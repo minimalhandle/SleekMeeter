@@ -1,8 +1,14 @@
 (function () {
   "use strict";
-  const { LAYOUT, createEngine } = window.Sleekmeeter;
+  const { LAYOUT, BUS_MODES, DEFAULT_SETTINGS, createEngine } = window.Sleekmeeter;
+  const { ICONS, COLORS, svg } = window.SleekIcons;
   const engine = createEngine();
   const $ = (s, el = document) => el.querySelector(s);
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+
+  let settings = clone(DEFAULT_SETTINGS);
+  let connected = null;
+  const reveal = { strip: false, bus: false };
 
   /* ---------- fader taper (shared by faders, meters and the scale) ---------- */
   // Piecewise taper: more travel around the useful -20…+6 dB range, like a real console.
@@ -25,10 +31,10 @@
     }
     return MAX_DB;
   }
-  const root = document.documentElement.style;
-  root.setProperty("--p-yellow", dbToPos(-9) * 100 + "%");
-  root.setProperty("--p-zero", dbToPos(0) * 100 + "%");
-  root.setProperty("--p-zero-f", dbToPos(0));
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty("--p-yellow", dbToPos(-9) * 100 + "%");
+  rootStyle.setProperty("--p-zero", dbToPos(0) * 100 + "%");
+  rootStyle.setProperty("--p-zero-f", dbToPos(0));
   const fmtDb = (db) => (db <= MIN_DB ? "−∞" : (db > 0.04 ? "+" : db < -0.04 ? "−" : "") + Math.abs(db).toFixed(1));
 
   /* ---------- outgoing writes, coalesced to one per frame per parameter ---------- */
@@ -47,92 +53,163 @@
   }
   function fail(err) { toast(String(err && err.message ? err.message : err)); }
 
-  /* ---------- build the desk ---------- */
-  const strips = [];   // input strip controllers
-  const buses = [];    // output strip controllers
-  const SCALE_TICKS = [12, 0, -10, -20, -40, -60];
-
-  function buildScale(el) {
-    for (const db of SCALE_TICKS) {
-      const s = document.createElement("span");
-      s.textContent = db > 0 ? "+" + db : db === 0 ? "0" : "−" + Math.abs(db);
-      if (db === 0) s.className = "zero";
-      s.style.bottom = `calc(4px + (100% - 8px) * ${dbToPos(db)})`;
-      el.appendChild(s);
-    }
+  /* ---------- settings persistence ---------- */
+  let saveTimer;
+  function saveSettings() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        const res = await engine.saveSettings(settings);
+        showProblems((res && res.problems) || []);
+      } catch (e) { fail(e); }
+    }, 250);
+  }
+  function showProblems(list) {
+    const el = $("#hotkeyProblems");
+    el.hidden = !list.length;
+    el.textContent = list.join(". ") + (list.length ? "." : "");
   }
 
-  function makeFader(el, paramName, label) {
-    const thumb = $(".thumb", el), dbText = $(".db", el), track = $(".track", el);
-    const f = { el, value: 0, lockUntil: 0, dragging: false };
-    el.setAttribute("aria-label", label);
-    f.render = () => {
-      el.style.setProperty("--pos", dbToPos(f.value));
-      dbText.textContent = fmtDb(f.value);
-      el.setAttribute("aria-valuenow", f.value.toFixed(1));
-      el.setAttribute("aria-valuetext", fmtDb(f.value) + " dB");
-    };
-    f.setRemote = (v) => {
-      if (f.dragging || performance.now() < f.lockUntil) return;
-      if (Math.abs(v - f.value) > 0.001) { f.value = v; f.render(); }
-    };
-    f.setLocal = (v) => {
-      v = Math.round(Math.max(MIN_DB, Math.min(MAX_DB, v)) * 10) / 10;
-      f.lockUntil = performance.now() + 500;
-      if (v === f.value) return;
-      f.value = v; f.render();
-      sendFloat(paramName(), v);
-    };
+  /* ---------- channels: one model, shown in the full mixer and in mini mode ---------- */
+  const chans = [];
+  LAYOUT.strips.forEach((info, i) => chans.push({ kind: "strip", i, key: `strip-${i}`, prefix: `Strip[${i}]`, info }));
+  LAYOUT.buses.forEach((info, j) => chans.push({ kind: "bus", i: j, key: `bus-${j}`, prefix: `Bus[${j}]`, info }));
+  for (const ch of chans) {
+    Object.assign(ch, {
+      data: null, gain: 0, dragging: false, lockUntil: 0,
+      faders: [], meterEls: [], toggles: [], chips: [], names: [], miniNames: [], subs: [], rows: [],
+      meter: { shown: [-200, -200], peak: [-200, -200], peakAt: [0, 0], target: [-200, -200] },
+    });
+  }
+  const isHw = (ch) => ch.info.kind === "hw";
 
-    let startY = 0, startPos = 0, h = 1;
+  function look(ch) {
+    const saved = (settings.appearance || {})[ch.key] || {};
+    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden };
+  }
+  function setLook(ch, patch) {
+    settings.appearance = settings.appearance || {};
+    settings.appearance[ch.key] = Object.assign({}, settings.appearance[ch.key], patch);
+    saveSettings();
+    paintLook(ch);
+    applyVisibility();
+    if (drawerCh === ch) renderDrawerHead();
+  }
+  function displayName(ch) {
+    const d = ch.data || {};
+    if (d.label) return d.label;
+    if (ch.kind === "strip") return isHw(ch) ? d.device || ch.info.fallback : ch.info.fallback;
+    return isHw(ch) ? d.device || `Output ${ch.info.id}` : `Virtual output ${ch.info.id}`;
+  }
+  function subText(ch) {
+    const d = ch.data || {};
+    if (ch.kind === "strip") {
+      if (!isHw(ch)) return "Virtual input";
+      if (!d.device) return "No device";
+      return displayName(ch) === d.device ? "Hardware input" : d.device;
+    }
+    const rest = isHw(ch) ? (d.label ? d.device || "No device" : "Hardware output") : "Virtual output";
+    return [ch.info.id, rest];
+  }
+
+  function paintLook(ch) {
+    const lk = look(ch);
+    for (const c of ch.chips) { c.dataset.color = lk.color; c.innerHTML = svg(lk.icon, c.classList.contains("small") ? 14 : 18); }
+    for (const r of ch.rows) r.dataset.color = lk.color;
+  }
+
+  /* ---------- fader component (vertical in the mixer, horizontal in mini mode) ---------- */
+  function setGain(ch, v) {
+    v = Math.round(Math.max(MIN_DB, Math.min(MAX_DB, v)) * 10) / 10;
+    ch.lockUntil = performance.now() + 500;
+    if (v === ch.gain) return;
+    ch.gain = v;
+    renderFaders(ch);
+    sendFloat(`${ch.prefix}.Gain`, v);
+  }
+  function renderFaders(ch) {
+    for (const f of ch.faders) {
+      f.style.setProperty("--pos", dbToPos(ch.gain));
+      $(".db", f).textContent = fmtDb(ch.gain);
+      f.setAttribute("aria-valuenow", ch.gain.toFixed(1));
+      f.setAttribute("aria-valuetext", fmtDb(ch.gain) + " dB");
+    }
+  }
+  function remoteGain(ch, v) {
+    if (ch.dragging || performance.now() < ch.lockUntil) return;
+    if (Math.abs(v - ch.gain) > 0.001) { ch.gain = v; renderFaders(ch); }
+  }
+
+  function makeFader(el, ch) {
+    const horizontal = el.classList.contains("h");
+    const track = $(".track", el);
+    ch.faders.push(el);
+    ch.meterEls.push({ m: [$(".meter.l", el), $(".meter.r", el)], p: [$(".peak.l", el), $(".peak.r", el)] });
+
+    let start = 0, startPos = 0, span = 1;
+    const posAt = (e, r) => horizontal ? (e.clientX - r.left - 4) / span : (r.bottom - 4 - e.clientY) / span;
+    const coord = (e) => (horizontal ? e.clientX : -e.clientY);
     track.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
       const r = track.getBoundingClientRect();
-      h = r.height - 8;
-      const clicked = (r.bottom - 4 - e.clientY) / h;
-      startPos = e.target.closest(".thumb") ? dbToPos(f.value) : clicked;
-      startY = e.clientY;
-      if (!e.target.closest(".thumb")) f.setLocal(posToDb(clicked));
-      f.dragging = true; el.classList.add("dragging");
+      span = (horizontal ? r.width : r.height) - 8;
+      const onThumb = !!e.target.closest(".thumb");
+      startPos = onThumb ? dbToPos(ch.gain) : posAt(e, r);
+      start = coord(e);
+      if (!onThumb) setGain(ch, posToDb(startPos));
+      ch.dragging = true; el.classList.add("dragging");
       track.setPointerCapture(e.pointerId);
       el.focus({ preventScroll: true });
     });
     track.addEventListener("pointermove", (e) => {
-      if (!f.dragging) return;
+      if (!ch.dragging || !el.classList.contains("dragging")) return;
       const fine = e.shiftKey ? 0.2 : 1;
-      f.setLocal(posToDb(startPos + ((startY - e.clientY) / h) * fine));
-      if (e.shiftKey) { startPos = dbToPos(f.value); startY = e.clientY; }
+      setGain(ch, posToDb(startPos + ((coord(e) - start) / span) * fine));
+      if (e.shiftKey) { startPos = dbToPos(ch.gain); start = coord(e); }
     });
-    const end = () => { f.dragging = false; el.classList.remove("dragging"); f.lockUntil = performance.now() + 500; };
+    const end = () => { ch.dragging = false; el.classList.remove("dragging"); ch.lockUntil = performance.now() + 500; };
     track.addEventListener("pointerup", end);
     track.addEventListener("pointercancel", end);
-    track.addEventListener("dblclick", () => f.setLocal(0));
+    track.addEventListener("dblclick", () => setGain(ch, 0));
     el.addEventListener("wheel", (e) => {
       e.preventDefault();
-      f.setLocal(f.value + (e.deltaY < 0 ? 1 : -1) * (e.altKey ? 0.1 : 1));
+      const dir = (horizontal ? (e.deltaY || e.deltaX) : e.deltaY) < 0 ? 1 : -1;
+      setGain(ch, ch.gain + dir * (e.altKey ? 0.1 : 1));
     }, { passive: false });
     el.addEventListener("keydown", (e) => {
       const step = e.shiftKey ? 0.1 : 0.5;
       const k = e.key;
       let v = null;
-      if (k === "ArrowUp" || k === "ArrowRight") v = f.value + step;
-      else if (k === "ArrowDown" || k === "ArrowLeft") v = f.value - step;
-      else if (k === "PageUp") v = f.value + 3;
-      else if (k === "PageDown") v = f.value - 3;
+      if (k === "ArrowUp" || k === "ArrowRight") v = ch.gain + step;
+      else if (k === "ArrowDown" || k === "ArrowLeft") v = ch.gain - step;
+      else if (k === "PageUp") v = ch.gain + 3;
+      else if (k === "PageDown") v = ch.gain - 3;
       else if (k === "Home") v = MIN_DB;
       else if (k === "End") v = MAX_DB;
       else if (k === "0") v = 0;
-      if (v !== null) { e.preventDefault(); f.setLocal(v); }
+      if (v !== null) { e.preventDefault(); setGain(ch, v); }
     });
-    f.render();
-    return f;
+    el.setAttribute("aria-label", `${displayName(ch)} level`);
   }
 
-  function makeName(el, paramName) {
-    const btn = $(".name", el), input = $(".name-edit", el);
+  function makeToggle(btn, ch, param) {
+    btn.setAttribute("aria-pressed", "false");
+    ch.toggles.push({ btn, param });
+    btn.addEventListener("click", () => {
+      const on = btn.getAttribute("aria-pressed") !== "true";
+      for (const t of ch.toggles) if (t.param === param) t.btn.setAttribute("aria-pressed", String(on));
+      if (param === "Mute") markMuted(ch, on);
+      sendFloat(`${ch.prefix}.${param}`, on ? 1 : 0);
+    });
+  }
+  function markMuted(ch, on) {
+    for (const f of ch.faders) f.closest(".strip, .mini-row").classList.toggle("muted", on);
+  }
+
+  function makeName(btn, input, ch) {
     let original = "";
     const open = () => {
-      original = btn.dataset.label || "";
+      original = (ch.data && ch.data.label) || "";
       input.value = original;
       btn.hidden = true; input.hidden = false; input.focus(); input.select();
     };
@@ -140,7 +217,7 @@
       if (input.hidden) return;
       input.hidden = true; btn.hidden = false;
       const v = input.value.trim();
-      if (commit && v !== original) engine.setString(paramName(), v).catch(fail);
+      if (commit && v !== original) engine.setString(`${ch.prefix}.Label`, v).catch(fail);
     };
     btn.addEventListener("dblclick", open);
     btn.addEventListener("keydown", (e) => { if (e.key === "F2" || e.key === "Enter") { e.preventDefault(); open(); } });
@@ -149,68 +226,63 @@
       if (e.key === "Escape") { e.preventDefault(); close(false); btn.focus(); }
     });
     input.addEventListener("blur", () => close(true));
-    return btn;
+    ch.names.push(btn);
   }
 
-  function makeMeters(el) {
-    const m = [$(".meter.l", el), $(".meter.r", el)];
-    const p = [$(".peak.l", el), $(".peak.r", el)];
-    return { m, p, shown: [-200, -200], peak: [-200, -200], peakAt: [0, 0], target: [-200, -200] };
+  function buildScale(el) {
+    for (const db of [12, 0, -10, -20, -40, -60]) {
+      const s = document.createElement("span");
+      s.textContent = db > 0 ? "+" + db : db === 0 ? "0" : "−" + Math.abs(db);
+      if (db === 0) s.className = "zero";
+      s.style.bottom = `calc(4px + (100% - 8px) * ${dbToPos(db)})`;
+      el.appendChild(s);
+    }
   }
 
-  function toggleBtn(btn, getName) {
-    btn.addEventListener("click", () => {
-      const on = btn.getAttribute("aria-pressed") !== "true";
-      btn.setAttribute("aria-pressed", String(on));
-      sendFloat(getName(), on ? 1 : 0);
-    });
-  }
-
-  LAYOUT.strips.forEach((info, i) => {
-    const el = $("#inputTpl").content.firstElementChild.cloneNode(true);
-    el.dataset.kind = info.kind;
-    const s = { el, info, meters: makeMeters(el) };
+  function buildMixerStrip(ch) {
+    const tpl = ch.kind === "strip" ? "#inputTpl" : "#outputTpl";
+    const el = $(tpl).content.firstElementChild.cloneNode(true);
+    el.dataset.kind = ch.info.kind;
+    ch.mixerEl = el;
+    ch.rows.push(el);
+    const chip = $(".chip", el);
+    ch.chips.push(chip);
+    chip.addEventListener("click", () => openDrawer(ch));
+    makeName($(".name", el), $(".name-edit", el), ch);
+    ch.subs.push($(".sub", el));
     buildScale($(".scale", el));
-    s.fader = makeFader($(".fader", el), () => `Strip[${i}].Gain`, info.fallback + " level");
-    s.name = makeName(el, () => `Strip[${i}].Label`);
-    s.sub = $(".sub", el);
-    s.routes = [...el.querySelectorAll(".route")];
-    s.routes.forEach((b) => {
-      b.setAttribute("aria-pressed", "false");
-      toggleBtn(b, () => `Strip[${i}].${b.textContent}`);
-    });
-    s.mute = $(".mute", el); toggleBtn(s.mute, () => `Strip[${i}].Mute`);
-    s.solo = $(".solo", el); toggleBtn(s.solo, () => `Strip[${i}].Solo`);
-    s.mono = $(".mono", el);
-    if (info.kind === "virt") { s.mono.textContent = "M.C."; s.mono.title = "Mute center channel"; }
-    toggleBtn(s.mono, () => `Strip[${i}].${info.kind === "virt" ? "MC" : "Mono"}`);
-    $("#inputs").appendChild(el);
-    strips.push(s);
-  });
+    makeFader($(".fader", el), ch);
+    makeToggle($(".mute", el), ch, "Mute");
+    if (ch.kind === "strip") {
+      el.querySelectorAll(".route").forEach((b) => makeToggle(b, ch, b.textContent));
+      makeToggle($(".solo", el), ch, "Solo");
+      const mono = $(".mono", el);
+      if (!isHw(ch)) { mono.textContent = "M.C."; mono.title = "Mute center channel"; }
+      makeToggle(mono, ch, isHw(ch) ? "Mono" : "MC");
+      $("#inputs").appendChild(el);
+    } else {
+      makeToggle($(".mono", el), ch, "Mono");
+      makeToggle($(".eq", el), ch, "EQ.on");
+      $("#outputs").appendChild(el);
+    }
+  }
 
-  LAYOUT.buses.forEach((info, j) => {
-    const el = $("#outputTpl").content.firstElementChild.cloneNode(true);
-    el.dataset.kind = info.kind;
-    const b = { el, info, meters: makeMeters(el) };
-    $(".bus-id", el).textContent = info.id;
-    buildScale($(".scale", el));
-    b.fader = makeFader($(".fader", el), () => `Bus[${j}].Gain`, info.id + " level");
-    b.name = makeName(el, () => `Bus[${j}].Label`);
-    b.sub = $(".sub", el);
-    b.mute = $(".mute", el); toggleBtn(b.mute, () => `Bus[${j}].Mute`);
-    b.mono = $(".mono", el); toggleBtn(b.mono, () => `Bus[${j}].Mono`);
-    b.eq = $(".eq", el); toggleBtn(b.eq, () => `Bus[${j}].EQ.on`);
-    $("#outputs").appendChild(el);
-    buses.push(b);
-  });
+  function buildMiniRow(ch) {
+    const el = $("#miniTpl").content.firstElementChild.cloneNode(true);
+    ch.miniEl = el;
+    ch.rows.push(el);
+    const chip = $(".chip", el);
+    ch.chips.push(chip);
+    ch.miniNames.push($(".mini-name", el));
+    makeFader($(".fader", el), ch);
+    makeToggle($(".mute", el), ch, "Mute");
+    $(ch.kind === "strip" ? "#miniInputs" : "#miniOutputs").appendChild(el);
+  }
 
   /* ---------- incoming state ---------- */
   const EDITIONS = { 1: "Voicemeeter", 2: "Voicemeeter Banana", 3: "Voicemeeter Potato" };
-  let connected = null;
-  const press = (btn, on) => btn.setAttribute("aria-pressed", String(!!on));
 
   function applyState(st) {
-    // connection
     const status = $("#status"), text = $("#statusText");
     if (!st.installed) {
       status.dataset.state = "offline"; text.textContent = "Voicemeeter isn't installed";
@@ -226,73 +298,284 @@
     connected = !!st.connected;
     if (!st.connected || !st.strips) return;
 
-    st.strips.slice(0, strips.length).forEach((d, i) => {
-      const s = strips[i];
-      const name = d.label || (s.info.kind === "hw" ? d.device || s.info.fallback : s.info.fallback);
-      s.name.textContent = name;
-      s.name.dataset.label = d.label || "";
-      s.name.title = "Double-click to rename";
-      s.sub.textContent = s.info.kind === "virt" ? "Virtual input" : (!d.device ? "No device" : name === d.device ? "Hardware input" : d.device);
-      s.sub.title = s.sub.textContent;
-      s.fader.setRemote(d.gain);
-      s.routes.forEach((b) => {
-        const k = +b.dataset.bus;
-        press(b, k < 3 ? d.a[k] : d.b[k - 3]);
-      });
-      press(s.mute, d.mute); press(s.solo, d.solo);
-      press(s.mono, s.info.kind === "virt" ? d.mc : d.mono);
-      s.el.classList.toggle("muted", !!d.mute);
-    });
-    st.buses.slice(0, buses.length).forEach((d, j) => {
-      const b = buses[j];
-      const hw = b.info.kind === "hw";
-      const name = d.label || (hw ? d.device || "No device" : "Virtual output");
-      b.name.textContent = name;
-      b.name.dataset.label = d.label || "";
-      b.sub.textContent = hw ? (d.label ? d.device || "No device" : "Hardware output") : (d.label ? "Virtual output" : "Voicemeeter " + b.info.id);
-      b.sub.title = b.sub.textContent;
-      b.fader.setRemote(d.gain);
-      press(b.mute, d.mute); press(b.mono, d.mono); press(b.eq, d.eq);
-      b.el.classList.toggle("muted", !!d.mute);
-    });
+    for (const ch of chans) {
+      const d = (ch.kind === "strip" ? st.strips : st.buses)[ch.i];
+      if (!d) continue;
+      ch.data = d;
+      const name = displayName(ch);
+      for (const n of ch.names) { n.textContent = name; }
+      for (const n of ch.miniNames) { n.textContent = name; n.title = name; }
+      for (const s of ch.subs) {
+        const sub = subText(ch);
+        if (Array.isArray(sub)) {
+          s.textContent = "";
+          s.append(Object.assign(document.createElement("span"), { className: "bus-tag", textContent: sub[0] }), " " + sub[1]);
+          s.title = sub.join(" ");
+        } else { s.textContent = sub; s.title = sub; }
+      }
+      for (const f of ch.faders) f.setAttribute("aria-label", `${name} level`);
+      remoteGain(ch, d.gain);
+      for (const t of ch.toggles) {
+        let on;
+        if (/^[AB]\d$/.test(t.param)) on = t.param[0] === "A" ? d.a[+t.param[1] - 1] : d.b[+t.param[1] - 1];
+        else on = { Mute: d.mute, Solo: d.solo, Mono: d.mono, MC: d.mc, "EQ.on": d.eq }[t.param];
+        t.btn.setAttribute("aria-pressed", String(!!on));
+      }
+      markMuted(ch, !!d.mute);
+    }
+    if (drawerCh) renderDrawerValues();
   }
+
+  /* ---------- visibility (hidden strips) ---------- */
+  function applyVisibility() {
+    const hiddenCount = { strip: 0, bus: 0 };
+    for (const ch of chans) {
+      const h = look(ch).hidden;
+      if (h) hiddenCount[ch.kind]++;
+      ch.mixerEl.hidden = h && !reveal[ch.kind];
+      ch.mixerEl.classList.toggle("is-hidden", h);
+      ch.miniEl.hidden = h;
+    }
+    document.querySelectorAll("[data-reveal]").forEach((b) => {
+      const k = b.dataset.reveal, n = hiddenCount[k];
+      b.hidden = n === 0;
+      if (n === 0) reveal[k] = false;
+      b.textContent = reveal[k] ? "Done" : `Show hidden (${n})`;
+    });
+    if (settings.mini) engine.windowMini(true, miniRows()).catch(() => {});
+  }
+  document.querySelectorAll("[data-reveal]").forEach((b) => b.addEventListener("click", () => {
+    reveal[b.dataset.reveal] = !reveal[b.dataset.reveal];
+    applyVisibility();
+  }));
+  const miniRows = () => chans.filter((c) => !look(c).hidden).length;
 
   /* ---------- meters: fast attack, smooth release, 1.5 s peak hold ---------- */
   function applyLevels(lv) {
-    (lv.inputs || []).forEach((pair, i) => { if (strips[i]) strips[i].meters.target = pair; });
-    (lv.outputs || []).forEach((pair, j) => { if (buses[j]) buses[j].meters.target = pair; });
+    chans.forEach((ch) => {
+      const pair = (ch.kind === "strip" ? lv.inputs : lv.outputs || [])[ch.i];
+      if (pair) ch.meter.target = pair;
+    });
   }
   let lastT = performance.now();
   function frame(t) {
     const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
-    for (const c of strips.concat(buses)) {
-      const M = c.meters;
-      for (let ch = 0; ch < 2; ch++) {
-        const target = connected ? M.target[ch] : -200;
-        const cur = M.shown[ch];
+    for (const ch of chans) {
+      const M = ch.meter;
+      for (let c = 0; c < 2; c++) {
+        const target = connected ? M.target[c] : -200;
+        const cur = M.shown[c];
         const next = target >= cur ? target : Math.max(target, cur - 26 * dt);
         if (next !== cur) {
-          M.shown[ch] = next;
-          M.m[ch].style.setProperty("--lvl", (dbToPos(next) * 100).toFixed(2) + "%");
+          M.shown[c] = next;
+          const lvl = (dbToPos(next) * 100).toFixed(2) + "%";
+          for (const v of ch.meterEls) v.m[c].style.setProperty("--lvl", lvl);
         }
-        if (next > M.peak[ch] || t - M.peakAt[ch] > 1500) {
-          if (next > M.peak[ch]) { M.peak[ch] = next; M.peakAt[ch] = t; }
-          else M.peak[ch] = Math.max(next, M.peak[ch] - 20 * dt);
-          const p = dbToPos(M.peak[ch]);
-          M.p[ch].style.setProperty("--pk", p.toFixed(4));
-          M.p[ch].style.setProperty("--pk-o", p > 0.01 ? 0.8 : 0);
+        if (next > M.peak[c] || t - M.peakAt[c] > 1500) {
+          if (next > M.peak[c]) { M.peak[c] = next; M.peakAt[c] = t; }
+          else M.peak[c] = Math.max(next, M.peak[c] - 20 * dt);
+          const p = dbToPos(M.peak[c]);
+          for (const v of ch.meterEls) {
+            v.p[c].style.setProperty("--pk", p.toFixed(4));
+            v.p[c].style.setProperty("--pk-o", p > 0.01 ? 0.8 : 0);
+          }
         }
       }
     }
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
+
+  /* ---------- channel drawer ---------- */
+  let drawerCh = null;
+  let deviceCache = null;
+  const drawer = $("#drawer"), drawerBody = $("#drawerBody");
+
+  function openDrawer(ch) {
+    drawerCh = ch;
+    drawer.hidden = false;
+    renderDrawerHead();
+    buildDrawerBody();
+    $("#drawerClose").focus();
+    engine.devices().then((d) => { deviceCache = d; if (drawerCh === ch) fillDevices(); }).catch(() => {});
+  }
+  function closeDrawer() {
+    const ch = drawerCh;
+    drawerCh = null;
+    drawer.hidden = true;
+    if (ch && ch.chips[0]) ch.chips[0].focus();
+  }
+  $("#drawerClose").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && drawerCh && !document.querySelector("dialog[open]")) closeDrawer();
+  });
+
+  function renderDrawerHead() {
+    const ch = drawerCh, lk = look(ch);
+    const chip = $("#drawerChip");
+    chip.dataset.color = lk.color;
+    chip.innerHTML = svg(lk.icon, 22);
+    $("#drawerTitle").textContent = displayName(ch);
+    const sub = subText(ch);
+    $("#drawerSub").textContent = Array.isArray(sub) ? sub.join(" ") : sub;
+    drawer.dataset.color = lk.color;
+    drawerBody.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", String(s.dataset.value === lk.color)));
+    drawerBody.querySelectorAll(".icon-pick").forEach((s) => s.setAttribute("aria-pressed", String(s.dataset.value === lk.icon)));
+    const hide = $("#lookHidden");
+    if (hide) hide.checked = lk.hidden;
+  }
+
+  function section(title) {
+    const s = document.createElement("section");
+    if (title) s.appendChild(Object.assign(document.createElement("h3"), { textContent: title }));
+    drawerBody.appendChild(s);
+    return s;
+  }
+
+  // A labelled slider bound to one Voicemeeter parameter.
+  function rangeField(parent, { id, label, param, min, max, step, center, format, reset }) {
+    const row = document.createElement("div");
+    row.className = "field";
+    row.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}"><output for="${id}"></output>`;
+    const input = $("input", row), out = $("output", row);
+    input.dataset.param = param;
+    const paint = () => {
+      const v = +input.value;
+      out.textContent = format(v);
+      const p = ((v - min) / (max - min)) * 100;
+      const c = center === undefined ? 0 : ((center - min) / (max - min)) * 100;
+      const [a, b] = p < c ? [p, c] : [c, p];
+      input.style.setProperty("--track-bg",
+        `linear-gradient(to right, var(--track) ${a}%, var(--acc) ${a}%, var(--acc) ${b}%, var(--track) ${b}%)`);
+    };
+    input.addEventListener("input", () => { paint(); sendFloat(`${drawerCh.prefix}.${param}`, +input.value); });
+    input.addEventListener("dblclick", () => { input.value = reset; paint(); sendFloat(`${drawerCh.prefix}.${param}`, reset); });
+    input._paint = paint;
+    parent.appendChild(row);
+    return input;
+  }
+
+  function buildDrawerBody() {
+    const ch = drawerCh;
+    drawerBody.textContent = "";
+
+    const lookSec = section("Look");
+    const sw = document.createElement("div");
+    sw.className = "swatches"; sw.setAttribute("role", "group"); sw.setAttribute("aria-label", "Color");
+    for (const [key, label] of Object.entries(COLORS)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "swatch"; b.dataset.color = key; b.dataset.value = key;
+      b.title = label; b.setAttribute("aria-label", label);
+      b.addEventListener("click", () => setLook(ch, { color: key }));
+      sw.appendChild(b);
+    }
+    const grid = document.createElement("div");
+    grid.className = "icon-grid"; grid.setAttribute("role", "group"); grid.setAttribute("aria-label", "Icon");
+    for (const [key, [label]] of Object.entries(ICONS)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "icon-pick"; b.dataset.value = key; b.title = label;
+      b.setAttribute("aria-label", label);
+      b.innerHTML = svg(key, 18);
+      b.addEventListener("click", () => setLook(ch, { icon: key }));
+      grid.appendChild(b);
+    }
+    const hide = document.createElement("label");
+    hide.className = "check";
+    hide.innerHTML = `<input type="checkbox" id="lookHidden"><span>Hide this ${ch.kind === "strip" ? "input" : "output"} from the mixer</span>`;
+    $("input", hide).addEventListener("change", (e) => setLook(ch, { hidden: e.target.checked }));
+    lookSec.append(sw, grid, hide);
+
+    if (isHw(ch)) {
+      const devSec = section(ch.kind === "strip" ? "Input device" : "Output device");
+      const sel = document.createElement("select");
+      sel.id = "deviceSelect";
+      sel.setAttribute("aria-label", "Device");
+      sel.innerHTML = `<option>Loading devices…</option>`;
+      sel.addEventListener("change", () => {
+        const [type, ...rest] = sel.value.split("|");
+        const name = rest.join("|");
+        engine.setString(`${ch.prefix}.device.${type || "wdm"}`, name)
+          .then(() => toast(name ? `Switched to ${name}` : "Device removed"))
+          .catch(fail);
+      });
+      devSec.appendChild(sel);
+      if (deviceCache) fillDevices();
+    }
+
+    if (ch.kind === "strip") {
+      const pos = section("Position");
+      rangeField(pos, { id: "fPan", label: "Pan", param: "Pan_x", min: -0.5, max: 0.5, step: 0.01, center: 0, reset: 0,
+        format: (v) => (Math.abs(v) < 0.005 ? "C" : (v < 0 ? "L " : "R ") + Math.round(Math.abs(v) * 200)) });
+      const dyn = section("Dynamics");
+      rangeField(dyn, { id: "fComp", label: "Compressor", param: "Comp", min: 0, max: 10, step: 0.1, reset: 0, format: (v) => v.toFixed(1) });
+      rangeField(dyn, { id: "fGate", label: "Gate", param: "Gate", min: 0, max: 10, step: 0.1, reset: 0, format: (v) => v.toFixed(1) });
+      if (!isHw(ch)) {
+        const eq = section("EQ");
+        const f = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
+        rangeField(eq, { id: "fEq1", label: "Bass", param: "EQGain1", min: -12, max: 12, step: 0.5, center: 0, reset: 0, format: f });
+        rangeField(eq, { id: "fEq2", label: "Mid", param: "EQGain2", min: -12, max: 12, step: 0.5, center: 0, reset: 0, format: f });
+        rangeField(eq, { id: "fEq3", label: "Treble", param: "EQGain3", min: -12, max: 12, step: 0.5, center: 0, reset: 0, format: f });
+      }
+    } else {
+      const modeSec = section("Bus mode");
+      const sel = document.createElement("select");
+      sel.id = "busMode"; sel.setAttribute("aria-label", "Bus mode");
+      for (const [v, label] of BUS_MODES) sel.appendChild(new Option(label, v));
+      sel.addEventListener("change", () => sendFloat(`${ch.prefix}.mode.${sel.value}`, 1));
+      modeSec.appendChild(sel);
+    }
+    renderDrawerHead();
+    renderDrawerValues();
+  }
+
+  function fillDevices() {
+    const sel = $("#deviceSelect");
+    if (!sel || !drawerCh) return;
+    const ch = drawerCh;
+    const current = (ch.data && ch.data.device) || "";
+    const list = (ch.kind === "strip" ? deviceCache.inputs : deviceCache.outputs) || [];
+    const groups = [["wdm", "WDM (recommended)"], ["ks", "Kernel streaming"], ["mme", "MME"]];
+    if (ch.kind === "bus" && ch.i === 0) groups.push(["asio", "ASIO"]);
+    sel.textContent = "";
+    sel.appendChild(new Option("No device", "wdm|"));
+    let picked = !current;
+    for (const [type, label] of groups) {
+      const items = list.filter((d) => d.type === type);
+      if (!items.length) continue;
+      const og = document.createElement("optgroup");
+      og.label = label;
+      for (const d of items) {
+        const o = new Option(d.name, `${type}|${d.name}`);
+        if (!picked && d.name === current) { o.selected = true; picked = true; }
+        og.appendChild(o);
+      }
+      sel.appendChild(og);
+    }
+    if (!picked) {
+      const o = new Option(`${current} (current)`, `wdm|${current}`);
+      o.selected = true;
+      sel.insertBefore(o, sel.options[1] || null);
+    }
+  }
+
+  function renderDrawerValues() {
+    const ch = drawerCh, d = ch && ch.data;
+    if (!d) return;
+    renderDrawerHead();
+    const map = { Pan_x: d.pan, Comp: d.comp, Gate: d.gate, EQGain1: (d.eq || [])[0], EQGain2: (d.eq || [])[1], EQGain3: (d.eq || [])[2] };
+    drawerBody.querySelectorAll("input[type=range]").forEach((inp) => {
+      const v = map[inp.dataset.param];
+      if (v === undefined || document.activeElement === inp) return;
+      inp.value = v;
+      inp._paint();
+    });
+    const mode = $("#busMode");
+    if (mode && document.activeElement !== mode) mode.value = d.mode || "normal";
+  }
 
   /* ---------- offline overlay ---------- */
   const launchBtn = $("#launchBtn");
   function showOffline(kind) {
-    const ov = $("#offline");
-    ov.hidden = !kind;
+    $("#offline").hidden = !kind;
     if (!kind) { launchBtn.disabled = false; launchBtn.textContent = "Start Voicemeeter"; return; }
     if (kind === "missing") {
       $("#offlineTitle").textContent = "Voicemeeter isn't installed";
@@ -306,11 +589,31 @@
   }
   launchBtn.addEventListener("click", () => {
     launchBtn.disabled = true; launchBtn.textContent = "Starting Voicemeeter…";
-    engine.launch().catch((e) => { fail(e); });
+    engine.launch().catch(fail);
     setTimeout(() => { launchBtn.disabled = false; launchBtn.textContent = "Start Voicemeeter"; }, 10000);
   });
 
-  /* ---------- more menu ---------- */
+  /* ---------- header: pin, mini mode, more menu ---------- */
+  const pinBtn = $("#pinBtn"), miniBtn = $("#miniBtn");
+  pinBtn.addEventListener("click", () => {
+    settings.alwaysOnTop = !settings.alwaysOnTop;
+    pinBtn.setAttribute("aria-pressed", String(settings.alwaysOnTop));
+    toast(settings.alwaysOnTop ? "Sleekmeeter stays on top" : "Sleekmeeter no longer stays on top");
+    saveSettings();
+  });
+  function setMini(on, save) {
+    settings.mini = on;
+    document.body.classList.toggle("is-mini", on);
+    $("#desk").hidden = on;
+    $("#miniView").hidden = !on;
+    miniBtn.setAttribute("aria-pressed", String(on));
+    miniBtn.title = miniBtn.ariaLabel = on ? "Full mixer" : "Mini mode";
+    if (on && drawerCh) closeDrawer();
+    engine.windowMini(on, miniRows()).catch(() => {});
+    if (save) saveSettings();
+  }
+  miniBtn.addEventListener("click", () => setMini(!settings.mini, true));
+
   const moreBtn = $("#moreBtn"), moreMenu = $("#moreMenu");
   const setMenu = (open) => { moreMenu.hidden = !open; moreBtn.setAttribute("aria-expanded", String(open)); if (open) moreMenu.querySelector("button").focus(); };
   moreBtn.addEventListener("click", () => setMenu(moreMenu.hidden));
@@ -320,10 +623,125 @@
     const a = e.target.closest("button")?.dataset.action;
     if (!a) return;
     setMenu(false);
-    if (a === "show") engine.setFloat("Command.Show", 1).catch(fail);
+    if (a === "show") engine.showWindow().catch(fail);
     if (a === "restart") engine.setFloat("Command.Restart", 1).then(() => toast("Restarting audio engine")).catch(fail);
-    if (a === "unsolo") strips.forEach((s, i) => { if (s.solo.getAttribute("aria-pressed") === "true") sendFloat(`Strip[${i}].Solo`, 0); });
+    if (a === "unsolo") chans.forEach((ch) => { if (ch.kind === "strip" && ch.data && ch.data.solo) sendFloat(`${ch.prefix}.Solo`, 0); });
   });
+
+  /* ---------- settings dialog ---------- */
+  const settingsDlg = $("#settingsDlg");
+  const CHECKS = {
+    setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
+    setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
+  };
+  for (const [id, key] of Object.entries(CHECKS)) {
+    $("#" + id).addEventListener("change", (e) => {
+      settings[key] = e.target.checked;
+      syncChecks();
+      saveSettings();
+    });
+  }
+  function syncChecks() {
+    for (const [id, key] of Object.entries(CHECKS)) $("#" + id).checked = !!settings[key];
+    const tray = $("#setStartInTray");
+    tray.disabled = !settings.startWithWindows;
+    tray.closest(".check").classList.toggle("disabled", tray.disabled);
+  }
+  $("#settingsBtn").addEventListener("click", () => {
+    syncChecks();
+    renderHotkeys();
+    settingsDlg.showModal();
+  });
+  settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
+
+  const ACTIONS = [["mute", "Mute or unmute"], ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"], ["window", "Show or hide Sleekmeeter"]];
+  function renderHotkeys() {
+    const list = $("#hotkeyList");
+    list.textContent = "";
+    (settings.hotkeys || []).forEach((h, idx) => {
+      const row = document.createElement("div");
+      row.className = "hotkey";
+      const act = document.createElement("select");
+      act.setAttribute("aria-label", "Action");
+      for (const [v, l] of ACTIONS) act.appendChild(new Option(l, v));
+      act.value = h.action;
+      const tgt = document.createElement("select");
+      tgt.setAttribute("aria-label", "Channel");
+      for (const ch of chans) tgt.appendChild(new Option(displayName(ch), ch.prefix));
+      tgt.value = h.target || "Strip[0]";
+      tgt.disabled = h.action === "window";
+      act.addEventListener("change", () => {
+        h.action = act.value;
+        tgt.disabled = h.action === "window";
+        h.target = tgt.disabled ? "" : tgt.value;
+        saveSettings();
+      });
+      tgt.addEventListener("change", () => { h.target = tgt.value; saveSettings(); });
+      const keys = document.createElement("button");
+      keys.type = "button";
+      keys.className = "keys" + (h.keys ? "" : " empty");
+      keys.textContent = h.keys || "Set shortcut";
+      keys.setAttribute("aria-label", h.keys ? `Shortcut ${h.keys}, click to change` : "Set shortcut");
+      keys.addEventListener("click", () => recordKeys(keys, h));
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn icon"; del.setAttribute("aria-label", "Remove shortcut");
+      del.innerHTML = `<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      del.addEventListener("click", () => { settings.hotkeys.splice(idx, 1); renderHotkeys(); saveSettings(); });
+      row.append(act, tgt, keys, del);
+      list.appendChild(row);
+    });
+  }
+  $("#addHotkey").addEventListener("click", () => {
+    settings.hotkeys = settings.hotkeys || [];
+    settings.hotkeys.push({ keys: "", action: "mute", target: "Strip[0]" });
+    renderHotkeys();
+    const all = document.querySelectorAll("#hotkeyList .keys");
+    all[all.length - 1].click();
+  });
+
+  // Turn a key press into a shortcut string Windows understands, e.g. "Ctrl+Alt+M".
+  function keyName(code) {
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+    if (/^Digit\d$/.test(code)) return code.slice(5);
+    if (/^F\d{1,2}$/.test(code)) return code;
+    if (/^Numpad\d$/.test(code)) return code;
+    const map = { ArrowUp: "Up", ArrowDown: "Down", ArrowLeft: "Left", ArrowRight: "Right", Space: "Space",
+      PageUp: "PageUp", PageDown: "PageDown", Home: "Home", End: "End", Insert: "Insert",
+      Minus: "Minus", Equal: "Equal", Comma: "Comma", Period: "Period", Slash: "Slash", Backquote: "Backquote",
+      BracketLeft: "BracketLeft", BracketRight: "BracketRight", Semicolon: "Semicolon", Quote: "Quote",
+      MediaPlayPause: "MediaPlayPause", AudioVolumeMute: "AudioVolumeMute", AudioVolumeUp: "AudioVolumeUp", AudioVolumeDown: "AudioVolumeDown" };
+    return map[code] || null;
+  }
+  function recordKeys(btn, h) {
+    btn.classList.add("recording");
+    btn.classList.remove("empty");
+    btn.textContent = "Press keys… (Esc to cancel)";
+    btn.focus();
+    const onKey = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (e.key === "Escape") return done();
+      if (e.key === "Backspace" || e.key === "Delete") { h.keys = ""; return done(true); }
+      const key = keyName(e.code);
+      if (!key) return; // a modifier on its own, keep listening
+      const mods = [e.ctrlKey && "Ctrl", e.altKey && "Alt", e.shiftKey && "Shift", e.metaKey && "Super"].filter(Boolean);
+      if (!mods.length && !/^F\d/.test(key) && !/^Media|^Audio/.test(key)) {
+        btn.textContent = "Add Ctrl, Alt or Shift";
+        return;
+      }
+      h.keys = [...mods, key].join("+");
+      done(true);
+    };
+    const done = (changed) => {
+      btn.removeEventListener("keydown", onKey, true);
+      btn.removeEventListener("blur", cancel);
+      btn.classList.remove("recording");
+      renderHotkeys();
+      if (changed) saveSettings();
+    };
+    const cancel = () => done();
+    btn.addEventListener("keydown", onKey, true);
+    btn.addEventListener("blur", cancel);
+  }
 
   /* ---------- scenes ---------- */
   const dlg = $("#scenesDlg"), list = $("#sceneList");
@@ -331,20 +749,16 @@
     const names = await engine.listScenes().catch((e) => { fail(e); return []; });
     list.textContent = "";
     if (!names.length) {
-      const li = document.createElement("li");
-      li.className = "empty"; li.textContent = "No scenes yet. Set up your mix, name it below and save it.";
-      list.appendChild(li);
+      list.appendChild(Object.assign(document.createElement("li"), { className: "empty", textContent: "No scenes yet. Set up your mix, name it below and save it." }));
       return;
     }
     for (const n of names) {
       const li = document.createElement("li");
-      const load = document.createElement("button");
-      load.type = "button"; load.className = "load"; load.textContent = n;
+      const load = Object.assign(document.createElement("button"), { type: "button", className: "load", textContent: n });
       load.addEventListener("click", async () => {
         try { await engine.loadScene(n); setScene(n); toast(`Loaded “${n}”`); dlg.close(); } catch (e) { fail(e); }
       });
-      const del = document.createElement("button");
-      del.type = "button"; del.className = "btn del"; del.textContent = "Delete";
+      const del = Object.assign(document.createElement("button"), { type: "button", className: "btn del", textContent: "Delete" });
       del.setAttribute("aria-label", `Delete ${n}`);
       let armed = false;
       del.addEventListener("click", async () => {
@@ -378,5 +792,18 @@
     toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
-  engine.start(applyState, applyLevels).catch(fail);
+  /* ---------- start ---------- */
+  async function init() {
+    try {
+      const s = await engine.getSettings();
+      settings = Object.assign(clone(DEFAULT_SETTINGS), s || {});
+    } catch (e) { /* keep defaults */ }
+    for (const ch of chans) { buildMixerStrip(ch); buildMiniRow(ch); paintLook(ch); renderFaders(ch); }
+    applyVisibility();
+    pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
+    setMini(!!settings.mini, false);
+    requestAnimationFrame(frame);
+    await engine.start(applyState, applyLevels);
+  }
+  init().catch(fail);
 })();

@@ -19,6 +19,23 @@ type FnGetStringW = unsafe extern "system" fn(*const c_char, *mut u16) -> i32;
 type FnGetLevel = unsafe extern "system" fn(i32, i32, *mut f32) -> i32;
 type FnSetFloat = unsafe extern "system" fn(*const c_char, f32) -> i32;
 type FnSetStringW = unsafe extern "system" fn(*const c_char, *const u16) -> i32;
+type FnDevDescW = unsafe extern "system" fn(i32, *mut i32, *mut u16, *mut u16) -> i32;
+
+/// Bus modes Voicemeeter Banana offers (Bus[i].mode.<name>).
+pub const BUS_MODES: &[&str] = &[
+    "normal",
+    "Amix",
+    "Bmix",
+    "Repeat",
+    "Composite",
+    "TVMix",
+    "UpMix21",
+    "UpMix41",
+    "UpMix61",
+    "CenterOnly",
+    "LFEOnly",
+    "RearOnly",
+];
 
 pub struct Api {
     _lib: Library,
@@ -33,6 +50,10 @@ pub struct Api {
     get_level: FnGetLevel,
     set_float: FnSetFloat,
     set_string_w: FnSetStringW,
+    in_dev_count: FnVoid,
+    in_dev_desc: FnDevDescW,
+    out_dev_count: FnVoid,
+    out_dev_desc: FnDevDescW,
 }
 
 /// Strip/bus counts for each Voicemeeter edition (from VoicemeeterRemote.h).
@@ -147,7 +168,15 @@ impl Api {
             let get_level = sym!("VBVMR_GetLevel", FnGetLevel);
             let set_float = sym!("VBVMR_SetParameterFloat", FnSetFloat);
             let set_string_w = sym!("VBVMR_SetParameterStringW", FnSetStringW);
+            let in_dev_count = sym!("VBVMR_Input_GetDeviceNumber", FnVoid);
+            let in_dev_desc = sym!("VBVMR_Input_GetDeviceDescW", FnDevDescW);
+            let out_dev_count = sym!("VBVMR_Output_GetDeviceNumber", FnVoid);
+            let out_dev_desc = sym!("VBVMR_Output_GetDeviceDescW", FnDevDescW);
             Ok(Api {
+                in_dev_count,
+                in_dev_desc,
+                out_dev_count,
+                out_dev_desc,
                 _lib: lib,
                 login,
                 logout,
@@ -248,6 +277,53 @@ impl Api {
         }
     }
 
+    /// Read the current value, add `delta`, clamp and write it back (used by hotkeys).
+    pub fn nudge(&self, name: &str, delta: f32, min: f32, max: f32) -> Result<f32, String> {
+        let v = (self.get_float(name).unwrap_or(0.0) + delta).clamp(min, max);
+        self.set_float(name, v)?;
+        Ok(v)
+    }
+
+    /// Flip a 0/1 parameter (used by hotkeys).
+    pub fn toggle(&self, name: &str) -> Result<bool, String> {
+        let on = !self.get_bool(name);
+        self.set_float(name, if on { 1.0 } else { 0.0 })?;
+        Ok(on)
+    }
+
+    /// Audio devices Voicemeeter can use, as [{ type: "wdm" | "ks" | "mme" | "asio", name }].
+    pub fn devices(&self) -> Value {
+        let list = |count: FnVoid, desc: FnDevDescW| -> Vec<Value> {
+            let n = unsafe { count() }.max(0);
+            let mut out = Vec::new();
+            for i in 0..n {
+                let mut kind = 0i32;
+                let mut name = [0u16; 512];
+                let mut hw = [0u16; 512];
+                if unsafe { desc(i, &mut kind, name.as_mut_ptr(), hw.as_mut_ptr()) } != 0 {
+                    continue;
+                }
+                let end = name.iter().position(|&c| c == 0).unwrap_or(name.len());
+                let name = String::from_utf16_lossy(&name[..end]);
+                let kind = match kind {
+                    1 => "mme",
+                    3 => "wdm",
+                    4 => "ks",
+                    5 => "asio",
+                    _ => continue,
+                };
+                if !name.is_empty() {
+                    out.push(json!({ "type": kind, "name": name }));
+                }
+            }
+            out
+        };
+        json!({
+            "inputs": list(self.in_dev_count, self.in_dev_desc),
+            "outputs": list(self.out_dev_count, self.out_dev_desc),
+        })
+    }
+
     /// Linear level → dBFS. kind: 1 = post-fader input, 3 = output.
     fn level_db(&self, kind: i32, channel: usize) -> f32 {
         let mut v = 0f32;
@@ -300,6 +376,11 @@ impl Api {
                 let hw = i < l.hw_strips;
                 let a: Vec<u8> = (1..=l.hw_buses).map(|k| self.get_bool(&p(&format!("A{k}"))) as u8).collect();
                 let b: Vec<u8> = (1..=l.virt_buses).map(|k| self.get_bool(&p(&format!("B{k}"))) as u8).collect();
+                let eq: Vec<f32> = if hw {
+                    Vec::new()
+                } else {
+                    (1..=3).map(|k| round(self.get_float(&p(&format!("EQGain{k}"))))).collect()
+                };
                 json!({
                     "label": self.get_string(&p("Label")).unwrap_or_default(),
                     "device": if hw { self.get_string(&p("device.name")).unwrap_or_default() } else { String::new() },
@@ -310,6 +391,10 @@ impl Api {
                     "mc": self.get_bool(&p("MC")),
                     "a": a,
                     "b": b,
+                    "pan": round(self.get_float(&p("Pan_x"))),
+                    "comp": round(self.get_float(&p("Comp"))),
+                    "gate": round(self.get_float(&p("Gate"))),
+                    "eq": eq,
                 })
             })
             .collect();
@@ -325,6 +410,7 @@ impl Api {
                     "mute": self.get_bool(&p("Mute")),
                     "mono": self.get_bool(&p("Mono")),
                     "eq": self.get_bool(&p("EQ.on")),
+                    "mode": BUS_MODES.iter().find(|m| self.get_bool(&p(&format!("mode.{m}")))).copied().unwrap_or("normal"),
                 })
             })
             .collect();

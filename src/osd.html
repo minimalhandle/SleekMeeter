@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sleekmeeter overlay</title>
+  <style>
+    @font-face { font-family: "Barlow SC"; src: url("fonts/BarlowSemiCondensed-SemiBold.woff2") format("woff2"); font-weight: 600; }
+    @font-face { font-family: "Barlow SC"; src: url("fonts/BarlowSemiCondensed-Bold.woff2") format("woff2"); font-weight: 700; }
+    :root {
+      --card: rgba(30, 38, 52, .92); --line: rgba(255,255,255,.08); --text: #e6ebf2; --muted: #8d99ad;
+      --track: rgba(0,0,0,.35); --red: #ee5d6c;
+      --c-slate: #8d99ad; --c-amber: #f0b341; --c-coral: #f08a5d; --c-rose: #f06b9a;
+      --c-violet: #a58cf5; --c-blue: #6c9ef8; --c-cyan: #4fc3e0; --c-green: #63d095;
+      color-scheme: dark;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --card: rgba(250, 251, 253, .94); --line: rgba(20,30,50,.10); --text: #18202c; --muted: #5d697c; --track: rgba(20,30,50,.12); --red: #d93e50;
+        --c-slate: #5d697c; --c-amber: #c98a12; --c-coral: #d4643a; --c-rose: #d4467b;
+        --c-violet: #7a5ce0; --c-blue: #3b6fd6; --c-cyan: #1b98ba; --c-green: #2e9e62;
+        color-scheme: light;
+      }
+    }
+    [data-color="slate"] { --acc: var(--c-slate); } [data-color="amber"] { --acc: var(--c-amber); }
+    [data-color="coral"] { --acc: var(--c-coral); } [data-color="rose"] { --acc: var(--c-rose); }
+    [data-color="violet"] { --acc: var(--c-violet); } [data-color="blue"] { --acc: var(--c-blue); }
+    [data-color="cyan"] { --acc: var(--c-cyan); } [data-color="green"] { --acc: var(--c-green); }
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+    body { --acc: var(--c-slate); font-family: "Barlow SC", "Segoe UI", system-ui, sans-serif; color: var(--text); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; user-select: none; }
+    .card {
+      position: absolute; inset: 4px; border-radius: 16px; background: var(--card); border: 1px solid var(--line);
+      display: grid; grid-template-columns: 40px 1fr auto; grid-template-rows: auto auto; column-gap: 12px; row-gap: 8px;
+      align-items: center; padding: 10px 16px 12px 12px;
+      backdrop-filter: blur(12px);
+      animation: pop .14s ease-out;
+    }
+    @keyframes pop { from { transform: scale(.96); opacity: 0; } }
+    .chip {
+      grid-row: 1 / 3; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+      color: var(--acc); background: color-mix(in srgb, var(--acc) 18%, transparent); border: 1px solid color-mix(in srgb, var(--acc) 35%, transparent);
+    }
+    .name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .value { font-size: 16px; font-weight: 700; }
+    .bar { grid-column: 2 / 4; height: 6px; border-radius: 3px; background: var(--track); position: relative; overflow: hidden; }
+    .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--acc); border-radius: 3px; transition: width .12s ease-out; }
+    .muted .fill { background: var(--muted); }
+    .muted .value { color: var(--red); }
+    @media (prefers-reduced-motion: reduce) { .card { animation: none; } .fill { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <span class="chip" id="chip"></span>
+    <span class="name" id="name"></span>
+    <span class="value" id="value"></span>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="osd.js"></script>
+</body>
+</html>
