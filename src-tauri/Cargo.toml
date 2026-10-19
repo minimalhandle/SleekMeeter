@@ -1,6 +1,6 @@
 [package]
 name = "sleekmeeter"
-version = "0.5.2"
+version = "0.6.0"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
 license = "MIT"
@@ -18,7 +18,7 @@ ureq = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp", "Win32_Media_Audio", "Win32_UI_Controls_Dialogs", "Win32_System_Com"] }
 
 [profile.release]
 opt-level = "s"

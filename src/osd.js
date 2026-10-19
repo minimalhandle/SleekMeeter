@@ -16,11 +16,14 @@
   function show(p) {
     const card = document.getElementById("card");
     card.dataset.color = p.color || "slate";
-    card.classList.toggle("muted", !!p.mute);
     document.getElementById("chip").innerHTML = window.SleekIcons.svg(p.icon || "wave", 22);
     document.getElementById("name").textContent = p.name || "";
-    document.getElementById("value").textContent = p.mute ? "Muted" : fmt(+p.gain || 0);
-    document.getElementById("fill").style.transform = `scaleX(${dbToPos(+p.gain || 0).toFixed(3)})`;
+    // Words instead of a level (ducking or recording switched by a shortcut).
+    const words = typeof p.text === "string";
+    card.classList.toggle("muted", !!p.mute || (words && !p.on));
+    document.getElementById("value").textContent = words ? p.text : p.mute ? "Muted" : fmt(+p.gain || 0);
+    const pos = words ? (p.on ? 1 : 0) : dbToPos(+p.gain || 0);
+    document.getElementById("fill").style.transform = `scaleX(${pos.toFixed(3)})`;
     document.body.classList.toggle("oled", !!p.oled);
     card.style.animation = "none"; void card.offsetWidth; card.style.animation = "";
   }

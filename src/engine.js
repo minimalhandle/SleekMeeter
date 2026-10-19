@@ -10,6 +10,10 @@
  *   openMixer() / closePanel() / onPanelShown(cb)   the tray volume panel
  *   checkUpdate() -> {current, latest, newer, url} / openRelease(url)
  *   runningApps() / onSceneAuto(cb)   automatic scene switching
+ *   glide(key, db)             fade a strip or bus ("Strip[0]") to a level
+ *   recorder(action) -> {state, elapsed, since}   record, play, replay, pause, stop, rew, ff
+ *   recorderOpen() -> file name | null / recorderLoad(path)   a file for the recorder to play
+ *   onEngineRestart(cb) / onSettingsChanged(cb) / onFileDrop(cb)
  *
  * Inside the Tauri app this goes to the Rust bridge (VoicemeeterRemote64.dll).
  * In a plain browser it runs a simulated Voicemeeter so the UI can be previewed
@@ -49,6 +53,9 @@
     startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
     overlay: true, alwaysOnTop: false, mini: false,
     sceneRules: [], checkUpdates: true, skippedVersion: "", oled: false,
+    fades: { on: true, muteMs: 250, sceneMs: 1200 },
+    ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
+    autoRestart: true,
   };
 
   /* ---------------- Tauri (real Voicemeeter) ---------------- */
@@ -86,6 +93,14 @@
     openRelease(url) { return this.invoke("open_release", { url }); }
     runningApps() { return this.invoke("running_apps"); }
     onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
+    glide(key, value) { return this.invoke("vm_glide", { key, value }); }
+    recorder(action) { return this.invoke("recorder_cmd", { action }); }
+    recorderOpen() { return this.invoke("recorder_open"); }
+    recorderLoad(path) { return this.invoke("recorder_load", { path }); }
+    onEngineRestart(cb) { return this.listen("engine-restarted", (e) => cb(e.payload)); }
+    onSettingsChanged(cb) { return this.listen("settings-changed", (e) => cb(e.payload)); }
+    // Files dropped on the window (Tauri hands over their paths).
+    onFileDrop(cb) { return this.listen("tauri://drag-drop", (e) => cb((e.payload && e.payload.paths) || [])); }
   }
 
   /* ---------------- Simulated Voicemeeter Banana ---------------- */
@@ -132,6 +147,14 @@
         strips: L.strips.map((x, i) => strip(x.kind === "hw" ? sampleStrips[i] : sampleVirt[i - hs], i)),
         buses: L.buses.map((x, j) => bus(x.kind === "hw" ? sampleBuses[j] : sampleVBuses[j - hb])),
       };
+      if (L.edition >= 2) {
+        this.state.recorder = {
+          armStrips: L.strips.map(() => false), armBuses: L.buses.map((_, j) => j === hb + vb - 1),
+          recBus: true, a: Array.from({ length: hb }, (_, k) => k === 0), b: Array.from({ length: vb }, () => false),
+          fileType: 1, gain: 0, playing: null, recording: null, state: "stopped", elapsed: 0, since: null,
+        };
+      }
+      this.glides = {};
       this.scenes = ["Streaming", "Gaming", "Late night"];
       this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
       this.settings.appearance = {
@@ -163,6 +186,14 @@
     emit() { this.onState(JSON.parse(JSON.stringify(this.state))); }
 
     setFloat(name, value) {
+      const rec = this.state.recorder;
+      const r = /^Recorder\.(ArmStrip|ArmBus)\[(\d)\]$/.exec(name);
+      if (rec && r) rec[r[1] === "ArmStrip" ? "armStrips" : "armBuses"][+r[2]] = !!value;
+      const ab = /^Recorder\.([AB])(\d)$/.exec(name);
+      if (rec && ab) rec[ab[1].toLowerCase()][+ab[2] - 1] = !!value;
+      if (rec && name === "Recorder.mode.recbus") rec.recBus = !!value;
+      if (rec && name === "Recorder.FileType") rec.fileType = value;
+      if (rec && name === "Recorder.gain") rec.gain = value;
       const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+)$/.exec(name);
       if (m) {
         const obj = (m[1] === "Strip" ? this.state.strips : this.state.buses)[+m[2]];
@@ -242,6 +273,42 @@
       return Promise.resolve(["discord.exe", "explorer.exe", "obs64.exe", "spotify.exe", "steam.exe", "valorant.exe"]);
     }
     onSceneAuto() { return Promise.resolve(); }
+    // Voicemeeter fades with FadeTo; the simulator steps the level the same way.
+    glide(key, value) {
+      const m = /^(Strip|Bus)\[(\d)\]$/.exec(key);
+      if (!m) return Promise.resolve();
+      const obj = (m[1] === "Strip" ? this.state.strips : this.state.buses)[+m[2]];
+      const from = obj.gain, to = Math.max(-60, Math.min(12, value)), t0 = performance.now(), ms = 300;
+      clearInterval(this.glides[key]);
+      this.glides[key] = setInterval(() => {
+        const k = Math.min(1, (performance.now() - t0) / ms);
+        obj.gain = Math.round((from + (to - from) * k) * 100) / 100;
+        this.emit();
+        if (k >= 1) clearInterval(this.glides[key]);
+      }, 33);
+      return Promise.resolve();
+    }
+    recorder(action) {
+      const rec = this.state.recorder;
+      if (!rec) return Promise.reject(new Error("This Voicemeeter has no recorder"));
+      const now = Date.now();
+      const run = (mode) => { rec.state = mode; rec.elapsed = 0; rec.since = now; };
+      if (action === "record") { if (rec.state === "paused" && rec.paused === "recording") { rec.state = "recording"; rec.since = now; } else if (rec.state !== "recording") run("recording"); }
+      if (action === "play") { if (rec.state === "paused" && rec.paused === "playing") { rec.state = "playing"; rec.since = now; } else if (rec.state === "stopped") run("playing"); }
+      if (action === "replay") run("playing");
+      if (action === "pause") {
+        if (rec.state === "paused") { rec.state = rec.paused; rec.since = now; }
+        else if (rec.state !== "stopped") { rec.elapsed += now - rec.since; rec.since = null; rec.paused = rec.state; rec.state = "paused"; }
+      }
+      if (action === "stop") { rec.state = "stopped"; rec.elapsed = 0; rec.since = null; }
+      this.emit();
+      return Promise.resolve({ state: rec.state, elapsed: rec.elapsed, since: rec.since });
+    }
+    recorderOpen() { return Promise.resolve("Interview take 3.wav"); }
+    recorderLoad(path) { return Promise.resolve(path.split(/[\\/]/).pop()); }
+    onEngineRestart() { return Promise.resolve(); }
+    onSettingsChanged() { return Promise.resolve(); }
+    onFileDrop() { return Promise.resolve(); }
 
     // Synthetic program material: speech-like mic, strummed guitar, music on desktop, chatter on Discord.
     levels(t) {
@@ -263,7 +330,21 @@
       const hs = this.layout.strips.filter((x) => x.kind === "hw").length;
       const hb = this.layout.buses.filter((x) => x.kind === "hw").length;
       const raw = st.strips.map((_, i) => (i < hs ? hwSignal[i] : virtSignal[i - hs]));
-      const post = raw.map((db, i) => db + st.strips[i].gain);
+      // Talk-over ducking, simulated: the trigger's level lowers the targets while it's loud.
+      const duck = this.settings.ducking || {};
+      const trig = /^Strip\[(\d)\]$/.exec(duck.trigger || "");
+      const ti = trig ? +trig[1] : -1;
+      const talking = !!duck.on && ti >= 0 && ti < st.strips.length && !st.strips[ti].mute
+        && raw[ti] + st.strips[ti].gain >= (duck.threshold ?? -40);
+      if (talking) this.loudAt = t;
+      const ducking = !!duck.on && this.loudAt !== undefined && t - this.loudAt < (duck.holdMs ?? 700) / 1000;
+      let duckChanged = false;
+      st.strips.forEach((s, i) => {
+        const on = ducking && (duck.targets || []).includes(`Strip[${i}]`) && i !== ti;
+        if (!!s.ducked !== on) { s.ducked = on; duckChanged = true; }
+      });
+      if (duckChanged) this.emit();
+      const post = raw.map((db, i) => db + st.strips[i].gain - (st.strips[i].ducked ? (duck.amount ?? 12) : 0));
       const inputs = post.map((db, i) => {
         const w = i === 0 ? 0 : 1.4 * Math.sin(t * 5 + i);
         const p = st.strips[i].pan * 8;

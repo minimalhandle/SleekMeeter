@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0
+- **Talk-over ducking:** other audio turns down while you talk and comes back when you stop. Pick the channel that talks, the channels to turn down, how much, and the level it starts at; the slider lights up with your voice so you can set it by eye. Ducked channels show **Ducking**, and their faders still move freely
+- **Smooth fades:** mute fades out and unmute fades in; typed levels, double-click to 0 dB, volume shortcuts and scene changes glide instead of jumping. Fade times are in Settings, and fades can be turned off
+- **Recorder** (Banana and Potato): record and play with Voicemeeter's built-in recorder from a new **Rec** button. Pick inputs or outputs to record, the format, a file to play (open or drop it on the window), where it plays and how loud. The clock runs in the header while recording
+- **Devices that come back:** when headphones or another device Voicemeeter uses comes back after being unplugged or disconnected, Sleekmeeter restarts the audio engine for you (Settings → Audio devices)
+- New shortcut actions: turn talk-over ducking on or off, and start or stop recording, with the on-screen overlay confirming each
+
 ## 0.5.2
 - Remembers the window's size, position and maximized state between launches (if that spot's monitor is gone, it opens centred instead)
 - First launch opens the window just wide enough for your mixer, centred, instead of a fixed size with empty space
