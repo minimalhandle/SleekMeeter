@@ -4,11 +4,7 @@ A modern face for Voicemeeter Banana. Sleekmeeter sits on top of Voicemeeter and
 
 ![Sleekmeeter's mixer: five input strips and three outputs, each fader doubling as a level meter](docs/screenshots/mixer.png)
 
-<img src="docs/screenshots/volume-panel.png" width="300" align="right" alt="The tray volume panel: one slim fader and mute button per channel">
-
 **Tray volume panel:** double-click the tray icon for a compact panel with every channel, right above the tray.
-
-<br clear="right">
 
 ## Requirements
 
