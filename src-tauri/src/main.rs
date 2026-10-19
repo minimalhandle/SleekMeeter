@@ -2,6 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod apps;
+mod devwatch;
+mod fades;
+mod gain;
+mod recorder;
 mod settings;
 mod update;
 mod vm;
@@ -29,6 +33,12 @@ struct Vm {
     hide_vm_until: Mutex<Option<Instant>>,
     /// Hide the volume overlay at this moment.
     osd_until: Mutex<Option<Instant>>,
+    /// Fades, fading mute and ducking (see gain.rs and fades.rs).
+    smooth: Mutex<gain::Smooth>,
+    /// The channels ducking lowered last time.
+    duck_targets: Mutex<Vec<String>>,
+    /// Voicemeeter's recorder: what it's doing and its clock.
+    rec: Mutex<recorder::RecState>,
 }
 
 struct Settings(Mutex<Value>);
@@ -68,8 +78,48 @@ fn vm_snapshot(vm: State<'_, Vm>) -> Value {
 }
 
 #[tauri::command]
-fn vm_set_float(vm: State<'_, Vm>, name: String, value: f32) -> Result<(), String> {
-    api(&vm)?.set_float(&name, value)
+fn vm_set_float(app: AppHandle, vm: State<'_, Vm>, name: String, value: f32) -> Result<(), String> {
+    fades::set_float(&app, api(&vm)?, &name, value)
+}
+
+/// Glide a strip or bus ("Strip[0]") to a level instead of jumping there.
+#[tauri::command]
+fn vm_glide(app: AppHandle, vm: State<'_, Vm>, key: String, value: f32) -> Result<(), String> {
+    if !(key.starts_with("Strip[") || key.starts_with("Bus[")) {
+        return Err("Only strips and buses have a level".into());
+    }
+    fades::glide(&app, api(&vm)?, &key, value)
+}
+
+/* ---------------- recorder ---------------- */
+
+#[tauri::command]
+fn recorder_cmd(app: AppHandle, vm: State<'_, Vm>, action: String) -> Result<Value, String> {
+    recorder::command(&app, api(&vm)?, &action)
+}
+
+/// Pick an audio file and load it into the recorder. Returns the file name, or null if cancelled.
+#[tauri::command]
+async fn recorder_open(app: AppHandle) -> Result<Option<String>, String> {
+    let picked = tauri::async_runtime::spawn_blocking(recorder::pick_file)
+        .await
+        .map_err(|e| e.to_string())?;
+    let Some(path) = picked else { return Ok(None) };
+    recorder_load(app, path).map(Some)
+}
+
+/// Load a file into the recorder (also used when a file is dropped on the window).
+#[tauri::command]
+fn recorder_load(app: AppHandle, path: String) -> Result<String, String> {
+    let p = PathBuf::from(&path);
+    if !p.is_file() {
+        return Err("That file can't be found".into());
+    }
+    let vm = app.state::<Vm>();
+    api(&vm)?.set_string("Recorder.load", &path)?;
+    Ok(p.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or(path))
 }
 
 #[tauri::command]
@@ -143,23 +193,28 @@ fn scene_list() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-fn scene_save(vm: State<'_, Vm>, name: String) -> Result<(), String> {
+fn scene_save(app: AppHandle, vm: State<'_, Vm>, name: String) -> Result<(), String> {
     let path = scene_path(&name)?;
-    api(&vm)?.set_string("Command.Save", &path.to_string_lossy())
+    api(&vm)?.set_string("Command.Save", &path.to_string_lossy())?;
+    fades::save_levels(&app, &path);
+    Ok(())
 }
 
 #[tauri::command]
-fn scene_load(vm: State<'_, Vm>, name: String) -> Result<(), String> {
+fn scene_load(app: AppHandle, name: String) -> Result<(), String> {
     let path = scene_path(&name)?;
     if !path.exists() {
         return Err(format!("The scene “{name}” no longer exists"));
     }
-    api(&vm)?.set_string("Command.Load", &path.to_string_lossy())
+    fades::load_scene(&app, path, None)
 }
 
 #[tauri::command]
 fn scene_delete(name: String) -> Result<(), String> {
-    std::fs::remove_file(scene_path(&name)?).map_err(|e| format!("Couldn't delete the scene: {e}"))
+    let path = scene_path(&name)?;
+    std::fs::remove_file(&path).map_err(|e| format!("Couldn't delete the scene: {e}"))?;
+    fades::delete_levels(&path);
+    Ok(())
 }
 
 /* ---------------- settings ---------------- */
@@ -280,22 +335,83 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut) {
     let target = action["target"].as_str().unwrap_or("").to_string();
     let vm = app.state::<Vm>();
     let Some(api) = vm.api.clone() else { return };
+    let channel = target.starts_with("Strip[") || target.starts_with("Bus[");
     match action["action"].as_str().unwrap_or("") {
-        "mute" => {
-            let _ = api.toggle(&format!("{target}.Mute"));
+        "mute" if channel => {
+            let _ = fades::toggle_mute(app, &api, &target);
         }
-        "volup" => {
-            let _ = api.nudge(&format!("{target}.Gain"), 2.0, -60.0, 12.0);
+        "volup" if channel => {
+            let _ = fades::nudge(app, &api, &target, 2.0);
         }
-        "voldown" => {
-            let _ = api.nudge(&format!("{target}.Gain"), -2.0, -60.0, 12.0);
+        "voldown" if channel => {
+            let _ = fades::nudge(app, &api, &target, -2.0);
         }
         "window" => toggle_main(app),
+        "duck" => {
+            let on = {
+                let st = app.state::<Settings>();
+                let mut s = st.0.lock().unwrap();
+                let on = !s["ducking"]["on"].as_bool().unwrap_or(false);
+                if !s["ducking"].is_object() {
+                    s["ducking"] = settings::defaults()["ducking"].clone();
+                }
+                s["ducking"]["on"] = json!(on);
+                let _ = settings::save(&s);
+                let _ = app.emit("settings-changed", s.clone());
+                on
+            };
+            show_osd_text(
+                app,
+                "Talk-over ducking",
+                if on { "On" } else { "Off" },
+                on,
+                "mic",
+            );
+        }
+        "record" => {
+            if let Ok(rec) = recorder::toggle_record(app, &api) {
+                let text = if rec { "Recording" } else { "Stopped" };
+                show_osd_text(app, "Recorder", text, rec, "record");
+            }
+        }
         _ => {}
     }
 }
 
 /* ---------------- volume overlay ---------------- */
+
+/// Move the overlay to the bottom centre of the screen the mixer is on.
+fn place_osd(app: &AppHandle, osd: &WebviewWindow) {
+    let monitor = app
+        .get_webview_window("main")
+        .and_then(|w| w.current_monitor().ok().flatten())
+        .or_else(|| osd.primary_monitor().ok().flatten());
+    if let Some(m) = monitor {
+        let s = m.scale_factor();
+        let (w, h) = (340.0 * s, 76.0 * s);
+        let x = m.position().x as f64 + (m.size().width as f64 - w) / 2.0;
+        let y = m.position().y as f64 + m.size().height as f64 - h - 110.0 * s;
+        let _ = osd.set_position(PhysicalPosition::new(x as i32, y as i32));
+    }
+}
+
+/// The overlay with words instead of a level (shortcuts for ducking and recording).
+fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) {
+    let Some(osd) = app.get_webview_window("osd") else {
+        return;
+    };
+    place_osd(app, &osd);
+    let oled = settings::flag(&app.state::<Settings>().0.lock().unwrap(), "oled");
+    let _ = app.emit_to(
+        "osd",
+        "osd",
+        json!({ "oled": oled, "name": name, "text": text, "on": on, "icon": icon,
+                "color": if icon == "record" { "rose" } else { "amber" } }),
+    );
+    let _ = osd.show();
+    *app.state::<Vm>().osd_until.lock().unwrap() =
+        Some(Instant::now() + Duration::from_millis(1600));
+}
 
 /// What changed between two snapshots: ("strip" | "bus", index) for gain or mute changes.
 fn changed_channels(prev: &Value, next: &Value) -> Vec<(&'static str, usize)> {
@@ -353,18 +469,7 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
         fallback
     };
 
-    // Bottom centre of the screen the mixer window is on.
-    let monitor = app
-        .get_webview_window("main")
-        .and_then(|w| w.current_monitor().ok().flatten())
-        .or_else(|| osd.primary_monitor().ok().flatten());
-    if let Some(m) = monitor {
-        let s = m.scale_factor();
-        let (w, h) = (340.0 * s, 76.0 * s);
-        let x = m.position().x as f64 + (m.size().width as f64 - w) / 2.0;
-        let y = m.position().y as f64 + m.size().height as f64 - h - 110.0 * s;
-        let _ = osd.set_position(PhysicalPosition::new(x as i32, y as i32));
-    }
+    place_osd(app, &osd);
     let oled = app.state::<Settings>().0.lock().unwrap()["oled"]
         .as_bool()
         .unwrap_or(false);
@@ -406,6 +511,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 if connected {
                     connected = false;
                     prev = None;
+                    fades::release(&app, None);
                     publish(&app, offline_state(true));
                 }
             } else {
@@ -421,11 +527,17 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                             Some(Instant::now() + Duration::from_secs(10));
                     }
                 }
+                let layout = Layout::for_edition(edition);
+                fades::tick(&app, &api, &layout);
                 let settling = Instant::now() < reread_until;
                 let periodic = last_full.elapsed() > Duration::from_secs(1);
                 if dirty == 1 || periodic || settling {
                     last_full = Instant::now();
-                    let snap = api.snapshot(edition);
+                    let mut snap = api.snapshot(edition);
+                    fades::dress(&app, &mut snap);
+                    if edition >= 2 {
+                        recorder::dress(&app, &mut snap, api.recorder(&layout));
+                    }
                     if let Some(p) = &prev {
                         maybe_osd(&app, p, &snap, settling);
                     }
@@ -433,7 +545,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     publish(&app, snap);
                 }
                 if window_visible(&app, "main") || window_visible(&app, FLYOUT) {
-                    let _ = app.emit("vm-levels", api.levels(&Layout::for_edition(edition)));
+                    let _ = app.emit("vm-levels", api.levels(&layout));
                 }
             }
 
@@ -723,15 +835,7 @@ fn load_scene_auto(app: &AppHandle, name: &str, because: &str) {
     if !path.exists() {
         return;
     }
-    let Some(api) = app.state::<Vm>().api.clone() else {
-        return;
-    };
-    if api
-        .set_string("Command.Load", &path.to_string_lossy())
-        .is_ok()
-    {
-        let _ = app.emit("scene-auto", json!({ "scene": name, "app": because }));
-    }
+    let _ = fades::load_scene(app, path, Some(json!({ "scene": name, "app": because })));
 }
 
 /// Every 2 s: when a rule's app starts, load its scene; when it closes, go back to the scene
@@ -921,6 +1025,9 @@ fn main() {
             last: Mutex::new(initial),
             hide_vm_until: Mutex::new(None),
             osd_until: Mutex::new(None),
+            smooth: Mutex::new(gain::Smooth::new()),
+            duck_targets: Mutex::new(Vec::new()),
+            rec: Mutex::new(recorder::RecState::default()),
         })
         .manage(Settings(Mutex::new(settings.clone())))
         .manage(Hotkeys(Mutex::new(Vec::new())))
@@ -938,6 +1045,10 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             vm_snapshot,
             vm_set_float,
+            vm_glide,
+            recorder_cmd,
+            recorder_open,
+            recorder_load,
             vm_set_string,
             vm_launch,
             vm_devices,
@@ -1062,7 +1173,8 @@ fn main() {
 
             if let Some(api) = api_for_setup.clone() {
                 spawn_poller(handle.clone(), api);
-                spawn_scene_rules(handle);
+                spawn_scene_rules(handle.clone());
+                devwatch::spawn(handle);
             }
             Ok(())
         })
@@ -1085,6 +1197,8 @@ fn main() {
 
     app.run(move |_handle, event| {
         if let RunEvent::Exit = event {
+            // Ducked or fading channels go straight back to their own level.
+            fades::release(_handle, api.as_deref());
             if let Some(a) = &api {
                 a.logout();
             }

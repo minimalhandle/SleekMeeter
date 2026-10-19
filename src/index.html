@@ -29,6 +29,9 @@
     <button class="btn icon panel-only" id="closePanelBtn" type="button" aria-label="Close volume panel" title="Close">
       <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
+    <button class="btn rec-btn full-only" id="recBtn" type="button" hidden aria-label="Recorder" title="Recorder">
+      <span class="rec-dot" aria-hidden="true"></span><span id="recLabel">Rec</span>
+    </button>
     <button class="btn full-only" id="scenesBtn" type="button">Scenes</button>
     <button class="btn icon" id="pinBtn" type="button" aria-pressed="false" aria-label="Keep on top" title="Keep on top">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5h-11L10 9.5zM12 13v7.5"/></svg>
@@ -121,6 +124,73 @@
     </section>
   </dialog>
 
+  <dialog class="dlg recorder" id="recDlg" aria-labelledby="recTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="recTitle">Recorder</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <div class="deck">
+      <div class="clock" id="recClock" aria-live="off">00:00</div>
+      <div class="deck-state" id="recState">Stopped</div>
+      <div class="transport" role="group" aria-label="Recorder controls">
+        <button class="btn icon" type="button" data-rec="rew" aria-label="Rewind" title="Rewind">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M11 7v10l-7-5zM20 7v10l-7-5z" fill="currentColor"/></svg>
+        </button>
+        <button class="btn icon" type="button" data-rec="play" aria-label="Play" title="Play">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+        </button>
+        <button class="btn icon" type="button" data-rec="pause" aria-label="Pause" title="Pause">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 5.5h3.5v13H7zM13.5 5.5H17v13h-3.5z" fill="currentColor"/></svg>
+        </button>
+        <button class="btn icon" type="button" data-rec="stop" aria-label="Stop" title="Stop">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></svg>
+        </button>
+        <button class="btn icon" type="button" data-rec="ff" aria-label="Fast forward" title="Fast forward">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7v10l7-5zM13 7v10l7-5z" fill="currentColor"/></svg>
+        </button>
+        <button class="btn rec-key" type="button" data-rec="record" aria-label="Record" title="Record">
+          <span class="rec-dot" aria-hidden="true"></span>Record
+        </button>
+      </div>
+    </div>
+    <section class="rec-sec">
+      <h3>Record</h3>
+      <div class="seg" role="group" aria-label="What to record">
+        <button type="button" class="tog" id="recFromIn" aria-pressed="false">Inputs</button>
+        <button type="button" class="tog" id="recFromOut" aria-pressed="false">Outputs</button>
+      </div>
+      <div class="arm-list" id="armList" role="group" aria-label="Channels to record"></div>
+      <div class="field rec-format">
+        <label for="recFormat">Format</label>
+        <select id="recFormat">
+          <option value="1">WAV</option>
+          <option value="2">AIFF</option>
+          <option value="3">BWF</option>
+          <option value="100">MP3</option>
+        </select>
+      </div>
+      <p class="hint">Voicemeeter saves recordings in the folder set in its own recorder menu.</p>
+    </section>
+    <section class="rec-sec">
+      <h3>Play a file</h3>
+      <div class="rec-file">
+        <button class="btn" type="button" id="recOpen">Open a file…</button>
+        <span class="rec-file-name" id="recFile">or drop one on this window</span>
+      </div>
+      <div class="field">
+        <label>Play into</label>
+        <div class="routes rec-out" id="recOut" role="group" aria-label="Play into"></div>
+      </div>
+      <div class="field">
+        <label for="recGain">Level</label>
+        <input type="range" id="recGain" min="-60" max="12" step="0.5">
+        <output for="recGain" id="recGainOut"></output>
+      </div>
+    </section>
+  </dialog>
+
   <dialog class="dlg settings" id="settingsDlg" aria-labelledby="settingsTitle">
     <form method="dialog" class="dlg-head">
       <h2 id="settingsTitle">Settings</h2>
@@ -132,6 +202,59 @@
       <section>
         <h3>Appearance</h3>
         <label class="check"><input type="checkbox" id="setOled"><span>Pure black for OLED screens</span></label>
+      </section>
+      <section>
+        <h3>Smooth fades</h3>
+        <label class="check"><input type="checkbox" id="setFades"><span>Fade instead of jumping when you mute, type a level, use a shortcut or switch scenes</span></label>
+        <div class="field wide" data-needs="fades">
+          <label for="setMuteMs">Mute fade</label>
+          <input type="range" id="setMuteMs" min="50" max="1000" step="10">
+          <output for="setMuteMs"></output>
+        </div>
+        <div class="field wide" data-needs="fades">
+          <label for="setSceneMs">Scene fade</label>
+          <input type="range" id="setSceneMs" min="200" max="5000" step="100">
+          <output for="setSceneMs"></output>
+        </div>
+      </section>
+      <section>
+        <h3>Talk-over ducking</h3>
+        <label class="check"><input type="checkbox" id="setDuck"><span>Turn other audio down while you talk</span></label>
+        <div class="duck-opts" data-needs="duck">
+          <div class="field wide">
+            <label for="duckTrigger">When this talks</label>
+            <select id="duckTrigger"></select>
+          </div>
+          <div class="field wide top">
+            <label>Turn down</label>
+            <div class="arm-list" id="duckTargets" role="group" aria-label="Channels to turn down"></div>
+          </div>
+          <div class="field wide">
+            <label for="duckAmount">By</label>
+            <input type="range" id="duckAmount" min="3" max="40" step="1">
+            <output for="duckAmount"></output>
+          </div>
+          <div class="field wide">
+            <label for="duckThreshold">Starts at</label>
+            <input type="range" id="duckThreshold" class="level-range" min="-70" max="-5" step="1">
+            <output for="duckThreshold"></output>
+          </div>
+          <p class="hint field-hint">The bar lights up with your voice. Ducking starts when it reaches the knob, so set the knob just under your speaking level.</p>
+          <div class="field wide">
+            <label for="duckHold">Back after</label>
+            <input type="range" id="duckHold" min="200" max="3000" step="50">
+            <output for="duckHold"></output>
+          </div>
+          <div class="field wide">
+            <label for="duckRelease">Fade back</label>
+            <input type="range" id="duckRelease" min="100" max="3000" step="50">
+            <output for="duckRelease"></output>
+          </div>
+        </div>
+      </section>
+      <section>
+        <h3>Audio devices</h3>
+        <label class="check"><input type="checkbox" id="setAutoRestart"><span>Restart the audio engine when a device Voicemeeter uses comes back, like headphones you unplugged or Bluetooth that reconnected</span></label>
       </section>
       <section>
         <h3>Startup</h3>
@@ -191,6 +314,7 @@
           <div class="unity"></div>
           <div class="travel"><div class="carrier"><div class="thumb"></div></div></div>
         </div>
+        <span class="duck-tag" title="Turned down while you talk">Ducking</span>
       </div>
       <button class="readout" type="button" title="Click to type a level"></button>
       <div class="toggles">

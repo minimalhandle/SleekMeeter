@@ -20,6 +20,7 @@ type FnGetLevel = unsafe extern "system" fn(i32, i32, *mut f32) -> i32;
 type FnSetFloat = unsafe extern "system" fn(*const c_char, f32) -> i32;
 type FnSetStringW = unsafe extern "system" fn(*const c_char, *const u16) -> i32;
 type FnDevDescW = unsafe extern "system" fn(i32, *mut i32, *mut u16, *mut u16) -> i32;
+type FnScript = unsafe extern "system" fn(*const c_char) -> i32;
 
 /// Bus modes Voicemeeter Banana offers (Bus[i].mode.<name>).
 pub const BUS_MODES: &[&str] = &[
@@ -50,6 +51,7 @@ pub struct Api {
     get_level: FnGetLevel,
     set_float: FnSetFloat,
     set_string_w: FnSetStringW,
+    set_script: FnScript,
     in_dev_count: FnVoid,
     in_dev_desc: FnDevDescW,
     out_dev_count: FnVoid,
@@ -168,6 +170,7 @@ impl Api {
             let get_level = sym!("VBVMR_GetLevel", FnGetLevel);
             let set_float = sym!("VBVMR_SetParameterFloat", FnSetFloat);
             let set_string_w = sym!("VBVMR_SetParameterStringW", FnSetStringW);
+            let set_script = sym!("VBVMR_SetParameters", FnScript);
             let in_dev_count = sym!("VBVMR_Input_GetDeviceNumber", FnVoid);
             let in_dev_desc = sym!("VBVMR_Input_GetDeviceDescW", FnDevDescW);
             let out_dev_count = sym!("VBVMR_Output_GetDeviceNumber", FnVoid);
@@ -189,6 +192,7 @@ impl Api {
                 get_level,
                 set_float,
                 set_string_w,
+                set_script,
             })
         }
     }
@@ -277,18 +281,18 @@ impl Api {
         }
     }
 
-    /// Read the current value, add `delta`, clamp and write it back (used by hotkeys).
-    pub fn nudge(&self, name: &str, delta: f32, min: f32, max: f32) -> Result<f32, String> {
-        let v = (self.get_float(name).unwrap_or(0.0) + delta).clamp(min, max);
-        self.set_float(name, v)?;
-        Ok(v)
-    }
-
-    /// Flip a 0/1 parameter (used by hotkeys).
-    pub fn toggle(&self, name: &str) -> Result<bool, String> {
-        let on = !self.get_bool(name);
-        self.set_float(name, if on { 1.0 } else { 0.0 })?;
-        Ok(on)
+    /// Run several instructions at once (`Strip[0].FadeTo = (-10.0, 500); Strip[0].Mute = 0`).
+    /// Voicemeeter applies them together. Errors carry the failing line number.
+    pub fn script(&self, lines: &[String]) -> Result<(), String> {
+        if lines.is_empty() {
+            return Ok(());
+        }
+        let text = cstr(&lines.join("\n"))?;
+        match unsafe { (self.set_script)(text.as_ptr()) } {
+            0 => Ok(()),
+            n if n > 0 => Err(format!("Voicemeeter didn't accept line {n}")),
+            e => Err(err_text(e)),
+        }
     }
 
     /// Audio devices Voicemeeter can use, as [{ type: "wdm" | "ks" | "mme" | "asio", name }].
@@ -345,6 +349,46 @@ impl Api {
             }
         }
         lr
+    }
+
+    /// Loudest channel of one input strip, after its fader and mute (dBFS). Poll thread only.
+    pub fn strip_level(&self, layout: &Layout, strip: usize) -> f32 {
+        let (base, count) = if strip < layout.hw_strips {
+            (strip * 2, 2)
+        } else {
+            (layout.hw_strips * 2 + (strip - layout.hw_strips) * 8, 8)
+        };
+        let [l, r] = self.pair(2, base, count);
+        l.max(r)
+    }
+
+    /// Voicemeeter's built-in recorder (Banana and Potato). Settings Voicemeeter can't
+    /// report come back as null.
+    pub fn recorder(&self, layout: &Layout) -> Value {
+        let opt = |name: &str| self.get_float(name).map(|v| v != 0.0);
+        let arm_strips: Vec<bool> = (0..layout.strips())
+            .map(|i| self.get_bool(&format!("Recorder.ArmStrip[{i}]")))
+            .collect();
+        let arm_buses: Vec<bool> = (0..layout.buses())
+            .map(|j| self.get_bool(&format!("Recorder.ArmBus[{j}]")))
+            .collect();
+        let a: Vec<bool> = (1..=layout.hw_buses)
+            .map(|k| self.get_bool(&format!("Recorder.A{k}")))
+            .collect();
+        let b: Vec<bool> = (1..=layout.virt_buses)
+            .map(|k| self.get_bool(&format!("Recorder.B{k}")))
+            .collect();
+        json!({
+            "armStrips": arm_strips,
+            "armBuses": arm_buses,
+            "recBus": self.get_bool("Recorder.mode.recbus"),
+            "a": a,
+            "b": b,
+            "fileType": self.get_float("Recorder.FileType").map(|v| v.round() as i32),
+            "gain": self.get_float("Recorder.gain").map(|v| (v * 10.0).round() / 10.0),
+            "playing": opt("Recorder.play"),
+            "recording": opt("Recorder.record"),
+        })
     }
 
     /// Meter data for every strip and bus. Must be called from the poll thread only.

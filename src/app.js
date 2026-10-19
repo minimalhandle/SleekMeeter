@@ -197,6 +197,21 @@
     if (ch.dragging || performance.now() < ch.lockUntil) return;
     if (Math.abs(v - ch.gain) > 0.001) { ch.gain = v; renderFaders(ch); }
   }
+  // Typed levels and double-click to 0 dB glide there (Voicemeeter fades; the cap follows).
+  const fadesOn = () => !settings.fades || settings.fades.on !== false;
+  function glideGain(ch, v) {
+    if (!fadesOn()) return setGain(ch, v);
+    v = Math.round(Math.max(MIN_DB, Math.min(MAX_DB, v)) * 10) / 10;
+    ch.lockUntil = performance.now() + 450;
+    if (v === ch.gain) return;
+    ch.gain = v;
+    for (const c of ch.carriers) c.el.classList.add("glide");
+    renderFaders(ch);
+    clearTimeout(ch.glideTimer);
+    ch.glideTimer = setTimeout(() => { for (const c of ch.carriers) c.el.classList.remove("glide"); }, 360);
+    pending.delete(`${ch.prefix}.Gain`);
+    engine.glide(ch.prefix, v).catch(fail);
+  }
 
   function makeFader(el, ch) {
     const horizontal = el.classList.contains("h");
@@ -230,7 +245,7 @@
     const end = () => { ch.dragging = false; el.classList.remove("dragging"); ch.lockUntil = performance.now() + 500; };
     track.addEventListener("pointerup", end);
     track.addEventListener("pointercancel", end);
-    track.addEventListener("dblclick", () => setGain(ch, 0));
+    track.addEventListener("dblclick", () => glideGain(ch, 0));
     el.addEventListener("wheel", (e) => {
       e.preventDefault();
       const dir = (horizontal ? (e.deltaY || e.deltaX) : e.deltaY) < 0 ? 1 : -1;
@@ -409,7 +424,9 @@
         t.btn.setAttribute("aria-pressed", String(!!on));
       }
       markMuted(ch, !!d.mute);
+      for (const r of ch.rows) r.classList.toggle("ducked", !!d.ducked);
     }
+    applyRecorder(st.recorder);
     sizeToNames();
     if (drawerCh) renderDrawerValues();
     if (!fitted) { fitted = true; requestAnimationFrame(fitWindowToMixer); }
@@ -461,6 +478,7 @@
       if (pair) ch.meter.target = pair;
     });
     wakeMeters();
+    if (settingsDlg.open) paintDuckLevel(false, lv);
   }
   // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
   // are composited on the GPU without repainting. The loop stops when every meter is at rest
@@ -550,7 +568,7 @@
       return;
     }
     const ch = editCh, back = editReturn;
-    setGain(ch, v);
+    glideGain(ch, v);
     if (v < MIN_DB || v > MAX_DB) toast(`${displayName(ch)} set to ${fmtDb(ch.gain)} dB, the closest Voicemeeter allows`);
     closeGainEdit();
     if (back) back.focus({ preventScroll: true });
@@ -813,7 +831,7 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setOled: "oled",
+    setCheckUpdates: "checkUpdates", setOled: "oled", setAutoRestart: "autoRestart",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
@@ -832,12 +850,16 @@
   }
   $("#settingsBtn").addEventListener("click", () => {
     syncChecks();
+    syncFadeDuck();
     renderHotkeys();
     settingsDlg.showModal();
   });
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
-  const ACTIONS = [["mute", "Mute or unmute"], ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"], ["window", "Show or hide Sleekmeeter"]];
+  const ACTIONS = [["mute", "Mute or unmute"], ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"],
+    ["window", "Show or hide Sleekmeeter"], ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"]];
+  // Actions that aren't about one channel.
+  const NO_TARGET = new Set(["window", "duck", "record"]);
   function renderHotkeys() {
     const list = $("#hotkeyList");
     list.textContent = "";
@@ -852,10 +874,10 @@
       tgt.setAttribute("aria-label", "Channel");
       for (const ch of chans) tgt.appendChild(new Option(displayName(ch), ch.prefix));
       tgt.value = h.target || "Strip[0]";
-      tgt.disabled = h.action === "window";
+      tgt.disabled = NO_TARGET.has(h.action);
       act.addEventListener("change", () => {
         h.action = act.value;
-        tgt.disabled = h.action === "window";
+        tgt.disabled = NO_TARGET.has(h.action);
         h.target = tgt.disabled ? "" : tgt.value;
         saveSettings();
       });
@@ -1052,6 +1074,251 @@
   });
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
+
+  /* ---------- settings: smooth fades and talk-over ducking ---------- */
+  const fmtMs = (ms) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(ms % 1000 ? 1 : 0)} s`);
+  const fmtDbShort = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " dB";
+  // A settings slider: amber fill up to the knob, value on the right.
+  function bindRange(id, get, set, format) {
+    const input = $("#" + id), out = $(`output[for="${id}"]`);
+    const paint = () => {
+      const v = +input.value, min = +input.min, max = +input.max;
+      out.textContent = format(v);
+      if (input.classList.contains("level-range")) return; // painted by the live level instead
+      const p = ((v - min) / (max - min)) * 100;
+      input.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--well) ${p}%)`);
+    };
+    input.addEventListener("input", () => { set(+input.value); paint(); saveSettings(); });
+    input._sync = () => { input.value = get(); paint(); };
+    return input;
+  }
+  const F = () => (settings.fades = Object.assign({}, DEFAULT_SETTINGS.fades, settings.fades));
+  const D = () => (settings.ducking = Object.assign({}, DEFAULT_SETTINGS.ducking, settings.ducking));
+  const fadeDuckRanges = [
+    bindRange("setMuteMs", () => F().muteMs, (v) => { F().muteMs = v; }, fmtMs),
+    bindRange("setSceneMs", () => F().sceneMs, (v) => { F().sceneMs = v; }, fmtMs),
+    bindRange("duckAmount", () => D().amount, (v) => { D().amount = v; }, (v) => fmtDbShort(-v)),
+    bindRange("duckThreshold", () => D().threshold, (v) => { D().threshold = v; paintDuckLevel(true); }, fmtDbShort),
+    bindRange("duckHold", () => D().holdMs, (v) => { D().holdMs = v; }, fmtMs),
+    bindRange("duckRelease", () => D().releaseMs, (v) => { D().releaseMs = v; }, fmtMs),
+  ];
+  $("#setFades").addEventListener("change", (e) => { F().on = e.target.checked; saveSettings(); syncFadeDuck(); });
+  $("#setDuck").addEventListener("change", (e) => {
+    const d = D();
+    d.on = e.target.checked;
+    // First time on: turn down the virtual inputs (desktop audio, music) by default.
+    if (d.on && !(d.targets || []).length) {
+      d.targets = chans.filter((c) => c.kind === "strip" && !isHw(c) && c.prefix !== d.trigger).map((c) => c.prefix);
+    }
+    saveSettings();
+    syncFadeDuck();
+  });
+  $("#duckTrigger").addEventListener("change", (e) => {
+    const d = D();
+    d.trigger = e.target.value;
+    d.targets = (d.targets || []).filter((t) => t !== d.trigger);
+    saveSettings();
+    syncFadeDuck();
+  });
+  function syncFadeDuck() {
+    const f = F(), d = D();
+    $("#setFades").checked = f.on !== false;
+    $("#setDuck").checked = !!d.on;
+    document.querySelectorAll('[data-needs="fades"]').forEach((el) => el.classList.toggle("off", f.on === false));
+    $(".duck-opts").hidden = !d.on;
+    const trig = $("#duckTrigger");
+    trig.textContent = "";
+    for (const ch of chans) if (ch.kind === "strip") trig.appendChild(new Option(displayName(ch), ch.prefix));
+    trig.value = d.trigger;
+    if (trig.selectedIndex < 0) { trig.selectedIndex = 0; d.trigger = trig.value; }
+    const list = $("#duckTargets");
+    list.textContent = "";
+    for (const ch of chans) {
+      if (ch.kind !== "strip" || ch.prefix === d.trigger) continue;
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "tog arm", textContent: displayName(ch) });
+      b.title = displayName(ch);
+      b.dataset.color = look(ch).color;
+      b.setAttribute("aria-pressed", String((d.targets || []).includes(ch.prefix)));
+      b.addEventListener("click", () => {
+        const on = b.getAttribute("aria-pressed") !== "true";
+        b.setAttribute("aria-pressed", String(on));
+        const set = new Set(d.targets || []);
+        if (on) set.add(ch.prefix); else set.delete(ch.prefix);
+        d.targets = chans.filter((c) => set.has(c.prefix)).map((c) => c.prefix);
+        saveSettings();
+      });
+      list.appendChild(b);
+    }
+    for (const r of fadeDuckRanges) r._sync();
+    paintDuckLevel(true);
+  }
+  // The "Starts at" slider's track lights up with the talking channel's level, so you can see
+  // where to put the knob. Amber once it passes the knob (ducking would start).
+  let duckShown = -200, duckDrawn = "";
+  function paintDuckLevel(force, lv) {
+    if (!settingsDlg.open || !settings.ducking || !settings.ducking.on) return;
+    const d = settings.ducking;
+    const m = /^Strip\[(\d)\]$/.exec(d.trigger || "");
+    const pair = lv && m ? (lv.inputs || [])[+m[1]] : null;
+    if (pair) { const db = Math.max(pair[0], pair[1]); duckShown = db > duckShown ? db : Math.max(db, duckShown - 3); }
+    const input = $("#duckThreshold"), min = +input.min, max = +input.max;
+    const p = Math.max(0, Math.min(1, (duckShown - min) / (max - min))) * 100;
+    const color = duckShown >= d.threshold ? "var(--amber)" : "var(--led-g)";
+    const bg = `linear-gradient(to right, ${color} ${p.toFixed(1)}%, var(--well) ${p.toFixed(1)}%)`;
+    if (force || bg !== duckDrawn) { duckDrawn = bg; input.style.setProperty("--track-bg", bg); }
+  }
+
+  /* ---------- recorder (Banana and Potato) ---------- */
+  const recBtn = $("#recBtn"), recDlg = $("#recDlg");
+  let rec = null, recHoldUntil = 0, recTimer = null, recArmKey = "";
+  const REC_STATES = { stopped: "Stopped", recording: "Recording", playing: "Playing", paused: "Paused" };
+  const recRunning = () => rec && (rec.state === "recording" || rec.state === "playing");
+  function recClock() {
+    if (!rec) return "00:00";
+    const ms = (rec.elapsed || 0) + (rec.since && recRunning() ? Math.max(0, Date.now() - rec.since) : 0);
+    const t = Math.floor(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+    const two = (n) => String(n).padStart(2, "0");
+    return (h ? `${h}:${two(m)}` : two(m)) + ":" + two(sec);
+  }
+  function applyRecorder(r) {
+    if (!r) {
+      rec = null;
+      recBtn.hidden = true;
+      if (recDlg.open) recDlg.close();
+      return;
+    }
+    // Right after a button press the snapshot can be a moment behind: keep what the press said.
+    if (rec && performance.now() < recHoldUntil) r = Object.assign({}, r, { state: rec.state, elapsed: rec.elapsed, since: rec.since });
+    rec = r;
+    recBtn.hidden = PANEL;
+    paintRecorder();
+  }
+  function paintRecorder() {
+    if (!rec) return;
+    const state = rec.state || "stopped";
+    recBtn.dataset.state = state;
+    $("#recLabel").textContent = state === "stopped" ? "Rec" : state === "paused" ? "Paused" : recClock();
+    recBtn.title = state === "stopped" ? "Recorder" : `Recorder: ${REC_STATES[state].toLowerCase()}`;
+    clearInterval(recTimer);
+    if (recRunning()) recTimer = setInterval(tickRecClock, 250);
+    if (!recDlg.open) return;
+    recDlg.dataset.state = state;
+    $("#recClock").textContent = recClock();
+    $("#recState").textContent = REC_STATES[state] || "Stopped";
+    recDlg.querySelectorAll("[data-rec]").forEach((b) => {
+      const a = b.dataset.rec;
+      const on = (a === "record" && state === "recording") || (a === "play" && state === "playing") || (a === "pause" && state === "paused");
+      b.setAttribute("aria-pressed", String(on));
+    });
+    $("#recFromIn").setAttribute("aria-pressed", String(!rec.recBus));
+    $("#recFromOut").setAttribute("aria-pressed", String(!!rec.recBus));
+    // What to record: inputs or outputs, each one a key that lights up when armed.
+    const kind = rec.recBus ? "bus" : "strip";
+    const armed = (rec.recBus ? rec.armBuses : rec.armStrips) || [];
+    const key = kind + chans.map((c) => displayName(c)).join("|");
+    const list = $("#armList");
+    if (key !== recArmKey) {
+      recArmKey = key;
+      list.textContent = "";
+      for (const ch of chans) {
+        if (ch.kind !== kind) continue;
+        const b = Object.assign(document.createElement("button"), { type: "button", className: "tog arm", textContent: kind === "bus" ? ch.info.id : displayName(ch) });
+        b.title = displayName(ch);
+        b.dataset.i = ch.i;
+        if (kind === "bus") b.textContent = `${ch.info.id} · ${displayName(ch)}`;
+        b.addEventListener("click", () => {
+          const on = b.getAttribute("aria-pressed") !== "true";
+          b.setAttribute("aria-pressed", String(on));
+          const name = rec.recBus ? `Recorder.ArmBus[${ch.i}]` : `Recorder.ArmStrip[${ch.i}]`;
+          (rec.recBus ? rec.armBuses : rec.armStrips)[ch.i] = on;
+          recHoldUntil = performance.now() + 600;
+          sendFloat(name, on ? 1 : 0);
+        });
+        list.appendChild(b);
+      }
+    }
+    list.querySelectorAll(".arm").forEach((b) => b.setAttribute("aria-pressed", String(!!armed[+b.dataset.i])));
+    const fmt = $("#recFormat");
+    if (rec.fileType != null && document.activeElement !== fmt) fmt.value = String(rec.fileType);
+    // Which outputs the player plays into.
+    const out = $("#recOut");
+    if (out.childElementCount !== layout.buses.length) {
+      out.textContent = "";
+      out.style.gridTemplateColumns = `repeat(${layout.buses.length}, minmax(0, 1fr))`;
+      let firstB = true;
+      for (const bus of layout.buses) {
+        const b = Object.assign(document.createElement("button"), { type: "button", className: `route ${bus.kind === "hw" ? "a" : "b"}`, textContent: bus.id });
+        if (bus.kind === "virt" && firstB) { b.classList.add("first-b"); firstB = false; }
+        b.title = `Play into ${bus.id}`;
+        b.dataset.param = bus.param;
+        b.addEventListener("click", () => {
+          const on = b.getAttribute("aria-pressed") !== "true";
+          b.setAttribute("aria-pressed", String(on));
+          const [k, n] = [bus.param[0].toLowerCase(), +bus.param.slice(1) - 1];
+          if (rec[k]) rec[k][n] = on;
+          recHoldUntil = performance.now() + 600;
+          sendFloat(`Recorder.${bus.param}`, on ? 1 : 0);
+        });
+        out.appendChild(b);
+      }
+    }
+    out.querySelectorAll(".route").forEach((b) => {
+      const p = b.dataset.param, list2 = rec[p[0].toLowerCase()] || [];
+      b.setAttribute("aria-pressed", String(!!list2[+p.slice(1) - 1]));
+    });
+    const g = $("#recGain");
+    if (rec.gain != null && document.activeElement !== g) { g.value = rec.gain; paintRecGain(); }
+  }
+  function tickRecClock() {
+    if (!recRunning()) { clearInterval(recTimer); return; }
+    const t = recClock();
+    $("#recLabel").textContent = t;
+    if (recDlg.open) $("#recClock").textContent = t;
+  }
+  function paintRecGain() {
+    const g = $("#recGain"), v = +g.value;
+    $("#recGainOut").textContent = fmtDb(v);
+    const p = dbToPos(v) * 100;
+    g.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--well) ${p}%)`);
+  }
+  recBtn.addEventListener("click", () => { recArmKey = ""; recDlg.showModal(); paintRecorder(); });
+  recDlg.addEventListener("click", (e) => { if (e.target === recDlg) recDlg.close(); });
+  recDlg.querySelectorAll("[data-rec]").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      const v = await engine.recorder(b.dataset.rec);
+      if (rec && v) { Object.assign(rec, v); recHoldUntil = performance.now() + 900; paintRecorder(); }
+    } catch (e) { fail(e); }
+  }));
+  for (const [id, bus] of [["#recFromIn", false], ["#recFromOut", true]]) {
+    $(id).addEventListener("click", () => {
+      if (!rec || !!rec.recBus === bus) return;
+      rec.recBus = bus;
+      recHoldUntil = performance.now() + 600;
+      sendFloat("Recorder.mode.recbus", bus ? 1 : 0);
+      paintRecorder();
+    });
+  }
+  $("#recFormat").addEventListener("change", (e) => { if (rec) rec.fileType = +e.target.value; sendFloat("Recorder.FileType", +e.target.value); });
+  $("#recGain").addEventListener("input", (e) => { if (rec) rec.gain = +e.target.value; paintRecGain(); sendFloat("Recorder.gain", +e.target.value); });
+  $("#recGain").addEventListener("dblclick", (e) => { e.target.value = 0; if (rec) rec.gain = 0; paintRecGain(); sendFloat("Recorder.gain", 0); });
+  function loadedFile(name) {
+    if (!name) return;
+    const el = $("#recFile");
+    el.textContent = name; el.title = name; el.classList.add("loaded");
+    toast(`Loaded “${name}”. Press play to hear it.`);
+  }
+  $("#recOpen").addEventListener("click", () => engine.recorderOpen().then(loadedFile).catch(fail));
+  const AUDIO_FILE = /\.(wav|mp3|aiff?|wma|m4a|flac|ogg|bwf)$/i;
+  function onFilesDropped(paths) {
+    if (!rec || PANEL) return;
+    const file = paths.find((p) => AUDIO_FILE.test(p));
+    if (!file) { if (paths.length) toast("Drop an audio file (WAV, MP3, AIFF…) to play it"); return; }
+    engine.recorderLoad(file).then((name) => {
+      if (!recDlg.open) { recArmKey = ""; recDlg.showModal(); paintRecorder(); }
+      loadedFile(name);
+    }).catch(fail);
+  }
+
   /* ---------- toast ---------- */
   let toastTimer;
   function toast(msg) {
@@ -1110,6 +1377,15 @@
       setScene(e.scene);
       if (!PANEL) toast(`Loaded “${e.scene}” for ${e.app}`);
     }).catch(() => {});
+    if (!PANEL) {
+      engine.onEngineRestart((e) => toast(`${e.device} is back, so Sleekmeeter restarted the audio engine`)).catch(() => {});
+      // A shortcut turned ducking on or off.
+      engine.onSettingsChanged((s) => {
+        if (s && s.ducking) settings.ducking = s.ducking;
+        if (settingsDlg.open) syncFadeDuck();
+      }).catch(() => {});
+      engine.onFileDrop(onFilesDropped).catch(() => {});
+    }
     checkForUpdate();
     // Show the window once the first frame with the real layout is drawn.
     requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {})));

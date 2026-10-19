@@ -35,7 +35,16 @@ pub fn defaults() -> Value {
         "sceneRules": [],
         "checkUpdates": true,
         "oled": false,
-        "skippedVersion": ""
+        "skippedVersion": "",
+        // Mutes fade out and in; typed levels, shortcuts and scenes glide.
+        "fades": { "on": true, "muteMs": 250, "sceneMs": 1200 },
+        // Talk-over ducking: while `trigger` is above `threshold` dB, lower `targets` by `amount` dB.
+        "ducking": {
+            "on": false, "trigger": "Strip[0]", "targets": [], "amount": 12, "threshold": -40,
+            "attackMs": 150, "releaseMs": 800, "holdMs": 700
+        },
+        // Restart Voicemeeter's audio engine when a device it uses comes back.
+        "autoRestart": true
     })
 }
 
@@ -60,5 +69,9 @@ pub fn save(s: &Value) -> Result<(), String> {
 }
 
 pub fn flag(s: &Value, key: &str) -> bool {
-    s.get(key).and_then(Value::as_bool).unwrap_or(false)
+    flag_or(s, key, false)
+}
+
+pub fn flag_or(s: &Value, key: &str, default: bool) -> bool {
+    s.get(key).and_then(Value::as_bool).unwrap_or(default)
 }
