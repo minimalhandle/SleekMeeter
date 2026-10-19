@@ -1,6 +1,9 @@
 // Hide the console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// First, so its log_info!/log_warn!/log_error! macros work in every module below.
+#[macro_use]
+mod logs;
 mod apps;
 mod devwatch;
 mod fades;
@@ -79,7 +82,11 @@ fn vm_snapshot(vm: State<'_, Vm>) -> Value {
 
 #[tauri::command]
 fn vm_set_float(app: AppHandle, vm: State<'_, Vm>, name: String, value: f32) -> Result<(), String> {
+    if name.starts_with("Command.") {
+        log_info!("{name} = {value}");
+    }
     fades::set_float(&app, api(&vm)?, &name, value)
+        .inspect_err(|e| log_warn!("Setting {name} = {value} failed: {e}"))
 }
 
 /// Glide a strip or bus ("Strip[0]") to a level instead of jumping there.
@@ -89,6 +96,53 @@ fn vm_glide(app: AppHandle, vm: State<'_, Vm>, key: String, value: f32) -> Resul
         return Err("Only strips and buses have a level".into());
     }
     fades::glide(&app, api(&vm)?, &key, value)
+}
+
+/* ---------------- about and logs ---------------- */
+
+/// Sleekmeeter's version and where its log is, for Settings → About.
+#[tauri::command]
+fn app_info() -> Value {
+    json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "logDir": logs::dir().map(|d| d.to_string_lossy().into_owned()),
+    })
+}
+
+/// Open the logs folder in Explorer, with the log file selected.
+#[tauri::command]
+fn open_logs() -> Result<(), String> {
+    let dir = logs::dir().ok_or("Logging isn't available")?;
+    let file = dir.join("sleekmeeter.log");
+    #[cfg(windows)]
+    {
+        let mut cmd = std::process::Command::new("explorer");
+        if file.exists() {
+            cmd.arg(format!("/select,{}", file.display()));
+        } else {
+            cmd.arg(&dir);
+        }
+        cmd.spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Couldn't open the logs folder: {e}"))
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = file;
+        Err("Only available on Windows".into())
+    }
+}
+
+/// Problems the window runs into (failed actions, script errors) go in the same log.
+#[tauri::command]
+fn ui_log(window: WebviewWindow, level: String, message: String) {
+    let message: String = message.chars().take(2000).collect();
+    let from = window.label().to_string();
+    match level.as_str() {
+        "error" => log_error!("[{from}] {message}"),
+        "warn" => log_warn!("[{from}] {message}"),
+        _ => log_info!("[{from}] {message}"),
+    }
 }
 
 /* ---------------- recorder ---------------- */
@@ -116,7 +170,15 @@ fn recorder_load(app: AppHandle, path: String) -> Result<String, String> {
         return Err("That file can't be found".into());
     }
     let vm = app.state::<Vm>();
-    api(&vm)?.set_string("Recorder.load", &path)?;
+    api(&vm)?
+        .set_string("Recorder.load", &path)
+        .inspect_err(|e| log_warn!("Loading a file into the recorder failed: {e}"))?;
+    log_info!(
+        "Recorder: loaded a file ({})",
+        p.extension()
+            .map(|x| x.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    );
     Ok(p.file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or(path))
@@ -124,7 +186,12 @@ fn recorder_load(app: AppHandle, path: String) -> Result<String, String> {
 
 #[tauri::command]
 fn vm_set_string(vm: State<'_, Vm>, name: String, value: String) -> Result<(), String> {
-    api(&vm)?.set_string(&name, &value)
+    if name.contains(".device.") {
+        log_info!("{name} = {value:?}");
+    }
+    api(&vm)?
+        .set_string(&name, &value)
+        .inspect_err(|e| log_warn!("Setting {name} failed: {e}"))
 }
 
 #[tauri::command]
@@ -195,7 +262,10 @@ fn scene_list() -> Result<Vec<String>, String> {
 #[tauri::command]
 fn scene_save(app: AppHandle, vm: State<'_, Vm>, name: String) -> Result<(), String> {
     let path = scene_path(&name)?;
-    api(&vm)?.set_string("Command.Save", &path.to_string_lossy())?;
+    api(&vm)?
+        .set_string("Command.Save", &path.to_string_lossy())
+        .inspect_err(|e| log_error!("Saving scene {name:?} failed: {e}"))?;
+    log_info!("Saved scene {name:?}");
     fades::save_levels(&app, &path);
     Ok(())
 }
@@ -206,7 +276,9 @@ fn scene_load(app: AppHandle, name: String) -> Result<(), String> {
     if !path.exists() {
         return Err(format!("The scene “{name}” no longer exists"));
     }
+    log_info!("Loading scene {name:?}");
     fades::load_scene(&app, path, None)
+        .inspect_err(|e| log_error!("Loading scene {name:?} failed: {e}"))
 }
 
 #[tauri::command]
@@ -214,6 +286,7 @@ fn scene_delete(name: String) -> Result<(), String> {
     let path = scene_path(&name)?;
     std::fs::remove_file(&path).map_err(|e| format!("Couldn't delete the scene: {e}"))?;
     fades::delete_levels(&path);
+    log_info!("Deleted scene {name:?}");
     Ok(())
 }
 
@@ -237,6 +310,9 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         }
     }
     problems.extend(apply_hotkeys(&app, &value["hotkeys"]));
+    for p in &problems {
+        log_warn!("Settings: {p}");
+    }
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.set_always_on_top(settings::flag(&value, "alwaysOnTop"));
     }
@@ -356,6 +432,10 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut) {
                     s["ducking"] = settings::defaults()["ducking"].clone();
                 }
                 s["ducking"]["on"] = json!(on);
+                log_info!(
+                    "Shortcut: talk-over ducking {}",
+                    if on { "on" } else { "off" }
+                );
                 let _ = settings::save(&s);
                 let _ = app.emit("settings-changed", s.clone());
                 on
@@ -510,6 +590,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
             if dirty < 0 {
                 if connected {
                     connected = false;
+                    log_info!("Voicemeeter disconnected (code {dirty})");
                     prev = None;
                     fades::release(&app, None);
                     publish(&app, offline_state(true));
@@ -518,6 +599,10 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 if !connected {
                     connected = true;
                     edition = api.edition().unwrap_or(2);
+                    log_info!(
+                        "Connected to Voicemeeter {} (edition {edition})",
+                        api.version().unwrap_or_default()
+                    );
                     remember_edition(&app, edition);
                     // Right after Voicemeeter starts its parameters settle over a second or two.
                     reread_until = Instant::now() + Duration::from_secs(3);
@@ -812,9 +897,18 @@ fn remember_edition(app: &AppHandle, edition: i32) {
 
 #[tauri::command]
 async fn check_update() -> Result<Value, String> {
-    tauri::async_runtime::spawn_blocking(update::latest)
+    let result = tauri::async_runtime::spawn_blocking(update::latest)
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+    match &result {
+        Ok(v) => log_info!(
+            "Update check: running {}, latest {}",
+            v["current"].as_str().unwrap_or("?"),
+            v["latest"].as_str().unwrap_or("?")
+        ),
+        Err(e) => log_warn!("Update check: {e}"),
+    }
+    result
 }
 
 #[tauri::command]
@@ -835,7 +929,10 @@ fn load_scene_auto(app: &AppHandle, name: &str, because: &str) {
     if !path.exists() {
         return;
     }
-    let _ = fades::load_scene(app, path, Some(json!({ "scene": name, "app": because })));
+    log_info!("Automatic switch: {because} → scene {name:?}");
+    if let Err(e) = fades::load_scene(app, path, Some(json!({ "scene": name, "app": because }))) {
+        log_error!("Automatic switch to {name:?} failed: {e}");
+    }
 }
 
 /// Every 2 s: when a rule's app starts, load its scene; when it closes, go back to the scene
@@ -998,12 +1095,35 @@ fn window_fit(
 }
 
 fn main() {
+    logs::init(&settings::app_dir());
+    log_info!(
+        "Sleekmeeter {} starting ({}){}",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::ARCH,
+        if std::env::args().any(|a| a == "--autostart") {
+            ", started with Windows"
+        } else {
+            ""
+        }
+    );
     let settings = settings::load();
     let api = Api::load().map(Arc::new);
-    if let Some(a) = &api {
-        // Login returns 1 when Voicemeeter isn't running yet.
-        if a.login() == 1 && settings::flag(&settings, "launchVoicemeeter") {
-            let _ = a.run(last_edition(&settings));
+    match &api {
+        None => log_warn!(
+            "Voicemeeter's remote DLL wasn't found (install folder: {:?})",
+            vm::install_dir()
+        ),
+        Some(a) => {
+            // Login returns 1 when Voicemeeter isn't running yet.
+            let login = a.login();
+            log_info!("Logged in to the Voicemeeter remote API (code {login})");
+            if login == 1 && settings::flag(&settings, "launchVoicemeeter") {
+                let edition = last_edition(&settings);
+                match a.run(edition) {
+                    Ok(()) => log_info!("Started Voicemeeter (edition {edition})"),
+                    Err(e) => log_warn!("Couldn't start Voicemeeter: {e}"),
+                }
+            }
         }
     }
     let initial = offline_state(api.is_some());
@@ -1015,6 +1135,7 @@ fn main() {
         // desktop shortcut) brings the running one's window back instead of opening another.
         // Registered first, so a second copy quits before it creates any windows.
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            log_info!("Sleekmeeter was started again; showing this copy instead");
             if !args.iter().any(|a| a == "--autostart") {
                 show_main(app);
             }
@@ -1054,6 +1175,9 @@ fn main() {
             vm_snapshot,
             vm_set_float,
             vm_glide,
+            app_info,
+            open_logs,
+            ui_log,
             recorder_cmd,
             recorder_open,
             recorder_load,
@@ -1085,7 +1209,7 @@ fn main() {
             let quit = MenuItem::with_id(app, "quit", "Quit Sleekmeeter", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &panel, &quit])?;
             let mut tray = TrayIconBuilder::with_id("sleekmeeter")
-                .tooltip("Sleekmeeter")
+                .tooltip(concat!("Sleekmeeter ", env!("CARGO_PKG_VERSION")))
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -1142,7 +1266,7 @@ fn main() {
 
             let handle = app.handle().clone();
             for p in apply_hotkeys(&handle, &settings["hotkeys"]) {
-                eprintln!("hotkey: {p}");
+                log_warn!("Shortcut: {p}");
             }
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.set_always_on_top(settings::flag(&settings, "alwaysOnTop"));
@@ -1205,6 +1329,7 @@ fn main() {
 
     app.run(move |_handle, event| {
         if let RunEvent::Exit = event {
+            log_info!("Sleekmeeter quitting");
             // Ducked or fading channels go straight back to their own level.
             fades::release(_handle, api.as_deref());
             if let Some(a) = &api {

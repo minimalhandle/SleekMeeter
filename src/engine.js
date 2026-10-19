@@ -14,6 +14,7 @@
  *   recorder(action) -> {state, elapsed, since}   record, play, replay, pause, stop, rew, ff
  *   recorderOpen() -> file name | null / recorderLoad(path)   a file for the recorder to play
  *   onEngineRestart(cb) / onSettingsChanged(cb) / onFileDrop(cb)
+ *   appInfo() -> {version, logDir} / openLogs() / log(level, message)   Settings → About, the log file
  *
  * Inside the Tauri app this goes to the Rust bridge (VoicemeeterRemote64.dll).
  * In a plain browser it runs a simulated Voicemeeter so the UI can be previewed
@@ -94,6 +95,9 @@
     runningApps() { return this.invoke("running_apps"); }
     onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
     glide(key, value) { return this.invoke("vm_glide", { key, value }); }
+    appInfo() { return this.invoke("app_info"); }
+    openLogs() { return this.invoke("open_logs"); }
+    log(level, message) { return this.invoke("ui_log", { level, message: String(message) }); }
     recorder(action) { return this.invoke("recorder_cmd", { action }); }
     recorderOpen() { return this.invoke("recorder_open"); }
     recorderLoad(path) { return this.invoke("recorder_load", { path }); }
@@ -306,6 +310,9 @@
       return Promise.resolve({ state: rec.state, elapsed: rec.elapsed, since: rec.since });
     }
     recorderOpen() { return Promise.resolve("Interview take 3.wav"); }
+    appInfo() { return Promise.resolve({ version: "preview", logDir: null }); }
+    openLogs() { return Promise.reject(new Error("The log is only kept by the Windows app")); }
+    log(level, message) { (level === "error" ? console.error : console.log)("[log]", message); return Promise.resolve(); }
     recorderLoad(path) { return Promise.resolve(path.split(/[\\/]/).pop()); }
     onEngineRestart() { return Promise.resolve(); }
     onSettingsChanged() { return Promise.resolve(); }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2
+- **Settings → About** shows the Sleekmeeter version you're running and the Voicemeeter it's connected to; the tray icon's tooltip shows the version too
+- Sleekmeeter keeps a log (`logs/sleekmeeter.log` next to the exe) of what it does and anything that goes wrong: starting up, connecting to Voicemeeter, scenes, the recorder, devices coming and going, engine restarts, failed actions and crashes. **Open log file** in Settings → About shows it, ready to attach to a bug report. It never grows past about 2 MB
+
 ## 0.6.1
 - Fixed: MP3 recordings came out loud and badly distorted. Voicemeeter's MP3 encoder reads its audio as 16-bit, so MP3 now always records at 16-bit (the recorder's other formats keep the bit depth you pick, 24-bit by default)
 - Only one Sleekmeeter runs at a time: starting it again (for example from a pinned taskbar icon after closing the window to the tray) brings the running one back instead of opening a second copy

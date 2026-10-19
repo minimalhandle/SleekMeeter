@@ -412,6 +412,16 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .rec-out { grid-column: 2 / -1; }
 .rec-out .route.first-b { grid-column: auto; }
 
+/* ---------- settings: about ---------- */
+.about-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; padding: 11px 14px; border-radius: 8px;
+  background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); box-shadow: inset 0 1px 0 var(--mod-edge), var(--mod-shadow);
+}
+.about-text { display: flex; flex-direction: column; min-width: 0; }
+.about-version { font-weight: 600; font-size: var(--s1); }
+.about-vm { color: var(--muted); font-size: var(--s-1); }
+.about .hint b { color: var(--ink); font-weight: 600; }
+
 /* ---------- settings: fades and ducking ---------- */
 .settings-body .field.top { align-items: start; }
 .settings-body .field.top label { padding-top: 5px; }
