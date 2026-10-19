@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Lets the mixer window receive Voicemeeter events",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sleekmeeter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="bar">
+    <span class="brand">Sleekmeeter</span>
+    <span class="status" id="status" data-state="connecting">
+      <span class="dot" aria-hidden="true"></span><span id="statusText">Looking for Voicemeeter…</span>
+    </span>
+    <span class="spacer"></span>
+    <span class="scene-now" id="sceneNow" hidden></span>
+    <button class="btn" id="scenesBtn" type="button">Scenes</button>
+    <div class="menu-wrap">
+      <button class="btn icon" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More actions">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="16" cy="10" r="1.6"/></svg>
+      </button>
+      <div class="menu" id="moreMenu" role="menu" hidden>
+        <button role="menuitem" type="button" data-action="show">Show Voicemeeter window</button>
+        <button role="menuitem" type="button" data-action="restart">Restart audio engine</button>
+        <button role="menuitem" type="button" data-action="unsolo">Clear all solos</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="desk" id="desk">
+    <section class="group" aria-labelledby="inputsTitle">
+      <h2 id="inputsTitle">Inputs</h2>
+      <div class="strips" id="inputs"></div>
+    </section>
+    <section class="group outputs" aria-labelledby="outputsTitle">
+      <h2 id="outputsTitle">Outputs</h2>
+      <div class="strips" id="outputs"></div>
+    </section>
+  </main>
+
+  <div class="offline" id="offline" hidden>
+    <div class="offline-card">
+      <h1 id="offlineTitle">Voicemeeter isn't running</h1>
+      <p id="offlineBody">Sleekmeeter controls Voicemeeter Banana. Start it and your mixer appears here.</p>
+      <button class="btn primary" id="launchBtn" type="button">Start Voicemeeter</button>
+    </div>
+  </div>
+
+  <dialog class="scenes" id="scenesDlg" aria-labelledby="scenesTitle">
+    <form method="dialog" class="scenes-head">
+      <h2 id="scenesTitle">Scenes</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint">A scene saves your whole Voicemeeter setup — faders, routing, devices — so you can switch setups in one click.</p>
+    <ul class="scene-list" id="sceneList"></ul>
+    <form class="scene-save" id="sceneSave">
+      <label for="sceneName" class="sr-only">Scene name</label>
+      <input id="sceneName" type="text" placeholder="Name this mix, e.g. Streaming" maxlength="48" autocomplete="off" required>
+      <button class="btn primary" type="submit">Save current mix</button>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <template id="inputTpl">
+    <div class="strip">
+      <div class="head">
+        <button class="name" type="button" title="Double-click to rename"></button>
+        <input class="name-edit" type="text" maxlength="32" hidden aria-label="Strip name">
+        <span class="sub"></span>
+      </div>
+      <div class="routes" role="group" aria-label="Send to">
+        <button type="button" class="route a" data-bus="0">A1</button>
+        <button type="button" class="route a" data-bus="1">A2</button>
+        <button type="button" class="route a" data-bus="2">A3</button>
+        <button type="button" class="route b" data-bus="3">B1</button>
+        <button type="button" class="route b" data-bus="4">B2</button>
+      </div>
+      <div class="fader" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="vertical">
+        <div class="scale" aria-hidden="true"></div>
+        <div class="track">
+          <div class="meter l"></div><div class="meter r"></div>
+          <div class="peak l"></div><div class="peak r"></div>
+          <div class="unity"></div>
+          <div class="thumb"><span class="db"></span></div>
+        </div>
+      </div>
+      <div class="toggles">
+        <button type="button" class="tog mute" aria-pressed="false">Mute</button>
+        <button type="button" class="tog solo" aria-pressed="false">Solo</button>
+        <button type="button" class="tog mono" aria-pressed="false">Mono</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="outputTpl">
+    <div class="strip bus">
+      <div class="head">
+        <span class="bus-id"></span>
+        <button class="name" type="button" title="Double-click to rename"></button>
+        <input class="name-edit" type="text" maxlength="32" hidden aria-label="Bus name">
+        <span class="sub"></span>
+      </div>
+      <div class="routes modes" role="group" aria-label="Bus options">
+        <button type="button" class="tog mono" aria-pressed="false">Mono</button>
+        <button type="button" class="tog eq" aria-pressed="false">EQ</button>
+      </div>
+      <div class="fader" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="vertical">
+        <div class="scale" aria-hidden="true"></div>
+        <div class="track">
+          <div class="meter l"></div><div class="meter r"></div>
+          <div class="peak l"></div><div class="peak r"></div>
+          <div class="unity"></div>
+          <div class="thumb"><span class="db"></span></div>
+        </div>
+      </div>
+      <div class="toggles">
+        <button type="button" class="tog mute wide" aria-pressed="false">Mute</button>
+      </div>
+    </div>
+  </template>
+
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
