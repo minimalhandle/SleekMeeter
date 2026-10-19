@@ -2,11 +2,11 @@
 
 A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on top of Voicemeeter and controls it through the official Voicemeeter Remote API — Voicemeeter keeps doing the audio, Sleekmeeter is just a nicer mixer to look at and use.
 
-![Sleekmeeter's mixer: five input strips and three outputs, each fader doubling as a level meter](docs/screenshots/mixer.png)
+![Sleekmeeter's mixer: five input channels and two outputs, each with an LED meter, a metal fader cap and lit routing buttons](docs/screenshots/mixer.png)
 
-**Tray volume panel:** double-click the tray icon for a compact panel with every channel, right above the tray.
+**Mini mode and the tray volume panel:** one slim row per channel, with a meter, a fader and a mute button. Double-click the tray icon to open it right above the tray.
 
-![The tray volume panel: one slim fader and mute button per channel](docs/screenshots/volume-panel.png)
+![Mini mode: one row per channel with an LED meter, a fader and a mute button](docs/screenshots/volume-panel.png)
 
 ## Requirements
 
@@ -40,6 +40,8 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
 For OLED screens, turn on **Settings → Appearance → Pure black for OLED screens**. Everything that isn't information turns true black, including the tray panel and the volume overlay.
+
+![The mixer in pure black for OLED screens](docs/screenshots/oled.png)
 
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
 
