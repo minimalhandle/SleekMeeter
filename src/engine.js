@@ -75,11 +75,12 @@
     deleteScene(name) { return this.invoke("scene_delete", { name }); }
     getSettings() { return this.invoke("settings_get"); }
     saveSettings(value) { return this.invoke("settings_set", { value }); }
-    windowMini(mini, rows) { return this.invoke("window_mini", { mini, rows }); }
+    windowMini(mini, rows, width) { return this.invoke("window_mini", { mini, rows, width }); }
     openMixer() { return this.invoke("open_mixer"); }
     closePanel() { return this.invoke("flyout_close"); }
     onPanelShown(cb) { return this.listen("flyout-shown", cb); }
-    fitPanel(height) { return this.invoke("panel_fit", { height }); }
+    fitPanel(height, width) { return this.invoke("panel_fit", { height, width }); }
+    uiReady() { return this.invoke("ui_ready"); }
     checkUpdate() { return this.invoke("check_update"); }
     openRelease(url) { return this.invoke("open_release", { url }); }
     runningApps() { return this.invoke("running_apps"); }
@@ -228,6 +229,7 @@
     closePanel() { return Promise.resolve(); }
     onPanelShown() { return Promise.resolve(); }
     fitPanel() { return Promise.resolve(); }
+    uiReady() { return Promise.resolve(); }
     checkUpdate() {
       const newer = /[?&]update\b/.test(location.search);
       return Promise.resolve({ current: "0.4.0", latest: newer ? "0.4.1" : "0.4.0", newer,

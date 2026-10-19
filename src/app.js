@@ -96,10 +96,43 @@
     }
     // Potato has 16 channels: narrower strips so they still fit.
     document.body.classList.toggle("dense", chans.length > 10);
-    // Each section gets width in proportion to its strips, so all strips end up the same width.
-    $("#inputs").closest(".group").style.flexGrow = layout.strips.length;
-    $("#outputs").closest(".group").style.flexGrow = layout.buses.length;
     applyVisibility();
+    sizeToNames();
+  }
+
+  /* ---------- size strips and the mini/panel name column to the names ---------- */
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  let lastSizes = "";
+  function textWidth(text, el) {
+    const cs = getComputedStyle(el);
+    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    return measureCtx.measureText(text).width;
+  }
+  // Each strip gets the width its own name needs (within limits), so names show in full
+  // without making every strip wide. The mini rows share one name column.
+  function sizeToNames() {
+    if (!chans.length) return;
+    const dense = document.body.classList.contains("dense");
+    const [minW, maxW, chrome] = dense ? [92, 220, 10 + 26 + 6 + 4] : [112, 240, 16 + 30 + 8 + 4];
+    const widths = chans.map((ch) => {
+      const name = ch.names[0] ? ch.names[0].textContent : "";
+      return Math.round(Math.min(maxW, Math.max(minW, chrome + textWidth(name, ch.names[0]))));
+    });
+    const miniNameW = Math.round(Math.min(200, Math.max(84, ...chans
+      .filter((ch) => !look(ch).hidden)
+      .map((ch) => textWidth(ch.miniNames[0].textContent, ch.miniNames[0]) + 2))));
+    const key = widths.join(",") + "|" + miniNameW;
+    if (key === lastSizes) return;
+    lastSizes = key;
+    chans.forEach((ch, k) => ch.mixerEl.style.setProperty("--w", widths[k] + "px"));
+    document.body.style.setProperty("--mini-name", miniNameW + "px");
+    if (PANEL) requestAnimationFrame(fitPanel);
+    else if (settings.mini) engine.windowMini(true, miniRows(), miniWidth()).catch(() => {});
+  }
+  // Window width for mini mode and the panel: padding + chip + name column + fader + mute button.
+  function miniWidth() {
+    const name = parseFloat(getComputedStyle(document.body).getPropertyValue("--mini-name")) || 96;
+    return Math.ceil(24 + 8 + 8 + 24 + 8 + name + 8 + 180 + 8 + 52 + 2);
   }
   const isHw = (ch) => ch.info.kind === "hw";
 
@@ -343,7 +376,7 @@
       if (!d) continue;
       ch.data = d;
       const name = displayName(ch);
-      for (const n of ch.names) { n.textContent = name; }
+      for (const n of ch.names) { n.textContent = name; n.title = `${name}\nDouble-click to rename`; }
       for (const n of ch.miniNames) { n.textContent = name; n.title = name; }
       for (const s of ch.subs) {
         const sub = subText(ch);
@@ -363,6 +396,7 @@
       }
       markMuted(ch, !!d.mute);
     }
+    sizeToNames();
     if (drawerCh) renderDrawerValues();
   }
 
@@ -382,7 +416,9 @@
       if (n === 0) reveal[k] = false;
       b.textContent = reveal[k] ? "Done" : `Show hidden (${n})`;
     });
-    if (settings.mini && !PANEL) engine.windowMini(true, miniRows()).catch(() => {});
+    lastSizes = "";
+    sizeToNames();
+    if (settings.mini && !PANEL) engine.windowMini(true, miniRows(), miniWidth()).catch(() => {});
     if (PANEL) requestAnimationFrame(fitPanel);
   }
   document.querySelectorAll("[data-reveal]").forEach((b) => b.addEventListener("click", () => {
@@ -707,7 +743,7 @@
     miniBtn.setAttribute("aria-pressed", String(on));
     miniBtn.title = miniBtn.ariaLabel = on ? "Full mixer" : "Mini mode";
     if (on && drawerCh) closeDrawer();
-    engine.windowMini(on, miniRows()).catch(() => {});
+    engine.windowMini(on, miniRows(), miniWidth()).catch(() => {});
     if (save) saveSettings();
   }
   miniBtn.addEventListener("click", () => setMini(!settings.mini, true));
@@ -990,7 +1026,7 @@
       + Math.max(0, lists.length - 1) * parseFloat(cs.rowGap || cs.gap || 0)
       + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const border = parseFloat(getComputedStyle(document.body).borderTopWidth) * 2;
-    engine.fitPanel(Math.ceil($(".bar").offsetHeight + content + border)).catch(() => {});
+    engine.fitPanel(Math.ceil($(".bar").offsetHeight + content + border), miniWidth() + border).catch(() => {});
   }
   async function loadSettings() {
     try {
@@ -1000,7 +1036,18 @@
   }
 
   /* ---------- start ---------- */
+  // Windows 11 draws the Mica (window) or Acrylic (tray panel) backdrop behind the app;
+  // let it show through. Windows 10 keeps the solid background.
+  async function useMica() {
+    if (!window.__TAURI__ || !navigator.userAgentData || !navigator.userAgentData.getHighEntropyValues) return;
+    try {
+      const ua = await navigator.userAgentData.getHighEntropyValues(["platformVersion"]);
+      if (ua.platform === "Windows" && parseInt(ua.platformVersion, 10) >= 13) document.body.classList.add("mica");
+    } catch (e) { /* keep the solid background */ }
+  }
+
   async function init() {
+    const micaChecked = useMica();
     await loadSettings();
     buildChannels(settings.edition || 2);
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
@@ -1023,6 +1070,10 @@
       if (!PANEL) toast(`Loaded “${e.scene}” for ${e.app}`);
     }).catch(() => {});
     checkForUpdate();
+    // Show the window once the first frame with the real layout is drawn.
+    micaChecked.then(() => requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {}))));
+    // Names are measured with the real font once it has loaded.
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { lastSizes = ""; sizeToNames(); });
     await engine.start(applyState, applyLevels);
   }
   init().catch(fail);

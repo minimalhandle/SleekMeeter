@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+- Looks at home on Windows 11: Segoe UI Variable, Mica window backdrop, Acrylic tray panel, Fluent buttons, corners, focus rings and scrollbars, and toggle switches in Settings
+- The connection dot pulses slowly while Voicemeeter is connected
+- Each strip is as wide as its name, so names like "Speakers (Realtek(R) Audio)" show in full; mini mode and the tray panel widen their name column to match
+- Input and output sections stay centred instead of stretching across a wide window
+- Mute gets its own row on input strips, with Solo and Mono below
+- The window appears once it's drawn, without a blank flash
+
 ## 0.4.0
 - Works with Voicemeeter Standard and Potato as well as Banana; the layout adapts to the edition you run, with a denser layout for Potato's 16 channels
 - **Start Voicemeeter** launches the edition you used last
