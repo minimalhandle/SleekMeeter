@@ -124,6 +124,17 @@ pub fn command(app: &AppHandle, api: &Api, action: &str) -> Result<Value, String
         "ff" => "Recorder.ff = 1;",
         _ => return Err("Unknown recorder button".into()),
     };
+    // Voicemeeter's MP3 encoder reads its audio as 16-bit: at 24 or 32-bit the file comes out
+    // about 48 dB too loud and badly distorted. Make sure an MP3 recording starts at 16-bit.
+    if action == "record"
+        && api.get_float("Recorder.FileType").map(|t| t.round() as i32) == Some(100)
+        && api
+            .get_float("Recorder.bitResolution")
+            .map(|b| b.round() as i32)
+            != Some(16)
+    {
+        let _ = api.set_float("Recorder.bitResolution", 16.0);
+    }
     if let Err(e) = api.script(&[line.to_string()]) {
         // Older Voicemeeter versions call the record button "rec".
         if action != "record" {

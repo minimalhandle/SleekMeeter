@@ -151,7 +151,7 @@
         this.state.recorder = {
           armStrips: L.strips.map(() => false), armBuses: L.buses.map((_, j) => j === hb + vb - 1),
           recBus: true, a: Array.from({ length: hb }, (_, k) => k === 0), b: Array.from({ length: vb }, () => false),
-          fileType: 1, gain: 0, playing: null, recording: null, state: "stopped", elapsed: 0, since: null,
+          fileType: 1, bits: 24, gain: 0, playing: null, recording: null, state: "stopped", elapsed: 0, since: null,
         };
       }
       this.glides = {};
@@ -193,6 +193,7 @@
       if (rec && ab) rec[ab[1].toLowerCase()][+ab[2] - 1] = !!value;
       if (rec && name === "Recorder.mode.recbus") rec.recBus = !!value;
       if (rec && name === "Recorder.FileType") rec.fileType = value;
+      if (rec && name === "Recorder.bitResolution") rec.bits = value;
       if (rec && name === "Recorder.gain") rec.gain = value;
       const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+)$/.exec(name);
       if (m) {
