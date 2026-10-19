@@ -190,7 +190,9 @@ pub fn spawn(app: AppHandle) {
             }
             let present = |name: &str| system.iter().any(|s| same_device(name, s));
             for name in &assigned {
-                watch.entry(name.clone()).or_insert_with(|| present(name.as_str()));
+                watch
+                    .entry(name.clone())
+                    .or_insert_with(|| present(name.as_str()));
             }
             let mut back = None;
             watch.retain(|name, was| {

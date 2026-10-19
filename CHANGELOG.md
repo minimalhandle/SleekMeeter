@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+- Only one Sleekmeeter runs at a time: starting it again (for example from a pinned taskbar icon after closing the window to the tray) brings the running one back instead of opening a second copy
+- The recorder shows how loud the recording is, and warns when it goes over 0 dB (which distorts the file) or when nothing is selected to record
+
 ## 0.6.0
 - **Talk-over ducking:** other audio turns down while you talk and comes back when you stop. Pick the channel that talks, the channels to turn down, how much, and the level it starts at; the slider lights up with your voice so you can set it by eye. Ducked channels show **Ducking**, and their faders still move freely
 - **Smooth fades:** mute fades out and unmute fades in; typed levels, double-click to 0 dB, volume shortcuts and scene changes glide instead of jumping. Fade times are in Settings, and fades can be turned off

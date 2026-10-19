@@ -134,6 +134,11 @@
     <div class="deck">
       <div class="clock" id="recClock" aria-live="off">00:00</div>
       <div class="deck-state" id="recState">Stopped</div>
+      <div class="rec-level" aria-hidden="true">
+        <div class="rec-meter" id="recMeter"><div class="unlit"></div><div class="lit"><b></b></div></div>
+        <span class="rec-level-db" id="recLevelDb">−∞</span>
+      </div>
+      <p class="rec-warn" id="recWarn" role="status"></p>
       <div class="transport" role="group" aria-label="Recorder controls">
         <button class="btn icon" type="button" data-rec="rew" aria-label="Rewind" title="Rewind">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M11 7v10l-7-5zM20 7v10l-7-5z" fill="currentColor"/></svg>
