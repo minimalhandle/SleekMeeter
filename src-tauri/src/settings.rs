@@ -30,7 +30,11 @@ pub fn defaults() -> Value {
         "hideVoicemeeter": false,
         "overlay": true,
         "alwaysOnTop": false,
-        "mini": false
+        "mini": false,
+        // Load a scene when an app starts: [{ "app": "obs64.exe", "scene": "Streaming", "restore": "Default" }]
+        "sceneRules": [],
+        "checkUpdates": true,
+        "skippedVersion": ""
     })
 }
 

@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  const { LAYOUT, BUS_MODES, DEFAULT_SETTINGS, createEngine } = window.Sleekmeeter;
+  const { layoutFor, BUS_MODES, DEFAULT_SETTINGS, createEngine } = window.Sleekmeeter;
   const { ICONS, COLORS, svg } = window.SleekIcons;
   const engine = createEngine();
   const $ = (s, el = document) => el.querySelector(s);
@@ -73,15 +73,33 @@
   }
 
   /* ---------- channels: one model, shown in the full mixer and in mini mode ---------- */
+  // Built for the running edition (Standard, Banana or Potato) and rebuilt if it changes.
   const chans = [];
-  LAYOUT.strips.forEach((info, i) => chans.push({ kind: "strip", i, key: `strip-${i}`, prefix: `Strip[${i}]`, info }));
-  LAYOUT.buses.forEach((info, j) => chans.push({ kind: "bus", i: j, key: `bus-${j}`, prefix: `Bus[${j}]`, info }));
-  for (const ch of chans) {
-    Object.assign(ch, {
-      data: null, gain: 0, dragging: false, lockUntil: 0,
-      faders: [], meterEls: [], toggles: [], chips: [], names: [], miniNames: [], subs: [], rows: [],
-      meter: { shown: [-200, -200], peak: [-200, -200], peakAt: [0, 0], target: [-200, -200] },
-    });
+  let layout = null;
+  function buildChannels(edition) {
+    layout = layoutFor(edition);
+    if (drawerCh) closeDrawer();
+    for (const id of ["#inputs", "#outputs", "#miniInputs", "#miniOutputs"]) $(id).textContent = "";
+    chans.length = 0;
+    layout.strips.forEach((info, i) => chans.push({ kind: "strip", i, key: `strip-${i}`, prefix: `Strip[${i}]`, info }));
+    layout.buses.forEach((info, j) => chans.push({ kind: "bus", i: j, key: `bus-${j}`, prefix: `Bus[${j}]`, info }));
+    for (const ch of chans) {
+      Object.assign(ch, {
+        data: null, gain: 0, dragging: false, lockUntil: 0,
+        faders: [], meterEls: [], toggles: [], chips: [], names: [], miniNames: [], subs: [], rows: [],
+        meter: { shown: [-200, -200], peak: [-200, -200], peakAt: [0, 0], target: [-200, -200] },
+      });
+      buildMixerStrip(ch);
+      buildMiniRow(ch);
+      paintLook(ch);
+      renderFaders(ch);
+    }
+    // Potato has 16 channels: narrower strips so they still fit.
+    document.body.classList.toggle("dense", chans.length > 10);
+    // Each section gets width in proportion to its strips, so all strips end up the same width.
+    $("#inputs").closest(".group").style.flexGrow = layout.strips.length;
+    $("#outputs").closest(".group").style.flexGrow = layout.buses.length;
+    applyVisibility();
   }
   const isHw = (ch) => ch.info.kind === "hw";
 
@@ -265,7 +283,18 @@
     makeFader($(".fader", el), ch);
     makeToggle($(".mute", el), ch, "Mute");
     if (ch.kind === "strip") {
-      el.querySelectorAll(".route").forEach((b) => makeToggle(b, ch, b.textContent));
+      const routes = $(".routes", el);
+      let firstB = true;
+      for (const bus of layout.buses) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = `route ${bus.kind === "hw" ? "a" : "b"}`;
+        if (bus.kind === "virt" && firstB) { b.classList.add("first-b"); firstB = false; }
+        b.textContent = bus.id;
+        b.title = `Send to ${bus.id}`;
+        routes.appendChild(b);
+        makeToggle(b, ch, bus.param);
+      }
       makeToggle($(".solo", el), ch, "Solo");
       const mono = $(".mono", el);
       if (!isHw(ch)) { mono.textContent = "M.C."; mono.title = "Mute center channel"; }
@@ -303,11 +332,11 @@
       status.dataset.state = "online";
       const ed = EDITIONS[st.edition] || "Voicemeeter";
       text.textContent = engine.simulated ? `Preview with a simulated ${ed}` : `${ed} ${st.version || ""}`.trim();
-      if (st.edition && st.edition !== 2 && connected !== true) toast(`Sleekmeeter is laid out for Banana — you're running ${ed}.`);
     }
     showOffline(!st.installed ? "missing" : !st.connected ? "stopped" : null);
     connected = !!st.connected;
     if (!st.connected || !st.strips) return;
+    if (st.edition && st.edition !== layout.edition) buildChannels(st.edition);
 
     for (const ch of chans) {
       const d = (ch.kind === "strip" ? st.strips : st.buses)[ch.i];
@@ -648,11 +677,11 @@
     if (!kind) { launchBtn.disabled = false; launchBtn.textContent = "Start Voicemeeter"; return; }
     if (kind === "missing") {
       $("#offlineTitle").textContent = "Voicemeeter isn't installed";
-      $("#offlineBody").textContent = "Install Voicemeeter Banana from voicemeeter.com, then reopen Sleekmeeter.";
+      $("#offlineBody").textContent = "Install Voicemeeter (Standard, Banana or Potato) from voicemeeter.com, then reopen Sleekmeeter.";
       launchBtn.hidden = true;
     } else {
       $("#offlineTitle").textContent = "Voicemeeter isn't running";
-      $("#offlineBody").textContent = "Sleekmeeter controls Voicemeeter Banana. Start it and your mixer appears here.";
+      $("#offlineBody").textContent = "Sleekmeeter controls Voicemeeter. Start it and your mixer appears here.";
       launchBtn.hidden = false;
     }
   }
@@ -702,12 +731,14 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
+    setCheckUpdates: "checkUpdates",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
       settings[key] = e.target.checked;
       syncChecks();
       saveSettings();
+      if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
     });
   }
   function syncChecks() {
@@ -843,7 +874,93 @@
     el.hidden = false; el.textContent = "";
     el.append("Scene: ", Object.assign(document.createElement("b"), { textContent: n }));
   }
-  $("#scenesBtn").addEventListener("click", () => { renderScenes(); dlg.showModal(); });
+  $("#scenesBtn").addEventListener("click", () => {
+    renderScenes();
+    renderRules();
+    engine.runningApps().then((apps) => {
+      const dl = $("#appList");
+      dl.textContent = "";
+      for (const a of apps) dl.appendChild(new Option(a));
+    }).catch(() => {});
+    dlg.showModal();
+  });
+
+  /* ---------- automatic scene switching ---------- */
+  let sceneNames = [];
+  async function renderRules() {
+    sceneNames = await engine.listScenes().catch(() => []);
+    const listEl = $("#ruleList");
+    listEl.textContent = "";
+    const rules = settings.sceneRules || (settings.sceneRules = []);
+    $("#rulesEmpty").hidden = sceneNames.length > 0;
+    $("#addRule").hidden = sceneNames.length === 0;
+    $("#ruleHead").hidden = rules.length === 0;
+    rules.forEach((r, idx) => {
+      const row = document.createElement("div");
+      row.className = "rule";
+      const app = document.createElement("input");
+      app.type = "text"; app.value = r.app || ""; app.placeholder = "e.g. obs64.exe";
+      app.setAttribute("list", "appList"); app.setAttribute("aria-label", "App");
+      app.spellcheck = false; app.autocomplete = "off";
+      app.addEventListener("change", () => { r.app = app.value.trim().toLowerCase(); app.value = r.app; saveSettings(); });
+      const scene = document.createElement("select");
+      scene.setAttribute("aria-label", "Scene to load");
+      for (const n of sceneNames) scene.appendChild(new Option(n, n));
+      if (r.scene && !sceneNames.includes(r.scene)) scene.appendChild(new Option(`${r.scene} (deleted)`, r.scene));
+      scene.value = r.scene || sceneNames[0] || "";
+      r.scene = scene.value;
+      scene.addEventListener("change", () => { r.scene = scene.value; saveSettings(); });
+      const restore = document.createElement("select");
+      restore.setAttribute("aria-label", "When the app closes");
+      restore.appendChild(new Option("Keep the scene", ""));
+      for (const n of sceneNames) restore.appendChild(new Option(`Load ${n}`, n));
+      restore.value = r.restore || "";
+      restore.addEventListener("change", () => { r.restore = restore.value; saveSettings(); });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn icon"; del.setAttribute("aria-label", "Remove rule");
+      del.innerHTML = `<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      del.addEventListener("click", () => { rules.splice(idx, 1); saveSettings(); renderRules(); });
+      row.append(app, scene, restore, del);
+      listEl.appendChild(row);
+    });
+  }
+  $("#addRule").addEventListener("click", async () => {
+    settings.sceneRules = settings.sceneRules || [];
+    settings.sceneRules.push({ app: "", scene: sceneNames[0] || "", restore: "" });
+    await renderRules();
+    const inputs = document.querySelectorAll("#ruleList input");
+    inputs[inputs.length - 1].focus();
+  });
+
+  /* ---------- update notifications ---------- */
+  let update = null;
+  const updateBtn = $("#updateBtn"), updateMenu = $("#updateMenu");
+  async function checkForUpdate() {
+    if (PANEL || !settings.checkUpdates) return;
+    try {
+      const u = await engine.checkUpdate();
+      if (!u || !u.newer || u.latest === settings.skippedVersion) return;
+      update = u;
+      updateBtn.textContent = `Update to ${u.latest}`;
+      $("#updateText").textContent = `Sleekmeeter ${u.latest} is out. You have ${u.current}.`;
+      $("#updateWrap").hidden = false;
+    } catch (e) { /* offline or GitHub unreachable: try again next start */ }
+  }
+  const setUpdateMenu = (open) => { updateMenu.hidden = !open; updateBtn.setAttribute("aria-expanded", String(open)); };
+  updateBtn.addEventListener("click", () => setUpdateMenu(updateMenu.hidden));
+  document.addEventListener("click", (e) => { if (!e.target.closest("#updateWrap")) setUpdateMenu(false); });
+  $("#updateGet").addEventListener("click", () => {
+    setUpdateMenu(false);
+    if (update) engine.openRelease(update.url).then(() => toast("Opening the download page")).catch(fail);
+  });
+  $("#updateSkip").addEventListener("click", () => {
+    setUpdateMenu(false);
+    if (!update) return;
+    settings.skippedVersion = update.latest;
+    saveSettings();
+    $("#updateWrap").hidden = true;
+    toast(`You won't be reminded about ${update.latest}`);
+  });
   $("#sceneSave").addEventListener("submit", async (e) => {
     e.preventDefault();
     const n = $("#sceneName").value.trim().replace(/[\\/:*?"<>|]/g, "");
@@ -885,8 +1002,7 @@
   /* ---------- start ---------- */
   async function init() {
     await loadSettings();
-    for (const ch of chans) { buildMixerStrip(ch); buildMiniRow(ch); paintLook(ch); renderFaders(ch); }
-    applyVisibility();
+    buildChannels(settings.edition || 2);
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
     if (PANEL) {
       // Pinned, fixed panel: mini rows only. Looks and hidden channels come from the mixer's settings.
@@ -902,6 +1018,11 @@
       setMini(!!settings.mini, false);
     }
     requestAnimationFrame(frame);
+    engine.onSceneAuto((e) => {
+      setScene(e.scene);
+      if (!PANEL) toast(`Loaded “${e.scene}” for ${e.app}`);
+    }).catch(() => {});
+    checkForUpdate();
     await engine.start(applyState, applyLevels);
   }
   init().catch(fail);

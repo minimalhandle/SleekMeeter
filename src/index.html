@@ -17,6 +17,14 @@
     </span>
     <span class="spacer"></span>
     <span class="scene-now" id="sceneNow" hidden></span>
+    <div class="menu-wrap full-only" id="updateWrap" hidden>
+      <button class="btn update-btn" id="updateBtn" type="button" aria-haspopup="true" aria-expanded="false"></button>
+      <div class="menu update-menu" id="updateMenu" hidden>
+        <p id="updateText"></p>
+        <button type="button" id="updateGet">Download the update</button>
+        <button type="button" id="updateSkip">Skip this version</button>
+      </div>
+    </div>
     <button class="btn panel-only" id="openMixerBtn" type="button">Open mixer</button>
     <button class="btn icon panel-only" id="closePanelBtn" type="button" aria-label="Close volume panel" title="Close">
       <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -83,7 +91,7 @@
   <div class="offline" id="offline" hidden>
     <div class="offline-card">
       <h1 id="offlineTitle">Voicemeeter isn't running</h1>
-      <p id="offlineBody">Sleekmeeter controls Voicemeeter Banana. Start it and your mixer appears here.</p>
+      <p id="offlineBody">Sleekmeeter controls Voicemeeter. Start it and your mixer appears here.</p>
       <button class="btn primary" id="launchBtn" type="button">Start Voicemeeter</button>
     </div>
   </div>
@@ -102,6 +110,15 @@
       <input id="sceneName" type="text" placeholder="Name this mix, e.g. Streaming" maxlength="48" autocomplete="off" required>
       <button class="btn primary" type="submit">Save current mix</button>
     </form>
+    <section class="rules" aria-labelledby="rulesTitle">
+      <h3 id="rulesTitle">Switch automatically</h3>
+      <p class="hint">Load a scene when an app starts, and choose what happens when it closes.</p>
+      <div class="rule-head" id="ruleHead" aria-hidden="true"><span>When this app starts</span><span>Load</span><span>When it closes</span><span></span></div>
+      <div class="rule-list" id="ruleList"></div>
+      <datalist id="appList"></datalist>
+      <button class="btn" id="addRule" type="button">Add rule</button>
+      <p class="hint" id="rulesEmpty" hidden>Save a scene first, then you can switch to it automatically.</p>
+    </section>
   </dialog>
 
   <dialog class="dlg settings" id="settingsDlg" aria-labelledby="settingsTitle">
@@ -122,6 +139,10 @@
       <section>
         <h3>Volume overlay</h3>
         <label class="check"><input type="checkbox" id="setOverlay"><span>Show the level on screen when it changes while you're in another app, for example from a shortcut, a MIDI controller or a Stream Deck</span></label>
+      </section>
+      <section>
+        <h3>Updates</h3>
+        <label class="check"><input type="checkbox" id="setCheckUpdates"><span>Check for a new version when Sleekmeeter starts</span></label>
       </section>
       <section>
         <h3>Shortcuts</h3>
@@ -154,13 +175,7 @@
           <span class="sub"></span>
         </div>
       </div>
-      <div class="routes" role="group" aria-label="Send to">
-        <button type="button" class="route a" data-bus="0">A1</button>
-        <button type="button" class="route a" data-bus="1">A2</button>
-        <button type="button" class="route a" data-bus="2">A3</button>
-        <button type="button" class="route b" data-bus="3">B1</button>
-        <button type="button" class="route b" data-bus="4">B2</button>
-      </div>
+      <div class="routes" role="group" aria-label="Send to"></div>
       <div class="fader" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="vertical">
         <div class="scale" aria-hidden="true"></div>
         <div class="track">
