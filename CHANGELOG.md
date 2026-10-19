@@ -1,5 +1,8 @@
 # Changelog
 
+## Next
+- Update notifications also find releases marked as pre-release
+
 ## 0.5.1
 - Smaller fader caps on the main mixer (32×38 instead of 46×54)
 - No more stray horizontal scrollbar in mini mode

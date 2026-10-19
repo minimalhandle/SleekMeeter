@@ -14,23 +14,39 @@ fn parts(v: &str) -> Vec<u64> {
         .collect()
 }
 
-/// { current, latest, newer, url } for the latest published release.
+fn get_json(url: &str) -> Result<Value, String> {
+    let body = ureq::get(url)
+        .set(
+            "User-Agent",
+            concat!("Sleekmeeter/", env!("CARGO_PKG_VERSION")),
+        )
+        .set("Accept", "application/vnd.github+json")
+        .timeout(Duration::from_secs(8))
+        .call()
+        .map_err(|e| format!("Couldn't check for updates: {e}"))?
+        .into_string()
+        .map_err(|e| format!("Couldn't check for updates: {e}"))?;
+    serde_json::from_str(&body).map_err(|e| format!("Couldn't read the update info: {e}"))
+}
+
+/// The newest published release, counting pre-releases too: GitHub's
+/// /releases/latest skips anything marked "Pre-release", so we read the list.
+fn newest_release() -> Result<Value, String> {
+    let list = get_json(&format!(
+        "https://api.github.com/repos/{REPO}/releases?per_page=20"
+    ))?;
+    list.as_array()
+        .into_iter()
+        .flatten()
+        .filter(|r| !r["draft"].as_bool().unwrap_or(false))
+        .max_by_key(|r| parts(r["tag_name"].as_str().unwrap_or("")))
+        .cloned()
+        .ok_or_else(|| "No releases published yet".to_string())
+}
+
+/// { current, latest, newer, url } for the newest published release.
 pub fn latest() -> Result<Value, String> {
-    let body = ureq::get(&format!(
-        "https://api.github.com/repos/{REPO}/releases/latest"
-    ))
-    .set(
-        "User-Agent",
-        concat!("Sleekmeeter/", env!("CARGO_PKG_VERSION")),
-    )
-    .set("Accept", "application/vnd.github+json")
-    .timeout(Duration::from_secs(8))
-    .call()
-    .map_err(|e| format!("Couldn't check for updates: {e}"))?
-    .into_string()
-    .map_err(|e| format!("Couldn't check for updates: {e}"))?;
-    let release: Value =
-        serde_json::from_str(&body).map_err(|e| format!("Couldn't read the update info: {e}"))?;
+    let release = newest_release()?;
     let tag = release["tag_name"].as_str().unwrap_or("");
     let latest = tag.trim_start_matches(['v', 'V']).to_string();
     Ok(json!({
