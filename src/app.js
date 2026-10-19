@@ -412,6 +412,19 @@
     }
     sizeToNames();
     if (drawerCh) renderDrawerValues();
+    if (!fitted) { fitted = true; requestAnimationFrame(fitWindowToMixer); }
+  }
+
+  // First launch only (Rust ignores it once a size is saved): make the window as wide as the mixer.
+  let fitted = false;
+  function fitWindowToMixer() {
+    if (PANEL || settings.mini) return;
+    const desk = $("#desk"), cs = getComputedStyle(desk);
+    const groups = [...desk.querySelectorAll(".group")].filter((g) => g.offsetWidth > 0);
+    const width = groups.reduce((w, g) => w + g.offsetWidth, 0)
+      + Math.max(0, groups.length - 1) * parseFloat(cs.columnGap || cs.gap || 0)
+      + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 4;
+    engine.fitWindow(Math.ceil(width)).catch(() => {});
   }
 
   /* ---------- visibility (hidden strips) ---------- */
