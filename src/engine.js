@@ -48,7 +48,7 @@
     ],
     startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
     overlay: true, alwaysOnTop: false, mini: false,
-    sceneRules: [], checkUpdates: true, skippedVersion: "",
+    sceneRules: [], checkUpdates: true, skippedVersion: "", oled: false,
   };
 
   /* ---------------- Tauri (real Voicemeeter) ---------------- */

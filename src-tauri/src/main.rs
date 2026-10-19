@@ -14,7 +14,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::window::{Effect, EffectsBuilder};
 use tauri::{
     AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, State, WebviewUrl,
     WebviewWindow, WebviewWindowBuilder, WindowEvent,
@@ -220,7 +219,7 @@ fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Res
             .0
             .lock()
             .unwrap()
-            .unwrap_or(LogicalSize::new(1280.0, 760.0));
+            .unwrap_or(LogicalSize::new(1400.0, 800.0));
         let _ = w.set_min_size(Some(LogicalSize::new(760.0, 520.0)));
         w.set_size(size).map_err(|e| e.to_string())?;
     }
@@ -350,10 +349,14 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
         let y = m.position().y as f64 + m.size().height as f64 - h - 110.0 * s;
         let _ = osd.set_position(PhysicalPosition::new(x as i32, y as i32));
     }
+    let oled = app.state::<Settings>().0.lock().unwrap()["oled"]
+        .as_bool()
+        .unwrap_or(false);
     let _ = app.emit_to(
         "osd",
         "osd",
         json!({
+            "oled": oled,
             "name": name,
             "gain": ch["gain"],
             "mute": ch["mute"],
@@ -596,9 +599,6 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         .decorations(false)
         .always_on_top(true)
         .skip_taskbar(true)
-        .transparent(true)
-        // Acrylic like Windows' own volume flyout (the page keeps a solid background on Windows 10).
-        .effects(EffectsBuilder::new().effect(Effect::Acrylic).build())
         .visible(false)
         .build();
     if let Ok(w) = built {

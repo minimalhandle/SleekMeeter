@@ -86,7 +86,7 @@
     for (const ch of chans) {
       Object.assign(ch, {
         data: null, gain: 0, dragging: false, lockUntil: 0,
-        faders: [], meterEls: [], toggles: [], chips: [], names: [], miniNames: [], subs: [], rows: [],
+        faders: [], carriers: [], readouts: [], meterEls: [], toggles: [], chips: [], names: [], miniNames: [], subs: [], rows: [],
         meter: { shown: [-200, -200], peak: [-200, -200], peakAt: [0, 0], target: [-200, -200] },
       });
       buildMixerStrip(ch);
@@ -106,19 +106,20 @@
   function textWidth(text, el) {
     const cs = getComputedStyle(el);
     measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-    return measureCtx.measureText(text).width;
+    const spacing = parseFloat(cs.letterSpacing) || 0;  // canvas doesn't include letter-spacing
+    return measureCtx.measureText(text).width + spacing * text.length + 2;
   }
   // Each strip gets the width its own name needs (within limits), so names show in full
   // without making every strip wide. The mini rows share one name column.
   function sizeToNames() {
     if (!chans.length) return;
     const dense = document.body.classList.contains("dense");
-    const [minW, maxW, chrome] = dense ? [92, 220, 10 + 26 + 6 + 4] : [112, 240, 16 + 30 + 8 + 4];
+    const [minW, maxW, chrome] = dense ? [108, 240, 16 + 26 + 6 + 4] : [132, 270, 22 + 28 + 8 + 4];
     const widths = chans.map((ch) => {
       const name = ch.names[0] ? ch.names[0].textContent : "";
       return Math.round(Math.min(maxW, Math.max(minW, chrome + textWidth(name, ch.names[0]))));
     });
-    const miniNameW = Math.round(Math.min(200, Math.max(84, ...chans
+    const miniNameW = Math.round(Math.min(240, Math.max(84, ...chans
       .filter((ch) => !look(ch).hidden)
       .map((ch) => textWidth(ch.miniNames[0].textContent, ch.miniNames[0]) + 2))));
     const key = widths.join(",") + "|" + miniNameW;
@@ -132,7 +133,7 @@
   // Window width for mini mode and the panel: padding + chip + name column + fader + mute button.
   function miniWidth() {
     const name = parseFloat(getComputedStyle(document.body).getPropertyValue("--mini-name")) || 96;
-    return Math.ceil(24 + 8 + 8 + 24 + 8 + name + 8 + 180 + 8 + 52 + 2);
+    return Math.ceil(24 + 12 + 12 + 24 + 8 + name + 8 + 180 + 8 + 54 + 2);
   }
   const isHw = (ch) => ch.info.kind === "hw";
 
@@ -180,13 +181,17 @@
     renderFaders(ch);
     sendFloat(`${ch.prefix}.Gain`, v);
   }
+  // Faders only ever change `transform`, so moving one never repaints the page.
   function renderFaders(ch) {
+    const p = dbToPos(ch.gain), text = fmtDb(ch.gain);
+    for (const c of ch.carriers) c.el.style.transform = c.h ? `translateX(${(p * 100).toFixed(2)}%)` : `translateY(${((1 - p) * 100).toFixed(2)}%)`;
     for (const f of ch.faders) {
-      f.style.setProperty("--pos", dbToPos(ch.gain));
-      $(".db", f).textContent = fmtDb(ch.gain);
+      const db = f.querySelector(".db");
+      if (db) db.textContent = text;
       f.setAttribute("aria-valuenow", ch.gain.toFixed(1));
-      f.setAttribute("aria-valuetext", fmtDb(ch.gain) + " dB");
+      f.setAttribute("aria-valuetext", text + " dB");
     }
+    for (const r of ch.readouts) r.textContent = text;
   }
   function remoteGain(ch, v) {
     if (ch.dragging || performance.now() < ch.lockUntil) return;
@@ -195,17 +200,19 @@
 
   function makeFader(el, ch) {
     const horizontal = el.classList.contains("h");
-    const track = $(".track", el);
+    const track = $(".track", el), travel = $(".travel", el);
     ch.faders.push(el);
-    ch.meterEls.push({ m: [$(".meter.l", el), $(".meter.r", el)], p: [$(".peak.l", el), $(".peak.r", el)] });
+    ch.carriers.push({ el: $(".carrier", el), h: horizontal });
+    const meters = [$(".meter.l", el), $(".meter.r", el)];
+    ch.meterEls.push({ lit: meters.map((m) => $(".lit", m)), led: meters.map((m) => $(".lit b", m)), pk: meters.map((m) => $(".pk", m)), h: horizontal });
 
     let start = 0, startPos = 0, span = 1;
-    const posAt = (e, r) => horizontal ? (e.clientX - r.left - 4) / span : (r.bottom - 4 - e.clientY) / span;
+    const posAt = (e, r) => horizontal ? (e.clientX - r.left) / span : (r.bottom - e.clientY) / span;
     const coord = (e) => (horizontal ? e.clientX : -e.clientY);
     track.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
-      const r = track.getBoundingClientRect();
-      span = (horizontal ? r.width : r.height) - 8;
+      const r = travel.getBoundingClientRect();
+      span = Math.max(1, horizontal ? r.width : r.height);
       const onThumb = !!e.target.closest(".thumb");
       startPos = onThumb ? dbToPos(ch.gain) : posAt(e, r);
       start = coord(e);
@@ -296,7 +303,7 @@
       const s = document.createElement("span");
       s.textContent = db > 0 ? "+" + db : db === 0 ? "0" : "−" + Math.abs(db);
       if (db === 0) s.className = "zero";
-      s.style.bottom = `calc(4px + (100% - 8px) * ${dbToPos(db)})`;
+      s.style.bottom = `calc(var(--cap-h) / 2 + (100% - var(--cap-h)) * ${dbToPos(db)})`;
       el.appendChild(s);
     }
   }
@@ -314,6 +321,13 @@
     ch.subs.push($(".sub", el));
     buildScale($(".scale", el));
     makeFader($(".fader", el), ch);
+    const readout = $(".readout", el);
+    ch.readouts.push(readout);
+    readout.addEventListener("click", () => {
+      const r = readout.getBoundingClientRect();
+      openGainEdit(ch, r.left, r.top - 40, $(".fader", el));
+    });
+    readout.addEventListener("contextmenu", (e) => { e.preventDefault(); readout.click(); });
     makeToggle($(".mute", el), ch, "Mute");
     if (ch.kind === "strip") {
       const routes = $(".routes", el);
@@ -433,33 +447,52 @@
       const pair = (ch.kind === "strip" ? lv.inputs : lv.outputs || [])[ch.i];
       if (pair) ch.meter.target = pair;
     });
+    wakeMeters();
   }
-  let lastT = performance.now();
+  // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
+  // are composited on the GPU without repainting. The loop stops when every meter is at rest
+  // and starts again when new levels arrive.
+  let lastT = performance.now(), running = false, lastLevels = 0;
+  const writeMeter = (ch, c, p, pk) => {
+    for (const v of ch.meterEls) {
+      const off = ((1 - p) * 100).toFixed(2);
+      v.lit[c].style.transform = v.h ? `translateX(-${off}%)` : `translateY(${off}%)`;
+      v.led[c].style.transform = v.h ? `translateX(${off}%)` : `translateY(-${off}%)`;
+      v.pk[c].style.transform = v.h ? `translateX(${(pk * 100).toFixed(2)}%)` : `translateY(${((1 - pk) * 100).toFixed(2)}%)`;
+      v.pk[c].style.opacity = pk > 0.01 ? "1" : "0";
+    }
+  };
+  function wakeMeters() {
+    lastLevels = performance.now();
+    if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(frame); }
+  }
   function frame(t) {
     const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+    let busy = false;
     for (const ch of chans) {
       const M = ch.meter;
       for (let c = 0; c < 2; c++) {
         const target = connected ? M.target[c] : -200;
         const cur = M.shown[c];
         const next = target >= cur ? target : Math.max(target, cur - 26 * dt);
-        if (next !== cur) {
-          M.shown[c] = next;
-          const lvl = (dbToPos(next) * 100).toFixed(2) + "%";
-          for (const v of ch.meterEls) v.m[c].style.setProperty("--lvl", lvl);
-        }
-        if (next > M.peak[c] || t - M.peakAt[c] > 1500) {
-          if (next > M.peak[c]) { M.peak[c] = next; M.peakAt[c] = t; }
-          else M.peak[c] = Math.max(next, M.peak[c] - 20 * dt);
-          const p = dbToPos(M.peak[c]);
-          for (const v of ch.meterEls) {
-            v.p[c].style.setProperty("--pk", p.toFixed(4));
-            v.p[c].style.setProperty("--pk-o", p > 0.01 ? 0.8 : 0);
+        let changed = false;
+        if (next !== cur) { M.shown[c] = next; changed = true; }
+        if (next > M.peak[c]) { M.peak[c] = next; M.peakAt[c] = t; changed = true; }
+        else if (t - M.peakAt[c] > 1500 && M.peak[c] > next) { M.peak[c] = Math.max(next, M.peak[c] - 20 * dt); changed = true; }
+        if (changed) {
+          busy = true;
+          const p = dbToPos(M.shown[c]), pk = dbToPos(M.peak[c]);
+          if (Math.abs(p - (M.drawn ? M.drawn[c] : -1)) > 0.0015 || Math.abs(pk - (M.drawnPk ? M.drawnPk[c] : -1)) > 0.0015) {
+            M.drawn = M.drawn || [0, 0]; M.drawnPk = M.drawnPk || [0, 0];
+            M.drawn[c] = p; M.drawnPk[c] = pk;
+            writeMeter(ch, c, p, pk);
           }
         }
       }
     }
-    requestAnimationFrame(frame);
+    // keep running while levels are arriving or anything is still falling
+    if (busy || t - lastLevels < 250) requestAnimationFrame(frame);
+    else running = false;
   }
 
   /* ---------- type-a-value box: right-click a fader (or press Enter on it) ---------- */
@@ -767,13 +800,14 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates",
+    setCheckUpdates: "checkUpdates", setOled: "oled",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
       settings[key] = e.target.checked;
       syncChecks();
       saveSettings();
+      if (key === "oled") applyOled();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
     });
   }
@@ -1036,19 +1070,12 @@
   }
 
   /* ---------- start ---------- */
-  // Windows 11 draws the Mica (window) or Acrylic (tray panel) backdrop behind the app;
-  // let it show through. Windows 10 keeps the solid background.
-  async function useMica() {
-    if (!window.__TAURI__ || !navigator.userAgentData || !navigator.userAgentData.getHighEntropyValues) return;
-    try {
-      const ua = await navigator.userAgentData.getHighEntropyValues(["platformVersion"]);
-      if (ua.platform === "Windows" && parseInt(ua.platformVersion, 10) >= 13) document.body.classList.add("mica");
-    } catch (e) { /* keep the solid background */ }
-  }
+  // Pure black for OLED screens (Settings → Appearance).
+  function applyOled() { document.body.classList.toggle("oled", !!settings.oled); }
 
   async function init() {
-    const micaChecked = useMica();
     await loadSettings();
+    applyOled();
     buildChannels(settings.edition || 2);
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
     if (PANEL) {
@@ -1058,20 +1085,21 @@
       $("#miniView").hidden = false;
       engine.onPanelShown(async () => {
         await loadSettings();
+        applyOled();
         chans.forEach(paintLook);
         applyVisibility();
       }).catch(() => {});
     } else {
       setMini(!!settings.mini, false);
     }
-    requestAnimationFrame(frame);
+    wakeMeters();
     engine.onSceneAuto((e) => {
       setScene(e.scene);
       if (!PANEL) toast(`Loaded “${e.scene}” for ${e.app}`);
     }).catch(() => {});
     checkForUpdate();
     // Show the window once the first frame with the real layout is drawn.
-    micaChecked.then(() => requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {}))));
+    requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {})));
     // Names are measured with the real font once it has loaded.
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { lastSizes = ""; sizeToNames(); });
     await engine.start(applyState, applyLevels);
