@@ -75,6 +75,15 @@ pub fn save(s: &Value) -> Result<(), String> {
     })
 }
 
+/// The chosen theme. Before themes there was only "Pure black for OLED" (`oled`).
+pub fn theme(s: &Value) -> String {
+    match s["theme"].as_str() {
+        Some(t) if !t.is_empty() => t.to_string(),
+        _ if flag(s, "oled") => "oled".into(),
+        _ => "console".into(),
+    }
+}
+
 pub fn flag(s: &Value, key: &str) -> bool {
     flag_or(s, key, false)
 }

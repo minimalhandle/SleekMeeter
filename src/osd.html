@@ -6,7 +6,7 @@
   <style>
     @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-SemiBold.woff") format("woff"); font-weight: 600; font-display: block; }
     @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-Bold.woff") format("woff"); font-weight: 700; font-display: block; }
-    /* Console look, matching the mixer; body.oled turns it pure black */
+    /* Matches the mixer's theme (data-theme on body); Console is the default */
     :root {
       --mod-a: #202027; --mod-b: #18181d; --edge: rgba(255,255,255,.07); --line: #2a2a31; --ink: #eeedf2; --muted: #7f7e89;
       --well: #070709; --red: #ff5a5a; --glow: 1;
@@ -14,7 +14,12 @@
       --c-violet: #a58cff; --c-blue: #6ea0ff; --c-cyan: #46c6ec; --c-green: #49d17d;
       color-scheme: dark;
     }
-    body.oled { --mod-a: #000; --mod-b: #000; --edge: transparent; --line: #1f1f24; --well: #000; --glow: .6; }
+    body { --key: #25252c; }
+    body[data-theme="midnight"] { --mod-a: #1a2140; --mod-b: #131933; --edge: rgba(170,195,255,.1); --line: #262f52; --ink: #e9edff; --muted: #7079a3; --well: #04060d; --red: #ff5c7a; --key: #1d2546; }
+    body[data-theme="analog"] { --mod-a: #2c2219; --mod-b: #221a13; --edge: rgba(255,225,190,.08); --line: #3c3026; --ink: #f4e9d6; --muted: #8f7e68; --well: #0a0705; --red: #ff5c47; --key: #30261d; }
+    body[data-theme="studio"] { --mod-a: #fcfbf9; --mod-b: #f2f0ec; --edge: #fff; --line: #d3cfc8; --ink: #1c1b21; --muted: #85838d; --well: #1b1b20; --red: #e5484d; --key: #e8e5e0; --glow: .45; color-scheme: light; }
+    body[data-theme="minimal"] { --mod-a: #1b1b1f; --mod-b: #1b1b1f; --edge: transparent; --line: #2a2a30; --ink: #f2f2f5; --muted: #76767f; --well: #0b0b0d; --key: #232328; --glow: 0; }
+    body[data-theme="oled"] { --mod-a: #000; --mod-b: #000; --edge: transparent; --line: #1f1f24; --well: #000; --glow: .6; --key: #000; }
     [data-color="slate"] { --acc: var(--c-slate); } [data-color="amber"] { --acc: var(--c-amber); }
     [data-color="coral"] { --acc: var(--c-coral); } [data-color="rose"] { --acc: var(--c-rose); }
     [data-color="violet"] { --acc: var(--c-violet); } [data-color="blue"] { --acc: var(--c-blue); }
@@ -31,9 +36,8 @@
     @keyframes pop { from { transform: scale(.96); opacity: 0; } }
     .chip {
       grid-row: 1 / 3; width: 40px; height: 40px; border-radius: 9px; display: grid; place-items: center; color: var(--acc);
-      background: color-mix(in srgb, var(--acc) 15%, #25252c); box-shadow: 0 0 calc(14px * var(--glow)) color-mix(in srgb, var(--acc) 25%, transparent);
+      background: color-mix(in srgb, var(--acc) 15%, var(--key)); box-shadow: 0 0 calc(14px * var(--glow)) color-mix(in srgb, var(--acc) 25%, transparent);
     }
-    body.oled .chip { background: color-mix(in srgb, var(--acc) 12%, #000); }
     .name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .value { font-size: 18px; font-weight: 700; }
     .bar {

@@ -846,14 +846,13 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setOled: "oled", setAutoRestart: "autoRestart",
+    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
       settings[key] = e.target.checked;
       syncChecks();
       saveSettings();
-      if (key === "oled") applyOled();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
     });
   }
@@ -865,6 +864,7 @@
   }
   $("#settingsBtn").addEventListener("click", () => {
     syncChecks();
+    renderThemes();
     renderAbout();
     syncFadeDuck();
     renderHotkeys();
@@ -1117,7 +1117,7 @@
       out.textContent = format(v);
       if (input.classList.contains("level-range")) return; // painted by the live level instead
       const p = ((v - min) / (max - min)) * 100;
-      input.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--well) ${p}%)`);
+      input.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--rail) ${p}%)`);
     };
     input.addEventListener("input", () => { set(+input.value); paint(); saveSettings(); });
     input._sync = () => { input.value = get(); paint(); };
@@ -1195,7 +1195,7 @@
     const input = $("#duckThreshold"), min = +input.min, max = +input.max;
     const p = Math.max(0, Math.min(1, (duckShown - min) / (max - min))) * 100;
     const color = duckShown >= d.threshold ? "var(--amber)" : "var(--led-g)";
-    const bg = `linear-gradient(to right, ${color} ${p.toFixed(1)}%, var(--well) ${p.toFixed(1)}%)`;
+    const bg = `linear-gradient(to right, ${color} ${p.toFixed(1)}%, var(--rail) ${p.toFixed(1)}%)`;
     if (force || bg !== duckDrawn) { duckDrawn = bg; input.style.setProperty("--track-bg", bg); }
   }
 
@@ -1352,7 +1352,7 @@
     const g = $("#recGain"), v = +g.value;
     $("#recGainOut").textContent = fmtDb(v);
     const p = dbToPos(v) * 100;
-    g.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--well) ${p}%)`);
+    g.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--rail) ${p}%)`);
   }
   recBtn.addEventListener("click", () => { recArmKey = ""; recDlg.showModal(); paintRecorder(); });
   recDlg.addEventListener("click", (e) => { if (e.target === recDlg) recDlg.close(); });
@@ -1450,11 +1450,49 @@
 
   /* ---------- start ---------- */
   // Pure black for OLED screens (Settings → Appearance).
-  function applyOled() { document.body.classList.toggle("oled", !!settings.oled); }
+  /* ---------- themes (Settings → Appearance) ---------- */
+  // Each theme is a set of colour and material tokens in styles.css, keyed by data-theme.
+  const THEMES = [
+    ["console", "Console", "Dark hardware desk with amber light"],
+    ["midnight", "Midnight", "Deep blue with periwinkle and mint"],
+    ["analog", "Analog", "Warm walnut and cream, like vintage tape"],
+    ["studio", "Studio", "Light desk with dark meter windows"],
+    ["minimal", "Minimal", "Flat graphite, no glow"],
+    ["oled", "OLED black", "Pure black for OLED screens"],
+  ];
+  // Before themes there was only "Pure black for OLED" (settings.oled).
+  const currentTheme = () => (THEMES.some((t) => t[0] === settings.theme) ? settings.theme : settings.oled ? "oled" : "console");
+  function applyTheme() { document.body.dataset.theme = currentTheme(); }
+  function renderThemes() {
+    const grid = $("#themePicker");
+    if (!grid.childElementCount) {
+      for (const [id, name, about] of THEMES) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "theme-card"; b.dataset.theme = id; b.dataset.color = "amber";
+        b.setAttribute("role", "radio");
+        b.title = about;
+        // A tiny desk in the theme's own colours: two modules with keys, meters and caps.
+        const mod = (lit) => `<span class="tc-mod"><span class="tc-keys"><i class="${lit ? "on a" : ""}"></i><i class="${lit ? "" : "on b"}"></i></span>`
+          + `<span class="tc-fader"><span class="tc-well"><b style="height:${lit ? 62 : 44}%"></b></span><span class="tc-slot"><span class="tc-cap" style="bottom:${lit ? 52 : 34}%"></span></span></span>`
+          + `<span class="tc-mute${lit ? "" : " on"}"></span></span>`;
+        b.innerHTML = `<span class="tc-desk">${mod(true)}${mod(false)}</span><span class="tc-name">${name}</span><span class="tc-about">${about}</span>`;
+        b.addEventListener("click", () => {
+          settings.theme = id;
+          settings.oled = id === "oled"; // older versions read this
+          applyTheme();
+          renderThemes();
+          saveSettings();
+        });
+        grid.appendChild(b);
+      }
+    }
+    const cur = currentTheme();
+    grid.querySelectorAll(".theme-card").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.theme === cur)));
+  }
 
   async function init() {
     await loadSettings();
-    applyOled();
+    applyTheme();
     buildChannels(settings.edition || 2);
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
     if (PANEL) {
@@ -1464,7 +1502,7 @@
       $("#miniView").hidden = false;
       engine.onPanelShown(async () => {
         await loadSettings();
-        applyOled();
+        applyTheme();
         chans.forEach(paintLook);
         applyVisibility();
       }).catch(() => {});
