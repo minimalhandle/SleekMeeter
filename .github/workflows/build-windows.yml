@@ -1,0 +1,30 @@
+name: Build Windows app
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm install
+      - run: npm run build
+      - name: Package portable folder
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist/Sleekmeeter | Out-Null
+          Copy-Item src-tauri/target/release/sleekmeeter.exe dist/Sleekmeeter/Sleekmeeter.exe
+          Copy-Item README.md dist/Sleekmeeter/README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sleekmeeter-portable
+          path: dist/Sleekmeeter/

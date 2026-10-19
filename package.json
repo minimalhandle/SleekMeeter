@@ -1,0 +1,13 @@
+{
+  "name": "sleekmeeter",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build --no-bundle",
+    "preview": "python -m http.server 8000 --directory src"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
