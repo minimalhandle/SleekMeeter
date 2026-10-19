@@ -1,6 +1,6 @@
 [package]
 name = "sleekmeeter"
-version = "0.2.0"
+version = "0.3.0"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
 

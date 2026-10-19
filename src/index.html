@@ -17,6 +17,10 @@
     </span>
     <span class="spacer"></span>
     <span class="scene-now" id="sceneNow" hidden></span>
+    <button class="btn panel-only" id="openMixerBtn" type="button">Open mixer</button>
+    <button class="btn icon panel-only" id="closePanelBtn" type="button" aria-label="Close volume panel" title="Close">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
     <button class="btn full-only" id="scenesBtn" type="button">Scenes</button>
     <button class="btn icon" id="pinBtn" type="button" aria-pressed="false" aria-label="Keep on top" title="Keep on top">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5h-11L10 9.5zM12 13v7.5"/></svg>
@@ -128,6 +132,15 @@
       </section>
     </div>
   </dialog>
+
+  <form class="gain-edit" id="gainEdit" hidden>
+    <label for="gainInput" id="gainLabel">Set level</label>
+    <div class="gain-row">
+      <input id="gainInput" type="text" inputmode="decimal" autocomplete="off" spellcheck="false">
+      <span class="unit">dB</span>
+    </div>
+    <span class="gain-hint" id="gainHint">−60 to +12, Enter to set</span>
+  </form>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

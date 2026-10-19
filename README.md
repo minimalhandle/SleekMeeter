@@ -19,6 +19,7 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | --- | --- |
 | Drag a fader (hold **Shift** for fine moves) | Change level |
 | Double-click a fader | Reset to 0 dB |
+| Right-click a fader (or press Enter on it) | Type an exact level, like `-10`, `-10db` or `+3 dB` |
 | Scroll over a fader (**Alt** for 0.1 dB steps) | Nudge by 1 dB |
 | Focus a fader, then ↑ ↓ / PgUp PgDn / 0 | Keyboard control |
 | Click **A1–A3 / B1–B2** on an input | Route it to that output |
@@ -31,6 +32,10 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | **⋯** menu | Show the Voicemeeter window, restart the audio engine, clear solos |
 
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
+
+### Tray volume panel
+
+Double-click the tray icon to open a small volume panel just above it: one fader and mute button per visible channel. It stays on top and can't be moved or resized; double-click the tray icon again or click **×** to close it, or **Open mixer** for the full window. A single click on the tray icon still shows or hides the mixer, and the tray menu has **Open volume panel** too.
 
 ### Shortcuts and the volume overlay
 

@@ -7,12 +7,14 @@ mod win;
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{
-    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, State, WindowEvent,
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, State, WebviewUrl,
+    WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use vm::{Api, Layout};
@@ -30,6 +32,13 @@ struct Vm {
 struct Settings(Mutex<Value>);
 struct Hotkeys(Mutex<Vec<(Shortcut, Value)>>);
 struct NormalSize(Mutex<Option<LogicalSize<f64>>>);
+/// Tells a single tray click apart from a double-click.
+struct TrayClicks {
+    gen: AtomicU64,
+    last_double: Mutex<Option<Instant>>,
+}
+
+const FLYOUT: &str = "flyout";
 
 fn offline_state(installed: bool) -> Value {
     json!({ "installed": installed, "connected": false })
@@ -377,12 +386,8 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     prev = Some(snap.clone());
                     publish(&app, snap);
                 }
-                if window_visible(&app) {
-                    let _ = app.emit_to(
-                        "main",
-                        "vm-levels",
-                        api.levels(&Layout::for_edition(edition)),
-                    );
+                if window_visible(&app, "main") || window_visible(&app, FLYOUT) {
+                    let _ = app.emit("vm-levels", api.levels(&Layout::for_edition(edition)));
                 }
             }
 
@@ -401,10 +406,11 @@ fn maybe_osd(app: &AppHandle, prev: &Value, next: &Value, settling: bool) {
     if settling || !settings::flag(&app.state::<Settings>().0.lock().unwrap(), "overlay") {
         return;
     }
-    let focused = app
-        .get_webview_window("main")
-        .map(|w| w.is_focused().unwrap_or(false) && w.is_visible().unwrap_or(false))
-        .unwrap_or(false);
+    let focused = ["main", FLYOUT].iter().any(|label| {
+        app.get_webview_window(label)
+            .map(|w| w.is_focused().unwrap_or(false) && w.is_visible().unwrap_or(false))
+            .unwrap_or(false)
+    });
     if focused {
         return;
     }
@@ -444,12 +450,12 @@ fn publish(app: &AppHandle, state: Value) {
     if *last != state {
         *last = state.clone();
         drop(last);
-        let _ = app.emit_to("main", "vm-state", state);
+        let _ = app.emit("vm-state", state);
     }
 }
 
-fn window_visible(app: &AppHandle) -> bool {
-    app.get_webview_window("main")
+fn window_visible(app: &AppHandle, label: &str) -> bool {
+    app.get_webview_window(label)
         .map(|w| w.is_visible().unwrap_or(true) && !w.is_minimized().unwrap_or(false))
         .unwrap_or(false)
 }
@@ -469,6 +475,118 @@ fn toggle_main(app: &AppHandle) {
         } else {
             show_main(app);
         }
+    }
+}
+
+/* ---------------- tray volume panel ("flyout") ---------------- */
+
+/// Panel height in logical pixels, matching the mini-row layout in styles.css.
+fn flyout_size(app: &AppHandle) -> (f64, f64) {
+    let s = app.state::<Settings>().0.lock().unwrap().clone();
+    let shown = |key: &str, n: usize| {
+        (0..n)
+            .filter(|i| {
+                !s["appearance"][format!("{key}-{i}")]["hidden"]
+                    .as_bool()
+                    .unwrap_or(false)
+            })
+            .count() as f64
+    };
+    let edition = app.state::<Vm>().last.lock().unwrap()["edition"]
+        .as_i64()
+        .unwrap_or(2) as i32;
+    let l = Layout::for_edition(edition);
+    let (ins, outs) = (shown("strip", l.strips()), shown("bus", l.buses()));
+    let list = |n: f64| if n == 0.0 { 0.0 } else { 10.0 + 42.0 * n - 2.0 };
+    let gap = if ins > 0.0 && outs > 0.0 { 8.0 } else { 0.0 };
+    (400.0, 50.0 + list(ins) + gap + list(outs) + 14.0)
+}
+
+/// Size the panel and put it next to the tray icon (or bottom-right when opened another way).
+fn place_flyout(app: &AppHandle, w: &WebviewWindow, anchor: Option<PhysicalPosition<f64>>) {
+    let (lw, lh) = flyout_size(app);
+    let _ = w.set_size(LogicalSize::new(lw, lh));
+    let monitors = w.available_monitors().unwrap_or_default();
+    let monitor = anchor
+        .and_then(|a| {
+            monitors.iter().find(|m| {
+                let (p, z) = (m.position(), m.size());
+                a.x >= p.x as f64
+                    && a.x < (p.x + z.width as i32) as f64
+                    && a.y >= p.y as f64
+                    && a.y < (p.y + z.height as i32) as f64
+            })
+        })
+        .cloned()
+        .or_else(|| w.primary_monitor().ok().flatten());
+    let Some(m) = monitor else { return };
+    let s = m.scale_factor();
+    let (mx, my) = (m.position().x as f64, m.position().y as f64);
+    let (mw, mh) = (m.size().width as f64, m.size().height as f64);
+    let (pw, ph) = (lw * s, lh * s);
+    let a = anchor.unwrap_or(PhysicalPosition::new(
+        mx + mw - 40.0 * s,
+        my + mh - 24.0 * s,
+    ));
+    // max/min rather than clamp: never panics when the panel is taller than the screen.
+    let x = (a.x - pw / 2.0)
+        .min(mx + mw - pw - 8.0 * s)
+        .max(mx + 8.0 * s);
+    // Taskbar at the bottom (usual): open above the icon; otherwise below it.
+    let y = if a.y > my + mh / 2.0 {
+        a.y - ph - 28.0 * s
+    } else {
+        a.y + 28.0 * s
+    };
+    let y = y.min(my + mh - ph - 8.0 * s).max(my + 8.0 * s);
+    let _ = w.set_position(PhysicalPosition::new(x as i32, y as i32));
+}
+
+/// Open the panel, or close it when it is already open. Must run on the main thread.
+fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
+    if let Some(w) = app.get_webview_window(FLYOUT) {
+        if w.is_visible().unwrap_or(false) {
+            let _ = w.hide();
+            return;
+        }
+        place_flyout(app, &w, anchor);
+        let _ = app.emit_to(FLYOUT, "flyout-shown", ());
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
+    let (lw, lh) = flyout_size(app);
+    let built = WebviewWindowBuilder::new(app, FLYOUT, WebviewUrl::App("index.html".into()))
+        .title("Sleekmeeter volume")
+        .initialization_script("window.SLEEK_FLYOUT = true;")
+        .inner_size(lw, lh)
+        .resizable(false)
+        .maximizable(false)
+        .minimizable(false)
+        .decorations(false)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .visible(false)
+        .build();
+    if let Ok(w) = built {
+        place_flyout(app, &w, anchor);
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
+
+#[tauri::command]
+fn open_mixer(app: AppHandle) {
+    if let Some(w) = app.get_webview_window(FLYOUT) {
+        let _ = w.hide();
+    }
+    show_main(&app);
+}
+
+#[tauri::command]
+fn flyout_close(app: AppHandle) {
+    if let Some(w) = app.get_webview_window(FLYOUT) {
+        let _ = w.hide();
     }
 }
 
@@ -504,6 +622,10 @@ fn main() {
         .manage(Settings(Mutex::new(settings.clone())))
         .manage(Hotkeys(Mutex::new(Vec::new())))
         .manage(NormalSize(Mutex::new(None)))
+        .manage(TrayClicks {
+            gen: AtomicU64::new(0),
+            last_double: Mutex::new(None),
+        })
         .invoke_handler(tauri::generate_handler![
             vm_snapshot,
             vm_set_float,
@@ -517,30 +639,66 @@ fn main() {
             scene_delete,
             settings_get,
             settings_set,
-            window_mini
+            window_mini,
+            open_mixer,
+            flyout_close
         ])
         .setup(move |app| {
-            // Tray icon: left-click shows/hides the mixer, right-click for the menu.
+            // Tray icon: click shows/hides the mixer, double-click opens the volume panel,
+            // right-click for the menu.
             let show = MenuItem::with_id(app, "show", "Show Sleekmeeter", true, None::<&str>)?;
+            let panel = MenuItem::with_id(app, "panel", "Open volume panel", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit Sleekmeeter", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &quit])?;
+            let menu = Menu::with_items(app, &[&show, &panel, &quit])?;
             let mut tray = TrayIconBuilder::with_id("sleekmeeter")
                 .tooltip("Sleekmeeter")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => show_main(app),
+                    "panel" => toggle_flyout(app, None),
                     "quit" => app.exit(0),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        toggle_main(tray.app_handle());
+                    let app = tray.app_handle().clone();
+                    match event {
+                        TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } => {
+                            let clicks = app.state::<TrayClicks>();
+                            // The second click of a double-click: already handled.
+                            let recent_double = clicks
+                                .last_double
+                                .lock()
+                                .unwrap()
+                                .map(|t| t.elapsed() < Duration::from_millis(500))
+                                .unwrap_or(false);
+                            if recent_double {
+                                return;
+                            }
+                            // Wait briefly so a double-click can cancel the single click.
+                            let gen = clicks.gen.fetch_add(1, Ordering::SeqCst) + 1;
+                            std::thread::spawn(move || {
+                                std::thread::sleep(Duration::from_millis(280));
+                                if app.state::<TrayClicks>().gen.load(Ordering::SeqCst) == gen {
+                                    toggle_main(&app);
+                                }
+                            });
+                        }
+                        TrayIconEvent::DoubleClick {
+                            button: MouseButton::Left,
+                            position,
+                            ..
+                        } => {
+                            let clicks = app.state::<TrayClicks>();
+                            clicks.gen.fetch_add(1, Ordering::SeqCst);
+                            *clicks.last_double.lock().unwrap() = Some(Instant::now());
+                            toggle_flyout(&app, Some(position));
+                        }
+                        _ => {}
                     }
                 });
             if let Some(icon) = app.default_window_icon() {
