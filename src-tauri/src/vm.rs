@@ -385,6 +385,7 @@ impl Api {
             "a": a,
             "b": b,
             "fileType": self.get_float("Recorder.FileType").map(|v| v.round() as i32),
+            "bits": self.get_float("Recorder.bitResolution").map(|v| v.round() as i32),
             "gain": self.get_float("Recorder.gain").map(|v| (v * 10.0).round() / 10.0),
             "playing": opt("Recorder.play"),
             "recording": opt("Recorder.record"),

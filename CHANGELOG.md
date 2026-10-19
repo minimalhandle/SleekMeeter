@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.6.1
+- Fixed: MP3 recordings came out loud and badly distorted. Voicemeeter's MP3 encoder reads its audio as 16-bit, so MP3 now always records at 16-bit (the recorder's other formats keep the bit depth you pick, 24-bit by default)
 - Only one Sleekmeeter runs at a time: starting it again (for example from a pinned taskbar icon after closing the window to the tray) brings the running one back instead of opening a second copy
 - The recorder shows how loud the recording is, and warns when it goes over 0 dB (which distorts the file) or when nothing is selected to record
 

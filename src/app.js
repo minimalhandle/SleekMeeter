@@ -1241,6 +1241,10 @@
     list.querySelectorAll(".arm").forEach((b) => b.setAttribute("aria-pressed", String(!!armed[+b.dataset.i])));
     const fmt = $("#recFormat");
     if (rec.fileType != null && document.activeElement !== fmt) fmt.value = String(rec.fileType);
+    // MP3 is always made from 16-bit audio (see setRecFormat); bit depth is for the other formats.
+    $("#recBitsRow").hidden = rec.fileType === 100;
+    const bits = $("#recBits");
+    if (rec.bits != null && document.activeElement !== bits && rec.fileType !== 100) bits.value = String(rec.bits);
     // Which outputs the player plays into.
     const out = $("#recOut");
     if (out.childElementCount !== layout.buses.length) {
@@ -1324,6 +1328,11 @@
   recDlg.addEventListener("click", (e) => { if (e.target === recDlg) recDlg.close(); });
   recDlg.querySelectorAll("[data-rec]").forEach((b) => b.addEventListener("click", async () => {
     try {
+      // Recording MP3 at a higher bit depth distorts: put it right first.
+      if (b.dataset.rec === "record" && rec && rec.fileType === MP3 && rec.bits !== 16) {
+        await engine.setFloat("Recorder.bitResolution", 16);
+        rec.bits = 16;
+      }
       const v = await engine.recorder(b.dataset.rec);
       if (rec && v) { Object.assign(rec, v); recHoldUntil = performance.now() + 900; paintRecorder(); }
     } catch (e) { fail(e); }
@@ -1337,7 +1346,28 @@
       paintRecorder();
     });
   }
-  $("#recFormat").addEventListener("change", (e) => { if (rec) rec.fileType = +e.target.value; sendFloat("Recorder.FileType", +e.target.value); });
+  // Voicemeeter's MP3 encoder reads its audio as 16-bit: at 24 or 32-bit it comes out about
+  // 48 dB too loud and badly distorted. So MP3 always records at 16-bit, and the other formats
+  // go back to the bit depth picked for them.
+  const MP3 = 100;
+  function recBitsFor(type) { return type === MP3 ? 16 : +(settings.recorderBits || 24); }
+  async function setRecFormat(type) {
+    if (!rec) return;
+    rec.fileType = type;
+    rec.bits = recBitsFor(type);
+    recHoldUntil = performance.now() + 600;
+    try {
+      await engine.setFloat("Recorder.bitResolution", rec.bits);
+      await engine.setFloat("Recorder.FileType", type);
+    } catch (e) { fail(e); }
+    paintRecorder();
+  }
+  $("#recFormat").addEventListener("change", (e) => setRecFormat(+e.target.value));
+  $("#recBits").addEventListener("change", (e) => {
+    settings.recorderBits = +e.target.value;
+    saveSettings();
+    setRecFormat(rec ? rec.fileType : 1);
+  });
   $("#recGain").addEventListener("input", (e) => { if (rec) rec.gain = +e.target.value; paintRecGain(); sendFloat("Recorder.gain", +e.target.value); });
   $("#recGain").addEventListener("dblclick", (e) => { e.target.value = 0; if (rec) rec.gain = 0; paintRecGain(); sendFloat("Recorder.gain", 0); });
   function loadedFile(name) {
