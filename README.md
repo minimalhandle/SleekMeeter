@@ -6,6 +6,8 @@ A modern face for Voicemeeter Banana. Sleekmeeter sits on top of Voicemeeter and
 
 **Tray volume panel:** double-click the tray icon for a compact panel with every channel, right above the tray.
 
+![The tray volume panel: one slim fader and mute button per channel](docs/screenshots/volume-panel.png)
+
 ## Requirements
 
 - Windows 10 or 11 (WebView2 comes with both)
