@@ -35,12 +35,12 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | **Rec** | Open Voicemeeter's recorder (Banana and Potato) |
 | Pin button | Keep Sleekmeeter on top of other windows |
 | Mini mode button | Switch to a small window with one row per channel |
-| Gear button | Settings: OLED pure black, fades, talk-over ducking, audio devices, startup, volume overlay, updates and global shortcuts |
+| Gear button | Settings: themes, fades, talk-over ducking, audio devices, startup, volume overlay, updates and global shortcuts |
 | **⋯** menu | Show the Voicemeeter window, restart the audio engine, clear solos |
 
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
-For OLED screens, turn on **Settings → Appearance → Pure black for OLED screens**. Everything that isn't information turns true black, including the tray panel and the volume overlay.
+Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Midnight** (deep blue), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows), **Minimal** (flat graphite, no glow) or **OLED black**, where everything that isn't information turns true black. The tray panel and the volume overlay follow the theme too.
 
 ![The mixer in pure black for OLED screens](docs/screenshots/oled.png)
 

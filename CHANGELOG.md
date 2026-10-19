@@ -1,6 +1,7 @@
 # Changelog
 
-## 0.6.2
+## 0.7.0
+- **Themes** (Settings → Appearance): Console, Midnight, Analog, Studio (light), Minimal and OLED black. Each one previews itself in the picker, and the tray panel and volume overlay follow the theme you pick. If you used "Pure black for OLED", you start on OLED black
 - **Settings → About** shows the Sleekmeeter version you're running and the Voicemeeter it's connected to; the tray icon's tooltip shows the version too
 - Sleekmeeter keeps a log (`logs/sleekmeeter.log` next to the exe) of what it does and anything that goes wrong: starting up, connecting to Voicemeeter, scenes, the recorder, devices coming and going, engine restarts, failed actions and crashes. **Open log file** in Settings → About shows it, ready to attach to a bug report. It never grows past about 2 MB
 

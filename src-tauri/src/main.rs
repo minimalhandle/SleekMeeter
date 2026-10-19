@@ -481,11 +481,11 @@ fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) 
         return;
     };
     place_osd(app, &osd);
-    let oled = settings::flag(&app.state::<Settings>().0.lock().unwrap(), "oled");
+    let theme = settings::theme(&app.state::<Settings>().0.lock().unwrap());
     let _ = app.emit_to(
         "osd",
         "osd",
-        json!({ "oled": oled, "name": name, "text": text, "on": on, "icon": icon,
+        json!({ "theme": theme, "name": name, "text": text, "on": on, "icon": icon,
                 "color": if icon == "record" { "rose" } else { "amber" } }),
     );
     let _ = osd.show();
@@ -550,14 +550,12 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
     };
 
     place_osd(app, &osd);
-    let oled = app.state::<Settings>().0.lock().unwrap()["oled"]
-        .as_bool()
-        .unwrap_or(false);
+    let theme = settings::theme(&app.state::<Settings>().0.lock().unwrap());
     let _ = app.emit_to(
         "osd",
         "osd",
         json!({
-            "oled": oled,
+            "theme": theme,
             "name": name,
             "gain": ch["gain"],
             "mute": ch["mute"],

@@ -24,7 +24,7 @@
     document.getElementById("value").textContent = words ? p.text : p.mute ? "Muted" : fmt(+p.gain || 0);
     const pos = words ? (p.on ? 1 : 0) : dbToPos(+p.gain || 0);
     document.getElementById("fill").style.transform = `scaleX(${pos.toFixed(3)})`;
-    document.body.classList.toggle("oled", !!p.oled);
+    document.body.dataset.theme = p.theme || (p.oled ? "oled" : "console");
     card.style.animation = "none"; void card.offsetWidth; card.style.animation = "";
   }
   window.showOsd = show;
