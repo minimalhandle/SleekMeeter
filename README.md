@@ -37,6 +37,8 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | Gear button | Settings: startup, volume overlay and global shortcuts |
 | **⋯** menu | Show the Voicemeeter window, restart the audio engine, clear solos |
 
+Each strip is as wide as its name, so names show in full; the input and output sections stay centred in the window. On Windows 11, Sleekmeeter uses the Mica backdrop like Windows' own apps, and the tray panel uses Acrylic like the volume flyout.
+
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
 
 ### Tray volume panel
@@ -98,6 +100,6 @@ Sleekmeeter is released under the MIT License (see `LICENSE`).
 
 ## Credits
 
-Uses the [Voicemeeter Remote API](https://github.com/vburel2018/Voicemeeter-SDK) by Vincent Burel / VB-Audio, free to use in projects that interact with Voicemeeter. Voicemeeter itself is donationware from VB-Audio. Font: Barlow Semi Condensed (SIL Open Font License, see `src/fonts/OFL.txt`).
+Uses the [Voicemeeter Remote API](https://github.com/vburel2018/Voicemeeter-SDK) by Vincent Burel / VB-Audio, free to use in projects that interact with Voicemeeter. Voicemeeter itself is donationware from VB-Audio.
 
 Sleekmeeter is an independent project and isn't affiliated with or endorsed by VB-Audio. Voicemeeter is a trademark of VB-Audio Software.

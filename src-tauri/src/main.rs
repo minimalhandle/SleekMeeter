@@ -14,6 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::window::{Effect, EffectsBuilder};
 use tauri::{
     AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, RunEvent, State, WebviewUrl,
     WebviewWindow, WebviewWindowBuilder, WindowEvent,
@@ -34,6 +35,10 @@ struct Vm {
 struct Settings(Mutex<Value>);
 struct Hotkeys(Mutex<Vec<(Shortcut, Value)>>);
 struct NormalSize(Mutex<Option<LogicalSize<f64>>>);
+/// Last size the tray panel asked for (logical px), so it reopens at the right size.
+struct PanelSize(Mutex<Option<(f64, f64)>>);
+/// Show the main window once the page has drawn (avoids a blank or see-through flash).
+struct ShowOnReady(std::sync::atomic::AtomicBool);
 /// Tells a single tray click apart from a double-click.
 struct TrayClicks {
     gen: AtomicU64,
@@ -193,7 +198,7 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
 /* ---------------- window: mini mode ---------------- */
 
 #[tauri::command]
-fn window_mini(app: AppHandle, mini: bool, rows: u32) -> Result<(), String> {
+fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Result<(), String> {
     let w = app.get_webview_window("main").ok_or("No main window")?;
     let saved = app.state::<NormalSize>();
     if mini {
@@ -206,8 +211,9 @@ fn window_mini(app: AppHandle, mini: bool, rows: u32) -> Result<(), String> {
             }
         }
         let h = 64.0 + 44.0 * rows.max(1) as f64;
+        let width = width.unwrap_or(400.0).clamp(300.0, 900.0);
         let _ = w.set_min_size(Some(LogicalSize::new(300.0, 120.0)));
-        w.set_size(LogicalSize::new(400.0, h))
+        w.set_size(LogicalSize::new(width, h))
             .map_err(|e| e.to_string())?;
     } else {
         let size = saved
@@ -503,6 +509,9 @@ fn toggle_main(app: &AppHandle) {
 
 /// Panel height in logical pixels, matching the mini-row layout in styles.css.
 fn flyout_size(app: &AppHandle) -> (f64, f64) {
+    if let Some(size) = *app.state::<PanelSize>().0.lock().unwrap() {
+        return size;
+    }
     let s = app.state::<Settings>().0.lock().unwrap().clone();
     let shown = |key: &str, n: usize| {
         (0..n)
@@ -587,6 +596,9 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         .decorations(false)
         .always_on_top(true)
         .skip_taskbar(true)
+        .transparent(true)
+        // Acrylic like Windows' own volume flyout (the page keeps a solid background on Windows 10).
+        .effects(EffectsBuilder::new().effect(Effect::Acrylic).build())
         .visible(false)
         .build();
     if let Ok(w) = built {
@@ -614,15 +626,25 @@ fn flyout_close(app: AppHandle) {
 /// The panel measures its own content and asks to be exactly that tall.
 /// Keeps the edge nearest the taskbar where it is, so the panel stays snug against the tray.
 #[tauri::command]
-fn panel_fit(window: WebviewWindow, height: f64) -> Result<(), String> {
+fn panel_fit(
+    app: AppHandle,
+    window: WebviewWindow,
+    height: f64,
+    width: Option<f64>,
+) -> Result<(), String> {
     if window.label() != FLYOUT || !(60.0..=2000.0).contains(&height) {
         return Ok(());
     }
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
     let inner = window.inner_size().map_err(|e| e.to_string())?;
     let pos = window.outer_position().map_err(|e| e.to_string())?;
-    let delta = (height * scale).round() as i32 - inner.height as i32;
-    if delta.abs() <= 1 {
+    let width = width
+        .unwrap_or(inner.width as f64 / scale)
+        .clamp(300.0, 800.0);
+    *app.state::<PanelSize>().0.lock().unwrap() = Some((width, height));
+    let dh = (height * scale).round() as i32 - inner.height as i32;
+    let dw = (width * scale).round() as i32 - inner.width as i32;
+    if dh.abs() <= 1 && dw.abs() <= 1 {
         return Ok(());
     }
     let opens_upward = window
@@ -632,12 +654,20 @@ fn panel_fit(window: WebviewWindow, height: f64) -> Result<(), String> {
         .map(|m| (pos.y as f64) > m.position().y as f64 + m.size().height as f64 / 3.0)
         .unwrap_or(true);
     window
-        .set_size(LogicalSize::new(inner.width as f64 / scale, height))
+        .set_size(LogicalSize::new(width, height))
         .map_err(|e| e.to_string())?;
-    if opens_upward {
-        let _ = window.set_position(PhysicalPosition::new(pos.x, pos.y - delta));
-    }
+    // Grow around the same centre, and upward when the panel sits above the taskbar.
+    let y = if opens_upward { pos.y - dh } else { pos.y };
+    let _ = window.set_position(PhysicalPosition::new(pos.x - dw / 2, y));
     Ok(())
+}
+
+/// The page has drawn: show the main window now unless Sleekmeeter started in the tray.
+#[tauri::command]
+fn ui_ready(window: WebviewWindow, show: State<'_, ShowOnReady>) {
+    if window.label() == "main" && show.0.swap(false, Ordering::SeqCst) {
+        let _ = window.show();
+    }
 }
 
 /// Save the running edition so "Start Voicemeeter" launches the right one next time.
@@ -786,6 +816,8 @@ fn main() {
         .manage(Settings(Mutex::new(settings.clone())))
         .manage(Hotkeys(Mutex::new(Vec::new())))
         .manage(NormalSize(Mutex::new(None)))
+        .manage(PanelSize(Mutex::new(None)))
+        .manage(ShowOnReady(std::sync::atomic::AtomicBool::new(false)))
         .manage(TrayClicks {
             gen: AtomicU64::new(0),
             last_double: Mutex::new(None),
@@ -808,6 +840,7 @@ fn main() {
             flyout_close,
             panel_fit,
             check_update,
+            ui_ready,
             open_release,
             running_apps
         ])
@@ -881,8 +914,18 @@ fn main() {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.set_always_on_top(settings::flag(&settings, "alwaysOnTop"));
                 // Started with Windows and asked to stay in the tray: don't show the window.
+                // Otherwise show it once the page has drawn (ui_ready), or after 3 s at the latest.
                 if !(autostarted && settings::flag(&settings, "startInTray")) {
-                    let _ = w.show();
+                    app.state::<ShowOnReady>().0.store(true, Ordering::SeqCst);
+                    let late = handle.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(Duration::from_secs(3));
+                        if late.state::<ShowOnReady>().0.swap(false, Ordering::SeqCst) {
+                            if let Some(w) = late.get_webview_window("main") {
+                                let _ = w.show();
+                            }
+                        }
+                    });
                 }
             }
 
