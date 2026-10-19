@@ -157,7 +157,7 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 26%, transparent);
 .strip.is-hidden > :not(.head) { opacity: .35; }
 .strip.is-hidden .titles::after { content: "Hidden"; font-size: 11px; color: var(--muted); }
 .head { display: flex; gap: 8px; align-items: center; height: 40px; min-width: 0; }
-.titles { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.titles { display: flex; flex-direction: column; min-width: 0; width: 0; flex: 1; }
 .name {
   border: 0; background: none; padding: 0; text-align: left;
   font-size: var(--s1); font-weight: 600; line-height: 1.2;
@@ -173,21 +173,21 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 26%, transparent);
 .bus[data-kind="virt"] { --busc: var(--cyan); }
 
 /* routing: amber for hardware outs, cyan for virtual outs */
-.routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.routes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 .route, .tog {
-  height: 26px; border-radius: 6px; border: 1px solid var(--line);
+  height: 26px; padding: 0; min-width: 0; border-radius: 6px; border: 1px solid var(--line);
   background: transparent; font-size: var(--s-1); font-weight: 600; color: var(--muted);
   transition: background-color .08s, color .08s, border-color .08s;
 }
 .route:hover, .tog:hover { color: var(--text); border-color: color-mix(in srgb, var(--text) 30%, var(--line)); }
 .route.a { --c: var(--amber); }
 .route.b { --c: var(--cyan); }
-.route.b[data-bus="3"] { grid-column: 1; }
+.route.first-b { grid-column: 1; }
 .route[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--on-ink); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 30%, transparent); }
-.modes { grid-template-columns: 1fr 1fr; align-content: start; height: 56px; }
+.modes { grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; height: 56px; }
 .modes .tog[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
 
-.toggles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; flex: none; }
+.toggles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; flex: none; }
 .toggles .tog { height: 30px; padding: 0; }
 .tog.wide { grid-column: 1 / -1; }
 .tog.mute[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; box-shadow: 0 0 12px color-mix(in srgb, var(--red) 35%, transparent); }
@@ -397,6 +397,20 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bo
 .scene-list .del { color: var(--muted); }
 .scene-list .empty { color: var(--muted); padding: 10px 0; }
 .scene-save { display: flex; gap: 8px; }
+.dlg.scenes { width: min(600px, calc(100vw - 32px)); }
+.rules { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.rules h3 { margin: 0; font-size: var(--s0); font-weight: 600; }
+.rules .hint { margin: 0; }
+.rule-head, .rule { display: grid; grid-template-columns: 1.25fr 1fr 1fr 32px; gap: 6px; width: 100%; align-items: center; }
+.rule-head { font-size: var(--s-1); color: var(--muted); }
+.rule-list { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.rule input {
+  height: 34px; min-width: 0; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); user-select: text;
+}
+.update-btn { border-color: color-mix(in srgb, var(--m-low) 55%, var(--line)); color: var(--m-low); }
+.update-menu { width: 260px; padding: 12px; }
+.update-menu p { margin: 0 0 8px; color: var(--muted); }
+.update-menu button:first-of-type { font-weight: 600; color: var(--text); }
 .scene-save input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); user-select: text; }
 
 /* ---------- toast ---------- */
@@ -406,6 +420,16 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bo
   opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- dense layout for Potato's 16 channels ---------- */
+body.dense { --strip-w: 80px; }
+.dense .strip { padding: 4px 5px 2px; gap: 8px; }
+.dense .fader { grid-template-columns: 20px 34px; gap: 8px; }
+.dense .head { gap: 6px; }
+.dense .chip:not(.small):not(.big) { width: 26px; height: 26px; border-radius: 8px; }
+.dense .name { font-size: var(--s0); }
+.dense .route, .dense .toggles .tog { font-size: 11px; }
+.dense .thumb { left: -6px; right: -6px; }
 
 @media (max-width: 700px) {
   :root { --strip-w: 96px; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+- Works with Voicemeeter Standard and Potato as well as Banana; the layout adapts to the edition you run, with a denser layout for Potato's 16 channels
+- **Start Voicemeeter** launches the edition you used last
+- Update notifications: a header button when a newer release is on GitHub, with an option to skip a version or turn the check off
+- Switch scenes automatically when an app starts or closes, set up in **Scenes → Switch automatically**
+
 ## 0.3.1
 - Tray volume panel sizes itself to its content, no empty space at the bottom
 - Screenshots in the README

@@ -8,28 +8,31 @@
  *   getSettings() / saveSettings(s) -> {problems:[...]}
  *   windowMini(mini, rows)     resize the window for mini mode
  *   openMixer() / closePanel() / onPanelShown(cb)   the tray volume panel
+ *   checkUpdate() -> {current, latest, newer, url} / openRelease(url)
+ *   runningApps() / onSceneAuto(cb)   automatic scene switching
  *
  * Inside the Tauri app this goes to the Rust bridge (VoicemeeterRemote64.dll).
- * In a plain browser it runs a simulated Voicemeeter Banana so the UI can be previewed.
+ * In a plain browser it runs a simulated Voicemeeter so the UI can be previewed
+ * (?edition=1 Standard, 2 Banana, 3 Potato; ?offline; ?panel; ?update).
  */
 (function () {
   "use strict";
 
-  // Voicemeeter Banana layout (see VoicemeeterRemote.h): 3 hardware + 2 virtual strips, A1–A3 + B1–B2.
-  const LAYOUT = {
-    strips: [
-      { kind: "hw", fallback: "Hardware input 1", icon: "mic" },
-      { kind: "hw", fallback: "Hardware input 2", icon: "wave" },
-      { kind: "hw", fallback: "Hardware input 3", icon: "wave" },
-      { kind: "virt", fallback: "Voicemeeter Input", icon: "desktop" },
-      { kind: "virt", fallback: "Voicemeeter AUX", icon: "music" },
-    ],
-    buses: [
-      { id: "A1", kind: "hw", icon: "headphones" }, { id: "A2", kind: "hw", icon: "speaker" },
-      { id: "A3", kind: "hw", icon: "speaker" },
-      { id: "B1", kind: "virt", icon: "stream" }, { id: "B2", kind: "virt", icon: "stream" },
-    ],
-  };
+  // Strip and bus counts per edition (see VoicemeeterRemote.h):
+  // Standard 2+1 inputs, A+B; Banana 3+2, A1–A3 + B1–B2; Potato 5+3, A1–A5 + B1–B3.
+  const COUNTS = { 1: [2, 1, 1, 1], 2: [3, 2, 3, 2], 3: [5, 3, 5, 3] };
+  const VIRTUAL_INPUTS = [["Voicemeeter Input", "desktop"], ["Voicemeeter AUX", "music"], ["Voicemeeter VAIO3", "chat"]];
+  function layoutFor(edition) {
+    const ed = COUNTS[edition] ? edition : 2;
+    const [hs, vs, hb, vb] = COUNTS[ed];
+    const single = ed === 1; // Standard names its buses just A and B
+    const strips = [], buses = [];
+    for (let i = 0; i < hs; i++) strips.push({ kind: "hw", fallback: `Hardware input ${i + 1}`, icon: i === 0 ? "mic" : "wave" });
+    for (let j = 0; j < vs; j++) strips.push({ kind: "virt", fallback: VIRTUAL_INPUTS[j][0], icon: VIRTUAL_INPUTS[j][1] });
+    for (let i = 0; i < hb; i++) buses.push({ id: single ? "A" : `A${i + 1}`, param: `A${i + 1}`, kind: "hw", icon: i === 0 ? "headphones" : "speaker" });
+    for (let j = 0; j < vb; j++) buses.push({ id: single ? "B" : `B${j + 1}`, param: `B${j + 1}`, kind: "virt", icon: "stream" });
+    return { edition: ed, strips, buses };
+  }
   const BUS_MODES = [
     ["normal", "Normal"], ["Amix", "Mix down A"], ["Bmix", "Mix down B"], ["Repeat", "Repeat"],
     ["Composite", "Composite"], ["TVMix", "TV mix"], ["UpMix21", "Up mix 2.1"], ["UpMix41", "Up mix 4.1"],
@@ -45,6 +48,7 @@
     ],
     startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
     overlay: true, alwaysOnTop: false, mini: false,
+    sceneRules: [], checkUpdates: true, skippedVersion: "",
   };
 
   /* ---------------- Tauri (real Voicemeeter) ---------------- */
@@ -76,6 +80,10 @@
     closePanel() { return this.invoke("flyout_close"); }
     onPanelShown(cb) { return this.listen("flyout-shown", cb); }
     fitPanel(height) { return this.invoke("panel_fit", { height }); }
+    checkUpdate() { return this.invoke("check_update"); }
+    openRelease(url) { return this.invoke("open_release", { url }); }
+    runningApps() { return this.invoke("running_apps"); }
+    onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
   }
 
   /* ---------------- Simulated Voicemeeter Banana ---------------- */
@@ -83,25 +91,44 @@
     constructor() {
       this.simulated = true;
       const offline = /[?&]offline\b/.test(location.search);
+      const em = /[?&]edition=(\d)/.exec(location.search);
+      this.layout = layoutFor(em ? +em[1] : 2);
+      const L = this.layout;
+      const sampleStrips = [
+        { label: "Mic", device: "Shure MV7", gain: -2.5, mono: true, comp: 3.5, gate: 2 },
+        { label: "Guitar", device: "Focusrite Scarlett 2i2", gain: -8, pan: -0.15 },
+        { label: "", device: "", gain: 0, mute: true },
+        { label: "Synth", device: "Arturia MiniFuse", gain: -10 },
+        { label: "", device: "", gain: 0, mute: true },
+      ];
+      const sampleVirt = [
+        { label: "Desktop", gain: -4, eq: [1.5, 0, -1] },
+        { label: "Discord", gain: -6, eq: [0, 2, 0] },
+        { label: "Game", gain: -9, eq: [0, 0, 0] },
+      ];
+      const hs = L.strips.filter((x) => x.kind === "hw").length;
+      const hb = L.buses.filter((x) => x.kind === "hw").length;
+      const vb = L.buses.length - hb;
+      const strip = (base, i) => Object.assign({
+        label: "", device: "", gain: 0, mute: false, solo: false, mono: false, mc: false,
+        a: Array.from({ length: hb }, (_, k) => (k === 0 && !base.mute ? 1 : 0)),
+        b: Array.from({ length: vb }, (_, k) => ((i === 0 && k === 0) || (i === hs && k === vb - 1) ? 1 : 0)),
+        pan: 0, comp: 0, gate: 0, eq: [],
+      }, base);
+      const sampleBuses = [
+        { label: "Headphones", device: "Realtek Audio", gain: -3 },
+        { label: "Speakers", device: "LG UltraGear", gain: -12, mute: true, eq: true },
+        { label: "", device: "" }, { label: "", device: "" }, { label: "", device: "" },
+      ];
+      const sampleVBuses = [{ label: "Stream mic" }, { label: "Stream mix", gain: -1.5 }, { label: "Recording" }];
+      const bus = (base) => Object.assign({ label: "", device: "", gain: 0, mute: false, mono: false, eq: false, mode: "normal" }, base);
       this.state = {
         installed: true,
         connected: !offline,
-        edition: 2,
-        version: "2.1.1.9",
-        strips: [
-          { label: "Mic", device: "Shure MV7", gain: -2.5, mute: false, solo: false, mono: true, mc: false, a: [1, 0, 0], b: [1, 0], pan: 0, comp: 3.5, gate: 2, eq: [] },
-          { label: "Guitar", device: "Focusrite Scarlett 2i2", gain: -8, mute: false, solo: false, mono: false, mc: false, a: [1, 0, 0], b: [0, 0], pan: -0.15, comp: 0, gate: 0, eq: [] },
-          { label: "", device: "", gain: 0, mute: true, solo: false, mono: false, mc: false, a: [0, 0, 0], b: [0, 0], pan: 0, comp: 0, gate: 0, eq: [] },
-          { label: "Desktop", device: "", gain: -4, mute: false, solo: false, mono: false, mc: false, a: [1, 0, 0], b: [0, 1], pan: 0, comp: 0, gate: 0, eq: [1.5, 0, -1] },
-          { label: "Discord", device: "", gain: -6, mute: false, solo: false, mono: false, mc: false, a: [1, 0, 0], b: [0, 0], pan: 0, comp: 0, gate: 0, eq: [0, 2, 0] },
-        ],
-        buses: [
-          { label: "Headphones", device: "Realtek Audio", gain: -3, mute: false, mono: false, eq: false, mode: "normal" },
-          { label: "Speakers", device: "LG UltraGear", gain: -12, mute: true, mono: false, eq: true, mode: "normal" },
-          { label: "", device: "", gain: 0, mute: false, mono: false, eq: false, mode: "normal" },
-          { label: "Stream mic", device: "", gain: 0, mute: false, mono: false, eq: false, mode: "normal" },
-          { label: "Stream mix", device: "", gain: -1.5, mute: false, mono: false, eq: false, mode: "normal" },
-        ],
+        edition: L.edition,
+        version: { 1: "1.1.1.9", 2: "2.1.1.9", 3: "3.1.1.9" }[L.edition],
+        strips: L.strips.map((x, i) => strip(x.kind === "hw" ? sampleStrips[i] : sampleVirt[i - hs], i)),
+        buses: L.buses.map((x, j) => bus(x.kind === "hw" ? sampleBuses[j] : sampleVBuses[j - hb])),
       };
       this.scenes = ["Streaming", "Gaming", "Late night"];
       this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -138,7 +165,8 @@
       if (m) {
         const obj = (m[1] === "Strip" ? this.state.strips : this.state.buses)[+m[2]];
         const key = m[3];
-        const routes = { A1: ["a", 0], A2: ["a", 1], A3: ["a", 2], B1: ["b", 0], B2: ["b", 1] };
+        const rm = /^([AB])(\d)$/.exec(key);
+        const routes = rm ? { [key]: [rm[1].toLowerCase(), +rm[2] - 1] } : {};
         const simple = { Gain: "gain", Mute: "mute", Solo: "solo", Mono: "mono", MC: "mc", Pan_x: "pan", Comp: "comp", Gate: "gate", "EQ.on": "eq" };
         if (routes[key]) obj[routes[key][0]][routes[key][1]] = value ? 1 : 0;
         else if (/^EQGain[123]$/.test(key)) obj.eq[+key.slice(-1) - 1] = value;
@@ -200,19 +228,37 @@
     closePanel() { return Promise.resolve(); }
     onPanelShown() { return Promise.resolve(); }
     fitPanel() { return Promise.resolve(); }
+    checkUpdate() {
+      const newer = /[?&]update\b/.test(location.search);
+      return Promise.resolve({ current: "0.4.0", latest: newer ? "0.4.1" : "0.4.0", newer,
+        url: "https://github.com/minimalhandle/SleekMeeter/releases/tag/v0.4.1" });
+    }
+    openRelease() { return Promise.resolve(); }
+    runningApps() {
+      return Promise.resolve(["discord.exe", "explorer.exe", "obs64.exe", "spotify.exe", "steam.exe", "valorant.exe"]);
+    }
+    onSceneAuto() { return Promise.resolve(); }
 
     // Synthetic program material: speech-like mic, strummed guitar, music on desktop, chatter on Discord.
     levels(t) {
       const n = (f, ph) => 0.5 + 0.5 * Math.sin(t * f + ph);
       const speech = (n(9, 0) * n(2.3, 1) > 0.35 ? 1 : 0.15) * (0.55 + 0.45 * n(17, 2));
-      const raw = [
+      const st = this.state;
+      const hwSignal = [
         -20 + 22 * speech - 6,
         -18 + 10 * Math.pow(n(0.9, 0), 6) - 6 * ((t * 1.1) % 1),
         -90,
+        -20 + 6 * n(1.7, 0.4),
+        -90,
+      ];
+      const virtSignal = [
         -12 + 4 * n(3.1, 0.2) + 2 * n(11, 1),
         (n(0.7, 2) > 0.55 ? -16 + 8 * n(13, 0) : -70),
+        -14 + 5 * n(4.3, 1.1),
       ];
-      const st = this.state;
+      const hs = this.layout.strips.filter((x) => x.kind === "hw").length;
+      const hb = this.layout.buses.filter((x) => x.kind === "hw").length;
+      const raw = st.strips.map((_, i) => (i < hs ? hwSignal[i] : virtSignal[i - hs]));
       const post = raw.map((db, i) => db + st.strips[i].gain);
       const inputs = post.map((db, i) => {
         const w = i === 0 ? 0 : 1.4 * Math.sin(t * 5 + i);
@@ -220,8 +266,8 @@
         return [db + w - p, db - w + p + (st.strips[i].mono ? w * 2 : 0)];
       });
       const outputs = st.buses.map((bus, j) => {
-        const isA = j < 3;
-        const k = isA ? j : j - 3;
+        const isA = j < hb;
+        const k = isA ? j : j - hb;
         let pw = 0;
         st.strips.forEach((s, i) => {
           if (s.mute) return;
@@ -236,7 +282,7 @@
   }
 
   window.Sleekmeeter = {
-    LAYOUT, BUS_MODES, DEFAULT_SETTINGS,
+    layoutFor, BUS_MODES, DEFAULT_SETTINGS,
     createEngine: () => (window.__TAURI__ ? new TauriEngine() : new MockEngine()),
   };
 })();

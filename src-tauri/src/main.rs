@@ -1,7 +1,9 @@
 // Hide the console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod apps;
 mod settings;
+mod update;
 mod vm;
 mod win;
 
@@ -68,8 +70,17 @@ fn vm_set_string(vm: State<'_, Vm>, name: String, value: String) -> Result<(), S
 }
 
 #[tauri::command]
-fn vm_launch(vm: State<'_, Vm>) -> Result<(), String> {
-    api(&vm)?.run(2) // Voicemeeter Banana
+fn vm_launch(vm: State<'_, Vm>, s: State<'_, Settings>) -> Result<(), String> {
+    let edition = last_edition(&s.0.lock().unwrap());
+    api(&vm)?.run(edition)
+}
+
+/// The edition last seen running (Standard 1, Banana 2, Potato 3); Banana until we know.
+fn last_edition(s: &Value) -> i32 {
+    match s["edition"].as_i64() {
+        Some(e @ 1..=3) => e as i32,
+        _ => 2,
+    }
 }
 
 #[tauri::command]
@@ -166,7 +177,15 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.set_always_on_top(settings::flag(&value, "alwaysOnTop"));
     }
-    *app.state::<Settings>().0.lock().unwrap() = value.clone();
+    // The edition is recorded by the poller; keep it even if the window's copy is older.
+    let mut value = value;
+    let state = app.state::<Settings>();
+    let mut current = state.0.lock().unwrap();
+    if !current["edition"].is_null() {
+        value["edition"] = current["edition"].clone();
+    }
+    *current = value.clone();
+    drop(current);
     settings::save(&value)?;
     Ok(json!({ "problems": problems }))
 }
@@ -292,10 +311,11 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
     let fallback = if kind == "strip" {
         if i < l.hw_strips {
             format!("Hardware input {}", i + 1)
-        } else if i == l.hw_strips {
-            "Voicemeeter Input".into()
         } else {
-            "Voicemeeter AUX".into()
+            ["Voicemeeter Input", "Voicemeeter AUX", "Voicemeeter VAIO3"]
+                .get(i - l.hw_strips)
+                .unwrap_or(&"Virtual input")
+                .to_string()
         }
     } else if i < l.hw_buses {
         format!("A{}", i + 1)
@@ -367,6 +387,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 if !connected {
                     connected = true;
                     edition = api.edition().unwrap_or(2);
+                    remember_edition(&app, edition);
                     // Right after Voicemeeter starts its parameters settle over a second or two.
                     reread_until = Instant::now() + Duration::from_secs(3);
                     let s = app.state::<Settings>().0.lock().unwrap().clone();
@@ -619,13 +640,127 @@ fn panel_fit(window: WebviewWindow, height: f64) -> Result<(), String> {
     Ok(())
 }
 
+/// Save the running edition so "Start Voicemeeter" launches the right one next time.
+fn remember_edition(app: &AppHandle, edition: i32) {
+    let state = app.state::<Settings>();
+    let mut s = state.0.lock().unwrap();
+    if s["edition"].as_i64() != Some(edition as i64) {
+        s["edition"] = json!(edition);
+        let _ = settings::save(&s);
+    }
+}
+
+/* ---------------- updates ---------------- */
+
+#[tauri::command]
+async fn check_update() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(update::latest)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn open_release(url: String) -> Result<(), String> {
+    update::open(&url)
+}
+
+/* ---------------- automatic scene switching ---------------- */
+
+#[tauri::command]
+fn running_apps() -> Vec<String> {
+    apps::suggestions()
+}
+
+/// Load a scene file into Voicemeeter and tell the mixer which one it was.
+fn load_scene_auto(app: &AppHandle, name: &str, because: &str) {
+    let Ok(path) = scene_path(name) else { return };
+    if !path.exists() {
+        return;
+    }
+    let Some(api) = app.state::<Vm>().api.clone() else {
+        return;
+    };
+    if api
+        .set_string("Command.Load", &path.to_string_lossy())
+        .is_ok()
+    {
+        let _ = app.emit("scene-auto", json!({ "scene": name, "app": because }));
+    }
+}
+
+/// Every 2 s: when a rule's app starts, load its scene; when it closes, go back to the scene
+/// of the app that started before it, or to the rule's "when it closes" scene.
+/// Apps already running when Sleekmeeter starts don't trigger anything.
+fn spawn_scene_rules(app: AppHandle) {
+    std::thread::spawn(move || {
+        let mut prev: Option<std::collections::BTreeSet<String>> = None;
+        let mut active: Vec<String> = Vec::new();
+        loop {
+            std::thread::sleep(Duration::from_secs(2));
+            let rules: Vec<(String, String, String)> = app.state::<Settings>().0.lock().unwrap()
+                ["sceneRules"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default()
+                .iter()
+                .filter_map(|r| {
+                    let a = r["app"].as_str()?.trim().to_lowercase();
+                    let scene = r["scene"].as_str()?.to_string();
+                    let restore = r["restore"].as_str().unwrap_or("").to_string();
+                    (!a.is_empty() && !scene.is_empty()).then_some((a, scene, restore))
+                })
+                .collect();
+            if rules.is_empty() {
+                prev = None;
+                active.clear();
+                continue;
+            }
+            let running = apps::running();
+            let rule_for = |a: &str| rules.iter().find(|r| r.0 == a).cloned();
+            match &prev {
+                None => {
+                    active = rules
+                        .iter()
+                        .filter(|r| running.contains(&r.0))
+                        .map(|r| r.0.clone())
+                        .collect();
+                    active.dedup();
+                }
+                Some(before) => {
+                    let mut seen = std::collections::BTreeSet::new();
+                    for (a, scene, restore) in rules.iter() {
+                        if !seen.insert(a.clone()) {
+                            continue; // first rule for an app wins
+                        }
+                        let now_on = running.contains(a);
+                        let was_on = before.contains(a);
+                        if now_on && !was_on {
+                            active.retain(|x| x != a);
+                            active.push(a.clone());
+                            load_scene_auto(&app, scene, a);
+                        } else if !now_on && was_on {
+                            active.retain(|x| x != a);
+                            if let Some(top) = active.last().and_then(|t| rule_for(t.as_str())) {
+                                load_scene_auto(&app, &top.1, &top.0);
+                            } else if !restore.is_empty() {
+                                load_scene_auto(&app, restore, a);
+                            }
+                        }
+                    }
+                }
+            }
+            prev = Some(running);
+        }
+    });
+}
+
 fn main() {
     let settings = settings::load();
     let api = Api::load().map(Arc::new);
     if let Some(a) = &api {
         // Login returns 1 when Voicemeeter isn't running yet.
         if a.login() == 1 && settings::flag(&settings, "launchVoicemeeter") {
-            let _ = a.run(2);
+            let _ = a.run(last_edition(&settings));
         }
     }
     let initial = offline_state(api.is_some());
@@ -671,7 +806,10 @@ fn main() {
             window_mini,
             open_mixer,
             flyout_close,
-            panel_fit
+            panel_fit,
+            check_update,
+            open_release,
+            running_apps
         ])
         .setup(move |app| {
             // Tray icon: click shows/hides the mixer, double-click opens the volume panel,
@@ -749,7 +887,8 @@ fn main() {
             }
 
             if let Some(api) = api_for_setup.clone() {
-                spawn_poller(handle, api);
+                spawn_poller(handle.clone(), api);
+                spawn_scene_rules(handle);
             }
             Ok(())
         })
