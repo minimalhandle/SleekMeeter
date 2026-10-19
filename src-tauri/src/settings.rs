@@ -34,6 +34,7 @@ pub fn defaults() -> Value {
         // Load a scene when an app starts: [{ "app": "obs64.exe", "scene": "Streaming", "restore": "Default" }]
         "sceneRules": [],
         "checkUpdates": true,
+        "oled": false,
         "skippedVersion": ""
     })
 }

@@ -20,7 +20,8 @@
     document.getElementById("chip").innerHTML = window.SleekIcons.svg(p.icon || "wave", 22);
     document.getElementById("name").textContent = p.name || "";
     document.getElementById("value").textContent = p.mute ? "Muted" : fmt(+p.gain || 0);
-    document.getElementById("fill").style.width = (dbToPos(+p.gain || 0) * 100).toFixed(1) + "%";
+    document.getElementById("fill").style.transform = `scaleX(${dbToPos(+p.gain || 0).toFixed(3)})`;
+    document.body.classList.toggle("oled", !!p.oled);
     card.style.animation = "none"; void card.offsetWidth; card.style.animation = "";
   }
   window.showOsd = show;

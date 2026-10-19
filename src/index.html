@@ -130,6 +130,10 @@
     </form>
     <div class="settings-body">
       <section>
+        <h3>Appearance</h3>
+        <label class="check"><input type="checkbox" id="setOled"><span>Pure black for OLED screens</span></label>
+      </section>
+      <section>
         <h3>Startup</h3>
         <label class="check"><input type="checkbox" id="setStartWithWindows"><span>Start Sleekmeeter with Windows</span></label>
         <label class="check indent"><input type="checkbox" id="setStartInTray"><span>Start in the tray instead of opening the window</span></label>
@@ -177,14 +181,18 @@
       </div>
       <div class="routes" role="group" aria-label="Send to"></div>
       <div class="fader" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="vertical">
+        <div class="well" aria-hidden="true">
+          <div class="meter l"><div class="unlit"></div><div class="lit"><b></b></div><div class="pk"><i></i></div></div>
+          <div class="meter r"><div class="unlit"></div><div class="lit"><b></b></div><div class="pk"><i></i></div></div>
+        </div>
         <div class="scale" aria-hidden="true"></div>
-        <div class="track">
-          <div class="meter l"></div><div class="meter r"></div>
-          <div class="peak l"></div><div class="peak r"></div>
+        <div class="slot track">
+          <div class="groove"></div>
           <div class="unity"></div>
-          <div class="thumb"><span class="db"></span></div>
+          <div class="travel"><div class="carrier"><div class="thumb"></div></div></div>
         </div>
       </div>
+      <button class="readout" type="button" title="Click to type a level"></button>
       <div class="toggles">
         <button type="button" class="tog mute" aria-pressed="false">Mute</button>
         <button type="button" class="tog solo" aria-pressed="false">Solo</button>
@@ -208,14 +216,18 @@
         <button type="button" class="tog eq" aria-pressed="false">EQ</button>
       </div>
       <div class="fader" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="vertical">
+        <div class="well" aria-hidden="true">
+          <div class="meter l"><div class="unlit"></div><div class="lit"><b></b></div><div class="pk"><i></i></div></div>
+          <div class="meter r"><div class="unlit"></div><div class="lit"><b></b></div><div class="pk"><i></i></div></div>
+        </div>
         <div class="scale" aria-hidden="true"></div>
-        <div class="track">
-          <div class="meter l"></div><div class="meter r"></div>
-          <div class="peak l"></div><div class="peak r"></div>
+        <div class="slot track">
+          <div class="groove"></div>
           <div class="unity"></div>
-          <div class="thumb"><span class="db"></span></div>
+          <div class="travel"><div class="carrier"><div class="thumb"></div></div></div>
         </div>
       </div>
+      <button class="readout" type="button" title="Click to type a level"></button>
       <div class="toggles">
         <button type="button" class="tog mute wide" aria-pressed="false">Mute</button>
       </div>
@@ -228,10 +240,10 @@
       <span class="mini-name"></span>
       <div class="fader h" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="horizontal">
         <div class="track">
-          <div class="meter l"></div><div class="meter r"></div>
-          <div class="peak l"></div><div class="peak r"></div>
+          <div class="meter l"><div class="unlit"></div><div class="lit"><b></b></div><div class="pk"><i></i></div></div>
+          <div class="meter r"><div class="unlit"></div><div class="lit"><b></b></div><div class="pk"><i></i></div></div>
           <div class="unity"></div>
-          <div class="thumb"><span class="db"></span></div>
+          <div class="travel"><div class="carrier"><div class="thumb"><span class="db"></span></div></div></div>
         </div>
       </div>
       <button type="button" class="tog mute" aria-pressed="false">Mute</button>

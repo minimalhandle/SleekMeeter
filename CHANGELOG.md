@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+- New look, "Console": each channel is a hardware module with a glowing LED meter, a machined fader cap in its own slot, backlit routing and mute keys, and a big dB readout you can click to type a level
+- Pure black theme for OLED screens (Settings → Appearance), also used by the tray panel and volume overlay
+- Faster: meters and faders animate on the GPU without layout or repainting (in testing, repaints over 3 s of live meters dropped from about 2,500 to 4), and the meter loop idles when nothing moves
+- Meter colours sit at their true levels: yellow from −9 dB, red above 0 dB, lined up with the fader scale
+- Mica and Acrylic backdrops removed in favour of the new look
+
 ## 0.4.1
 - Looks at home on Windows 11: Segoe UI Variable, Mica window backdrop, Acrylic tray panel, Fluent buttons, corners, focus rings and scrollbars, and toggle switches in Settings
 - The connection dot pulses slowly while Voicemeeter is connected
