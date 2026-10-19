@@ -23,10 +23,24 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | Focus a fader, then ↑ ↓ / PgUp PgDn / 0 | Keyboard control |
 | Click **A1–A3 / B1–B2** on an input | Route it to that output |
 | Double-click a name (or F2) | Rename the strip or bus in Voicemeeter |
+| Click a strip's icon | Open its panel: color, icon, hide, device, pan, compressor, gate, EQ (virtual inputs) or bus mode (outputs) |
 | **Scenes** | Save or recall your whole Voicemeeter setup |
+| Pin button | Keep Sleekmeeter on top of other windows |
+| Mini mode button | Switch to a small window with one row per channel |
+| Gear button | Settings: startup, volume overlay and global shortcuts |
 | **⋯** menu | Show the Voicemeeter window, restart the audio engine, clear solos |
 
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
+
+### Shortcuts and the volume overlay
+
+Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level.
+
+### Startup
+
+In Settings you can start Sleekmeeter with Windows (optionally straight to the tray), start Voicemeeter automatically, and hide Voicemeeter's own window when it starts. **⋯ → Show Voicemeeter window** always brings it back.
+
+All of this is saved in `settings.json` next to the exe.
 
 ## Build it
 
@@ -54,7 +68,8 @@ Open `src/index.html` in any browser. With no Voicemeeter available it runs agai
 
 - `src-tauri/src/vm.rs` finds Voicemeeter through its uninstall registry key, loads `VoicemeeterRemote64.dll`, and wraps the `VBVMR_*` functions (login, get/set parameters, levels, run).
 - `src-tauri/src/main.rs` polls `VBVMR_IsParametersDirty` and `VBVMR_GetLevel` about 30 times a second, sends `vm-state` and `vm-levels` events to the window, and exposes commands for setting parameters and managing scenes.
-- `src/` is the interface (plain HTML, CSS and JavaScript). `engine.js` talks to the Rust side inside the app, or to the simulator in a browser.
+- `src-tauri/src/settings.rs` keeps settings in `settings.json`; `win.rs` handles start with Windows and Voicemeeter's window.
+- `src/` is the interface (plain HTML, CSS and JavaScript). `engine.js` talks to the Rust side inside the app, or to the simulator in a browser. `osd.html` is the volume overlay.
 
 Parameter names follow the Voicemeeter Remote API documentation (e.g. `Strip[0].Gain`, `Strip[3].B1`, `Bus[0].Mute`), so adding more controls is mostly a matter of adding buttons that call `engine.setFloat(...)`.
 

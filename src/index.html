@@ -8,16 +8,29 @@
 </head>
 <body>
   <header class="bar">
-    <span class="brand">Sleekmeeter</span>
+    <span class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="var(--panel-hi)"/><rect x="6" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="6" y="12" width="2.2" height="7" rx="1.1" fill="var(--amber)"/><rect x="11" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="11" y="8" width="2.2" height="11" rx="1.1" fill="var(--amber)"/><rect x="16" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="16" y="10" width="2.2" height="9" rx="1.1" fill="var(--cyan)"/></svg>
+      <span class="brand-name">Sleekmeeter</span>
+    </span>
     <span class="status" id="status" data-state="connecting">
       <span class="dot" aria-hidden="true"></span><span id="statusText">Looking for Voicemeeter…</span>
     </span>
     <span class="spacer"></span>
     <span class="scene-now" id="sceneNow" hidden></span>
-    <button class="btn" id="scenesBtn" type="button">Scenes</button>
-    <div class="menu-wrap">
+    <button class="btn full-only" id="scenesBtn" type="button">Scenes</button>
+    <button class="btn icon" id="pinBtn" type="button" aria-pressed="false" aria-label="Keep on top" title="Keep on top">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5h-11L10 9.5zM12 13v7.5"/></svg>
+    </button>
+    <button class="btn icon" id="miniBtn" type="button" aria-pressed="false" aria-label="Mini mode" title="Mini mode">
+      <svg class="to-mini" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M13 13.5h5.5v4H13z" fill="currentColor"/></svg>
+      <svg class="to-full" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+    <button class="btn icon full-only" id="settingsBtn" type="button" aria-label="Settings" title="Settings">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+    <div class="menu-wrap full-only">
       <button class="btn icon" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More actions">
-        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="16" cy="10" r="1.6"/></svg>
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="16" cy="10" r="1.6" fill="currentColor"/></svg>
       </button>
       <div class="menu" id="moreMenu" role="menu" hidden>
         <button role="menuitem" type="button" data-action="show">Show Voicemeeter window</button>
@@ -29,14 +42,39 @@
 
   <main class="desk" id="desk">
     <section class="group" aria-labelledby="inputsTitle">
-      <h2 id="inputsTitle">Inputs</h2>
+      <div class="group-head">
+        <h2 id="inputsTitle">Inputs</h2>
+        <button class="linkish" type="button" data-reveal="strip" hidden></button>
+      </div>
       <div class="strips" id="inputs"></div>
     </section>
     <section class="group outputs" aria-labelledby="outputsTitle">
-      <h2 id="outputsTitle">Outputs</h2>
+      <div class="group-head">
+        <h2 id="outputsTitle">Outputs</h2>
+        <button class="linkish" type="button" data-reveal="bus" hidden></button>
+      </div>
       <div class="strips" id="outputs"></div>
     </section>
   </main>
+
+  <main class="mini-view" id="miniView" hidden>
+    <div class="mini-list" id="miniInputs" aria-label="Inputs"></div>
+    <div class="mini-list" id="miniOutputs" aria-label="Outputs"></div>
+  </main>
+
+  <aside class="drawer" id="drawer" aria-labelledby="drawerTitle" hidden>
+    <div class="drawer-head">
+      <span class="chip big" id="drawerChip"></span>
+      <div class="drawer-titles">
+        <h2 id="drawerTitle"></h2>
+        <span class="sub" id="drawerSub"></span>
+      </div>
+      <button class="btn icon" id="drawerClose" type="button" aria-label="Close channel settings">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
 
   <div class="offline" id="offline" hidden>
     <div class="offline-card">
@@ -46,8 +84,8 @@
     </div>
   </div>
 
-  <dialog class="scenes" id="scenesDlg" aria-labelledby="scenesTitle">
-    <form method="dialog" class="scenes-head">
+  <dialog class="dlg scenes" id="scenesDlg" aria-labelledby="scenesTitle">
+    <form method="dialog" class="dlg-head">
       <h2 id="scenesTitle">Scenes</h2>
       <button class="btn icon" value="close" aria-label="Close">
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -62,14 +100,46 @@
     </form>
   </dialog>
 
+  <dialog class="dlg settings" id="settingsDlg" aria-labelledby="settingsTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="settingsTitle">Settings</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <div class="settings-body">
+      <section>
+        <h3>Startup</h3>
+        <label class="check"><input type="checkbox" id="setStartWithWindows"><span>Start Sleekmeeter with Windows</span></label>
+        <label class="check indent"><input type="checkbox" id="setStartInTray"><span>Start in the tray instead of opening the window</span></label>
+        <label class="check"><input type="checkbox" id="setLaunchVoicemeeter"><span>Start Voicemeeter if it isn't running</span></label>
+        <label class="check"><input type="checkbox" id="setHideVoicemeeter"><span>Hide Voicemeeter's own window when it starts</span></label>
+      </section>
+      <section>
+        <h3>Volume overlay</h3>
+        <label class="check"><input type="checkbox" id="setOverlay"><span>Show the level on screen when it changes while you're in another app, for example from a shortcut, a MIDI controller or a Stream Deck</span></label>
+      </section>
+      <section>
+        <h3>Shortcuts</h3>
+        <p class="hint">These work everywhere in Windows. Click a shortcut and press the keys you want.</p>
+        <div class="hotkeys" id="hotkeyList"></div>
+        <button class="btn" id="addHotkey" type="button">Add shortcut</button>
+        <p class="problems" id="hotkeyProblems" role="alert" hidden></p>
+      </section>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <template id="inputTpl">
     <div class="strip">
       <div class="head">
-        <button class="name" type="button" title="Double-click to rename"></button>
-        <input class="name-edit" type="text" maxlength="32" hidden aria-label="Strip name">
-        <span class="sub"></span>
+        <button class="chip" type="button" aria-label="Channel settings" title="Channel settings"></button>
+        <div class="titles">
+          <button class="name" type="button" title="Double-click to rename"></button>
+          <input class="name-edit" type="text" maxlength="32" hidden aria-label="Strip name">
+          <span class="sub"></span>
+        </div>
       </div>
       <div class="routes" role="group" aria-label="Send to">
         <button type="button" class="route a" data-bus="0">A1</button>
@@ -98,10 +168,12 @@
   <template id="outputTpl">
     <div class="strip bus">
       <div class="head">
-        <span class="bus-id"></span>
-        <button class="name" type="button" title="Double-click to rename"></button>
-        <input class="name-edit" type="text" maxlength="32" hidden aria-label="Bus name">
-        <span class="sub"></span>
+        <button class="chip" type="button" aria-label="Output settings" title="Output settings"></button>
+        <div class="titles">
+          <button class="name" type="button" title="Double-click to rename"></button>
+          <input class="name-edit" type="text" maxlength="32" hidden aria-label="Bus name">
+          <span class="sub"></span>
+        </div>
       </div>
       <div class="routes modes" role="group" aria-label="Bus options">
         <button type="button" class="tog mono" aria-pressed="false">Mono</button>
@@ -122,6 +194,23 @@
     </div>
   </template>
 
+  <template id="miniTpl">
+    <div class="mini-row">
+      <span class="chip small"></span>
+      <span class="mini-name"></span>
+      <div class="fader h" role="slider" tabindex="0" aria-valuemin="-60" aria-valuemax="12" aria-orientation="horizontal">
+        <div class="track">
+          <div class="meter l"></div><div class="meter r"></div>
+          <div class="peak l"></div><div class="peak r"></div>
+          <div class="unity"></div>
+          <div class="thumb"><span class="db"></span></div>
+        </div>
+      </div>
+      <button type="button" class="tog mute" aria-pressed="false">Mute</button>
+    </div>
+  </template>
+
+  <script src="icons.js"></script>
   <script src="engine.js"></script>
   <script src="app.js"></script>
 </body>
