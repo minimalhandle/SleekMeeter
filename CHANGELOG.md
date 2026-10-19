@@ -1,6 +1,9 @@
 # Changelog
 
-## Next
+## 0.5.2
+- Remembers the window's size, position and maximized state between launches (if that spot's monitor is gone, it opens centred instead)
+- First launch opens the window just wide enough for your mixer, centred, instead of a fixed size with empty space
+- Leaving mini mode goes back to your remembered size
 - Update notifications also find releases marked as pre-release
 
 ## 0.5.1

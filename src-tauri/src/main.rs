@@ -38,6 +38,10 @@ struct NormalSize(Mutex<Option<LogicalSize<f64>>>);
 struct PanelSize(Mutex<Option<(f64, f64)>>);
 /// Show the main window once the page has drawn (avoids a blank or see-through flash).
 struct ShowOnReady(std::sync::atomic::AtomicBool);
+/// Window size/position changed and settings.json needs saving (written at most once a second).
+struct SettingsDirty(std::sync::atomic::AtomicBool);
+/// No window size was saved when Sleekmeeter started: fit the window to the mixer once.
+struct FirstLaunch(std::sync::atomic::AtomicBool);
 /// Tells a single tray click apart from a double-click.
 struct TrayClicks {
     gen: AtomicU64,
@@ -188,6 +192,10 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     if !current["edition"].is_null() {
         value["edition"] = current["edition"].clone();
     }
+    // Window size and position are recorded here in Rust; the page never edits them.
+    if !current["window"].is_null() {
+        value["window"] = current["window"].clone();
+    }
     *current = value.clone();
     drop(current);
     settings::save(&value)?;
@@ -199,6 +207,8 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
 #[tauri::command]
 fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Result<(), String> {
     let w = app.get_webview_window("main").ok_or("No main window")?;
+    // Mark mini mode first, so the resize below isn't remembered as the normal window size.
+    app.state::<Settings>().0.lock().unwrap()["mini"] = json!(mini);
     let saved = app.state::<NormalSize>();
     if mini {
         let scale = w.scale_factor().unwrap_or(1.0);
@@ -215,11 +225,17 @@ fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Res
         w.set_size(LogicalSize::new(width, h))
             .map_err(|e| e.to_string())?;
     } else {
-        let size = saved
-            .0
-            .lock()
-            .unwrap()
-            .unwrap_or(LogicalSize::new(1400.0, 800.0));
+        // Back to the full size: the one from before mini mode, else the remembered one.
+        let remembered = {
+            let st = app.state::<Settings>();
+            let guard = st.0.lock().unwrap();
+            let g = &guard["window"];
+            match (g["width"].as_f64(), g["height"].as_f64()) {
+                (Some(wd), Some(ht)) => LogicalSize::new(wd, ht),
+                _ => LogicalSize::new(1400.0, 800.0),
+            }
+        };
+        let size = saved.0.lock().unwrap().unwrap_or(remembered);
         let _ = w.set_min_size(Some(LogicalSize::new(760.0, 520.0)));
         w.set_size(size).map_err(|e| e.to_string())?;
     }
@@ -784,6 +800,99 @@ fn spawn_scene_rules(app: AppHandle) {
     });
 }
 
+/* ---------------- remember the window's size and position ---------------- */
+
+/// Record the main window's size and position (not in mini mode, not while minimized).
+fn remember_window(window: &tauri::Window) {
+    let app = window.app_handle();
+    let state = app.state::<Settings>();
+    let mut s = state.0.lock().unwrap();
+    if settings::flag(&s, "mini") || window.is_minimized().unwrap_or(false) {
+        return;
+    }
+    let maximized = window.is_maximized().unwrap_or(false);
+    let mut geo = s["window"].clone();
+    if !geo.is_object() {
+        geo = json!({});
+    }
+    geo["maximized"] = json!(maximized);
+    // Keep the normal size while maximized, so un-maximizing goes back to it.
+    if !maximized {
+        let scale = window.scale_factor().unwrap_or(1.0);
+        if let (Ok(size), Ok(pos)) = (window.inner_size(), window.outer_position()) {
+            let size = size.to_logical::<f64>(scale);
+            if size.width >= 300.0 && size.height >= 200.0 {
+                geo["width"] = json!(size.width.round());
+                geo["height"] = json!(size.height.round());
+                geo["x"] = json!(pos.x);
+                geo["y"] = json!(pos.y);
+            }
+        }
+    }
+    if s["window"] != geo {
+        s["window"] = geo;
+        app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
+    }
+}
+
+/// Put the main window back where it was last time. Returns false when nothing was saved.
+fn restore_window(w: &WebviewWindow, s: &Value) -> bool {
+    let geo = &s["window"];
+    let (Some(width), Some(height)) = (geo["width"].as_f64(), geo["height"].as_f64()) else {
+        return false;
+    };
+    let _ = w.set_size(LogicalSize::new(width.max(760.0), height.max(520.0)));
+    if let (Some(x), Some(y)) = (geo["x"].as_i64(), geo["y"].as_i64()) {
+        // Only if that spot is still on a connected monitor.
+        let (cx, cy) = (x + 80, y + 20);
+        let visible = w.available_monitors().unwrap_or_default().iter().any(|m| {
+            let (p, z) = (m.position(), m.size());
+            cx >= p.x as i64
+                && cx < p.x as i64 + z.width as i64
+                && cy >= p.y as i64
+                && cy < p.y as i64 + z.height as i64
+        });
+        if visible {
+            let _ = w.set_position(PhysicalPosition::new(x as i32, y as i32));
+        } else {
+            let _ = w.center();
+        }
+    }
+    if geo["maximized"].as_bool().unwrap_or(false) {
+        let _ = w.maximize();
+    }
+    true
+}
+
+/// First launch only: make the window just wide enough for the mixer, centred on its screen.
+#[tauri::command]
+fn window_fit(
+    window: WebviewWindow,
+    first: State<'_, FirstLaunch>,
+    width: f64,
+) -> Result<(), String> {
+    if window.label() != "main" || !first.0.swap(false, Ordering::SeqCst) {
+        return Ok(());
+    }
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let size = window
+        .inner_size()
+        .map_err(|e| e.to_string())?
+        .to_logical::<f64>(scale);
+    let max_w = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| m.size().width as f64 / m.scale_factor() - 40.0)
+        .unwrap_or(1900.0);
+    let width = width.clamp(760.0, max_w.max(760.0));
+    window
+        .set_size(LogicalSize::new(width, size.height))
+        .map_err(|e| e.to_string())?;
+    let _ = window.center();
+    Ok(())
+}
+
 fn main() {
     let settings = settings::load();
     let api = Api::load().map(Arc::new);
@@ -818,6 +927,10 @@ fn main() {
         .manage(NormalSize(Mutex::new(None)))
         .manage(PanelSize(Mutex::new(None)))
         .manage(ShowOnReady(std::sync::atomic::AtomicBool::new(false)))
+        .manage(SettingsDirty(std::sync::atomic::AtomicBool::new(false)))
+        .manage(FirstLaunch(std::sync::atomic::AtomicBool::new(
+            settings["window"].is_null() && !settings::flag(&settings, "mini"),
+        )))
         .manage(TrayClicks {
             gen: AtomicU64::new(0),
             last_double: Mutex::new(None),
@@ -841,6 +954,7 @@ fn main() {
             panel_fit,
             check_update,
             ui_ready,
+            window_fit,
             open_release,
             running_apps
         ])
@@ -913,6 +1027,9 @@ fn main() {
             }
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.set_always_on_top(settings::flag(&settings, "alwaysOnTop"));
+                if !settings::flag(&settings, "mini") {
+                    restore_window(&w, &settings);
+                }
                 // Started with Windows and asked to stay in the tray: don't show the window.
                 // Otherwise show it once the page has drawn (ui_ready), or after 3 s at the latest.
                 if !(autostarted && settings::flag(&settings, "startInTray")) {
@@ -929,18 +1046,39 @@ fn main() {
                 }
             }
 
+            // Write remembered window size/position to settings.json at most once a second.
+            let saver = handle.clone();
+            std::thread::spawn(move || loop {
+                std::thread::sleep(Duration::from_secs(1));
+                if saver
+                    .state::<SettingsDirty>()
+                    .0
+                    .swap(false, Ordering::SeqCst)
+                {
+                    let s = saver.state::<Settings>().0.lock().unwrap().clone();
+                    let _ = settings::save(&s);
+                }
+            });
+
             if let Some(api) = api_for_setup.clone() {
                 spawn_poller(handle.clone(), api);
                 spawn_scene_rules(handle);
             }
             Ok(())
         })
-        .on_window_event(|window, event| {
+        .on_window_event(|window, event| match event {
             // Closing the window keeps Sleekmeeter in the tray; quit from the tray menu.
-            if let WindowEvent::CloseRequested { api, .. } = event {
+            WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
+                if window.label() == "main" {
+                    remember_window(window);
+                }
                 let _ = window.hide();
             }
+            WindowEvent::Resized(_) | WindowEvent::Moved(_) if window.label() == "main" => {
+                remember_window(window);
+            }
+            _ => {}
         })
         .build(tauri::generate_context!())
         .expect("failed to start Sleekmeeter");
@@ -949,6 +1087,14 @@ fn main() {
         if let RunEvent::Exit = event {
             if let Some(a) = &api {
                 a.logout();
+            }
+            if _handle
+                .state::<SettingsDirty>()
+                .0
+                .swap(false, Ordering::SeqCst)
+            {
+                let s = _handle.state::<Settings>().0.lock().unwrap().clone();
+                let _ = settings::save(&s);
             }
         }
     });

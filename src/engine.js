@@ -81,6 +81,7 @@
     onPanelShown(cb) { return this.listen("flyout-shown", cb); }
     fitPanel(height, width) { return this.invoke("panel_fit", { height, width }); }
     uiReady() { return this.invoke("ui_ready"); }
+    fitWindow(width) { return this.invoke("window_fit", { width }); }
     checkUpdate() { return this.invoke("check_update"); }
     openRelease(url) { return this.invoke("open_release", { url }); }
     runningApps() { return this.invoke("running_apps"); }
@@ -230,6 +231,7 @@
     onPanelShown() { return Promise.resolve(); }
     fitPanel() { return Promise.resolve(); }
     uiReady() { return Promise.resolve(); }
+    fitWindow() { return Promise.resolve(); }
     checkUpdate() {
       const newer = /[?&]update\b/.test(location.search);
       return Promise.resolve({ current: "0.4.0", latest: newer ? "0.4.1" : "0.4.0", newer,
