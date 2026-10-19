@@ -354,6 +354,7 @@
       b.textContent = reveal[k] ? "Done" : `Show hidden (${n})`;
     });
     if (settings.mini && !PANEL) engine.windowMini(true, miniRows()).catch(() => {});
+    if (PANEL) requestAnimationFrame(fitPanel);
   }
   document.querySelectorAll("[data-reveal]").forEach((b) => b.addEventListener("click", () => {
     reveal[b.dataset.reveal] = !reveal[b.dataset.reveal];
@@ -863,6 +864,17 @@
   /* ---------- tray volume panel ---------- */
   $("#openMixerBtn").addEventListener("click", () => engine.openMixer().catch(fail));
   $("#closePanelBtn").addEventListener("click", () => engine.closePanel().catch(fail));
+  // Ask the panel window to be exactly as tall as its content.
+  function fitPanel() {
+    const view = $("#miniView");
+    const cs = getComputedStyle(view);
+    const lists = [...view.children].filter((el) => el.offsetHeight > 0);
+    const content = lists.reduce((h, el) => h + el.offsetHeight, 0)
+      + Math.max(0, lists.length - 1) * parseFloat(cs.rowGap || cs.gap || 0)
+      + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const border = parseFloat(getComputedStyle(document.body).borderTopWidth) * 2;
+    engine.fitPanel(Math.ceil($(".bar").offsetHeight + content + border)).catch(() => {});
+  }
   async function loadSettings() {
     try {
       const s = await engine.getSettings();

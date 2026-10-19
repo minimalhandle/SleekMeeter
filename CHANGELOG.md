@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+- Tray volume panel sizes itself to its content, no empty space at the bottom
+- Screenshots in the README
+
 ## 0.3.0
 - Right-click a fader (or press Enter on it) to type an exact level, like `-10`, `-10db` or `+3 dB`
 - Double-click the tray icon for a pinned volume panel above the tray; also in the tray menu as **Open volume panel**
