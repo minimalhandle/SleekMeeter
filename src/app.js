@@ -479,6 +479,7 @@
     });
     wakeMeters();
     if (settingsDlg.open) paintDuckLevel(false, lv);
+    if (recDlg.open) paintRecLevel(lv);
   }
   // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
   // are composited on the GPU without repainting. The loop stops when every meter is at rest
@@ -1268,6 +1269,44 @@
     });
     const g = $("#recGain");
     if (rec.gain != null && document.activeElement !== g) { g.value = rec.gain; paintRecGain(); }
+  }
+  // How loud the recording is: the channels being recorded, added together (the recorder mixes
+  // them into one file). Over 0 dB the file distorts, so that gets a warning that stays a few seconds.
+  let recLevel = -200, recOverAt = -1e9, recLevelDrawn = -1, recWarnText = null;
+  function paintRecLevel(lv) {
+    if (!rec) return;
+    const armed = (rec.recBus ? rec.armBuses : rec.armStrips) || [];
+    const list = (rec.recBus ? lv.outputs : lv.inputs) || [];
+    let power = 0, count = 0;
+    armed.forEach((on, i) => {
+      if (!on || !list[i]) return;
+      count++;
+      const db = Math.max(list[i][0], list[i][1]);
+      if (db > -150) power += Math.pow(10, db / 10);
+    });
+    const db = power > 0 ? 10 * Math.log10(power) : -200;
+    recLevel = db > recLevel ? db : Math.max(db, recLevel - 1.5);
+    const now = performance.now();
+    if (db > -0.3) recOverAt = now;
+    const p = dbToPos(recLevel);
+    if (Math.abs(p - recLevelDrawn) > 0.002) {
+      recLevelDrawn = p;
+      const off = ((1 - p) * 100).toFixed(2);
+      $("#recMeter .lit").style.transform = `translateX(-${off}%)`;
+      $("#recMeter .lit b").style.transform = `translateX(${off}%)`;
+      $("#recLevelDb").textContent = recLevel <= MIN_DB ? "−∞" : fmtDb(recLevel);
+    }
+    let warn = "";
+    if (!count) warn = `Nothing is selected to record. Pick the ${rec.recBus ? "outputs" : "inputs"} to record below.`;
+    else if (now - recOverAt < 3000) warn = "Too loud: this goes over 0 dB, so the recording will distort. Turn down what you're recording"
+      + (count > 1 ? `, or record fewer channels (the ${count} you picked are added together).` : ".");
+    if (warn !== recWarnText) {
+      recWarnText = warn;
+      const el = $("#recWarn");
+      el.textContent = warn;
+      el.classList.toggle("over", warn.startsWith("Too loud"));
+      $(".rec-level").classList.toggle("over", warn.startsWith("Too loud"));
+    }
   }
   function tickRecClock() {
     if (!recRunning()) { clearInterval(recTimer); return; }

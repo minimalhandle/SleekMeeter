@@ -1011,6 +1011,14 @@ fn main() {
     let autostarted = std::env::args().any(|a| a == "--autostart");
 
     let app = tauri::Builder::default()
+        // Only one Sleekmeeter at a time: starting it again (pinned taskbar icon, Start menu,
+        // desktop shortcut) brings the running one's window back instead of opening another.
+        // Registered first, so a second copy quits before it creates any windows.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if !args.iter().any(|a| a == "--autostart") {
+                show_main(app);
+            }
+        }))
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {

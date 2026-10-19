@@ -370,6 +370,20 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .recorder[data-state="playing"] .clock { color: var(--led-g); }
 .recorder[data-state="paused"] .clock { color: var(--amber); }
 .deck-state { color: var(--muted); font-size: var(--s-1); text-align: right; letter-spacing: .06em; padding-bottom: 6px; }
+.rec-level { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.rec-meter {
+  position: relative; flex: 1; height: 8px; overflow: hidden; border-radius: 2px;
+  -webkit-mask: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px); mask: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px);
+}
+.rec-meter .unlit, .rec-meter .lit, .rec-meter .lit b { position: absolute; inset: 0; }
+.rec-meter .unlit { background: linear-gradient(to right, var(--led-g-off) 0, var(--led-g-off) var(--p-yellow), var(--led-y-off) var(--p-yellow), var(--led-y-off) var(--p-zero), var(--led-r-off) var(--p-zero)); }
+.rec-meter .lit { overflow: hidden; transform: translateX(-100%); will-change: transform; }
+.rec-meter .lit b { transform: translateX(100%); will-change: transform; background: linear-gradient(to right, var(--led-g) 0, var(--led-g) var(--p-yellow), var(--led-y) var(--p-yellow), var(--led-y) var(--p-zero), var(--led-r) var(--p-zero)); }
+.rec-level-db { width: 52px; text-align: right; font-size: var(--s-1); font-weight: 600; color: var(--ink-2); }
+.rec-level.over .rec-level-db { color: var(--red); }
+.rec-warn { grid-column: 1 / -1; margin: 6px 0 0; font-size: var(--s-1); line-height: 17px; color: var(--muted); min-height: 0; }
+.rec-warn:empty { display: none; }
+.rec-warn.over { color: var(--red); font-weight: 600; }
 .transport { grid-column: 1 / -1; display: flex; gap: 6px; margin-top: 10px; }
 .transport .btn.icon { width: 44px; height: 38px; }
 .transport .btn[aria-pressed="true"]:not(.rec-key) { background: var(--led-g); color: var(--on-ink); box-shadow: 0 0 calc(12px * var(--glow)) color-mix(in srgb, var(--led-g) 45%, transparent); }
