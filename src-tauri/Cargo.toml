@@ -3,6 +3,7 @@ name = "sleekmeeter"
 version = "0.3.0"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
+license = "MIT"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

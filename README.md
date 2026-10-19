@@ -78,6 +78,12 @@ Open `src/index.html` in any browser. With no Voicemeeter available it runs agai
 
 Parameter names follow the Voicemeeter Remote API documentation (e.g. `Strip[0].Gain`, `Strip[3].B1`, `Bus[0].Mute`), so adding more controls is mostly a matter of adding buttons that call `engine.setFloat(...)`.
 
+## License
+
+Sleekmeeter is released under the MIT License (see `LICENSE`).
+
 ## Credits
 
 Uses the [Voicemeeter Remote API](https://github.com/vburel2018/Voicemeeter-SDK) by Vincent Burel / VB-Audio, free to use in projects that interact with Voicemeeter. Voicemeeter itself is donationware from VB-Audio. Font: Barlow Semi Condensed (SIL Open Font License, see `src/fonts/OFL.txt`).
+
+Sleekmeeter is an independent project and isn't affiliated with or endorsed by VB-Audio. Voicemeeter is a trademark of VB-Audio Software.
