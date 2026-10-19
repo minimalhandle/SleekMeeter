@@ -590,6 +590,35 @@ fn flyout_close(app: AppHandle) {
     }
 }
 
+/// The panel measures its own content and asks to be exactly that tall.
+/// Keeps the edge nearest the taskbar where it is, so the panel stays snug against the tray.
+#[tauri::command]
+fn panel_fit(window: WebviewWindow, height: f64) -> Result<(), String> {
+    if window.label() != FLYOUT || !(60.0..=2000.0).contains(&height) {
+        return Ok(());
+    }
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let inner = window.inner_size().map_err(|e| e.to_string())?;
+    let pos = window.outer_position().map_err(|e| e.to_string())?;
+    let delta = (height * scale).round() as i32 - inner.height as i32;
+    if delta.abs() <= 1 {
+        return Ok(());
+    }
+    let opens_upward = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| (pos.y as f64) > m.position().y as f64 + m.size().height as f64 / 3.0)
+        .unwrap_or(true);
+    window
+        .set_size(LogicalSize::new(inner.width as f64 / scale, height))
+        .map_err(|e| e.to_string())?;
+    if opens_upward {
+        let _ = window.set_position(PhysicalPosition::new(pos.x, pos.y - delta));
+    }
+    Ok(())
+}
+
 fn main() {
     let settings = settings::load();
     let api = Api::load().map(Arc::new);
@@ -641,7 +670,8 @@ fn main() {
             settings_set,
             window_mini,
             open_mixer,
-            flyout_close
+            flyout_close,
+            panel_fit
         ])
         .setup(move |app| {
             // Tray icon: click shows/hides the mixer, double-click opens the volume panel,

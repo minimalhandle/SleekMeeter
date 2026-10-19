@@ -2,6 +2,14 @@
 
 A modern face for Voicemeeter Banana. Sleekmeeter sits on top of Voicemeeter and controls it through the official Voicemeeter Remote API — Voicemeeter keeps doing the audio, Sleekmeeter is just a nicer mixer to look at and use.
 
+![Sleekmeeter's mixer: five input strips and three outputs, each fader doubling as a level meter](docs/screenshots/mixer.png)
+
+<img src="docs/screenshots/volume-panel.png" width="300" align="right" alt="The tray volume panel: one slim fader and mute button per channel">
+
+**Tray volume panel:** double-click the tray icon for a compact panel with every channel, right above the tray.
+
+<br clear="right">
+
 ## Requirements
 
 - Windows 10 or 11 (WebView2 comes with both)

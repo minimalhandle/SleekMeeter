@@ -75,6 +75,7 @@
     openMixer() { return this.invoke("open_mixer"); }
     closePanel() { return this.invoke("flyout_close"); }
     onPanelShown(cb) { return this.listen("flyout-shown", cb); }
+    fitPanel(height) { return this.invoke("panel_fit", { height }); }
   }
 
   /* ---------------- Simulated Voicemeeter Banana ---------------- */
@@ -198,6 +199,7 @@
     openMixer() { location.search = ""; return Promise.resolve(); }
     closePanel() { return Promise.resolve(); }
     onPanelShown() { return Promise.resolve(); }
+    fitPanel() { return Promise.resolve(); }
 
     // Synthetic program material: speech-like mic, strummed guitar, music on desktop, chatter on Discord.
     levels(t) {
