@@ -41,7 +41,8 @@
   --focus: #ffd27a;
   --panel-hi: #2a2a32;            /* brand mark */
   --track: #0d0d10;
-  --cap-h: 54px;                  /* vertical fader cap height */
+  --cap-h: 38px;                  /* vertical fader cap height */
+  --cap-w: 32px;                  /* vertical fader cap width */
   /* channel colors */
   --c-slate: #a3a2ad; --c-amber: #f2b443; --c-coral: #f58a5c; --c-rose: #f46b9c;
   --c-violet: #a58cff; --c-blue: #6ea0ff; --c-cyan: #46c6ec; --c-green: #49d17d;
@@ -222,7 +223,7 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 24%, var(--key)); 
 /* ---------- meter well + fader slot ---------- */
 .fader {
   flex: 1; min-height: 150px; position: relative;
-  display: grid; grid-template-columns: 30px 20px 46px; gap: 5px; justify-content: center;
+  display: grid; grid-template-columns: 30px 20px 40px; gap: 5px; justify-content: center;
   touch-action: none; border-radius: 8px;
 }
 .well {
@@ -259,7 +260,8 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .scale span { position: absolute; right: 0; transform: translateY(50%); font-size: 11px; color: var(--muted); line-height: 1; letter-spacing: 0; }
 .scale span.zero { color: var(--ink); font-weight: 600; }
 
-.slot { position: relative; cursor: ns-resize; }
+/* `overflow: clip` keeps the sliding cap layer from adding scrollbars; the margin leaves room for the cap's shadow */
+.slot { position: relative; cursor: ns-resize; overflow: clip; overflow-clip-margin: 14px; }
 .groove {
   position: absolute; left: 50%; top: 4px; bottom: 4px; width: 6px; margin-left: -3px; border-radius: 3px;
   background: var(--well); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .9), 0 1px 0 var(--mod-edge);
@@ -272,14 +274,14 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .carrier { position: absolute; left: 0; right: 0; top: 0; height: 100%; transform: translateY(16%); will-change: transform; }
 /* the machined cap: brushed metal with grip ridges and a colored index line */
 .thumb {
-  position: absolute; left: 0; right: 0; top: calc(var(--cap-h) / -2); height: var(--cap-h); border-radius: 6px; pointer-events: auto;
+  position: absolute; left: 50%; width: var(--cap-w); margin-left: calc(var(--cap-w) / -2); top: calc(var(--cap-h) / -2); height: var(--cap-h); border-radius: 5px; pointer-events: auto;
   background:
     repeating-linear-gradient(180deg, rgba(0, 0, 0, .16) 0 1px, transparent 1px 4px),
     linear-gradient(180deg, #f6f6f8, #c4c4cb 46%, #93939b 52%, #d8d8de);
   box-shadow: 0 10px 16px rgba(0, 0, 0, .55), 0 2px 3px rgba(0, 0, 0, .5), inset 0 1px 0 #fff, 0 0 0 1px rgba(0, 0, 0, .55);
 }
 .thumb::after {
-  content: ""; position: absolute; left: 6px; right: 6px; top: calc(50% - 1px); height: 2px; border-radius: 1px;
+  content: ""; position: absolute; left: 5px; right: 5px; top: calc(50% - 1px); height: 2px; border-radius: 1px;
   background: var(--acc); box-shadow: 0 0 calc(8px * var(--glow)) var(--acc);
 }
 .fader:focus-visible { outline-offset: 4px; }
@@ -293,7 +295,7 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .muted .readout { color: var(--muted); }
 
 /* ---------- horizontal fader (mini mode and the tray panel) ---------- */
-.fader.h { display: block; min-height: 0; height: 30px; flex: 1; min-width: 180px; --cap-w: 46px; }
+.fader.h { display: block; min-height: 0; height: 30px; flex: 1; min-width: 180px; --cap-w: 46px; overflow: clip; overflow-clip-margin: 8px; }
 .fader.h .track {
   position: absolute; inset: 0; cursor: ew-resize; border-radius: 6px; background: var(--well);
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, .85), 0 1px 0 var(--mod-edge);
@@ -313,7 +315,7 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .fader.h .travel { top: 0; bottom: 0; left: calc(var(--cap-w) / 2); right: calc(var(--cap-w) / 2); }
 .fader.h .carrier { top: 0; left: 0; width: 100%; height: 100%; transform: translateX(84%); }
 .fader.h .thumb {
-  top: -3px; bottom: -3px; height: auto; left: calc(var(--cap-w) / -2); right: auto; width: var(--cap-w);
+  top: -3px; bottom: -3px; height: auto; left: calc(var(--cap-w) / -2); right: auto; width: var(--cap-w); margin-left: 0;
   display: grid; place-items: center; color: #18181c;
   background:
     repeating-linear-gradient(90deg, rgba(0, 0, 0, .14) 0 1px, transparent 1px 4px),
@@ -323,7 +325,7 @@ body.oled input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset
 .fader.h .db { font-size: 12px; font-weight: 700; padding: 0 3px; border-radius: 3px; background: rgba(255, 255, 255, .55); }
 
 /* ---------- mini mode ---------- */
-.mini-view { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.mini-view { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
 .mini-list {
   display: flex; flex-direction: column; gap: 4px; padding: 6px;
   background: var(--bay); border-radius: 12px; box-shadow: inset 0 2px 8px rgba(0, 0, 0, .6), 0 1px 0 var(--bay-edge);
@@ -501,10 +503,10 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- dense layout for Potato's 16 channels ---------- */
-.dense { --cap-h: 48px; }
+.dense { --cap-h: 34px; --cap-w: 28px; }
 .dense .strips { gap: 6px; }
 .dense .strip { padding: 10px 8px; gap: 8px; }
-.dense .fader { grid-template-columns: 24px 18px 40px; gap: 4px; }
+.dense .fader { grid-template-columns: 24px 18px 34px; gap: 4px; }
 .dense .head { gap: 6px; }
 .dense .chip:not(.small):not(.big) { width: 26px; height: 26px; }
 .dense .name { font-size: var(--s0); }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+- Smaller fader caps on the main mixer (32×38 instead of 46×54)
+- No more stray horizontal scrollbar in mini mode
+
 ## 0.5.0
 - New look, "Console": each channel is a hardware module with a glowing LED meter, a machined fader cap in its own slot, backlit routing and mute keys, and a big dB readout you can click to type a level
 - Pure black theme for OLED screens (Settings → Appearance), also used by the tray panel and volume overlay
