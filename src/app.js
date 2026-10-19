@@ -53,7 +53,19 @@
       });
     }
   }
-  function fail(err) { toast(String(err && err.message ? err.message : err)); }
+  function fail(err) {
+    const msg = String(err && err.message ? err.message : err);
+    toast(msg);
+    engine.log("warn", msg).catch(() => {});
+  }
+  // Anything that breaks in the window goes in the log file too.
+  window.addEventListener("error", (e) => {
+    engine.log("error", `${e.message} at ${(e.filename || "").split("/").pop()}:${e.lineno}`).catch(() => {});
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e.reason;
+    engine.log("error", `Unhandled: ${r && r.message ? r.message : r}`).catch(() => {});
+  });
 
   /* ---------- settings persistence ---------- */
   let saveTimer;
@@ -384,7 +396,9 @@
   /* ---------- incoming state ---------- */
   const EDITIONS = { 1: "Voicemeeter", 2: "Voicemeeter Banana", 3: "Voicemeeter Potato" };
 
+  let lastState = null;
   function applyState(st) {
+    lastState = st;
     const status = $("#status"), text = $("#statusText");
     if (!st.installed) {
       status.dataset.state = "offline"; text.textContent = "Voicemeeter isn't installed";
@@ -851,6 +865,7 @@
   }
   $("#settingsBtn").addEventListener("click", () => {
     syncChecks();
+    renderAbout();
     syncFadeDuck();
     renderHotkeys();
     settingsDlg.showModal();
@@ -1075,6 +1090,21 @@
   });
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
+
+  /* ---------- settings: about and logs ---------- */
+  let appInfo = null;
+  async function renderAbout() {
+    if (!appInfo) appInfo = await engine.appInfo().catch(() => null);
+    const v = appInfo && appInfo.version;
+    $("#aboutVersion").textContent = !v ? "Sleekmeeter" : v === "preview" ? "Sleekmeeter (browser preview)" : `Sleekmeeter ${v}`;
+    const d = lastState;
+    $("#aboutVm").textContent = d && d.connected
+      ? `${EDITIONS[d.edition] || "Voicemeeter"} ${d.version || ""}`.trim()
+      : d && d.installed === false ? "Voicemeeter isn't installed" : "Voicemeeter isn't running";
+    $("#openLogs").hidden = !(appInfo && appInfo.logDir);
+    $("#logsHint").hidden = !(appInfo && appInfo.logDir);
+  }
+  $("#openLogs").addEventListener("click", () => engine.openLogs().catch(fail));
 
   /* ---------- settings: smooth fades and talk-over ducking ---------- */
   const fmtMs = (ms) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(ms % 1000 ? 1 : 0)} s`);

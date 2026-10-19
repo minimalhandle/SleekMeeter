@@ -133,15 +133,19 @@ pub fn command(app: &AppHandle, api: &Api, action: &str) -> Result<Value, String
             .map(|b| b.round() as i32)
             != Some(16)
     {
+        log_info!("Recorder: MP3 needs 16-bit, switching the bit depth to 16");
         let _ = api.set_float("Recorder.bitResolution", 16.0);
     }
     if let Err(e) = api.script(&[line.to_string()]) {
         // Older Voicemeeter versions call the record button "rec".
         if action != "record" {
+            log_warn!("Recorder: {action} failed: {e}");
             return Err(e);
         }
-        api.script(&["Recorder.rec = 1;".to_string()])?;
+        api.script(&["Recorder.rec = 1;".to_string()])
+            .inspect_err(|e| log_warn!("Recorder: {action} failed: {e}"))?;
     }
+    log_info!("Recorder: {action}");
     let vm = app.state::<Vm>();
     let mut rec = vm.rec.lock().unwrap();
     rec.apply(action);

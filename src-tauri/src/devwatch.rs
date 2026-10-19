@@ -198,7 +198,10 @@ pub fn spawn(app: AppHandle) {
             watch.retain(|name, was| {
                 let now = present(name.as_str());
                 if now && !*was {
+                    log_info!("Audio device back: {name}");
                     back = Some(name.clone());
+                } else if !now && *was {
+                    log_info!("Audio device gone: {name}");
                 }
                 *was = now;
                 // Keep watching a missing device even if Voicemeeter blanks its name;
@@ -217,9 +220,13 @@ pub fn spawn(app: AppHandle) {
                     let Some(api) = app.state::<Vm>().api.clone() else {
                         continue;
                     };
-                    if api.set_float("Command.Restart", 1.0).is_ok() {
-                        last_restart = Some(Instant::now());
-                        let _ = app.emit("engine-restarted", json!({ "device": name }));
+                    match api.set_float("Command.Restart", 1.0) {
+                        Ok(()) => {
+                            log_info!("Restarted the audio engine because {name} came back");
+                            last_restart = Some(Instant::now());
+                            let _ = app.emit("engine-restarted", json!({ "device": name }));
+                        }
+                        Err(e) => log_warn!("Couldn't restart the audio engine: {e}"),
                     }
                 }
             }

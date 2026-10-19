@@ -225,7 +225,9 @@ pub fn tick(app: &AppHandle, api: &Api, layout: &Layout) {
     drop(used);
     drop(smooth);
     if !lines.is_empty() {
-        let _ = api.script(&lines);
+        if let Err(e) = api.script(&lines) {
+            log_warn!("Fade/ducking command rejected: {e} ({})", lines.join(" "));
+        }
     }
 }
 
@@ -348,12 +350,12 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
             };
             lines.push(fade_line(key, target, ms));
         }
-        let _ = api.script(&lines);
+        if let Err(e) = api.script(&lines) {
+            log_warn!("Scene fade rejected: {e}");
+        }
         std::thread::sleep(Duration::from_millis(ms + 60));
-        if api
-            .set_string("Command.Load", &xml.to_string_lossy())
-            .is_err()
-        {
+        if let Err(e) = api.set_string("Command.Load", &xml.to_string_lossy()) {
+            log_error!("Loading scene file failed: {e}");
             return;
         }
         if let Some(e) = done {

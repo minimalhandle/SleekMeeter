@@ -88,6 +88,10 @@ In Settings you can start Sleekmeeter with Windows (optionally straight to the t
 
 All of this is saved in `settings.json` next to the exe.
 
+## Reporting a problem
+
+**Settings → About** shows which version of Sleekmeeter you're running. Sleekmeeter also keeps a log of what it does and anything that goes wrong (events only, never audio): click **Open log file** there and attach `sleekmeeter.log` to your [issue](https://github.com/minimalhandle/SleekMeeter/issues). The log lives in a `logs` folder next to the exe (or in `%LOCALAPPDATA%\Sleekmeeter\logs` if that folder can't be written to) and never grows past about 2 MB.
+
 ## Build it
 
 ### Option A: GitHub Actions (no tools needed)

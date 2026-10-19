@@ -52,12 +52,16 @@ pub fn defaults() -> Value {
 pub fn load() -> Value {
     let mut s = defaults();
     if let Ok(text) = std::fs::read_to_string(path()) {
-        if let Ok(Value::Object(saved)) = serde_json::from_str::<Value>(&text) {
-            if let Value::Object(base) = &mut s {
-                for (k, v) in saved {
-                    base.insert(k, v);
+        match serde_json::from_str::<Value>(&text) {
+            Ok(Value::Object(saved)) => {
+                if let Value::Object(base) = &mut s {
+                    for (k, v) in saved {
+                        base.insert(k, v);
+                    }
                 }
             }
+            Ok(_) => log_warn!("settings.json isn't a settings object; using the defaults"),
+            Err(e) => log_warn!("settings.json couldn't be read ({e}); using the defaults"),
         }
     }
     s
@@ -65,7 +69,10 @@ pub fn load() -> Value {
 
 pub fn save(s: &Value) -> Result<(), String> {
     let text = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
-    std::fs::write(path(), text).map_err(|e| format!("Couldn't save settings: {e}"))
+    std::fs::write(path(), text).map_err(|e| {
+        log_error!("Couldn't save settings to {}: {e}", path().display());
+        format!("Couldn't save settings: {e}")
+    })
 }
 
 pub fn flag(s: &Value, key: &str) -> bool {
