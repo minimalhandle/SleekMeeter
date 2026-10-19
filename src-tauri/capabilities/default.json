@@ -4,7 +4,8 @@
   "description": "Lets the mixer window receive Voicemeeter events",
   "windows": [
     "main",
-    "osd"
+    "osd",
+    "flyout"
   ],
   "permissions": [
     "core:default"

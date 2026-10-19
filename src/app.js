@@ -6,6 +6,8 @@
   const $ = (s, el = document) => el.querySelector(s);
   const clone = (o) => JSON.parse(JSON.stringify(o));
 
+  // The tray volume panel loads this same page with SLEEK_FLYOUT set (or ?panel in a browser).
+  const PANEL = !!window.SLEEK_FLYOUT || /[?&]panel\b/.test(location.search);
   let settings = clone(DEFAULT_SETTINGS);
   let connected = null;
   const reveal = { strip: false, bus: false };
@@ -187,7 +189,16 @@
       else if (k === "Home") v = MIN_DB;
       else if (k === "End") v = MAX_DB;
       else if (k === "0") v = 0;
+      else if (k === "Enter") {
+        e.preventDefault();
+        const r = el.getBoundingClientRect();
+        return openGainEdit(ch, r.left + r.width / 2, r.top + r.height / 2, el);
+      }
       if (v !== null) { e.preventDefault(); setGain(ch, v); }
+    });
+    el.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      openGainEdit(ch, e.clientX, e.clientY, el);
     });
     el.setAttribute("aria-label", `${displayName(ch)} level`);
   }
@@ -342,7 +353,7 @@
       if (n === 0) reveal[k] = false;
       b.textContent = reveal[k] ? "Done" : `Show hidden (${n})`;
     });
-    if (settings.mini) engine.windowMini(true, miniRows()).catch(() => {});
+    if (settings.mini && !PANEL) engine.windowMini(true, miniRows()).catch(() => {});
   }
   document.querySelectorAll("[data-reveal]").forEach((b) => b.addEventListener("click", () => {
     reveal[b.dataset.reveal] = !reveal[b.dataset.reveal];
@@ -384,6 +395,63 @@
     }
     requestAnimationFrame(frame);
   }
+
+  /* ---------- type-a-value box: right-click a fader (or press Enter on it) ---------- */
+  const gainEdit = $("#gainEdit"), gainInput = $("#gainInput"), gainHint = $("#gainHint");
+  let editCh = null, editReturn = null;
+  const HINT = "−60 to +12, Enter to set";
+
+  function openGainEdit(ch, x, y, returnTo) {
+    editCh = ch; editReturn = returnTo;
+    $("#gainLabel").textContent = `Set ${displayName(ch)}`;
+    gainInput.value = ch.gain <= MIN_DB ? "-60" : String(+ch.gain.toFixed(1));
+    gainEdit.classList.remove("invalid");
+    gainHint.textContent = HINT;
+    gainEdit.hidden = false;
+    const r = gainEdit.getBoundingClientRect();
+    gainEdit.style.left = Math.max(8, Math.min(x + 10, innerWidth - r.width - 8)) + "px";
+    gainEdit.style.top = Math.max(8, Math.min(y - 24, innerHeight - r.height - 8)) + "px";
+    gainInput.focus();
+    gainInput.select();
+  }
+  function closeGainEdit() {
+    if (gainEdit.hidden) return;
+    gainEdit.hidden = true;
+    const back = editReturn;
+    editCh = editReturn = null;
+    if (back && document.activeElement === document.body) back.focus({ preventScroll: true });
+  }
+  // Accepts "-10", "-10db", "+3 dB", "−4,5", "0", "-inf".
+  function parseDb(text) {
+    const t = text.trim().toLowerCase().replace(/[−–—]/g, "-").replace(",", ".").replace(/\s+/g, "").replace(/db$/, "");
+    if (/^-?(inf|∞)/.test(t)) return MIN_DB;
+    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(t)) return null;
+    return parseFloat(t);
+  }
+  gainEdit.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = parseDb(gainInput.value);
+    if (v === null) {
+      gainEdit.classList.add("invalid");
+      gainHint.textContent = "Type a number, like -10";
+      gainInput.select();
+      return;
+    }
+    const ch = editCh, back = editReturn;
+    setGain(ch, v);
+    if (v < MIN_DB || v > MAX_DB) toast(`${displayName(ch)} set to ${fmtDb(ch.gain)} dB, the closest Voicemeeter allows`);
+    closeGainEdit();
+    if (back) back.focus({ preventScroll: true });
+  });
+  gainInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); const back = editReturn; closeGainEdit(); if (back) back.focus({ preventScroll: true }); }
+  });
+  gainInput.addEventListener("input", () => { gainEdit.classList.remove("invalid"); gainHint.textContent = HINT; });
+  gainInput.addEventListener("blur", () => setTimeout(closeGainEdit, 0));
+  // Keep the browser's own right-click menu (Reload, Inspect…) out of the app, except in text fields.
+  document.addEventListener("contextmenu", (e) => {
+    if (!e.target.closest("input, textarea")) e.preventDefault();
+  });
 
   /* ---------- channel drawer ---------- */
   let drawerCh = null;
@@ -792,16 +860,35 @@
     toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
   }
 
-  /* ---------- start ---------- */
-  async function init() {
+  /* ---------- tray volume panel ---------- */
+  $("#openMixerBtn").addEventListener("click", () => engine.openMixer().catch(fail));
+  $("#closePanelBtn").addEventListener("click", () => engine.closePanel().catch(fail));
+  async function loadSettings() {
     try {
       const s = await engine.getSettings();
       settings = Object.assign(clone(DEFAULT_SETTINGS), s || {});
     } catch (e) { /* keep defaults */ }
+  }
+
+  /* ---------- start ---------- */
+  async function init() {
+    await loadSettings();
     for (const ch of chans) { buildMixerStrip(ch); buildMiniRow(ch); paintLook(ch); renderFaders(ch); }
     applyVisibility();
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
-    setMini(!!settings.mini, false);
+    if (PANEL) {
+      // Pinned, fixed panel: mini rows only. Looks and hidden channels come from the mixer's settings.
+      document.body.classList.add("is-mini", "is-panel");
+      $("#desk").hidden = true;
+      $("#miniView").hidden = false;
+      engine.onPanelShown(async () => {
+        await loadSettings();
+        chans.forEach(paintLook);
+        applyVisibility();
+      }).catch(() => {});
+    } else {
+      setMini(!!settings.mini, false);
+    }
     requestAnimationFrame(frame);
     await engine.start(applyState, applyLevels);
   }

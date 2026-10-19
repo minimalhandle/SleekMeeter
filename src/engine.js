@@ -7,6 +7,7 @@
  *   listScenes() / saveScene(n) / loadScene(n) / deleteScene(n)
  *   getSettings() / saveSettings(s) -> {problems:[...]}
  *   windowMini(mini, rows)     resize the window for mini mode
+ *   openMixer() / closePanel() / onPanelShown(cb)   the tray volume panel
  *
  * Inside the Tauri app this goes to the Rust bridge (VoicemeeterRemote64.dll).
  * In a plain browser it runs a simulated Voicemeeter Banana so the UI can be previewed.
@@ -71,6 +72,9 @@
     getSettings() { return this.invoke("settings_get"); }
     saveSettings(value) { return this.invoke("settings_set", { value }); }
     windowMini(mini, rows) { return this.invoke("window_mini", { mini, rows }); }
+    openMixer() { return this.invoke("open_mixer"); }
+    closePanel() { return this.invoke("flyout_close"); }
+    onPanelShown(cb) { return this.listen("flyout-shown", cb); }
   }
 
   /* ---------------- Simulated Voicemeeter Banana ---------------- */
@@ -191,6 +195,9 @@
       return Promise.resolve({ problems });
     }
     windowMini() { return Promise.resolve(); }
+    openMixer() { location.search = ""; return Promise.resolve(); }
+    closePanel() { return Promise.resolve(); }
+    onPanelShown() { return Promise.resolve(); }
 
     // Synthetic program material: speech-like mic, strummed guitar, music on desktop, chatter on Discord.
     levels(t) {
