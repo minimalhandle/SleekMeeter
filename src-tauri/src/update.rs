@@ -133,12 +133,15 @@ fn installed() -> bool {
 }
 
 fn download(app: &AppHandle, a: &Asset, dest: &Path) -> Result<(), String> {
-    let resp = ureq::get(&a.url)
+    let resp = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(10))
+        .timeout_read(Duration::from_secs(30))
+        .build()
+        .get(&a.url)
         .set(
             "User-Agent",
             concat!("Sleekmeeter/", env!("CARGO_PKG_VERSION")),
         )
-        .timeout_connect(10_000)
         .call()
         .map_err(|e| format!("Couldn't download the update: {e}"))?;
     let total: u64 = resp
