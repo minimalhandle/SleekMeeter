@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+- **Soundboard:** play wav, mp3, ogg and flac clips into your mix from buttons, shortcuts or chat, to any output device (like a Voicemeeter virtual input, so each sound is a channel you can route and fade)
+- **Twitch chat commands:** `!brb`, `!scene`, `!sound` and more, from you, your mods or everyone. Joins chat anonymously; nothing is ever posted
+- **Phone remote:** faders, mutes, Be right back, scenes, sounds and outputs from a phone on the same Wi-Fi, protected by a secret key in the address
+- **Level history:** a graph of how loud each channel was over the last 3 hours, with clipping highlighted
+- **Per-app routing:** choose which output each app plays to, from the Apps window
+- New shortcut actions: load a scene, play a sound, stop all sounds
+
 ## 0.10.2
 - Fixed: faders wobbled when turning Be right back off. Levels and mutes are now put back in an order that doesn't make Voicemeeter's fades fight each other
 

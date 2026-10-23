@@ -86,7 +86,16 @@ pub fn defaults() -> Value {
         "obs": { "on": false, "host": "127.0.0.1", "port": 4455, "password": "", "rules": [],
                  "liveDo": "", "liveScene": "", "offDo": "", "offScene": "" },
         // Warn when this channel's level goes over 0 dB.
-        "clipWarn": { "on": false, "target": "Strip[0]" }
+        "clipWarn": { "on": false, "target": "Strip[0]" },
+        // Soundboard: sounds [{ "name", "path", "volume" 0-100 }] play to `device` ("" = a Voicemeeter virtual input).
+        "soundboard": { "device": "", "volume": 100, "sounds": [] },
+        // Twitch chat commands: commands [{ "cmd": "!brb", "action": "brb", "target": "" }];
+        // who can use them: "broadcaster", "mods" or "everyone".
+        "twitch": { "on": false, "channel": "", "who": "mods", "cooldown": 3, "commands": [] },
+        // Control from a phone on the same network. `key` is the secret in the address.
+        "remote": { "on": false, "port": 8787, "key": "" },
+        // Record how loud each channel is, for the level history.
+        "history": { "on": true }
     })
 }
 

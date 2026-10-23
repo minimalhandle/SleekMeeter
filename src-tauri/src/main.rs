@@ -4,6 +4,7 @@
 // First, so its log_info!/log_warn!/log_error! macros work in every module below.
 #[macro_use]
 mod logs;
+mod actions;
 mod apps;
 mod appvol;
 mod brb;
@@ -12,11 +13,16 @@ mod fades;
 mod files;
 mod gain;
 mod health;
+mod history;
 mod hold;
 mod obs;
 mod outputs;
 mod recorder;
+mod remote;
+mod routing;
 mod settings;
+mod sounds;
+mod twitch;
 mod update;
 mod vm;
 mod win;
@@ -231,6 +237,23 @@ async fn app_volume_set(
         .await
         .map_err(|e| e.to_string())?
         .inspect_err(|e| log_warn!("Per-app volume: {e}"))
+}
+
+/// Playback devices an app can be sent to.
+#[tauri::command]
+async fn app_route_devices() -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(routing::devices)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Send apps (by process id) to a playback device; an empty device puts them back on the default.
+#[tauri::command]
+async fn app_route_set(pids: Vec<u32>, device: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || routing::set(&pids, &device))
+        .await
+        .map_err(|e| e.to_string())?
+        .inspect_err(|e| log_warn!("App routing: {e}"))
 }
 
 #[tauri::command]
@@ -467,9 +490,6 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
         .map(|(_, a)| a.clone());
     let Some(action) = action else { return };
     let target = action["target"].as_str().unwrap_or("").to_string();
-    let vm = app.state::<Vm>();
-    let Some(api) = vm.api.clone() else { return };
-    let channel = target.starts_with("Strip[") || target.starts_with("Bus[");
     let kind = action["action"].as_str().unwrap_or("");
     // Push to talk / push to mute act on both the press and the release.
     if kind == "ptt" || kind == "ptm" {
@@ -484,57 +504,8 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
     if !pressed {
         return;
     }
-    match kind {
-        "mute" if channel => {
-            let _ = fades::toggle_mute(app, &api, &target);
-        }
-        "volup" if channel => {
-            let _ = fades::nudge(app, &api, &target, 2.0);
-        }
-        "voldown" if channel => {
-            let _ = fades::nudge(app, &api, &target, -2.0);
-        }
-        "window" => toggle_main(app),
-        "output" if !target.is_empty() => outputs::switch_with_osd(app, &target, "shortcut"),
-        "outputnext" => outputs::cycle(app),
-        "brb" => {
-            if let Err(e) = brb::toggle(app) {
-                log_warn!("Be right back: {e}");
-                show_osd_text(app, "Stream mode", "Not set up", false, "mic");
-            }
-        }
-        "duck" => {
-            let on = {
-                let st = app.state::<Settings>();
-                let mut s = st.0.lock().unwrap();
-                let on = !s["ducking"]["on"].as_bool().unwrap_or(false);
-                if !s["ducking"].is_object() {
-                    s["ducking"] = settings::defaults()["ducking"].clone();
-                }
-                s["ducking"]["on"] = json!(on);
-                log_info!(
-                    "Shortcut: talk-over ducking {}",
-                    if on { "on" } else { "off" }
-                );
-                let _ = settings::save(&s);
-                let _ = app.emit("settings-changed", s.clone());
-                on
-            };
-            show_osd_text(
-                app,
-                "Talk-over ducking",
-                if on { "On" } else { "Off" },
-                on,
-                "mic",
-            );
-        }
-        "record" => {
-            if let Ok(rec) = recorder::toggle_record(app, &api) {
-                let text = if rec { "Recording" } else { "Stopped" };
-                show_osd_text(app, "Recorder", text, rec, "record");
-            }
-        }
-        _ => {}
+    if let Err(e) = actions::perform(app, kind, &target) {
+        log_warn!("Shortcut {kind}: {e}");
     }
 }
 
@@ -652,6 +623,14 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
 
 /// Polls Voicemeeter ~30 times a second, as the SDK recommends:
 /// IsParametersDirty() for changes (and connection state), GetLevel() for meters.
+/// Whether the level history is being recorded (Settings).
+fn keep_history(app: &AppHandle) -> bool {
+    let state = app.state::<Settings>();
+    let s = state.0.lock().unwrap();
+    let on = s["history"]["on"].as_bool().unwrap_or(true);
+    on
+}
+
 fn spawn_poller(app: AppHandle, api: Arc<Api>) {
     std::thread::spawn(move || {
         let tick = Duration::from_millis(33);
@@ -662,6 +641,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
         let mut prev: Option<Value> = None;
         // Push-to-talk channels start out muted, once the connection has settled.
         let mut arm_pending = false;
+        let mut levels_log = history::Recorder::new();
 
         loop {
             let started = Instant::now();
@@ -720,7 +700,14 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     hold::arm(&app, &hotkeys);
                 }
                 if window_visible(&app, "main") || window_visible(&app, FLYOUT) {
-                    let _ = app.emit("vm-levels", api.levels(&layout));
+                    let levels = api.levels(&layout);
+                    if keep_history(&app) {
+                        levels_log.feed(&levels);
+                    }
+                    let _ = app.emit("vm-levels", levels);
+                } else if levels_log.due() && keep_history(&app) {
+                    // Hidden in the tray: read the meters once a second, just for the history.
+                    levels_log.feed(&api.levels(&layout));
                 }
             }
 
@@ -1131,6 +1118,53 @@ async fn update_install(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Soundboard: output devices Windows has, and the one used when none is chosen.
+#[tauri::command]
+async fn sound_devices() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(sounds::devices)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn sound_play(app: AppHandle, name: String) -> Result<(), String> {
+    sounds::play(&app, &name)
+}
+
+#[tauri::command]
+fn sound_stop() {
+    sounds::stop_all();
+}
+
+/// Ask for a sound file. Returns the path, or null if cancelled.
+#[tauri::command]
+async fn sound_pick() -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(files::pick_audio)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Levels of the last `minutes` minutes, for the history graph.
+#[tauri::command]
+fn history_get(minutes: u64) -> Value {
+    history::get(minutes)
+}
+
+#[tauri::command]
+fn history_clear() {
+    history::clear();
+}
+
+#[tauri::command]
+fn remote_status() -> Value {
+    remote::status()
+}
+
+#[tauri::command]
+fn twitch_status() -> Value {
+    twitch::status()
+}
+
 #[tauri::command]
 fn open_release(url: String) -> Result<(), String> {
     update::open(&url)
@@ -1176,6 +1210,9 @@ async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
     if value["obs"].is_object() {
         value["obs"]["password"] = json!("");
     }
+    if value["remote"].is_object() {
+        value["remote"]["key"] = json!("");
+    }
     let text = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
     std::fs::write(&path, text).map_err(|e| format!("Couldn't save the backup: {e}"))?;
     log_info!("Exported settings to {path}");
@@ -1218,6 +1255,10 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
         let mine = cur["obs"]["password"].as_str().unwrap_or("").to_string();
         if !mine.is_empty() && value["obs"]["password"].as_str().unwrap_or("").is_empty() {
             value["obs"]["password"] = json!(mine);
+        }
+        let key = cur["remote"]["key"].as_str().unwrap_or("").to_string();
+        if !key.is_empty() && value["remote"].is_object() {
+            value["remote"]["key"] = json!(key);
         }
     }
     settings_set(app.clone(), value)?;
@@ -1579,6 +1620,8 @@ fn main() {
             outputs_apply,
             app_volumes,
             app_volume_set,
+            app_route_devices,
+            app_route_set,
             vm_launch,
             vm_devices,
             vm_show_window,
@@ -1595,6 +1638,14 @@ fn main() {
             panel_fit,
             check_update,
             update_install,
+            sound_devices,
+            sound_play,
+            sound_stop,
+            sound_pick,
+            twitch_status,
+            remote_status,
+            history_get,
+            history_clear,
             ui_ready,
             window_fit,
             open_release,
@@ -1712,6 +1763,8 @@ fn main() {
                 spawn_poller(handle.clone(), api);
                 spawn_scene_rules(handle.clone());
                 obs::spawn(handle.clone());
+                twitch::spawn(handle.clone());
+                remote::spawn(handle.clone());
                 devwatch::spawn(handle);
             }
             Ok(())

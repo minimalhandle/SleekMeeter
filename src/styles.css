@@ -709,9 +709,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 #outputsBtn[data-live="1"]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 7px; border-radius: 50%; vertical-align: 1px; background: var(--amber); box-shadow: 0 0 calc(6px * var(--glow)) var(--amber); }
 
 /* ---------- volume per app ---------- */
-.dlg.apps-dlg { width: min(580px, calc(100vw - 32px)); }
+.dlg.apps-dlg { width: min(780px, calc(100vw - 32px)); }
 .app-vols { display: flex; flex-direction: column; gap: 2px; max-height: min(56vh, 460px); overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
-.app-row { display: grid; grid-template-columns: minmax(110px, 160px) 1fr 44px 62px; gap: 12px; align-items: center; padding: 5px 0; }
+.app-row { display: grid; grid-template-columns: minmax(100px, 140px) 1fr 44px 62px minmax(130px, 200px); gap: 12px; align-items: center; padding: 5px 0; }
 .app-name { display: flex; align-items: center; gap: 9px; min-width: 0; font-weight: 600; }
 .app-name .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-name .live { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--rail); }
@@ -837,3 +837,39 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .strip.clipped .well { box-shadow: inset 0 2px 6px rgba(0, 0, 0, .85), 0 0 0 1px var(--red); }
 .offline-card .linkish { display: block; margin: 14px auto 0; }
 .fold-body > .btn, .fold-body > .btn-row { align-self: flex-start; }
+
+/* ---------- soundboard, Twitch, phone remote, level history ---------- */
+.dlg.sounds-dlg, .dlg.history-dlg { width: min(640px, calc(100vw - 32px)); }
+.sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
+.sound-tile { position: relative; --sc: var(--amber); }
+.sound-tile[data-n="1"] { --sc: var(--cyan); } .sound-tile[data-n="2"] { --sc: var(--rose, var(--red)); }
+.sound-tile[data-n="3"] { --sc: var(--violet, var(--amber)); } .sound-tile[data-n="4"] { --sc: var(--green, var(--cyan)); }
+.sound-tile[data-n="5"] { --sc: var(--coral, var(--amber)); }
+.sound-play { width: 100%; min-height: 56px; padding: 8px 10px; border-radius: var(--r, 8px); background: var(--key); color: var(--ink);
+  border: 1px solid var(--line, rgba(255,255,255,.12)); box-shadow: inset 0 -3px 0 var(--sc); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.sound-play:hover { filter: brightness(1.12); }
+.sound-tile.hit .sound-play { background: var(--sc); color: var(--on-ink, #111); }
+.sound-name { width: 100%; min-height: 56px; }
+.sound-del { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--red); color: #fff; border: 0; padding: 0; }
+.remote-url { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.remote-url code { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 6px; background: var(--well); overflow-wrap: anywhere; user-select: all; font-size: var(--s-1); }
+.twitch-head, .twitch-rule { grid-template-columns: .8fr 1.2fr 1fr 32px; }
+.hist-bar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.hist-seg { display: flex; gap: 5px; }
+.hist-seg .tog { height: 30px; padding: 0 12px; font-size: var(--s0); }
+#histCanvas { width: 100%; height: 240px; display: block; border-radius: 8px; background: var(--well); }
+.hist-keys { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.hist-key { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 13px; font-size: var(--s-1);
+  background: var(--key); color: var(--ink); border: 1px solid var(--line, rgba(255,255,255,.12)); }
+.hist-key::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--k); }
+.hist-key[aria-pressed="false"] { opacity: .45; }
+.hist-key[aria-pressed="false"]::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--k); }
+.hist-table { display: flex; flex-direction: column; margin: 4px 0 10px; }
+.hist-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 8px; padding: 5px 4px; border-top: 1px solid var(--rail); font-variant-numeric: tabular-nums; }
+.hist-row.head { color: var(--ink-2); font-size: var(--s-1); border-top: 0; }
+.hist-row[data-clip="1"] span:nth-child(2), .hist-row[data-clip="1"] span:nth-child(3) { color: var(--red); font-weight: 600; }
+@media (max-width: 700px) { .app-row { grid-template-columns: minmax(90px, 1fr) 1fr 44px 62px; } .app-row .route { grid-column: 1 / -1; } }
+.sounds-dlg .field { margin-top: 10px; }
+.sounds-dlg .btn-row { margin: 6px 0; }
+.sounds-dlg .hint { margin-top: 12px; }

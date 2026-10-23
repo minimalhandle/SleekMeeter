@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Sleekmeeter remote</title>
+<style>
+  :root { --bg:#14161b; --card:#1d2027; --line:#2c303a; --ink:#eef0f4; --ink2:#9aa1af; --amber:#ffb454; --red:#ff5d5d; color-scheme: dark; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f3f4f7; --card:#fff; --line:#dcdfe6; --ink:#1b1e26; --ink2:#667085; --amber:#d97706; --red:#d92d20; color-scheme: light; } }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; padding:12px 16px calc(24px + env(safe-area-inset-bottom)); }
+  h1 { font-size:18px; margin:4px 0 12px; display:flex; align-items:center; gap:8px; }
+  h1 small { font-weight:400; color:var(--ink2); font-size:13px; }
+  h2 { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink2); margin:20px 0 8px; font-weight:600; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:8px; }
+  button { font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; min-height:48px; }
+  button:active { transform:scale(.98); }
+  button[aria-pressed="true"] { background:var(--amber); color:#1b1204; border-color:var(--amber); font-weight:600; }
+  .brb { width:100%; font-size:18px; font-weight:600; }
+  .brb[aria-pressed="true"] { background:var(--red); color:#fff; border-color:var(--red); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+  .row { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; }
+  .row .name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row .db { color:var(--ink2); font-variant-numeric:tabular-nums; margin-left:8px; font-weight:400; }
+  .row input[type=range] { grid-column:1 / 2; width:100%; height:36px; accent-color:var(--amber); }
+  .row button { grid-row:1 / 3; grid-column:2; min-width:72px; }
+  .row.muted .name { color:var(--ink2); text-decoration:line-through; }
+  .msg { text-align:center; color:var(--ink2); padding:40px 8px; }
+  .off { opacity:.5; pointer-events:none; }
+</style>
+</head>
+<body>
+<h1>Sleekmeeter <small id="status">connecting…</small></h1>
+<div id="app" hidden>
+  <button class="brb" id="brb" type="button" aria-pressed="false">Be right back</button>
+  <div id="blocks"></div>
+</div>
+<p class="msg" id="msg" hidden></p>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  let key = params.get("k") || "";
+  try { if (key) sessionStorage.setItem("k", key); else key = sessionStorage.getItem("k") || ""; } catch (e) {}
+  if (params.has("k")) history.replaceState(null, "", location.pathname);
+  const show = (text) => { $("msg").textContent = text; $("msg").hidden = !text; $("app").hidden = !!text; };
+  if (!key) { show("Open the address shown in Sleekmeeter → Settings → Phone remote."); return; }
+
+  const api = async (path, body) => {
+    const r = await fetch(path, { method: body ? "POST" : "GET", headers: { "X-Key": key, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401) throw new Error("wrong-key");
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || "failed");
+    return data;
+  };
+  const act = (action, target = "") => api("/api/action", { action, target }).then(refresh).catch((e) => flash(e.message));
+  const flash = (t) => { $("status").textContent = t; };
+
+  const rows = new Map();   // key → {el, slider, db, mute, hold}
+  let built = "";
+  function build(s) {
+    const sig = JSON.stringify([s.scenes, s.sounds, s.outputs, s.strips.map((c) => c.key), s.buses.map((c) => c.key)]);
+    if (sig === built) return;
+    built = sig; rows.clear();
+    const root = $("blocks"); root.textContent = "";
+    const section = (title, nodes) => {
+      if (!nodes.length) return;
+      const h = document.createElement("h2"); h.textContent = title; root.appendChild(h);
+      nodes.forEach((n) => root.appendChild(n));
+    };
+    const grid = (names, onTap, label) => {
+      if (!names.length) return [];
+      const g = document.createElement("div"); g.className = "grid";
+      names.forEach((n) => { const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.dataset.name = n; b.addEventListener("click", () => onTap(n)); g.appendChild(b); });
+      return [g];
+    };
+    section("Scenes", grid(s.scenes, (n) => act("scene", n)));
+    const sounds = grid(s.sounds, (n) => act("sound", n));
+    if (sounds.length) { const stop = document.createElement("button"); stop.type = "button"; stop.textContent = "Stop sounds"; stop.addEventListener("click", () => act("soundstop")); sounds[0].appendChild(stop); }
+    section("Sounds", sounds);
+    section("Outputs", grid(s.outputs, (n) => act("output", n)));
+    const chan = (c) => {
+      const el = document.createElement("div"); el.className = "card row";
+      el.innerHTML = '<div class="name"><span class="n"></span><span class="db"></span></div><input type="range" min="-60" max="12" step="0.5"><button type="button">Mute</button>';
+      const r = { el, name: el.querySelector(".n"), db: el.querySelector(".db"), slider: el.querySelector("input"), mute: el.querySelector("button"), hold: 0, muted: false };
+      let pending = null;
+      r.slider.addEventListener("input", () => {
+        r.hold = Date.now() + 1200;
+        r.db.textContent = (+r.slider.value).toFixed(1) + " dB";
+        if (pending) return;
+        pending = setTimeout(() => { pending = null; api("/api/gain", { key: c.key, db: +r.slider.value }).catch((e) => flash(e.message)); }, 70);
+      });
+      r.slider.addEventListener("dblclick", () => { r.slider.value = 0; r.slider.dispatchEvent(new Event("input")); });
+      r.mute.addEventListener("click", () => { r.hold = Date.now() + 1200; r.muted = !r.muted; r.mute.setAttribute("aria-pressed", r.muted); r.el.classList.toggle("muted", r.muted); act("mute", c.key); });
+      rows.set(c.key, r);
+      return el;
+    };
+    section("Inputs", s.strips.map(chan));
+    section("Outputs", s.buses.map(chan));
+  }
+  function paint(s) {
+    $("brb").setAttribute("aria-pressed", String(!!s.brb));
+    $("brb").textContent = s.brb ? "Back live" : "Be right back";
+    $("brb").hidden = !s.brbSet && !s.brb;
+    document.querySelectorAll("#blocks [data-name]").forEach((b) => { if (s.outputs.includes(b.dataset.name)) b.setAttribute("aria-pressed", String(b.dataset.name === s.outputNow)); });
+    [...s.strips, ...s.buses].forEach((c) => {
+      const r = rows.get(c.key); if (!r) return;
+      r.name.textContent = c.name;
+      if (Date.now() < r.hold) return;
+      r.slider.value = c.gain; r.db.textContent = (+c.gain).toFixed(1) + " dB";
+      r.muted = c.mute; r.mute.setAttribute("aria-pressed", String(c.mute)); r.el.classList.toggle("muted", c.mute);
+    });
+    $("blocks").classList.toggle("off", !s.connected);
+    $("status").textContent = s.connected ? "connected" : "Voicemeeter isn't running";
+  }
+  $("brb").addEventListener("click", () => act("brb"));
+  let failures = 0;
+  async function refresh() {
+    try { const s = await api("/api/state"); failures = 0; show(""); build(s); paint(s); }
+    catch (e) {
+      if (e.message === "wrong-key") { show("That key doesn't match. Scan or open the address in Sleekmeeter again."); return; }
+      if (++failures > 2) flash("can't reach the PC…");
+    }
+  }
+  refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, 800);
+})();
+</script>
+</body>
+</html>
