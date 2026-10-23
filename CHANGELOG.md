@@ -6,6 +6,7 @@
 - **Twelve themes that look nothing alike.** Midnight, Minimal, Clean, Analog and Studio are gone because they looked too much like Console, OLED black and Ink. If you were using one, you're moved to the closest remaining theme (Console, or Ink for Clean and Studio), including in automatic per-app rules
 - **Three more new themes:** **Rack** (brushed-steel studio gear, black fader caps, amber LCD readouts), **Deco** (Art Deco black and brass gold, serif capitals, diamond fader caps) and **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks)
 - **Every channel strip is the same width, in every theme.** Strips no longer grow to fit long channel names: long names are cut short with "…" and show in full when you hover over them
+- **Mini mode fits its channels:** the mini window is sized from the real height of the channel list in your theme, so it never needs a scroll bar (unless the list is taller than your screen) and switching between mini and the full mixer is seamless. It resizes itself when you hide or show channels or change theme
 - Fixed: header buttons (like Outputs with its live dot) could wrap onto two lines in the wider themes, and strips could end up wider than their names needed. Header buttons now never wrap, Arcade, Block and Deco no longer add extra spacing around strips and keys, and strips are re-measured whenever you switch theme
 - Fixed: the OLED black preview in the theme picker was unreadable while a light theme was active
 

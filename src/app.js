@@ -150,7 +150,7 @@
     chans.forEach((ch, k) => ch.mixerEl.style.setProperty("--w", widths[k] + "px"));
     document.body.style.setProperty("--mini-name", miniNameW + "px");
     if (PANEL) requestAnimationFrame(fitPanel);
-    else if (settings.mini) engine.windowMini(true, miniRows(), miniWidth()).catch(() => {});
+    else if (settings.mini) syncMiniWindow(true);
   }
   // Window width for mini mode and the panel: padding + chip + name column + fader + mute button.
   function miniWidth() {
@@ -490,7 +490,7 @@
     });
     lastSizes = "";
     sizeToNames();
-    if (settings.mini && !PANEL) engine.windowMini(true, miniRows(), miniWidth()).catch(() => {});
+    if (settings.mini && !PANEL) syncMiniWindow(true);
     if (PANEL) requestAnimationFrame(fitPanel);
   }
   document.querySelectorAll("[data-reveal]").forEach((b) => b.addEventListener("click", () => {
@@ -838,7 +838,7 @@
     miniBtn.setAttribute("aria-pressed", String(on));
     miniBtn.title = miniBtn.ariaLabel = on ? "Full mixer" : "Mini mode";
     if (on && drawerCh) closeDrawer();
-    engine.windowMini(on, miniRows(), miniWidth()).catch(() => {});
+    syncMiniWindow(on);
     if (save) saveSettings();
   }
   miniBtn.addEventListener("click", () => setMini(!settings.mini, true));
@@ -1753,7 +1753,8 @@
   $("#openMixerBtn").addEventListener("click", () => engine.openMixer().catch(fail));
   $("#closePanelBtn").addEventListener("click", () => engine.closePanel().catch(fail));
   // Ask the panel window to be exactly as tall as its content.
-  function fitPanel() {
+  // Height the mini list needs to show every channel with no scroll bar.
+  function miniHeight() {
     const view = $("#miniView");
     const cs = getComputedStyle(view);
     const lists = [...view.children].filter((el) => el.offsetHeight > 0);
@@ -1761,7 +1762,18 @@
       + Math.max(0, lists.length - 1) * parseFloat(cs.rowGap || cs.gap || 0)
       + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const border = parseFloat(getComputedStyle(document.body).borderTopWidth) * 2;
-    engine.fitPanel(Math.ceil($(".bar").offsetHeight + content + border), miniWidth() + border).catch(() => {});
+    return { h: Math.ceil($(".bar").offsetHeight + content + border), border };
+  }
+  function fitPanel() {
+    const { h, border } = miniHeight();
+    engine.fitPanel(h, miniWidth() + border).catch(() => {});
+  }
+  // Mini mode in the main window: size it to the channels, so it never needs a scroll bar and
+  // switching to and from the full mixer is seamless. Redone whenever the channels change.
+  function syncMiniWindow(on) {
+    if (PANEL) return;
+    const send = () => engine.windowMini(on, miniRows(), miniWidth(), on ? miniHeight().h : undefined).catch(() => {});
+    if (on) requestAnimationFrame(send); else send();
   }
   // The tray panel: docked to the corner by default; undocked, the header drags it.
   const dockBtn = $("#dockBtn");

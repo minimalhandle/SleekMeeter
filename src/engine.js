@@ -6,7 +6,7 @@
  *   devices()                  {inputs:[{type,name}], outputs:[...]}
  *   listScenes() / saveScene(n) / loadScene(n) / deleteScene(n)
  *   getSettings() / saveSettings(s) -> {problems:[...]}
- *   windowMini(mini, rows)     resize the window for mini mode
+ *   windowMini(mini, rows, width, height)  resize the window for mini mode (height fits the channels)
  *   openMixer() / closePanel() / onPanelShown(cb)   the tray volume panel
  *   checkUpdate() -> {current, latest, newer, url, canInstall} / openRelease(url)
  *   updateInstall() downloads and installs the newest version, then restarts (the app exits)
@@ -110,7 +110,7 @@
     deleteScene(name) { return this.invoke("scene_delete", { name }); }
     getSettings() { return this.invoke("settings_get"); }
     saveSettings(value) { return this.invoke("settings_set", { value }); }
-    windowMini(mini, rows, width) { return this.invoke("window_mini", { mini, rows, width }); }
+    windowMini(mini, rows, width, height) { return this.invoke("window_mini", { mini, rows, width, height }); }
     openMixer() { return this.invoke("open_mixer"); }
     closePanel() { return this.invoke("flyout_close"); }
     onPanelShown(cb) { return this.listen("flyout-shown", cb); }
