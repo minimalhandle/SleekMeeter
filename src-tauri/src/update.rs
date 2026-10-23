@@ -259,12 +259,27 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
 
     let pid = std::process::id();
     let script = if msi {
+        // Removing the old copy first (with this MSI's own product code) and then installing
+        // means it doesn't matter whether Windows sees the new MSI as an upgrade or as the
+        // same product: the install always ends up on the new version. Settings live in
+        // %APPDATA%, so they are kept. Both steps run in one elevated script (one prompt).
+        let inner = dir.join("install.ps1");
+        std::fs::write(
+            &inner,
+            format!(
+                "$msi = {msi}\n\
+                 Start-Process msiexec -Wait -ArgumentList ('/x \"' + $msi + '\" /qn /norestart')\n\
+                 Start-Process msiexec -Wait -ArgumentList ('/i \"' + $msi + '\" /passive /norestart')\n",
+                msi = ps(&file),
+            ),
+        )
+        .map_err(|e| format!("Couldn't prepare the update: {e}"))?;
         format!(
-            "$msi = {msi}\n$exe = {exe}\n\
+            "$inner = {inner}\n$exe = {exe}\n\
              try {{ Wait-Process -Id {pid} -Timeout 30 }} catch {{ }}\n\
-             try {{ Start-Process msiexec -ArgumentList ('/i \"' + $msi + '\" /passive /norestart') -Wait -Verb RunAs }} catch {{ }}\n\
+             try {{ Start-Process powershell -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $inner) }} catch {{ }}\n\
              Start-Process $exe\n",
-            msi = ps(&file),
+            inner = ps(&inner),
             exe = ps(&exe),
         )
     } else {
