@@ -2857,23 +2857,19 @@
     ["console", "Console", "Dark hardware desk with amber light"],
     ["oled", "OLED black", "Pure black for OLED screens"],
     ["glass", "Glass", "Frosted cards over a soft glow, capsule faders"],
-    ["ink", "Ink", "Light page, big thin numbers, no boxes"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
     ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
     ["blueprint", "Blueprint", "Drafting paper: white lines on blue, monospace, tick-mark faders"],
     ["block", "Block", "Bold and flat: thick outlines, hard shadows, bright colour blocks"],
     ["rack", "Rack", "Brushed steel studio gear, black fader caps, amber LCDs"],
-    ["deco", "Deco", "Art Deco: black and brass gold, serif capitals, diamond caps"],
     ["arcade", "Arcade", "8-bit cabinet: pixel corners, chunky blocks, hot colours"],
     ["peach", "Peaches & Cream", "Girly pink: peach faders, heart meters, scalloped cards"],
-    ["haunted", "Haunted", "Tombstone channels, ghost faders, slime meters, mute makes a skull"],
     ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, starburst faders"],
-    ["cosmic", "Space Cadet", "Spaceship pods, rocket faders, flame meters, guarded mute"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
   // Themes that were retired map to their closest remaining one.
-  const RETIRED = { midnight: "console", minimal: "console", clean: "ink", analog: "console", studio: "ink" };
+  const RETIRED = { midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console", ink: "console", deco: "console", haunted: "console", cosmic: "console" };
   const currentTheme = () => {
     const t = RETIRED[settings.theme] || settings.theme;
     return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "console";

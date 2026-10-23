@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.13.0
-- **Four more themes (sixteen in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a crescent moon when muted), **Haunted** (tombstone channels, ghost fader caps that become skulls when muted, slime meters), **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps) and **Space Cadet** (spaceship pods with portholes, rocket caps, flame meters, hazard-striped mute). Each has its own channel icons, and the tray panel, mini mode and volume overlay follow along
+- **Two more themes (twelve in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps). Ink and Deco are gone; if you were using them you're moved to Console
 - **Mic chain:** **⋯ → Mic chain…** has noise gate, compressor and denoiser sliders for your microphone, one-click presets (Streamer voice, Gentle, Noisy room, All off) and a live meter. Only the controls your Voicemeeter edition has are shown
 - **Setup assistant:** **⋯ → Setup assistant…** sets the A1 and B1 routing for every channel for "Just gaming + chat" or "Streamer + Discord" (which also builds a stream mix on B2)
 - **OBS overlay:** a see-through browser-source page with a MUTED or BRB badge, a mic meter and the name of the last sound played. The address is under Settings → Phone remote
@@ -15,7 +15,7 @@
 ## 0.12.0
 - **A themed title bar:** the plain Windows frame is gone. Minimise, maximise and close now sit in Sleekmeeter's own top bar and follow the theme (glowing in Neon, square in Terminal, chunky in Block, and so on). Drag the top bar to move the window and double-click it to maximise
 - **New themes:** **Blueprint** (white lines on a drafting-paper grid, monospace labels, tick-mark faders) and **Block** (flat and bold, with thick outlines, hard shadows and bright colour blocks)
-- **Twelve themes that look nothing alike.** Midnight, Minimal, Clean, Analog and Studio are gone because they looked too much like Console, OLED black and Ink. If you were using one, you're moved to the closest remaining theme (Console, or Ink for Clean and Studio), including in automatic per-app rules
+- **Themes that look nothing alike.** Midnight, Minimal, Clean, Analog and Studio are gone because they looked too much like Console, OLED black and Ink. If you were using one, you're moved to the closest remaining theme (Console, or Ink for Clean and Studio), including in automatic per-app rules
 - **Three more new themes:** **Rack** (brushed-steel studio gear, black fader caps, amber LCD readouts), **Deco** (Art Deco black and brass gold, serif capitals, diamond fader caps) and **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks)
 - **Every channel strip is the same width, in every theme.** Strips no longer grow to fit long channel names: long names are cut short with "…" and show in full when you hover over them
 - **Soundboard imports in bulk:** **Add sounds…** now lets you pick several files at once, and the new **Add a folder…** adds every wav, mp3, ogg and flac inside a folder and its subfolders. Sounds already on the board are skipped
