@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.10.0
+- **Installer:** a Windows MSI and a **Sleekmeeter-Setup.exe** that installs Voicemeeter first (downloaded from VB-Audio) if it's missing. The portable exe stays. Installed copies keep settings and scenes in `%APPDATA%\Sleekmeeter`
 - **Be right back:** a **BRB** button (and shortcut) that mutes your mic, turns the game down and plays music, all with fades, then puts everything back exactly as it was. Set it up in Settings → Stream mode
 - **OBS Studio link:** follow your OBS scenes (load a Voicemeeter scene, or start or end Be right back, when OBS changes scene), act when you go live or the stream ends, and show a **LIVE** tag in the header. Needs OBS 28 or newer with its WebSocket server on
 - **Mic level check:** talk for 8 seconds and Sleekmeeter says whether your mic is too quiet or too loud and can set the fader for you, plus an optional warning when a channel goes over 0 dB

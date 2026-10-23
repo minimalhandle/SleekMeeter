@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build --no-bundle",
+    "package": "powershell -ExecutionPolicy Bypass -File scripts/package.ps1",
     "preview": "python -m http.server 8000 --directory src"
   },
   "devDependencies": {

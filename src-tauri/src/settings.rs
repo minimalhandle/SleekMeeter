@@ -1,13 +1,38 @@
-//! Settings live in settings.json next to the exe, so Sleekmeeter stays portable.
+//! Settings live in settings.json next to the exe, so Sleekmeeter stays portable
+//! (or in %APPDATA%\Sleekmeeter when the exe sits in a read-only folder, like after an MSI install).
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
+/// Where settings, scenes and logs live. Portable: the exe's own folder. If that folder can't be
+/// written to (installed under Program Files by the MSI), %APPDATA%\Sleekmeeter instead.
 pub fn app_dir() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("."))
+    static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    DIR.get_or_init(|| {
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+            .unwrap_or_else(|| PathBuf::from("."));
+        if writable(&exe_dir) {
+            return exe_dir;
+        }
+        match std::env::var_os("APPDATA") {
+            Some(appdata) => {
+                let dir = PathBuf::from(appdata).join("Sleekmeeter");
+                let _ = std::fs::create_dir_all(&dir);
+                dir
+            }
+            None => exe_dir,
+        }
+    })
+    .clone()
+}
+
+fn writable(dir: &std::path::Path) -> bool {
+    let probe = dir.join(".sleekmeeter-write-test");
+    let ok = std::fs::write(&probe, b"").is_ok();
+    let _ = std::fs::remove_file(&probe);
+    ok
 }
 
 fn path() -> PathBuf {
