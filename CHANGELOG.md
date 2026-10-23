@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.13.0
+- Fixed: faders could wobble a little when you muted or unmuted a channel. The cap now holds still while the mute fades
 - **Two more themes (twelve in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps). Ink and Deco are gone; if you were using them you're moved to Console
 - **Mic chain:** **⋯ → Mic chain…** has noise gate, compressor and denoiser sliders for your microphone, one-click presets (Streamer voice, Gentle, Noisy room, All off) and a live meter. Only the controls your Voicemeeter edition has are shown
 - **Setup assistant:** **⋯ → Setup assistant…** sets the A1 and B1 routing for every channel for "Just gaming + chat" or "Streamer + Discord" (which also builds a stream mix on B2)

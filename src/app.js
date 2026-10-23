@@ -310,6 +310,12 @@
     });
   }
   function markMuted(ch, on) {
+    // A mute or unmute fades levels inside Voicemeeter. The fader's own level doesn't change, so while
+    // that runs the cap ignores incoming levels and can't wobble with the fade's in-between values.
+    if (ch.mutedShown !== on) {
+      if (ch.mutedShown !== undefined) ch.lockUntil = Math.max(ch.lockUntil, performance.now() + 900);
+      ch.mutedShown = on;
+    }
     for (const f of ch.faders) f.closest(".strip, .mini-row").classList.toggle("muted", on);
   }
 
