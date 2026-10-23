@@ -1,6 +1,7 @@
 /*
  * Engine layer. The UI only ever talks to this object:
  *   start(onState, onLevels)   onState(snapshot), onLevels({inputs:[[l,r]...], outputs:[[l,r]...]} in dBFS)
+ *   getFloats(names) -> [number|null]   read mic-chain parameters (null = this edition has none)
  *   setFloat(name, value) / setString(name, value)   Voicemeeter parameters, e.g. "Strip[0].Gain"
  *   launch() / showWindow()    start Voicemeeter / bring its own window back
  *   devices()                  {inputs:[{type,name}], outputs:[...]}
@@ -20,7 +21,8 @@
  *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
- *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPlay(name) / soundStop()   soundboard
+ *   selftestInputs() -> {devices} / selftestRun(input, output, secs)   hear-yourself test
+ *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPickPack() -> {folder,count}|null / soundPlay(name) / soundStop()   soundboard
  *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last} of the Twitch chat link
  *   remoteStatus() -> {running, message, urls}   the phone remote
  *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
@@ -101,6 +103,7 @@
     }
     setFloat(name, value) { return this.invoke("vm_set_float", { name, value }); }
     setString(name, value) { return this.invoke("vm_set_string", { name, value }); }
+    getFloats(names) { return this.invoke("vm_get_floats", { names }); }
     launch() { return this.invoke("vm_launch"); }
     showWindow() { return this.invoke("vm_show_window"); }
     devices() { return this.invoke("vm_devices"); }
@@ -138,6 +141,9 @@
     soundDevices() { return this.invoke("sound_devices"); }
     soundPick() { return this.invoke("sound_pick"); }
     soundPickFolder() { return this.invoke("sound_pick_folder"); }
+    soundPickPack() { return this.invoke("sound_pick_pack"); }
+    selftestInputs() { return this.invoke("selftest_inputs"); }
+    selftestRun(input, output, secs) { return this.invoke("selftest_run", { input, output, secs }); }
     soundPlay(name) { return this.invoke("sound_play", { name }); }
     soundStop() { return this.invoke("sound_stop"); }
     twitchStatus() { return this.invoke("twitch_status"); }
@@ -257,7 +263,21 @@
       this.onState(snap);
     }
 
+    getFloats(names) {
+      this._chain = this._chain || {};
+      return Promise.resolve(names.map((n) => {
+        const m = /^Strip\[(\d)\]\.(.+)$/.exec(n);
+        if (!m || +m[1] > 1) return null;
+        if (n in this._chain) return this._chain[n];
+        const d = { Comp: 0, Gate: 0, Denoiser: 0, "Comp.Threshold": -30, "Comp.Ratio": 2, "Gate.Threshold": -60 };
+        if (!(m[2] in d)) return null;
+        if (this.layout.edition < 3 && m[2].includes(".")) return null;
+        if (this.layout.edition < 3 && m[2] === "Denoiser") return null;
+        return d[m[2]];
+      }));
+    }
     setFloat(name, value) {
+      if (/^Strip\[\d\]\.(Comp|Gate|Denoiser)/.test(name)) { (this._chain = this._chain || {})[name] = value; }
       const rec = this.state.recorder;
       const r = /^Recorder\.(ArmStrip|ArmBus)\[(\d)\]$/.exec(name);
       if (rec && r) rec[r[1] === "ArmStrip" ? "armStrips" : "armBuses"][+r[2]] = !!value;
@@ -422,6 +442,9 @@
       return Promise.resolve({ devices: ["Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
     }
     soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve([["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]]); }
+    selftestInputs() { return Promise.resolve({ devices: ["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO)"] }); }
+    selftestRun(input, output, secs) { return new Promise((r) => setTimeout(r, Math.min(secs, 2) * 1000)); }
+    soundPickPack() { return Promise.resolve({ folder: "C:\\Sounds\\Cheers", count: 6 }); }
     soundPickFolder() { return Promise.resolve(["rimshot.wav", "wilhelm-scream.mp3", "oof.ogg", "bell_ding.flac", "applause.wav"].map((f) => "C:\\Sounds\\Memes\\" + f)); }
     soundPlay(name) { this.played = name; return Promise.resolve(); }
     soundStop() { return Promise.resolve(); }

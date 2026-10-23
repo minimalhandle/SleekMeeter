@@ -79,6 +79,13 @@ pub fn pick_audio_folder() -> Vec<String> {
     }
 }
 
+/// Ask for a folder to use as a random pack: returns the folder and how many sounds it holds.
+pub fn pick_audio_pack() -> Option<(String, usize)> {
+    let dir = pick_folder("Choose a folder for a random sound pack")?;
+    let n = audio_in(std::path::Path::new(&dir)).len();
+    Some((dir, n))
+}
+
 const AUDIO_EXT: [&str; 4] = ["wav", "mp3", "ogg", "flac"];
 
 /// Sound files in a folder and the folders inside it (a few levels deep), sorted by name.

@@ -154,6 +154,50 @@ pub fn devices() -> Value {
     }
 }
 
+static PACK_LAST: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(Vec::new());
+
+/// A random sound from the pack's folder, never the same one twice in a row.
+fn pick_random(name: &str, folder: &str) -> Result<String, String> {
+    let files = crate::files::audio_in(std::path::Path::new(folder));
+    if files.is_empty() {
+        return Err(format!("No sounds found in {folder}"));
+    }
+    let mut last = PACK_LAST.lock().unwrap();
+    let before = last
+        .iter()
+        .find(|(n, _)| n == name)
+        .map(|(_, p)| p.clone())
+        .unwrap_or_default();
+    let seed = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos() as u64 ^ d.as_secs().wrapping_mul(2_654_435_761))
+        .unwrap_or(0);
+    let mut i = (seed % files.len() as u64) as usize;
+    if files.len() > 1 && files[i] == before {
+        i = (i + 1) % files.len();
+    }
+    let chosen = files[i].clone();
+    last.retain(|(n, _)| n != name);
+    last.push((name.to_string(), chosen.clone()));
+    Ok(chosen)
+}
+
+static LAST: std::sync::Mutex<(String, Option<std::time::Instant>)> =
+    std::sync::Mutex::new((String::new(), None));
+
+/// The sound that played most recently and how many milliseconds ago.
+pub fn last_played() -> (String, u64) {
+    let l = LAST.lock().unwrap();
+    match l.1 {
+        Some(t) => (l.0.clone(), t.elapsed().as_millis() as u64),
+        None => (String::new(), 0),
+    }
+}
+
+fn remember(name: &str) {
+    *LAST.lock().unwrap() = (name.to_string(), Some(std::time::Instant::now()));
+}
+
 /// Play the sound called `name` (not case sensitive) from the soundboard.
 pub fn play(app: &AppHandle, name: &str) -> Result<(), String> {
     let found = {
@@ -176,17 +220,22 @@ pub fn play(app: &AppHandle, name: &str) -> Result<(), String> {
             let own = x["volume"].as_f64().unwrap_or(100.0).clamp(0.0, 100.0) as f32 / 100.0;
             (
                 x["path"].as_str().unwrap_or("").to_string(),
+                x["folder"].as_str().unwrap_or("").to_string(),
                 master * own,
                 device,
             )
         })
     };
-    let Some((path, volume, device)) = found else {
+    let Some((mut path, folder, volume, device)) = found else {
         return Err(format!("No sound called {name:?}"));
     };
+    if !folder.is_empty() {
+        path = pick_random(name, &folder)?;
+    }
     if path.is_empty() || !std::path::Path::new(&path).exists() {
         return Err(format!("The file for {name:?} is missing: {path}"));
     }
+    remember(name.trim());
     #[cfg(windows)]
     {
         player::play(&path, volume, &device);

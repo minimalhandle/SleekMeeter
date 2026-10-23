@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0
+- **Mic chain:** **⋯ → Mic chain…** has noise gate, compressor and denoiser sliders for your microphone, one-click presets (Streamer voice, Gentle, Noisy room, All off) and a live meter. Only the controls your Voicemeeter edition has are shown
+- **Setup assistant:** **⋯ → Setup assistant…** sets the A1 and B1 routing for every channel for "Just gaming + chat" or "Streamer + Discord" (which also builds a stream mix on B2)
+- **OBS overlay:** a see-through browser-source page with a MUTED or BRB badge, a mic meter and the name of the last sound played. The address is under Settings → Phone remote
+- **Duck for friends too:** talk-over ducking can now start from more than one channel (your mic or Discord), under "Or when these talk"
+- **Smarter soundboard:** a shortcut for each sound, groups with a tab bar, and **Random pack…** to turn a folder into one button that plays a random sound from it
+- **Hear yourself:** **⋯ → Hear yourself…** records 5 seconds of your stream mix and plays it back on your headphones
+
 ## 0.12.0
 - **A themed title bar:** the plain Windows frame is gone. Minimise, maximise and close now sit in Sleekmeeter's own top bar and follow the theme (glowing in Neon, square in Terminal, chunky in Block, and so on). Drag the top bar to move the window and double-click it to maximise
 - **New themes:** **Blueprint** (white lines on a drafting-paper grid, monospace labels, tick-mark faders) and **Block** (flat and bold, with thick outlines, hard shadows and bright colour blocks)

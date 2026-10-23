@@ -8,11 +8,13 @@ use crate::{actions, fades, Settings, Vm};
 use serde_json::{json, Value};
 use std::io::{Read, Write};
 use std::net::{IpAddr, TcpListener, TcpStream, UdpSocket};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
 const PAGE: &str = include_str!("../remote.html");
+const OVERLAY: &str = include_str!("../overlay.html");
 /// Actions the phone is allowed to run.
 const ALLOWED: &[&str] = &[
     "brb",
@@ -27,6 +29,46 @@ const ALLOWED: &[&str] = &[
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
+static LEVELS: Mutex<Value> = Mutex::new(Value::Null);
+/// When the OBS overlay last asked for data (milliseconds since start), 0 if never.
+static OVERLAY_SEEN: AtomicU64 = AtomicU64::new(0);
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// True while an OBS overlay is open, so the meters keep being read with the window hidden.
+pub fn overlay_active() -> bool {
+    let seen = OVERLAY_SEEN.load(Ordering::Relaxed);
+    seen != 0 && now_ms().saturating_sub(seen) < 5000
+}
+
+/// The latest meter readings, kept for the overlay.
+pub fn set_levels(levels: &Value) {
+    *LEVELS.lock().unwrap() = levels.clone();
+}
+
+fn overlay_json(app: &AppHandle) -> Value {
+    OVERLAY_SEEN.store(now_ms(), Ordering::Relaxed);
+    let vm = app.state::<Vm>();
+    let snap = vm.last.lock().unwrap().clone();
+    let strips: Vec<Value> = snap["strips"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|c| json!({ "mute": c["mute"].as_bool().unwrap_or(false) }))
+        .collect();
+    let (name, age) = crate::sounds::last_played();
+    json!({
+        "brb": snap["brb"].as_bool().unwrap_or(false),
+        "strips": strips,
+        "levels": LEVELS.lock().unwrap().clone(),
+        "sound": if name.is_empty() { Value::Null } else { json!({ "name": name, "ageMs": age }) },
+    })
+}
 
 fn publish(v: Value) {
     *STATUS.lock().unwrap() = v;
@@ -221,6 +263,9 @@ fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
     if req.method == "GET" && (req.path == "/" || req.path == "/index.html") {
         return respond(stream, "200 OK", "text/html; charset=utf-8", PAGE);
     }
+    if req.method == "GET" && req.path == "/overlay" {
+        return respond(stream, "200 OK", "text/html; charset=utf-8", OVERLAY);
+    }
     if !req.path.starts_with("/api/") {
         return respond(stream, "404 Not Found", "text/plain", "Not found");
     }
@@ -236,6 +281,7 @@ fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
     let body: Value = serde_json::from_str(&req.body).unwrap_or(Value::Null);
     let result: Result<Value, String> = match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/api/state") => Ok(state_json(app)),
+        ("GET", "/api/overlay") => Ok(overlay_json(app)),
         ("POST", "/api/gain") => {
             let key = body["key"].as_str().unwrap_or("");
             let db = body["db"].as_f64().unwrap_or(0.0).clamp(-60.0, 12.0) as f32;

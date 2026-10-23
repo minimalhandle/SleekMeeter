@@ -61,6 +61,9 @@
         <button role="menuitem" type="button" data-action="show">Show Voicemeeter window</button>
         <button role="menuitem" type="button" data-action="restart">Restart audio engine</button>
         <button role="menuitem" type="button" data-action="unsolo">Clear all solos</button>
+        <button role="menuitem" type="button" data-action="setup">Setup assistant…</button>
+        <button role="menuitem" type="button" data-action="hear">Hear yourself…</button>
+        <button role="menuitem" type="button" data-action="chain">Mic chain…</button>
         <button role="menuitem" type="button" data-action="history">Level history</button>
       </div>
     </div>
@@ -172,6 +175,60 @@
     <div class="btn-row"><button class="btn" id="healthAgain" type="button">Check again</button></div>
   </dialog>
 
+  <dialog class="dlg setup-dlg" id="setupDlg" aria-labelledby="setupTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="setupTitle">Setup assistant</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint">Pick what you are doing and Sleekmeeter sets the A1 / B1 routing buttons on every channel for you. You can still change any of them afterwards.</p>
+    <div class="setup-choices" role="radiogroup" aria-label="What are you setting up?">
+      <label class="setup-choice"><input type="radio" name="setupKind" value="chat" checked><span><b>Just gaming + chat</b><small>You hear everything on your headphones. Friends hear only your mic.</small></span></label>
+      <label class="setup-choice"><input type="radio" name="setupKind" value="stream"><span><b>Streamer + Discord</b><small>As above, plus a second mix for OBS with your mic, game, Discord and music.</small></span></label>
+    </div>
+    <div class="field wide"><label for="setupMic">My microphone</label><select id="setupMic"></select></div>
+    <div class="field wide" id="setupDiscordRow"><label for="setupDiscord">Discord / voice chat</label><select id="setupDiscord"></select></div>
+    <ul class="setup-plan" id="setupPlan"></ul>
+    <div class="btn-row"><button class="btn primary" id="setupApply" type="button">Apply routing</button></div>
+  </dialog>
+
+  <dialog class="dlg hear-dlg" id="hearDlg" aria-labelledby="hearTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="hearTitle">Hear yourself</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint">Records 5 seconds of the mix your stream or friends get, then plays it back on your headphones. Talk, play a sound, and hear exactly what they hear.</p>
+    <div class="field wide"><label for="hearInput">Record the mix</label><select id="hearInput"></select></div>
+    <div class="field wide"><label for="hearOutput">Play back on</label><select id="hearOutput"></select></div>
+    <p class="hint" id="hearNone" hidden>No Voicemeeter virtual outputs were found. Turn on B1 or B2 for the channels you want to hear, and check that Voicemeeter is running.</p>
+    <p class="mic-result" id="hearStatus" role="status" aria-live="polite"></p>
+    <div class="btn-row"><button class="btn primary" id="hearStart" type="button">Record 5 seconds</button></div>
+  </dialog>
+
+  <dialog class="dlg chain-dlg" id="chainDlg" aria-labelledby="chainTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="chainTitle">Mic chain</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint">Clean up your voice: the gate silences background noise between words, the compressor evens out loud and quiet parts, the denoiser removes hiss.</p>
+    <div class="field wide"><label for="chainWhich">Microphone</label><select id="chainWhich"></select></div>
+    <div class="btn-row chain-presets">
+      <button class="btn primary" type="button" data-preset="streamer">Streamer voice</button>
+      <button class="btn" type="button" data-preset="gentle">Gentle</button>
+      <button class="btn" type="button" data-preset="noisy">Noisy room</button>
+      <button class="btn" type="button" data-preset="off">All off</button>
+    </div>
+    <div id="chainKnobs" class="chain-knobs"></div>
+    <p class="hint" id="chainNone" hidden>This Voicemeeter strip has no gate, compressor or denoiser controls. They are on the hardware input strips of Banana and Potato.</p>
+    <div class="mic-meter" aria-hidden="true"><div class="mic-fill" id="chainFill"></div><div class="mic-zone"></div></div>
+    <div class="mic-scale" aria-hidden="true"><span>−60</span><span>−45</span><span>−30</span><span>−15</span><span>0 dB</span></div>
+  </dialog>
+
   <dialog class="dlg mic-dlg" id="micDlg" aria-labelledby="micTitle">
     <form method="dialog" class="dlg-head">
       <h2 id="micTitle">Check my mic level</h2>
@@ -194,9 +251,11 @@
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </form>
+    <div class="sound-tabs" id="soundTabs" role="tablist" aria-label="Sound groups" hidden></div>
     <div class="sound-grid" id="soundGrid"></div>
     <p class="hint empty-note" id="soundsEmpty" hidden>No sounds yet. Add sound files, or a whole folder of them (wav, mp3, ogg or flac), and each one shows up here as a button.</p>
-    <div class="btn-row"><button class="btn primary" id="soundAdd" type="button" title="Pick one or more sound files">Add sounds…</button><button class="btn" id="soundAddFolder" type="button" title="Add every sound in a folder">Add a folder…</button><button class="btn" id="soundStop" type="button">Stop all sounds</button><button class="btn" id="soundEdit" type="button" aria-pressed="false">Edit</button></div>
+    <div class="btn-row"><button class="btn primary" id="soundAdd" type="button" title="Pick one or more sound files">Add sounds…</button><button class="btn" id="soundAddFolder" type="button" title="Add every sound in a folder">Add a folder…</button><button class="btn" id="soundAddPack" type="button" title="One button that plays a random sound from a folder">Random pack…</button><button class="btn" id="soundStop" type="button">Stop all sounds</button><button class="btn" id="soundEdit" type="button" aria-pressed="false">Edit</button></div>
+    <datalist id="soundTabList"></datalist>
     <div class="field wide"><label for="soundDevice">Play to</label><select id="soundDevice"></select></div>
     <div class="field"><label for="soundVolume">Volume</label><input type="range" id="soundVolume" min="0" max="100" step="1"><output for="soundVolume"></output></div>
     <p class="hint">Sounds play to the device above. Pick one of Voicemeeter's virtual inputs and the sound appears in the mixer as its own channel, so you choose where it goes (stream, headphones or both) and turn it up or down with its fader. To trigger a sound from a key or from chat, add a shortcut or a Twitch command with the action <b>Play a sound</b>.</p>
@@ -348,6 +407,10 @@
             <select id="duckTrigger"></select>
           </div>
           <div class="field wide top">
+            <label>Or when these talk</label>
+            <div class="arm-list" id="duckAlso" role="group" aria-label="Other channels that also turn the game down, such as Discord"></div>
+          </div>
+          <div class="field wide top">
             <label>Turn down</label>
             <div class="arm-list" id="duckTargets" role="group" aria-label="Channels to turn down"></div>
           </div>
@@ -438,6 +501,8 @@
               <div class="field wide"><label for="remotePort">Port</label><input type="number" id="remotePort" min="1024" max="65535"></div>
               <div class="remote-url" id="remoteUrl" hidden><code id="remoteUrlText"></code><button class="btn" id="remoteCopy" type="button">Copy</button></div>
               <p class="hint obs-status" id="remoteStatusText" role="status"></p>
+              <p class="hint">For OBS: add a Browser source and paste this address. It shows a MUTED or BRB badge, your mic meter and the name of the sound that just played, on a see-through background. Add <code>&amp;mic=1</code> if your mic is not the first channel.</p>
+              <div class="remote-url" id="overlayUrl" hidden><code id="overlayUrlText"></code><button class="btn" id="overlayCopy" type="button">Copy</button></div>
               <div class="btn-row"><button class="btn" id="remoteNewKey" type="button">Make a new key</button></div>
               <p class="hint">A new key signs every phone out until you open the new address on it.</p>
             </div>

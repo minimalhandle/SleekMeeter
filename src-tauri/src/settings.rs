@@ -65,7 +65,7 @@ pub fn defaults() -> Value {
         "fades": { "on": true, "muteMs": 250, "sceneMs": 1200 },
         // Talk-over ducking: while `trigger` is above `threshold` dB, lower `targets` by `amount` dB.
         "ducking": {
-            "on": false, "trigger": "Strip[0]", "targets": [], "amount": 12, "threshold": -40,
+            "on": false, "trigger": "Strip[0]", "also": [], "targets": [], "amount": 12, "threshold": -40,
             "attackMs": 150, "releaseMs": 800, "holdMs": 700
         },
         // Restart Voicemeeter's audio engine when a device it uses comes back.

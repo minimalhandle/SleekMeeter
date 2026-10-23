@@ -510,6 +510,7 @@
     if (recDlg.open) paintRecLevel(lv);
     checkClip(lv);
     if (micDlg.open) micLevels(lv);
+    if (chainDlg.open) chainLevels(lv);
   }
   // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
   // are composited on the GPU without repainting. The loop stops when every meter is at rest
@@ -854,6 +855,9 @@
     setMenu(false);
     if (a === "show") engine.showWindow().catch(fail);
     if (a === "restart") engine.setFloat("Command.Restart", 1).then(() => toast("Restarting audio engine")).catch(fail);
+    if (a === "setup") openSetup();
+    if (a === "hear") openHear();
+    if (a === "chain") openChain();
     if (a === "history") openHistory();
     if (a === "unsolo") chans.forEach((ch) => { if (ch.kind === "strip" && ch.data && ch.data.solo) sendFloat(`${ch.prefix}.Solo`, 0); });
   });
@@ -1466,6 +1470,7 @@
   $("#duckTrigger").addEventListener("change", (e) => {
     const d = D();
     d.trigger = e.target.value;
+    d.also = (d.also || []).filter((t) => t !== d.trigger);
     d.targets = (d.targets || []).filter((t) => t !== d.trigger);
     saveSettings();
     syncFadeDuck();
@@ -1481,10 +1486,30 @@
     for (const ch of chans) if (ch.kind === "strip") trig.appendChild(new Option(displayName(ch), ch.prefix));
     trig.value = d.trigger;
     if (trig.selectedIndex < 0) { trig.selectedIndex = 0; d.trigger = trig.value; }
+    const alsoList = $("#duckAlso");
+    alsoList.textContent = "";
+    for (const ch of chans) {
+      if (ch.kind !== "strip" || ch.prefix === d.trigger) continue;
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "tog arm", textContent: displayName(ch) });
+      b.title = `Also turn things down when ${displayName(ch)} is loud`;
+      b.dataset.color = look(ch).color;
+      b.setAttribute("aria-pressed", String((d.also || []).includes(ch.prefix)));
+      b.addEventListener("click", () => {
+        const cur = D();
+        const set = new Set(cur.also || []);
+        if (set.has(ch.prefix)) set.delete(ch.prefix); else set.add(ch.prefix);
+        cur.also = chans.filter((c) => set.has(c.prefix)).map((c) => c.prefix);
+        // A channel that triggers ducking can't also be turned down.
+        cur.targets = (cur.targets || []).filter((t) => !set.has(t));
+        saveSettings();
+        syncFadeDuck();
+      });
+      alsoList.appendChild(b);
+    }
     const list = $("#duckTargets");
     list.textContent = "";
     for (const ch of chans) {
-      if (ch.kind !== "strip" || ch.prefix === d.trigger) continue;
+      if (ch.kind !== "strip" || ch.prefix === d.trigger || (d.also || []).includes(ch.prefix)) continue;
       const b = Object.assign(document.createElement("button"), { type: "button", className: "tog arm", textContent: displayName(ch) });
       b.title = displayName(ch);
       b.dataset.color = look(ch).color;
@@ -1511,8 +1536,9 @@
   function paintDuckLevel(force, lv) {
     if (!settingsDlg.open || !settings.ducking || !settings.ducking.on) return;
     const d = settings.ducking;
-    const m = /^Strip\[(\d)\]$/.exec(d.trigger || "");
-    const pair = lv && m ? (lv.inputs || [])[+m[1]] : null;
+    let hit = -200;
+    for (const k of [d.trigger, ...(d.also || [])]) { const m = /^Strip\[(\d)\]$/.exec(k || ""); const pr = lv && m ? (lv.inputs || [])[+m[1]] : null; if (pr) hit = Math.max(hit, pr[0], pr[1]); }
+    const pair = hit > -200 ? [hit, hit] : null;
     if (pair) { const db = Math.max(pair[0], pair[1]); duckShown = db > duckShown ? db : Math.max(db, duckShown - 3); }
     const input = $("#duckThreshold"), min = +input.min, max = +input.max;
     const p = Math.max(0, Math.min(1, (duckShown - min) / (max - min))) * 100;
@@ -1963,19 +1989,40 @@
   const soundsDlg = $("#soundsDlg");
   let soundEdit = false;
   const soundRange = bindRange("soundVolume", () => SB().volume, (v) => { SB().volume = v; }, (v) => v + "%");
+  let soundTab = "";
+  const soundHotkey = (s) => (settings.hotkeys || []).find((h) => h.action === "sound" && h.target === s.name);
   function renderSounds() {
     const grid = $("#soundGrid");
     grid.textContent = "";
     const list = SB().sounds || (SB().sounds = []);
     $("#soundsEmpty").hidden = list.length > 0;
+    // Groups: a sound's `tab` is any name you like. The bar shows once there is at least one.
+    const tabs = [...new Set(list.map((s) => (s.tab || "").trim()).filter(Boolean))];
+    if (soundTab && !tabs.includes(soundTab)) soundTab = "";
+    const bar = $("#soundTabs");
+    bar.hidden = !tabs.length;
+    bar.textContent = "";
+    for (const t of ["", ...tabs]) {
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "sound-tab", textContent: t || "All" });
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(t === soundTab));
+      b.addEventListener("click", () => { soundTab = t; renderSounds(); });
+      bar.appendChild(b);
+    }
+    const dl = $("#soundTabList");
+    dl.textContent = "";
+    for (const t of tabs) dl.appendChild(new Option(t));
     list.forEach((s, idx) => {
+      if (soundTab && (s.tab || "").trim() !== soundTab) return;
       const tile = document.createElement("div");
       tile.className = "sound-tile";
       tile.dataset.n = String(idx % 6);
       const play = document.createElement("button");
       play.type = "button"; play.className = "sound-play";
-      play.textContent = s.name;
-      play.title = s.path;
+      play.textContent = (s.folder ? "🎲 " : "") + s.name;
+      play.title = s.folder ? `A random sound from ${s.folder}` : s.path;
+      const hk = soundHotkey(s);
+      if (hk && hk.keys) { const k = document.createElement("small"); k.className = "sound-key"; k.textContent = hk.keys; play.appendChild(k); }
       play.addEventListener("click", () => {
         if (soundEdit) return;
         tile.classList.add("hit"); setTimeout(() => tile.classList.remove("hit"), 350);
@@ -1986,16 +2033,39 @@
         const del = document.createElement("button");
         del.type = "button"; del.className = "sound-del"; del.setAttribute("aria-label", `Remove ${s.name}`);
         del.innerHTML = `<svg viewBox="0 0 20 20" width="12" height="12" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
-        del.addEventListener("click", () => { list.splice(idx, 1); saveSettings(); renderSounds(); });
+        del.addEventListener("click", () => {
+          list.splice(idx, 1);
+          settings.hotkeys = (settings.hotkeys || []).filter((h) => !(h.action === "sound" && h.target === s.name));
+          saveSettings(); renderSounds();
+        });
         const name = document.createElement("input");
         name.type = "text"; name.className = "sound-name"; name.value = s.name; name.maxLength = 30; name.setAttribute("aria-label", "Sound name");
         name.addEventListener("change", () => {
           const n = name.value.trim().replace(/\s+/g, " ");
           if (!n || list.some((o, i) => i !== idx && o.name.toLowerCase() === n.toLowerCase())) { name.value = s.name; return; }
+          const h = soundHotkey(s);
+          if (h) h.target = n;
           s.name = n; saveSettings();
         });
         play.replaceWith(name);
         tile.appendChild(del);
+        const extra = document.createElement("div");
+        extra.className = "sound-extra";
+        const tab = document.createElement("input");
+        tab.type = "text"; tab.className = "sound-tabname"; tab.value = s.tab || ""; tab.maxLength = 16; tab.placeholder = "Group"; tab.setAttribute("list", "soundTabList"); tab.setAttribute("aria-label", "Group");
+        tab.addEventListener("change", () => { s.tab = tab.value.trim(); saveSettings(); });
+        tab.addEventListener("blur", () => renderSounds());
+        const key = document.createElement("button");
+        key.type = "button"; key.className = "keys" + (hk && hk.keys ? "" : " empty");
+        key.textContent = hk && hk.keys ? hk.keys : "Key";
+        key.title = "A shortcut that plays this sound from anywhere";
+        key.addEventListener("click", () => {
+          let h = soundHotkey(s);
+          if (!h) { h = { keys: "", action: "sound", target: s.name }; settings.hotkeys = settings.hotkeys || []; settings.hotkeys.push(h); }
+          recordKeys(key, h);
+        });
+        extra.append(tab, key);
+        tile.appendChild(extra);
       }
       grid.appendChild(tile);
     });
@@ -2029,7 +2099,7 @@
       const base = path.split(/[\\/]/).pop().replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 30) || "Sound";
       let name = base, n = 2;
       while (list.some((s) => s.name.toLowerCase() === name.toLowerCase())) name = `${base} ${n++}`;
-      list.push({ name, path, volume: 100 });
+      list.push(soundTab ? { name, path, volume: 100, tab: soundTab } : { name, path, volume: 100 });
       added++;
     }
     if (!added) { toast(paths && paths.length ? "Those sounds are already on the board" : "No sounds found"); return; }
@@ -2042,6 +2112,22 @@
   });
   $("#soundAddFolder").addEventListener("click", async () => {
     try { await addSounds(await engine.soundPickFolder()); } catch (e) { fail(e); }
+  });
+  $("#soundAddPack").addEventListener("click", async () => {
+    try {
+      const r = await engine.soundPickPack();
+      if (!r || !r.folder) return;
+      if (!r.count) { toast("No sounds found in that folder"); return; }
+      const list = SB().sounds || (SB().sounds = []);
+      if (list.some((s) => s.folder && s.folder.toLowerCase() === r.folder.toLowerCase())) { toast("That folder is already a pack"); return; }
+      const base = (r.folder.split(/[\\/]/).filter(Boolean).pop() || "Pack").replace(/[-_]+/g, " ").trim().slice(0, 26) || "Pack";
+      let name = base, n = 2;
+      while (list.some((s) => s.name.toLowerCase() === name.toLowerCase())) name = `${base} ${n++}`;
+      list.push(Object.assign({ name, path: "", folder: r.folder, volume: 100 }, soundTab ? { tab: soundTab } : {}));
+      await saveNow();
+      renderSounds();
+      toast(`Added “${name}”: plays one of ${r.count} sounds at random`);
+    } catch (e) { fail(e); }
   });
   $("#soundStop").addEventListener("click", () => engine.soundStop().catch(fail));
   $("#soundEdit").addEventListener("click", (e) => {
@@ -2143,6 +2229,10 @@
     const url = (st.urls || [])[0] || "";
     $("#remoteUrl").hidden = !url;
     $("#remoteUrlText").textContent = url;
+    let ov = "";
+    try { const u = new URL(url); u.hostname = "localhost"; u.pathname = "/overlay"; ov = u.toString(); } catch (e) { /* no address yet */ }
+    $("#overlayUrl").hidden = !ov;
+    $("#overlayUrlText").textContent = ov;
     const text = $("#remoteStatusText");
     text.textContent = RM().on ? (on ? "Open this address on your phone while it's on the same Wi-Fi as this PC." : st.message || "") : "";
     text.dataset.ok = on ? "1" : "";
@@ -2165,6 +2255,10 @@
   });
   $("#remotePort").addEventListener("change", async (e) => { RM().port = Math.max(1024, Math.min(65535, +e.target.value || 8787)); e.target.value = RM().port; await remoteSaved(); });
   $("#remoteNewKey").addEventListener("click", async () => { RM().key = newKey(); await remoteSaved(); toast("Made a new key"); });
+  $("#overlayCopy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("#overlayUrlText").textContent); toast("OBS address copied"); }
+    catch (e) { toast("Select the address and press Ctrl+C"); }
+  });
   $("#remoteCopy").addEventListener("click", async () => {
     const text = $("#remoteUrlText").textContent;
     try { await navigator.clipboard.writeText(text); toast("Address copied"); }
@@ -2335,6 +2429,183 @@
       for (const r of ch.rows) r.classList.add("clipped");
       setTimeout(() => { for (const r of ch.rows) r.classList.remove("clipped"); }, 2500);
     }
+  }
+
+
+  /* ---------- hear yourself ---------- */
+  const hearDlg = $("#hearDlg");
+  let hearBusy = false;
+  async function openHear() {
+    $("#hearStatus").textContent = "";
+    let ins = [], outs = { devices: [] };
+    try { ins = (await engine.selftestInputs()).devices || []; } catch (e) { fail(e); }
+    try { outs = await engine.soundDevices(); } catch (e) { /* default only */ }
+    const si = $("#hearInput"), so = $("#hearOutput");
+    si.textContent = ""; so.textContent = "";
+    // Prefer B2 (the stream mix) when there is one, otherwise B1.
+    for (const d of ins) si.appendChild(new Option(d.replace(/\s*\(.*\)$/, ""), d));
+    const pick = ins.find((d) => /out b2/i.test(d)) || ins[0];
+    if (pick) si.value = pick;
+    so.appendChild(new Option("My default speakers or headphones", ""));
+    for (const d of outs.devices || []) if (!/voicemeeter/i.test(d)) so.appendChild(new Option(d, d));
+    $("#hearNone").hidden = ins.length > 0;
+    $("#hearStart").disabled = !ins.length || hearBusy;
+    hearDlg.showModal();
+  }
+  hearDlg.addEventListener("click", (e) => { if (e.target === hearDlg) hearDlg.close(); });
+  $("#hearStart").addEventListener("click", async () => {
+    if (hearBusy) return;
+    hearBusy = true;
+    const b = $("#hearStart"), st = $("#hearStatus");
+    b.disabled = true;
+    const SECS = 5;
+    let left = SECS;
+    st.textContent = `Recording… talk now (${left} s)`;
+    const t = setInterval(() => { left = Math.max(0, left - 1); st.textContent = left ? `Recording… talk now (${left} s)` : "Playing it back…"; }, 1000);
+    try {
+      await engine.selftestRun($("#hearInput").value, $("#hearOutput").value, SECS);
+      st.textContent = "Done. Press the button to try again.";
+    } catch (e) { st.textContent = String((e && e.message) || e); }
+    clearInterval(t);
+    hearBusy = false; b.disabled = false; b.textContent = "Record again";
+  });
+
+  /* ---------- setup assistant ---------- */
+  const setupDlg = $("#setupDlg");
+  const setupKind = () => setupDlg.querySelector("input[name=setupKind]:checked").value;
+  const strips = () => chans.filter((c) => c.kind === "strip");
+  // What each strip should send to, per scenario. A = headphones/speakers, B = virtual outputs.
+  function setupRoutes(kind, micI, discI) {
+    const virt = layout.buses.filter((b) => b.kind === "virt");
+    const plan = [];
+    for (const ch of strips()) {
+      const on = {};
+      for (const b of layout.buses) on[b.param] = false;
+      const isMic = ch.i === micI, isDisc = kind === "stream" && ch.i === discI;
+      if (virt[0]) on[virt[0].param] = isMic;                       // B1: what friends hear
+      if (!isMic) { const a = layout.buses.find((b) => b.kind === "hw"); if (a) on[a.param] = true; } // A1: your ears
+      if (kind === "stream" && virt[1]) on[virt[1].param] = true;   // B2: the stream mix
+      plan.push({ ch, on, isMic, isDisc });
+    }
+    return plan;
+  }
+  function paintSetupPlan() {
+    const kind = setupKind(), mic = +$("#setupMic").value, disc = +$("#setupDiscord").value;
+    $("#setupDiscordRow").hidden = kind !== "stream";
+    const virt = layout.buses.filter((b) => b.kind === "virt");
+    const ul = $("#setupPlan");
+    ul.textContent = "";
+    for (const p of setupRoutes(kind, mic, disc)) {
+      const li = document.createElement("li");
+      const sends = layout.buses.filter((b) => p.on[b.param]).map((b) => b.id);
+      li.textContent = `${displayName(p.ch)}: ${sends.length ? sends.join(" ") : "nothing"}`;
+      ul.appendChild(li);
+    }
+    if (kind === "stream" && virt.length < 2) {
+      const li = document.createElement("li");
+      li.className = "warn";
+      li.textContent = "This Voicemeeter has only one virtual output (B1), so no separate stream mix can be made. Banana and Potato have more.";
+      ul.appendChild(li);
+    }
+  }
+  function openSetup() {
+    for (const id of ["#setupMic", "#setupDiscord"]) {
+      const sel = $(id); sel.textContent = "";
+      for (const ch of strips()) sel.appendChild(new Option(displayName(ch), ch.i));
+    }
+    // Hardware strips come first; virtual ones are usually Voicemeeter VAIO/AUX, which Discord plays on.
+    const virtStrips = strips().filter((c) => !isHw(c));
+    $("#setupMic").value = "0";
+    if (virtStrips[0]) $("#setupDiscord").value = String(virtStrips[0].i);
+    paintSetupPlan();
+    setupDlg.showModal();
+  }
+  setupDlg.addEventListener("change", paintSetupPlan);
+  setupDlg.addEventListener("click", (e) => { if (e.target === setupDlg) setupDlg.close(); });
+  $("#setupApply").addEventListener("click", () => {
+    for (const p of setupRoutes(setupKind(), +$("#setupMic").value, +$("#setupDiscord").value)) {
+      for (const [param, v] of Object.entries(p.on)) sendFloat(`${p.ch.prefix}.${param}`, v ? 1 : 0);
+    }
+    setupDlg.close();
+    toast("Routing set up");
+  });
+
+  /* ---------- mic chain (gate / compressor / denoiser) ---------- */
+  const chainDlg = $("#chainDlg"), chainFill = $("#chainFill");
+  const CHAIN_KNOBS = [
+    ["Gate", "Noise gate", "Silences the room when you stop talking"],
+    ["Comp", "Compressor", "Evens out loud and quiet speech"],
+    ["Denoiser", "Denoiser", "Removes steady hiss and fan noise"],
+  ];
+  // Potato exposes the detail behind each knob; shown only when the probe finds it.
+  const CHAIN_DETAIL = [
+    ["Comp.Threshold", "Comp threshold", -40, 0, 1, " dB"],
+    ["Comp.Ratio", "Comp ratio", 1, 8, 0.1, ":1"],
+    ["Gate.Threshold", "Gate threshold", -70, -20, 1, " dB"],
+  ];
+  const CHAIN_PRESETS = {
+    off: { Gate: 0, Comp: 0, Denoiser: 0 },
+    gentle: { Gate: 2, Comp: 3, Denoiser: 2 },
+    streamer: { Gate: 4, Comp: 5.5, Denoiser: 4, "Comp.Ratio": 3, "Comp.Threshold": -24, "Gate.Threshold": -52 },
+    noisy: { Gate: 7, Comp: 5, Denoiser: 8, "Comp.Ratio": 3.5, "Comp.Threshold": -26, "Gate.Threshold": -42 },
+  };
+  let chainShown = -200, chainFound = {};
+  const chainPrefix = () => $("#chainWhich").value;
+  async function buildChain() {
+    const box = $("#chainKnobs"), pre = chainPrefix();
+    box.textContent = "";
+    chainFound = {};
+    const defs = [...CHAIN_KNOBS.map((k) => [k[0], k[1], 0, 10, 0.1, "", k[2]]), ...CHAIN_DETAIL];
+    let vals = [];
+    try { vals = await engine.getFloats(defs.map((d) => `${pre}.${d[0]}`)); } catch (e) { vals = []; }
+    let any = false;
+    defs.forEach((d, i) => {
+      const v = vals[i];
+      if (v == null) return;
+      any = true; chainFound[d[0]] = true;
+      const row = document.createElement("div");
+      row.className = "field wide chain-row";
+      const id = `chain_${d[0].replace(/\W/g, "_")}`;
+      row.innerHTML = `<label for="${id}"></label><input type="range" id="${id}"><output></output>`;
+      row.firstChild.textContent = d[1];
+      if (d[6]) row.firstChild.title = d[6];
+      const r = row.querySelector("input"), o = row.querySelector("output");
+      r.min = d[2]; r.max = d[3]; r.step = d[4]; r.value = v;
+      const show = () => { o.textContent = (d[4] < 1 ? (+r.value).toFixed(1) : Math.round(r.value)) + d[5]; };
+      show();
+      r.addEventListener("input", () => { show(); sendFloat(`${pre}.${d[0]}`, +r.value); });
+      box.appendChild(row);
+    });
+    $("#chainNone").hidden = any;
+    chainDlg.querySelector(".chain-presets").hidden = !any;
+  }
+  function openChain() {
+    const sel = $("#chainWhich");
+    sel.textContent = "";
+    for (const ch of chans) if (ch.kind === "strip") sel.appendChild(new Option(displayName(ch), ch.prefix));
+    sel.value = (settings.ducking && settings.ducking.trigger) || "Strip[0]";
+    if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+    buildChain();
+    chainDlg.showModal();
+  }
+  $("#chainWhich").addEventListener("change", buildChain);
+  chainDlg.addEventListener("click", (e) => {
+    if (e.target === chainDlg) { chainDlg.close(); return; }
+    const p = e.target.closest("[data-preset]");
+    if (!p) return;
+    const preset = CHAIN_PRESETS[p.dataset.preset], pre = chainPrefix();
+    for (const [k, v] of Object.entries(preset)) {
+      if (!chainFound[k]) continue;
+      sendFloat(`${pre}.${k}`, v);
+      const r = $(`#chain_${k.replace(/\W/g, "_")}`);
+      if (r) { r.value = v; r.dispatchEvent(new Event("input")); }
+    }
+    toast(`Applied: ${p.textContent}`);
+  });
+  function chainLevels(lv) {
+    const db = levelOf(lv, chainPrefix());
+    chainShown = db > chainShown ? db : Math.max(db, chainShown - 2);
+    chainFill.style.transform = `scaleX(${Math.max(0, Math.min(1, (chainShown + 60) / 60)).toFixed(3)})`;
   }
 
   const micDlg = $("#micDlg"), micFill = $("#micFill"), micResult = $("#micResult"), micStart = $("#micStart"), micApply = $("#micApply");

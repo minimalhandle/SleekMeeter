@@ -20,6 +20,7 @@ mod outputs;
 mod recorder;
 mod remote;
 mod routing;
+mod selftest;
 mod settings;
 mod sounds;
 mod twitch;
@@ -106,6 +107,33 @@ fn vm_set_float(app: AppHandle, vm: State<'_, Vm>, name: String, value: f32) -> 
     }
     fades::set_float(&app, api(&vm)?, &name, value)
         .inspect_err(|e| log_warn!("Setting {name} = {value} failed: {e}"))
+}
+
+/// Read mic-chain parameters (compressor, gate, denoiser) for the Mic chain panel. A parameter
+/// this edition doesn't have comes back as null, which is how the panel knows what to show.
+#[tauri::command]
+fn vm_get_floats(vm: State<'_, Vm>, names: Vec<String>) -> Result<Vec<Option<f32>>, String> {
+    let a = api(&vm)?;
+    Ok(names
+        .iter()
+        .map(|n| if chain_param(n) { a.get_float(n) } else { None })
+        .collect())
+}
+
+/// "Strip[2].Comp", "Strip[0].Gate.Threshold", "Strip[1].Denoiser" and so on.
+fn chain_param(name: &str) -> bool {
+    let Some(rest) = name.strip_prefix("Strip[") else {
+        return false;
+    };
+    let Some((idx, tail)) = rest.split_once("].") else {
+        return false;
+    };
+    idx.parse::<u8>().is_ok()
+        && ["Comp", "Gate", "Denoiser"]
+            .iter()
+            .any(|p| tail == *p || tail.strip_prefix(p).is_some_and(|t| t.starts_with('.')))
+        && tail.len() < 24
+        && tail.chars().all(|c| c.is_ascii_alphanumeric() || c == '.')
 }
 
 /// Glide a strip or bus ("Strip[0]") to a level instead of jumping there.
@@ -713,8 +741,12 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     let hotkeys = app.state::<Settings>().0.lock().unwrap()["hotkeys"].clone();
                     hold::arm(&app, &hotkeys);
                 }
-                if window_visible(&app, "main") || window_visible(&app, FLYOUT) {
+                if window_visible(&app, "main")
+                    || window_visible(&app, FLYOUT)
+                    || remote::overlay_active()
+                {
                     let levels = api.levels(&layout);
+                    remote::set_levels(&levels);
                     if keep_history(&app) {
                         levels_log.feed(&levels);
                     }
@@ -1145,6 +1177,33 @@ fn sound_play(app: AppHandle, name: String) -> Result<(), String> {
     sounds::play(&app, &name)
 }
 
+/// Hear-yourself test: Voicemeeter's virtual outputs that can be recorded.
+#[tauri::command]
+async fn selftest_inputs() -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(selftest::inputs)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Record a few seconds of `input`, then play it on `output`.
+#[tauri::command]
+async fn selftest_run(
+    app: AppHandle,
+    input: String,
+    output: String,
+    secs: u64,
+) -> Result<(), String> {
+    let a = app.clone();
+    let r = tauri::async_runtime::spawn_blocking(move || {
+        let _ = a.emit("selftest", json!({ "phase": "recording", "secs": secs }));
+        selftest::run(&input, &output, secs)
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let _ = app.emit("selftest", json!({ "phase": "done" }));
+    r
+}
+
 #[tauri::command]
 fn sound_stop() {
     sounds::stop_all();
@@ -1164,6 +1223,18 @@ async fn sound_pick_folder() -> Result<Vec<String>, String> {
     tauri::async_runtime::spawn_blocking(files::pick_audio_folder)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Ask for a folder to use as a random pack: { folder, count }, or null if cancelled.
+#[tauri::command]
+async fn sound_pick_pack() -> Result<Value, String> {
+    let r = tauri::async_runtime::spawn_blocking(files::pick_audio_pack)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(match r {
+        Some((folder, count)) => json!({ "folder": folder, "count": count }),
+        None => Value::Null,
+    })
 }
 
 /// Levels of the last `minutes` minutes, for the history graph.
@@ -1630,6 +1701,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             vm_snapshot,
             vm_set_float,
+            vm_get_floats,
             vm_glide,
             app_info,
             open_logs,
@@ -1663,8 +1735,11 @@ fn main() {
             sound_devices,
             sound_play,
             sound_stop,
+            selftest_inputs,
+            selftest_run,
             sound_pick,
             sound_pick_folder,
+            sound_pick_pack,
             twitch_status,
             remote_status,
             history_get,

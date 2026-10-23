@@ -826,3 +826,26 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .sounds-dlg .field { margin-top: 10px; }
 .sounds-dlg .btn-row { margin: 6px 0; }
 .sounds-dlg .hint { margin-top: 12px; }
+
+/* Mic chain dialog */
+.chain-presets { margin: 4px 0 8px; flex-wrap: wrap; }
+.chain-knobs { display: grid; gap: 6px; margin-bottom: 8px; }
+.chain-row { display: grid; grid-template-columns: 130px 1fr 64px; align-items: center; gap: 10px; }
+.chain-row output { text-align: right; color: var(--ink-dim, var(--muted)); font-variant-numeric: tabular-nums; }
+.chain-row input[type=range] { width: 100%; }
+
+/* Setup assistant */
+.setup-choices { display: grid; gap: 8px; margin: 6px 0 10px; }
+.setup-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-sm, 8px); background: var(--well); cursor: pointer; }
+.setup-choice small { display: block; color: var(--muted); margin-top: 2px; }
+.setup-plan { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.setup-plan .warn { color: var(--warn, #e0a030); }
+
+/* Soundboard groups, hotkeys, packs */
+.sound-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.sound-tab { border: 0; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12px; background: var(--well); color: var(--muted); cursor: pointer; }
+.sound-tab[aria-selected="true"] { background: var(--accent, #5aa9ff); color: var(--accent-ink, #04121f); }
+.sound-key { display: block; font-size: 10px; opacity: .7; margin-top: 2px; }
+.sound-extra { display: flex; gap: 4px; margin-top: 4px; }
+.sound-extra .sound-tabname { flex: 1; min-width: 0; font: inherit; font-size: 11px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line, transparent); background: var(--well); color: inherit; }
+.sound-extra .keys { font-size: 11px; padding: 3px 8px; }
