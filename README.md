@@ -80,7 +80,8 @@ Pick a theme in **Settings → Appearance**. There are twelve, and they're built
 <td align="center"><img src="docs/screenshots/theme-peach.png" alt="The Peaches &amp; Cream theme" width="400"><br><sub><b>Peaches &amp; Cream</b></sub></td>
 </tr>
 <tr>
-<td align="center" colspan="2"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="400"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="400"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-terminal.png" alt="The Terminal theme" width="400"><br><sub><b>Terminal</b></sub></td>
 </tr>
 </table>
 
