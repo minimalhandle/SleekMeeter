@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.13.0
+- **Four more themes (sixteen in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a crescent moon when muted), **Haunted** (tombstone channels, ghost fader caps that become skulls when muted, slime meters), **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps) and **Space Cadet** (spaceship pods with portholes, rocket caps, flame meters, hazard-striped mute). Each has its own channel icons, and the tray panel, mini mode and volume overlay follow along
 - **Mic chain:** **⋯ → Mic chain…** has noise gate, compressor and denoiser sliders for your microphone, one-click presets (Streamer voice, Gentle, Noisy room, All off) and a live meter. Only the controls your Voicemeeter edition has are shown
 - **Setup assistant:** **⋯ → Setup assistant…** sets the A1 and B1 routing for every channel for "Just gaming + chat" or "Streamer + Discord" (which also builds a stream mix on B2)
 - **OBS overlay:** a see-through browser-source page with a MUTED or BRB badge, a mic meter and the name of the last sound played. The address is under Settings → Phone remote
