@@ -130,8 +130,8 @@ pub fn save(s: &Value) -> Result<(), String> {
 pub fn theme(s: &Value) -> String {
     match s["theme"].as_str() {
         // Retired themes show as their closest remaining one.
-        Some("midnight") | Some("minimal") | Some("analog") => "console".into(),
-        Some("clean") | Some("studio") => "ink".into(),
+        Some("midnight") | Some("minimal") | Some("analog") | Some("clean") | Some("studio")
+        | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") => "console".into(),
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
         _ => "console".into(),
