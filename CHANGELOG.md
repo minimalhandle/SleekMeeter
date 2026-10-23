@@ -6,6 +6,7 @@
 - **OBS overlay:** a see-through browser-source page with a MUTED or BRB badge, a mic meter and the name of the last sound played. The address is under Settings → Phone remote
 - **Duck for friends too:** talk-over ducking can now start from more than one channel (your mic or Discord), under "Or when these talk"
 - **Smarter soundboard:** a shortcut for each sound, groups with a tab bar, and **Random pack…** to turn a folder into one button that plays a random sound from it
+- **Sounds are copied into Sleekmeeter's own `sounds` folder** when you add them, so you can move or delete the originals. Random packs copy their folder too
 - **Hear yourself:** **⋯ → Hear yourself…** records 5 seconds of your stream mix and plays it back on your headphones
 
 ## 0.12.0
