@@ -1225,6 +1225,14 @@ async fn sound_pick_folder() -> Result<Vec<String>, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Copy sound files into Sleekmeeter's data folder; returns the copies' paths.
+#[tauri::command]
+async fn sound_import(paths: Vec<String>) -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || files::import_sounds(&paths))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Ask for a folder to use as a random pack: { folder, count }, or null if cancelled.
 #[tauri::command]
 async fn sound_pick_pack() -> Result<Value, String> {
@@ -1740,6 +1748,7 @@ fn main() {
             sound_pick,
             sound_pick_folder,
             sound_pick_pack,
+            sound_import,
             twitch_status,
             remote_status,
             history_get,

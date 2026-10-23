@@ -82,8 +82,8 @@ pub fn pick_audio_folder() -> Vec<String> {
 /// Ask for a folder to use as a random pack: returns the folder and how many sounds it holds.
 pub fn pick_audio_pack() -> Option<(String, usize)> {
     let dir = pick_folder("Choose a folder for a random sound pack")?;
-    let n = audio_in(std::path::Path::new(&dir)).len();
-    Some((dir, n))
+    // An empty folder reports a count of 0 so the app can say so.
+    Some(import_pack(&dir).unwrap_or((dir, 0)))
 }
 
 const AUDIO_EXT: [&str; 4] = ["wav", "mp3", "ogg", "flac"];
@@ -203,3 +203,64 @@ fn open_many(_title: &str, _filter: &str) -> Vec<String> {
 const JSON: &str = "Sleekmeeter settings (*.json)\0*.json\0All files\0*.*\0\0";
 const AUDIO: &str =
     "Sound files (*.wav, *.mp3, *.ogg, *.flac)\0*.wav;*.mp3;*.ogg;*.flac\0All files\0*.*\0\0";
+
+/// Copy `src` into `dir` (created if needed) and return the copy's path. A file with the same
+/// name and size already there is reused, so adding the same sound twice doesn't pile up copies.
+fn copy_into(src: &std::path::Path, dir: &std::path::Path) -> Option<String> {
+    std::fs::create_dir_all(dir).ok()?;
+    if src.parent() == Some(dir) {
+        return Some(src.to_string_lossy().into_owned());
+    }
+    let stem = src.file_stem()?.to_string_lossy().into_owned();
+    let ext = src
+        .extension()
+        .map(|e| format!(".{}", e.to_string_lossy()))
+        .unwrap_or_default();
+    let size = std::fs::metadata(src).ok()?.len();
+    for n in 1..1000 {
+        let name = if n == 1 {
+            format!("{stem}{ext}")
+        } else {
+            format!("{stem} ({n}){ext}")
+        };
+        let dest = dir.join(name);
+        match std::fs::metadata(&dest) {
+            Ok(m) if m.len() == size => return Some(dest.to_string_lossy().into_owned()),
+            Ok(_) => continue,
+            Err(_) => {
+                std::fs::copy(src, &dest).ok()?;
+                return Some(dest.to_string_lossy().into_owned());
+            }
+        }
+    }
+    None
+}
+
+/// Sounds live in Sleekmeeter's own `sounds` folder, so the originals can be moved or deleted.
+pub fn import_sounds(paths: &[String]) -> Vec<String> {
+    let dir = crate::settings::app_dir().join("sounds");
+    paths
+        .iter()
+        .filter_map(|p| copy_into(std::path::Path::new(p), &dir))
+        .collect()
+}
+
+/// Copy a folder's sounds into `sounds/<folder name>` and return that folder and the count.
+pub fn import_pack(folder: &str) -> Option<(String, usize)> {
+    let src = std::path::Path::new(folder);
+    let name = src.file_name()?.to_string_lossy().into_owned();
+    let root = crate::settings::app_dir().join("sounds");
+    let mut dir = root.join(&name);
+    let mut n = 2;
+    while dir.exists() {
+        dir = root.join(format!("{name} {n}"));
+        n += 1;
+    }
+    let mut count = 0;
+    for f in audio_in(src) {
+        if copy_into(std::path::Path::new(&f), &dir).is_some() {
+            count += 1;
+        }
+    }
+    (count > 0).then(|| (dir.to_string_lossy().into_owned(), count))
+}
