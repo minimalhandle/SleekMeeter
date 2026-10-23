@@ -20,7 +20,7 @@
  *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
- *   soundDevices() -> {devices, auto} / soundPick() -> path|null / soundPlay(name) / soundStop()   soundboard
+ *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPlay(name) / soundStop()   soundboard
  *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last} of the Twitch chat link
  *   remoteStatus() -> {running, message, urls}   the phone remote
  *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
@@ -137,6 +137,7 @@
     appVolumeSet(exe, volume, mute) { return this.invoke("app_volume_set", { exe, volume, mute }); }
     soundDevices() { return this.invoke("sound_devices"); }
     soundPick() { return this.invoke("sound_pick"); }
+    soundPickFolder() { return this.invoke("sound_pick_folder"); }
     soundPlay(name) { return this.invoke("sound_play", { name }); }
     soundStop() { return this.invoke("sound_stop"); }
     twitchStatus() { return this.invoke("twitch_status"); }
@@ -420,7 +421,8 @@
     soundDevices() {
       return Promise.resolve({ devices: ["Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
     }
-    soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve(["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]); }
+    soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve([["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]]); }
+    soundPickFolder() { return Promise.resolve(["rimshot.wav", "wilhelm-scream.mp3", "oof.ogg", "bell_ding.flac", "applause.wav"].map((f) => "C:\\Sounds\\Memes\\" + f)); }
     soundPlay(name) { this.played = name; return Promise.resolve(); }
     soundStop() { return Promise.resolve(); }
     twitchStatus() { return Promise.resolve(this._twitch || { connected: false, message: "Off", last: "" }); }
