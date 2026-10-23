@@ -137,20 +137,10 @@
   // without making every strip wide. The mini rows share one name column.
   function sizeToNames() {
     if (!chans.length) return;
+    // Every strip is the same width in every theme, whatever its name: long names are cut
+    // short with "…" (hover for the full name). Only the mini rows' name column fits its names.
     const dense = document.body.classList.contains("dense");
-    const [minW, maxW, base] = dense ? [108, 240, 16 + 26 + 6 + 4] : [132, 270, 22 + 28 + 8 + 4];
-    // The room a strip spends on padding, the icon and its gap depends on the theme; measure it.
-    let chrome = base;
-    const probe = chans.find((c) => c.mixerEl && !c.mixerEl.hidden);
-    if (probe) {
-      const cs = getComputedStyle(probe.mixerEl), icon = $(".chip", probe.mixerEl), head = $(".head", probe.mixerEl);
-      const iw = icon ? icon.getBoundingClientRect().width : 0;
-      if (iw > 0) chrome = Math.round((parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + iw + (parseFloat(head && getComputedStyle(head).columnGap) || 8) + 4);
-    }
-    const widths = chans.map((ch) => {
-      const name = ch.names[0] ? ch.names[0].textContent : "";
-      return Math.round(Math.min(maxW, Math.max(minW, chrome + textWidth(name, ch.names[0]))));
-    });
+    const widths = chans.map(() => (dense ? 124 : 148));
     const miniNameW = Math.round(Math.min(240, Math.max(84, ...chans
       .filter((ch) => !look(ch).hidden)
       .map((ch) => textWidth(ch.miniNames[0].textContent, ch.miniNames[0]) + 2))));
