@@ -64,6 +64,14 @@
         <button role="menuitem" type="button" data-action="history">Level history</button>
       </div>
     </div>
+    <div class="winctl" id="winctl" hidden>
+      <button class="wc" id="wcMin" type="button" aria-label="Minimise" title="Minimise"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 6.5h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+      <button class="wc" id="wcMax" type="button" aria-label="Maximise" title="Maximise">
+        <svg class="to-max" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2.2" y="2.2" width="7.6" height="7.6" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+        <svg class="to-restore" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><rect x="2.2" y="3.8" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M4 3.8V2.8a1 1 0 0 1 1-1h4.2a1 1 0 0 1 1 1V7a1 1 0 0 1-1 1h-1" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+      <button class="wc close" id="wcClose" type="button" aria-label="Close" title="Close"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
+    </div>
   </header>
 
   <main class="desk" id="desk">

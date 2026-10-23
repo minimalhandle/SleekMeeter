@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.12.0
+- **A themed title bar:** the plain Windows frame is gone. Minimise, maximise and close now sit in Sleekmeeter's own top bar and follow the theme (glowing in Neon, square in Terminal, chunky in Block, and so on). Drag the top bar to move the window and double-click it to maximise
 - **Two new themes:** **Blueprint** (white lines on a drafting-paper grid, monospace labels, tick-mark faders) and **Block** (flat and bold, with thick outlines, hard shadows and bright colour blocks)
 - **Fewer, more different themes:** Midnight, Minimal and Clean are gone because they looked too much like Console, OLED black and Ink. If you were using one, you're moved to the closest remaining theme (Console, or Ink for Clean), including in automatic per-app rules
 - Fixed: the OLED black preview in the theme picker was unreadable while a light theme was active
