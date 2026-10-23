@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.11.1
+- Fixed: the talk-over ducking "turn down" choices didn't always stick (they could reset when you closed Settings)
 - **Setup.exe upgrades in place:** running Sleekmeeter-Setup.exe over an existing install now removes the old copy first (settings are kept) and installs the new one, instead of stopping at Windows' Change/Repair/Remove screen
 
 ## 0.11.0

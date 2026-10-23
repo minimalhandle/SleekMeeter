@@ -1481,9 +1481,12 @@
       b.addEventListener("click", () => {
         const on = b.getAttribute("aria-pressed") !== "true";
         b.setAttribute("aria-pressed", String(on));
-        const set = new Set(d.targets || []);
+        // Fetch the live settings object: D() hands back a fresh copy each call,
+        // so the one captured when the list was drawn can be stale by now.
+        const cur = D();
+        const set = new Set(cur.targets || []);
         if (on) set.add(ch.prefix); else set.delete(ch.prefix);
-        d.targets = chans.filter((c) => set.has(c.prefix)).map((c) => c.prefix);
+        cur.targets = chans.filter((c) => set.has(c.prefix)).map((c) => c.prefix);
         saveSettings();
       });
       list.appendChild(b);
