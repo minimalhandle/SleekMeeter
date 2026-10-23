@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.11.1
+- **Cleaner Potato mixer:** the A4 and A5 buttons are hidden on each input by default. Turn them on in Settings → Extra outputs (only shown on Potato). A button still appears if that input already sends to it
 - Fixed: the talk-over ducking "turn down" choices didn't always stick (they could reset when you closed Settings)
 - **Setup.exe upgrades in place:** running Sleekmeeter-Setup.exe over an existing install now removes the old copy first (settings are kept) and installs the new one, instead of stopping at Windows' Change/Repair/Remove screen
 
