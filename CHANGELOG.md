@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0
+- **Be right back:** a **BRB** button (and shortcut) that mutes your mic, turns the game down and plays music, all with fades, then puts everything back exactly as it was. Set it up in Settings → Stream mode
+- **OBS Studio link:** follow your OBS scenes (load a Voicemeeter scene, or start or end Be right back, when OBS changes scene), act when you go live or the stream ends, and show a **LIVE** tag in the header. Needs OBS 28 or newer with its WebSocket server on
+- **Mic level check:** talk for 8 seconds and Sleekmeeter says whether your mic is too quiet or too loud and can set the fader for you, plus an optional warning when a channel goes over 0 dB
+- **Per-game profiles:** automatic rules can also switch your outputs and theme while an app runs, and put them back when it closes
+- **Backup and layout:** save and restore your settings, reset the window layout, and **Check my setup** to find out why something isn't working
+- Fixed: the tray panel's remembered position could be lost when settings were saved from the mixer window
+
 ## 0.9.0
 - **The tray panel is docked by default:** double-click the tray icon and it snaps flush against the taskbar and clock, in exactly the same spot every time, whichever edge the taskbar is on. The pin button in its header (or Settings → Tray volume panel) undocks it so you can drag it by the header; it remembers where you put it
 - **Four new themes that change the whole look, not just the colours:** **Glass** (frosted cards, capsule faders), **Ink** (light, minimal, big thin numbers), **Neon** (glowing synth night) and **Terminal** (green phosphor). Two more arrive too: **Bubblegum** (pink, with heart faders and cute emoji channel icons) and **Clean** (the least clutter of any theme). The theme picker in Settings is collapsed to three themes with a **Show all 12 themes** button. Everything works the same in all of them, including the tray panel, mini mode and the volume overlay

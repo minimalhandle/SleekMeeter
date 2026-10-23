@@ -16,6 +16,7 @@
     <span class="status" id="status" data-state="connecting">
       <span class="dot" aria-hidden="true"></span><span id="statusText">Looking for Voicemeeter…</span>
     </span>
+    <span class="live-tag full-only" id="liveTag" hidden title="OBS says you're streaming">LIVE</span>
     <span class="spacer"></span>
     <span class="scene-now" id="sceneNow" hidden></span>
     <div class="menu-wrap full-only" id="updateWrap" hidden>
@@ -33,6 +34,7 @@
     <button class="btn icon panel-only" id="closePanelBtn" type="button" aria-label="Close volume panel" title="Close">
       <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
+    <button class="btn brb-btn full-only" id="brbBtn" type="button" aria-pressed="false" title="Be right back: mutes your mic, turns the game down, plays music. Click again to go back live">BRB</button>
     <button class="btn rec-btn full-only" id="recBtn" type="button" hidden aria-label="Recorder" title="Recorder">
       <span class="rec-dot" aria-hidden="true"></span><span id="recLabel">Rec</span>
     </button>
@@ -102,6 +104,7 @@
       <h1 id="offlineTitle">Voicemeeter isn't running</h1>
       <p id="offlineBody">Sleekmeeter controls Voicemeeter. Start it and your mixer appears here.</p>
       <button class="btn primary" id="launchBtn" type="button">Start Voicemeeter</button>
+      <button class="linkish" id="offlineHealth" type="button">Check my setup</button>
     </div>
   </div>
 
@@ -121,12 +124,12 @@
     </form>
     <section class="rules" aria-labelledby="rulesTitle">
       <h3 id="rulesTitle">Switch automatically</h3>
-      <p class="hint">Load a scene when an app starts, and choose what happens when it closes.</p>
+      <p class="hint">When an app starts, load a scene, switch your outputs and change the look. When it closes, everything goes back.</p>
       <div class="rule-head" id="ruleHead" aria-hidden="true"><span>When this app starts</span><span>Load</span><span>When it closes</span><span></span></div>
       <div class="rule-list" id="ruleList"></div>
       <datalist id="appList"></datalist>
       <button class="btn" id="addRule" type="button">Add rule</button>
-      <p class="hint" id="rulesEmpty" hidden>Save a scene first, then you can switch to it automatically.</p>
+      <p class="hint" id="rulesEmpty" hidden>Save a scene or an output profile first, then you can switch to it automatically.</p>
     </section>
   </dialog>
 
@@ -145,6 +148,32 @@
       <button class="btn primary" type="submit">Save current outputs</button>
     </form>
     <p class="hint field-note" id="profileNote"></p>
+  </dialog>
+
+  <dialog class="dlg health-dlg" id="healthDlg" aria-labelledby="healthTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="healthTitle">Check my setup</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <ul class="health-list" id="healthList"></ul>
+    <div class="btn-row"><button class="btn" id="healthAgain" type="button">Check again</button></div>
+  </dialog>
+
+  <dialog class="dlg mic-dlg" id="micDlg" aria-labelledby="micTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="micTitle">Check my mic level</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint" id="micIntro">Press Start, then talk the way you do on stream for 8 seconds, including your loudest moments (a laugh, a jump scare).</p>
+    <div class="field wide"><label for="micWhich">Channel</label><select id="micWhich"></select></div>
+    <div class="mic-meter" aria-hidden="true"><div class="mic-fill" id="micFill"></div><div class="mic-zone"></div></div>
+    <div class="mic-scale" aria-hidden="true"><span>−60</span><span>−45</span><span>−30</span><span>−15</span><span>0 dB</span></div>
+    <p class="mic-result" id="micResult" role="status" aria-live="polite"></p>
+    <div class="btn-row"><button class="btn primary" id="micStart" type="button">Start</button><button class="btn" id="micApply" type="button" hidden>Set the fader</button></div>
   </dialog>
 
   <dialog class="dlg apps-dlg" id="appsDlg" aria-labelledby="appsTitle">
@@ -301,6 +330,52 @@
           </div>
         </div>
       </section>
+      <section class="fold">
+        <details id="brbFold">
+          <summary><h3>Stream mode: Be right back</h3></summary>
+          <div class="fold-body">
+            <p class="hint">The <b>BRB</b> button (or a shortcut, or an OBS scene) mutes your mic, turns the game down and plays music, all with fades. Press it again and everything goes back exactly as it was.</p>
+            <div class="field wide top"><label>Mute</label><div class="arm-list" id="brbMute" role="group" aria-label="Channels to mute"></div></div>
+            <div class="field wide top"><label>Turn down</label><div class="arm-list" id="brbLower" role="group" aria-label="Channels to turn down"></div></div>
+            <div class="field wide"><label for="brbAmount">By</label><input type="range" id="brbAmount" min="6" max="60" step="1"><output for="brbAmount"></output></div>
+            <div class="field wide"><label for="brbPlay">Play</label><select id="brbPlay"></select></div>
+            <div class="field wide" data-needs="brbplay"><label for="brbPlayDb">At</label><input type="range" id="brbPlayDb" min="-40" max="0" step="1"><output for="brbPlayDb"></output></div>
+            <label class="check"><input type="checkbox" id="brbOverlay"><span>Show “Be right back” on screen when it turns on and off</span></label>
+            <p class="hint">Pick channels above, then try the BRB button. Add a shortcut for it under Shortcuts.</p>
+          </div>
+        </details>
+      </section>
+      <section class="fold">
+        <details id="obsFold">
+          <summary><h3>OBS Studio</h3><span class="fold-note" id="obsNote"></span></summary>
+          <div class="fold-body">
+            <label class="check"><input type="checkbox" id="obsOn"><span>Connect to OBS, so Sleekmeeter can follow your scenes and know when you're live</span></label>
+            <div class="fold-body" id="obsOpts">
+              <p class="hint">In OBS: <b>Tools → WebSocket Server Settings → Enable WebSocket server</b>. Sleekmeeter only listens; it never changes anything in OBS. Twitch streams are covered: OBS tells Sleekmeeter when you go live.</p>
+              <div class="field wide"><label for="obsHost">Address</label><div class="pair"><input type="text" id="obsHost" spellcheck="false" autocomplete="off" aria-label="OBS address"><input type="number" id="obsPort" min="1" max="65535" aria-label="OBS port"></div></div>
+              <div class="field wide"><label for="obsPass">Password</label><input type="password" id="obsPass" autocomplete="off" placeholder="Only if you set one in OBS"></div>
+              <p class="hint obs-status" id="obsStatusText" role="status"></p>
+              <div class="rule-head obs-head" id="obsHead" aria-hidden="true"><span>When OBS switches to</span><span>Do</span><span>Scene</span><span></span></div>
+              <div class="rule-list" id="obsRules"></div>
+              <datalist id="obsSceneList"></datalist>
+              <button class="btn" id="addObsRule" type="button">Add OBS scene rule</button>
+              <div class="rule obs-rule"><span>When I go live</span><select id="obsLiveDo" aria-label="When I go live"></select><select id="obsLiveScene" aria-label="Scene to load"></select><span></span></div>
+              <div class="rule obs-rule"><span>When the stream ends</span><select id="obsOffDo" aria-label="When the stream ends"></select><select id="obsOffScene" aria-label="Scene to load"></select><span></span></div>
+            </div>
+          </div>
+        </details>
+      </section>
+      <section class="fold">
+        <details id="micFold">
+          <summary><h3>Mic level</h3></summary>
+          <div class="fold-body">
+            <label class="check"><input type="checkbox" id="clipOn"><span>Warn me when this channel goes over 0 dB, where it starts to distort</span></label>
+            <div class="field wide" data-needs="clip"><label for="clipTarget">Watch</label><select id="clipTarget"></select></div>
+            <button class="btn" id="micCheckBtn" type="button">Check my mic level…</button>
+            <p class="hint">Talk for a few seconds and Sleekmeeter tells you if your mic is too quiet or too loud, and can set the fader for you.</p>
+          </div>
+        </details>
+      </section>
       <section>
         <h3>Audio devices</h3>
         <label class="check"><input type="checkbox" id="setAutoRestart"><span>Restart the audio engine when a device Voicemeeter uses comes back, like headphones you unplugged or Bluetooth that reconnected</span></label>
@@ -337,6 +412,20 @@
         <p class="hint field-hint" id="holdHint" hidden>After you let go of a push-to-talk shortcut, so the end of a word isn't cut off.</p>
         <p class="problems" id="hotkeyProblems" role="alert" hidden></p>
       </section>
+      <section class="fold">
+        <details id="backupFold">
+          <summary><h3>Backup and layout</h3></summary>
+          <div class="fold-body">
+            <p class="hint">Save your settings to a file to move them to another PC or keep a safe copy, and restore them later. Your scenes are the .xml files in the <b>scenes</b> folder next to Sleekmeeter; copy that folder too. The OBS password is never saved to the file.</p>
+            <div class="btn-row">
+              <button class="btn" id="exportSettings" type="button">Save a backup…</button>
+              <button class="btn" id="importSettings" type="button">Restore from a backup…</button>
+            </div>
+            <p class="hint">If the window ends up somewhere odd, or channels are hidden and you can't find them:</p>
+            <button class="btn" id="resetLayout" type="button">Reset the layout</button>
+          </div>
+        </details>
+      </section>
       <section class="about">
         <h3>About</h3>
         <div class="about-card">
@@ -344,7 +433,7 @@
             <span class="about-version" id="aboutVersion">Sleekmeeter</span>
             <span class="about-vm" id="aboutVm"></span>
           </div>
-          <button class="btn" id="openLogs" type="button">Open log file</button>
+          <div class="btn-row"><button class="btn" id="openHealth" type="button">Check my setup</button><button class="btn" id="openLogs" type="button">Open log file</button></div>
         </div>
         <p class="hint" id="logsHint">Sleekmeeter keeps a log of what it does and anything that goes wrong (no audio, just events). If you report a problem, attach <b>sleekmeeter.log</b> from the logs folder.</p>
       </section>

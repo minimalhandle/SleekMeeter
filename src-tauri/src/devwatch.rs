@@ -147,7 +147,7 @@ fn endpoint_devices() -> Vec<String> {
 }
 
 /// The devices Voicemeeter is set to use, from the latest mixer snapshot.
-fn assigned_devices(app: &AppHandle) -> Vec<String> {
+pub fn assigned_devices(app: &AppHandle) -> Vec<String> {
     let snap = app.state::<Vm>().last.lock().unwrap().clone();
     if !snap["connected"].as_bool().unwrap_or(false) {
         return Vec::new();
