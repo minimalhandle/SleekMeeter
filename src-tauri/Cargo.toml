@@ -1,6 +1,6 @@
 [package]
 name = "sleekmeeter"
-version = "0.7.0"
+version = "0.8.0"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
 license = "MIT"
@@ -19,6 +19,8 @@ ureq = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
+# Per-app volume talks to Windows' audio sessions (COM), which windows-sys has no types for.
+windows = { version = "0.58", features = ["Win32_Foundation", "Win32_Media_Audio", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_UI_Shell_PropertiesSystem"] }
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp", "Win32_Media_Audio", "Win32_UI_Controls_Dialogs", "Win32_System_Com", "Win32_System_SystemInformation"] }
 
 [profile.release]

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0
+- **Output profiles** (**Outputs** in the header): save the devices your outputs are using as a named setup, like Headphones or Speakers, and switch between setups in one click. Turn on **Auto** for a setup and Sleekmeeter switches to it by itself when one of its devices connects, such as when you turn on a different headset. Shortcuts can switch to a chosen profile or step to the next one, with the on-screen overlay naming it
+- **Push to talk and push to mute** shortcuts that only act while you hold the keys. With push to talk the mic starts out muted, opens when you press the keys and closes a moment after you let go (**Mic stays open** in Settings, so the end of a word isn't cut off). Push to mute does the opposite, and a channel you had already muted stays muted
+- **App volumes** (**Apps** in the header): a volume slider and mute for each app that is playing sound, the same controls as Windows' volume mixer, so you can turn Discord down or mute a browser without touching the rest. Apps that are playing show a green dot
 ## 0.7.0
 - **Themes** (Settings → Appearance): Console, Midnight, Analog, Studio (light), Minimal and OLED black. Each one previews itself in the picker, and the tray panel and volume overlay follow the theme you pick. If you used "Pure black for OLED", you start on OLED black
 - **Settings → About** shows the Sleekmeeter version you're running and the Voicemeeter it's connected to; the tray icon's tooltip shows the version too

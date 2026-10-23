@@ -15,6 +15,8 @@
  *   recorderOpen() -> file name | null / recorderLoad(path)   a file for the recorder to play
  *   onEngineRestart(cb) / onSettingsChanged(cb) / onFileDrop(cb)
  *   appInfo() -> {version, logDir} / openLogs() / log(level, message)   Settings → About, the log file
+ *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
+ *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
  *
  * Inside the Tauri app this goes to the Rust bridge (VoicemeeterRemote64.dll).
  * In a plain browser it runs a simulated Voicemeeter so the UI can be previewed
@@ -57,6 +59,8 @@
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
     autoRestart: true,
+    outputProfiles: [],
+    hold: { releaseMs: 250 },
   };
 
   /* ---------------- Tauri (real Voicemeeter) ---------------- */
@@ -101,6 +105,10 @@
     recorder(action) { return this.invoke("recorder_cmd", { action }); }
     recorderOpen() { return this.invoke("recorder_open"); }
     recorderLoad(path) { return this.invoke("recorder_load", { path }); }
+    outputsCapture() { return this.invoke("outputs_capture"); }
+    outputsApply(name) { return this.invoke("outputs_apply", { name }); }
+    appVolumes() { return this.invoke("app_volumes"); }
+    appVolumeSet(exe, volume, mute) { return this.invoke("app_volume_set", { exe, volume, mute }); }
     onEngineRestart(cb) { return this.listen("engine-restarted", (e) => cb(e.payload)); }
     onSettingsChanged(cb) { return this.listen("settings-changed", (e) => cb(e.payload)); }
     // Files dropped on the window (Tauri hands over their paths).
@@ -159,6 +167,13 @@
         };
       }
       this.glides = {};
+      this.apps = [
+        { exe: "spotify.exe", name: "Spotify", volume: 70, mute: false, active: true },
+        { exe: "discord.exe", name: "Discord", volume: 100, mute: false, active: true },
+        { exe: "chrome.exe", name: "Chrome", volume: 45, mute: false, active: false },
+        { exe: "valorant.exe", name: "Valorant", volume: 85, mute: false, active: true },
+        { exe: "system sounds", name: "System sounds", volume: 100, mute: true, active: false },
+      ];
       this.scenes = ["Streaming", "Gaming", "Late night"];
       this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
       this.settings.appearance = {
@@ -187,7 +202,14 @@
         if (this.state.connected) onLevels(this.levels((performance.now() - this.t0) / 1000));
       }, 33);
     }
-    emit() { this.onState(JSON.parse(JSON.stringify(this.state))); }
+    emit() {
+      // The active output profile, like the app works it out (outputs.rs).
+      const snap = JSON.parse(JSON.stringify(this.state));
+      const cur = (this.settings && this.settings.outputProfiles || []).find((p) =>
+        p.buses.length && p.buses.every((e) => !snap.buses[e.bus] || snap.buses[e.bus].device === e.name));
+      snap.outputProfile = cur ? cur.name : null;
+      this.onState(snap);
+    }
 
     setFloat(name, value) {
       const rec = this.state.recorder;
@@ -259,6 +281,7 @@
         if (used[h.keys]) problems.push(`${h.keys} is used twice`);
         used[h.keys] = 1;
       }
+      if (this.onState) this.emit();
       return Promise.resolve({ problems });
     }
     windowMini() { return Promise.resolve(); }
@@ -310,6 +333,33 @@
       return Promise.resolve({ state: rec.state, elapsed: rec.elapsed, since: rec.since });
     }
     recorderOpen() { return Promise.resolve("Interview take 3.wav"); }
+    // Output profiles: capture reads the hardware outputs, apply puts a saved profile's devices back.
+    outputsCapture() {
+      const hb = this.layout.buses.filter((x) => x.kind === "hw").length;
+      return Promise.resolve(this.state.buses.slice(0, hb).map((b, j) => ({ bus: j, type: "wdm", name: b.device })));
+    }
+    outputsApply(name) {
+      const p = (this.settings.outputProfiles || []).find((x) => x.name === name);
+      if (!p) return Promise.reject(new Error(`There's no output profile “${name}”`));
+      let changed = 0;
+      for (const e of p.buses) {
+        const b = this.state.buses[e.bus];
+        if (b && b.device !== e.name) { b.device = e.name; changed++; }
+      }
+      this.emit();
+      return Promise.resolve(changed);
+    }
+    appVolumes() {
+      // A little life: the active apps come and go like real ones would.
+      return Promise.resolve(JSON.parse(JSON.stringify(this.apps)));
+    }
+    appVolumeSet(exe, volume, mute) {
+      const a = this.apps.find((x) => x.exe === exe);
+      if (!a) return Promise.reject(new Error("That app isn't playing audio any more"));
+      if (volume !== null && volume !== undefined) a.volume = Math.round(volume);
+      if (mute !== null && mute !== undefined) a.mute = !!mute;
+      return Promise.resolve();
+    }
     appInfo() { return Promise.resolve({ version: "preview", logDir: null }); }
     openLogs() { return Promise.reject(new Error("The log is only kept by the Windows app")); }
     log(level, message) { (level === "error" ? console.error : console.log)("[log]", message); return Promise.resolve(); }

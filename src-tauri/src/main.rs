@@ -5,9 +5,12 @@
 #[macro_use]
 mod logs;
 mod apps;
+mod appvol;
 mod devwatch;
 mod fades;
 mod gain;
+mod hold;
+mod outputs;
 mod recorder;
 mod settings;
 mod update;
@@ -42,6 +45,8 @@ struct Vm {
     duck_targets: Mutex<Vec<String>>,
     /// Voicemeeter's recorder: what it's doing and its clock.
     rec: Mutex<recorder::RecState>,
+    /// Push-to-talk and push-to-mute shortcuts that are being held (see hold.rs).
+    holds: Mutex<hold::Holds>,
 }
 
 struct Settings(Mutex<Value>);
@@ -182,6 +187,42 @@ fn recorder_load(app: AppHandle, path: String) -> Result<String, String> {
     Ok(p.file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or(path))
+}
+
+/* ---------------- output profiles ---------------- */
+
+/// The outputs' devices as they are now, for saving as a profile.
+#[tauri::command]
+fn outputs_capture(vm: State<'_, Vm>, s: State<'_, Settings>) -> Result<Vec<Value>, String> {
+    let edition = last_edition(&s.0.lock().unwrap());
+    Ok(outputs::capture(api(&vm)?, edition))
+}
+
+/// Switch the outputs to a saved profile.
+#[tauri::command]
+fn outputs_apply(app: AppHandle, name: String) -> Result<usize, String> {
+    outputs::apply_named(&app, &name, "from the window")
+}
+
+/* ---------------- volume per app ---------------- */
+
+#[tauri::command]
+async fn app_volumes() -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(appvol::list)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn app_volume_set(
+    exe: String,
+    volume: Option<f32>,
+    mute: Option<bool>,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || appvol::set(&exe, volume, mute))
+        .await
+        .map_err(|e| e.to_string())?
+        .inspect_err(|e| log_warn!("Per-app volume: {e}"))
 }
 
 #[tauri::command]
@@ -378,6 +419,8 @@ fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Res
 /// (Re)register every shortcut. Returns one message per shortcut that couldn't be used.
 fn apply_hotkeys(app: &AppHandle, list: &Value) -> Vec<String> {
     let gs = app.global_shortcut();
+    // A key held down while the shortcuts are re-registered would never report its release.
+    hold::release_all(app);
     let _ = gs.unregister_all();
     let mut map = Vec::new();
     let mut problems = Vec::new();
@@ -395,10 +438,11 @@ fn apply_hotkeys(app: &AppHandle, list: &Value) -> Vec<String> {
         }
     }
     *app.state::<Hotkeys>().0.lock().unwrap() = map;
+    hold::arm(app, list);
     problems
 }
 
-fn run_hotkey(app: &AppHandle, shortcut: &Shortcut) {
+fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
     let action = app
         .state::<Hotkeys>()
         .0
@@ -412,7 +456,21 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut) {
     let vm = app.state::<Vm>();
     let Some(api) = vm.api.clone() else { return };
     let channel = target.starts_with("Strip[") || target.starts_with("Bus[");
-    match action["action"].as_str().unwrap_or("") {
+    let kind = action["action"].as_str().unwrap_or("");
+    // Push to talk / push to mute act on both the press and the release.
+    if kind == "ptt" || kind == "ptm" {
+        let id = action["keys"].as_str().unwrap_or("").to_string();
+        if pressed {
+            hold::press(app, &id, kind == "ptt", &target);
+        } else {
+            hold::release(app, &id);
+        }
+        return;
+    }
+    if !pressed {
+        return;
+    }
+    match kind {
         "mute" if channel => {
             let _ = fades::toggle_mute(app, &api, &target);
         }
@@ -423,6 +481,8 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut) {
             let _ = fades::nudge(app, &api, &target, -2.0);
         }
         "window" => toggle_main(app),
+        "output" if !target.is_empty() => outputs::switch_with_osd(app, &target, "shortcut"),
+        "outputnext" => outputs::cycle(app),
         "duck" => {
             let on = {
                 let st = app.state::<Settings>();
@@ -580,6 +640,8 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
         let mut last_full = Instant::now();
         let mut reread_until = Instant::now();
         let mut prev: Option<Value> = None;
+        // Push-to-talk channels start out muted, once the connection has settled.
+        let mut arm_pending = false;
 
         loop {
             let started = Instant::now();
@@ -590,6 +652,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     connected = false;
                     log_info!("Voicemeeter disconnected (code {dirty})");
                     prev = None;
+                    arm_pending = false;
                     fades::release(&app, None);
                     publish(&app, offline_state(true));
                 }
@@ -604,6 +667,8 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     remember_edition(&app, edition);
                     // Right after Voicemeeter starts its parameters settle over a second or two.
                     reread_until = Instant::now() + Duration::from_secs(3);
+                    arm_pending = true;
+                    hold::forget_armed(&app);
                     let s = app.state::<Settings>().0.lock().unwrap().clone();
                     if settings::flag(&s, "hideVoicemeeter") {
                         *app.state::<Vm>().hide_vm_until.lock().unwrap() =
@@ -618,6 +683,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     last_full = Instant::now();
                     let mut snap = api.snapshot(edition);
                     fades::dress(&app, &mut snap);
+                    outputs::dress(&app, &mut snap);
                     if edition >= 2 {
                         recorder::dress(&app, &mut snap, api.recorder(&layout));
                     }
@@ -626,6 +692,11 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     }
                     prev = Some(snap.clone());
                     publish(&app, snap);
+                }
+                if arm_pending && !settling {
+                    arm_pending = false;
+                    let hotkeys = app.state::<Settings>().0.lock().unwrap()["hotkeys"].clone();
+                    hold::arm(&app, &hotkeys);
                 }
                 if window_visible(&app, "main") || window_visible(&app, FLYOUT) {
                     let _ = app.emit("vm-levels", api.levels(&layout));
@@ -1141,9 +1212,7 @@ fn main() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
-                    if event.state() == ShortcutState::Pressed {
-                        run_hotkey(app, shortcut);
-                    }
+                    run_hotkey(app, shortcut, event.state() == ShortcutState::Pressed);
                 })
                 .build(),
         )
@@ -1155,6 +1224,7 @@ fn main() {
             smooth: Mutex::new(gain::Smooth::new()),
             duck_targets: Mutex::new(Vec::new()),
             rec: Mutex::new(recorder::RecState::default()),
+            holds: Mutex::new(hold::Holds::default()),
         })
         .manage(Settings(Mutex::new(settings.clone())))
         .manage(Hotkeys(Mutex::new(Vec::new())))
@@ -1180,6 +1250,10 @@ fn main() {
             recorder_open,
             recorder_load,
             vm_set_string,
+            outputs_capture,
+            outputs_apply,
+            app_volumes,
+            app_volume_set,
             vm_launch,
             vm_devices,
             vm_show_window,
