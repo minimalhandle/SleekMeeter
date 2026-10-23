@@ -130,6 +130,7 @@
     const cs = getComputedStyle(el);
     measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
     const spacing = parseFloat(cs.letterSpacing) || 0;  // canvas doesn't include letter-spacing
+    if (cs.textTransform === "uppercase") text = text.toUpperCase();  // themes that capitalise names are wider
     return measureCtx.measureText(text).width + spacing * text.length + 2;
   }
   // Each strip gets the width its own name needs (within limits), so names show in full
@@ -137,7 +138,15 @@
   function sizeToNames() {
     if (!chans.length) return;
     const dense = document.body.classList.contains("dense");
-    const [minW, maxW, chrome] = dense ? [108, 240, 16 + 26 + 6 + 4] : [132, 270, 22 + 28 + 8 + 4];
+    const [minW, maxW, base] = dense ? [108, 240, 16 + 26 + 6 + 4] : [132, 270, 22 + 28 + 8 + 4];
+    // The room a strip spends on padding, the icon and its gap depends on the theme; measure it.
+    let chrome = base;
+    const probe = chans.find((c) => c.mixerEl && !c.mixerEl.hidden);
+    if (probe) {
+      const cs = getComputedStyle(probe.mixerEl), icon = $(".chip", probe.mixerEl), head = $(".head", probe.mixerEl);
+      const iw = icon ? icon.getBoundingClientRect().width : 0;
+      if (iw > 0) chrome = Math.round((parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + iw + (parseFloat(head && getComputedStyle(head).columnGap) || 8) + 4);
+    }
     const widths = chans.map((ch) => {
       const name = ch.names[0] ? ch.names[0].textContent : "";
       return Math.round(Math.min(maxW, Math.max(minW, chrome + textWidth(name, ch.names[0]))));
@@ -2466,7 +2475,12 @@
     return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "console";
   };
   let autoTheme = "";
-  function applyTheme() { document.body.dataset.theme = RETIRED[autoTheme] || autoTheme || currentTheme(); }
+  function applyTheme() {
+    document.body.dataset.theme = RETIRED[autoTheme] || autoTheme || currentTheme();
+    // Fonts and spacing change with the theme, so strips must be re-sized to their names.
+    lastSizes = "";
+    requestAnimationFrame(() => sizeToNames());
+  }
   function renderThemes() {
     const grid = $("#themePicker");
     if (!grid.childElementCount) {

@@ -120,7 +120,9 @@ button { cursor: default; }
 }
 .btn:hover, .route:hover, .tog:hover, .keys:hover, .icon-pick:hover, select:hover, .scene-list .load:hover { background: var(--key-hi); color: var(--ink); }
 .btn:active, .route:active, .tog:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .5); }
-.btn { height: 32px; padding: 0 14px; font-weight: 500; }
+.btn { height: 32px; padding: 0 14px; font-weight: 500; white-space: nowrap; }
+.bar .btn, .bar .menu-wrap { flex: none; }
+.route, .tog { white-space: nowrap; overflow: hidden; }
 .btn.icon { width: 32px; padding: 0; display: grid; place-items: center; }
 /* a key that is lit: amber backlight with a soft bloom */
 .btn.primary, .btn[aria-pressed="true"], .update-btn {

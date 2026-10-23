@@ -602,7 +602,9 @@ body[data-theme="blueprint"] {
 [data-theme="block"] .fader.h .track, [data-theme="block"] .thumb, [data-theme="block"] .offline-card, [data-theme="block"] .scene-list .load,
 [data-theme="block"] .icon-pick, [data-theme="block"] input, [data-theme="block"] .toast { border-radius: 0; }
 /* thick outlines and hard offset shadows */
-[data-theme="block"] .strip, [data-theme="block"] .mini-row { box-shadow: 0 0 0 3px #111, 5px 5px 0 3px #111; margin: 0 6px 6px 0; }
+[data-theme="block"] .strip, [data-theme="block"] .mini-row { box-shadow: 0 0 0 3px #111, 5px 5px 0 3px #111; }
+[data-theme="block"] .strips { gap: 14px; }
+[data-theme="block"] .dense .strips, [data-theme="block"].dense .strips { gap: 12px; }
 [data-theme="block"] .strip { background: #ffffff; }
 [data-theme="block"] .group { padding: 8px 10px 10px; }
 [data-theme="block"] .mini-list { background: none; box-shadow: none; padding: 0 6px 0 0; gap: 8px; }
@@ -811,7 +813,8 @@ body[data-theme="deco"] {
 [data-theme="deco"] .fader.h .track, [data-theme="deco"] .offline-card, [data-theme="deco"] .scene-list .load, [data-theme="deco"] .icon-pick,
 [data-theme="deco"] input, [data-theme="deco"] .toast { border-radius: 0; }
 /* a double gold frame */
-[data-theme="deco"] .strip { background: linear-gradient(180deg, #151519, #0e0e11); box-shadow: 0 0 0 1px #b8923e, inset 0 0 0 4px #0e0e11, inset 0 0 0 5px rgba(184, 146, 62, .55); padding: 16px 15px; }
+[data-theme="deco"] .strip { background: linear-gradient(180deg, #151519, #0e0e11); box-shadow: 0 0 0 1px #b8923e, inset 0 0 0 4px #0e0e11, inset 0 0 0 5px rgba(184, 146, 62, .55); padding: 16px 11px; }
+[data-theme="deco"].dense .strip { padding: 12px 8px; }
 [data-theme="deco"] .mini-row { background: #121215; box-shadow: 0 0 0 1px #b8923e, inset 0 0 0 3px #0e0e11, inset 0 0 0 4px rgba(184, 146, 62, .5); }
 [data-theme="deco"] .mini-list { background: none; box-shadow: none; padding: 0; gap: 6px; }
 [data-theme="deco"] .group { padding: 4px 10px; }
@@ -826,6 +829,10 @@ body[data-theme="deco"] {
 [data-theme="deco"] .btn, [data-theme="deco"] .route, [data-theme="deco"] .tog, [data-theme="deco"] .keys, [data-theme="deco"] select, [data-theme="deco"] .scene-list .load {
   background: none; color: #d9bd78; box-shadow: inset 0 0 0 1px #8a6f33; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
 }
+[data-theme="deco"] .route, [data-theme="deco"] .tog { letter-spacing: .04em; font-size: 12px; }
+[data-theme="deco"] .btn { letter-spacing: .1em; padding: 0 12px; }
+[data-theme="deco"] .brand-name { letter-spacing: .24em; }
+[data-theme="deco"] .group-head h2 { letter-spacing: .3em; }
 [data-theme="deco"] .btn:hover, [data-theme="deco"] .route:hover, [data-theme="deco"] .tog:hover { background: rgba(226, 184, 77, .14); color: #fff1c4; box-shadow: inset 0 0 0 1px #e2b84d; }
 [data-theme="deco"] .route[aria-pressed="true"], [data-theme="deco"] .modes .tog[aria-pressed="true"], [data-theme="deco"] .tog.mono[aria-pressed="true"] {
   background: linear-gradient(180deg, #f6dc8a, #d4a53a); color: #120d02; font-weight: 700; box-shadow: inset 0 0 0 1px #fff1bf, 0 0 12px rgba(226, 184, 77, .35);
@@ -895,8 +902,10 @@ body[data-theme="arcade"] {
 [data-theme="arcade"] .fader.h .track, [data-theme="arcade"] .thumb, [data-theme="arcade"] .offline-card, [data-theme="arcade"] .scene-list .load,
 [data-theme="arcade"] .icon-pick, [data-theme="arcade"] input, [data-theme="arcade"] .toast { border-radius: 0; }
 /* pixel-stepped outlines: four bars that leave the corners notched */
-[data-theme="arcade"] .strip, [data-theme="arcade"] .mini-row { box-shadow: 0 -4px 0 0 #fff, 0 4px 0 0 #fff, -4px 0 0 0 #fff, 4px 0 0 0 #fff, 8px 8px 0 0 rgba(0, 0, 0, .55); margin: 4px; }
+[data-theme="arcade"] .strip, [data-theme="arcade"] .mini-row { box-shadow: 0 -4px 0 0 #fff, 0 4px 0 0 #fff, -4px 0 0 0 #fff, 4px 0 0 0 #fff, 8px 8px 0 0 rgba(0, 0, 0, .55); }
+[data-theme="arcade"] .strips, [data-theme="arcade"].dense .strips { gap: 14px; }
 [data-theme="arcade"] .strip { padding: 14px 11px; }
+[data-theme="arcade"].dense .strip { padding: 10px 8px; }
 [data-theme="arcade"] .mini-list { background: none; box-shadow: none; padding: 0; gap: 10px; }
 [data-theme="arcade"] .group { padding: 6px 12px; }
 [data-theme="arcade"] .group-head h2 { color: #ffd400; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; text-shadow: 2px 2px 0 #ff3b3b; }
@@ -905,25 +914,25 @@ body[data-theme="arcade"] {
 [data-theme="arcade"] .brand-name { color: #ffd400; text-shadow: 2px 2px 0 #ff3b3b; }
 [data-theme="arcade"] .name { font-size: 13px; }
 [data-theme="arcade"] .sub { color: var(--muted); font-weight: 400; }
-[data-theme="arcade"] .chip { background: var(--acc); color: #170a35; box-shadow: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff; margin: 2px; }
+[data-theme="arcade"] .chip { background: var(--acc); color: #170a35; box-shadow: inset 0 0 0 2px #fff; clip-path: polygon(0 3px, 3px 3px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px), 0 calc(100% - 3px)); }
 [data-theme="arcade"] button.chip:hover { background: #fff; color: var(--acc); }
 [data-theme="arcade"] .btn, [data-theme="arcade"] .route, [data-theme="arcade"] .tog, [data-theme="arcade"] .keys, [data-theme="arcade"] select, [data-theme="arcade"] .scene-list .load {
   background: #170a35; color: #fff; text-transform: uppercase; font-weight: 700; letter-spacing: .04em;
-  box-shadow: 0 -2px 0 0 #9a85d8, 0 2px 0 0 #9a85d8, -2px 0 0 0 #9a85d8, 2px 0 0 0 #9a85d8; margin: 2px;
+  box-shadow: inset 0 0 0 2px #9a85d8; clip-path: polygon(0 3px, 3px 3px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px), 0 calc(100% - 3px));
 }
-[data-theme="arcade"] .btn:hover, [data-theme="arcade"] .route:hover, [data-theme="arcade"] .tog:hover { background: #3a1c80; box-shadow: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff; }
+[data-theme="arcade"] .btn:hover, [data-theme="arcade"] .route:hover, [data-theme="arcade"] .tog:hover { background: #3a1c80; box-shadow: inset 0 0 0 2px #fff; }
 [data-theme="arcade"] .btn:active, [data-theme="arcade"] .route:active, [data-theme="arcade"] .tog:active { transform: translate(2px, 2px); }
 [data-theme="arcade"] .route[aria-pressed="true"], [data-theme="arcade"] .modes .tog[aria-pressed="true"], [data-theme="arcade"] .tog.mono[aria-pressed="true"] {
-  background: var(--c, var(--amber)); color: #170a35; box-shadow: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff;
+  background: var(--c, var(--amber)); color: #170a35; box-shadow: inset 0 0 0 2px #fff;
 }
 [data-theme="arcade"] .route[aria-pressed="true"]:hover { background: var(--c, var(--amber)); color: #170a35; }
-[data-theme="arcade"] .tog.mute[aria-pressed="true"] { background: var(--red); color: #fff; box-shadow: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff; }
+[data-theme="arcade"] .tog.mute[aria-pressed="true"] { background: var(--red); color: #fff; box-shadow: inset 0 0 0 2px #fff; }
 [data-theme="arcade"] .tog.solo[aria-pressed="true"] { background: var(--solo); color: #170a35; }
-[data-theme="arcade"] .btn.primary, [data-theme="arcade"] .btn[aria-pressed="true"], [data-theme="arcade"] .update-btn { background: #ffd400; color: #170a35; box-shadow: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff; }
+[data-theme="arcade"] .btn.primary, [data-theme="arcade"] .btn[aria-pressed="true"], [data-theme="arcade"] .update-btn { background: #ffd400; color: #170a35; box-shadow: inset 0 0 0 2px #fff; }
 [data-theme="arcade"] .btn.primary:hover, [data-theme="arcade"] .update-btn:hover { background: #fff; }
 [data-theme="arcade"] .readout { color: #ffd400; font-size: 20px; font-weight: 700; letter-spacing: 0; text-shadow: 2px 2px 0 #ff3b3b; }
 [data-theme="arcade"] .readout:hover { background: #3a1c80; }
-[data-theme="arcade"] .well { background: #0a0420; box-shadow: 0 -2px 0 0 #5a3aa8, 0 2px 0 0 #5a3aa8, -2px 0 0 0 #5a3aa8, 2px 0 0 0 #5a3aa8; margin: 2px 0; }
+[data-theme="arcade"] .well { background: #0a0420; box-shadow: inset 0 0 0 2px #5a3aa8; }
 [data-theme="arcade"] .meter { border-radius: 0; -webkit-mask: repeating-linear-gradient(to top, #000 0 6px, transparent 6px 9px); mask: repeating-linear-gradient(to top, #000 0 6px, transparent 6px 9px); }
 [data-theme="arcade"] .groove { width: 8px; margin-left: -4px; border-radius: 0; background: repeating-linear-gradient(to top, #5a3aa8 0 4px, transparent 4px 8px); box-shadow: none; }
 [data-theme="arcade"] .thumb { background: #fff; box-shadow: 0 0 0 3px #000, 4px 4px 0 3px #000; }
@@ -932,7 +941,7 @@ body[data-theme="arcade"] {
 [data-theme="arcade"] .unity { background: #ffd400; opacity: .8; height: 2px; }
 [data-theme="arcade"] .scale span { color: #9a85d8; font-weight: 400; }
 [data-theme="arcade"] .scale span.zero { color: #ffd400; font-weight: 700; }
-[data-theme="arcade"] .fader.h .track { background: #0a0420; box-shadow: 0 -2px 0 0 #5a3aa8, 0 2px 0 0 #5a3aa8, -2px 0 0 0 #5a3aa8, 2px 0 0 0 #5a3aa8; }
+[data-theme="arcade"] .fader.h .track { background: #0a0420; box-shadow: inset 0 0 0 2px #5a3aa8; }
 [data-theme="arcade"] .fader.h .thumb { background: #fff; color: #170a35; }
 [data-theme="arcade"] .fader.h .thumb::after { display: none; }
 [data-theme="arcade"] .dlg { background: #2a1260; box-shadow: 0 -4px 0 0 #fff, 0 4px 0 0 #fff, -4px 0 0 0 #fff, 4px 0 0 0 #fff, 10px 10px 0 0 rgba(0, 0, 0, .6); }
@@ -942,7 +951,7 @@ body[data-theme="arcade"] {
 [data-theme="arcade"] .wc.close:hover { background: #ff3b3b; color: #fff; }
 .theme-card[data-theme="arcade"] .tc-desk { background: #170a35; border-radius: 0; }
 .theme-card[data-theme="arcade"] .tc-mod, .theme-card[data-theme="arcade"] .tc-keys i, .theme-card[data-theme="arcade"] .tc-mute, .theme-card[data-theme="arcade"] .tc-well, .theme-card[data-theme="arcade"] .tc-cap { border-radius: 0; }
-.theme-card[data-theme="arcade"] .tc-mod { background: #2a1260; box-shadow: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff; margin: 2px; }
+.theme-card[data-theme="arcade"] .tc-mod { background: #2a1260; box-shadow: inset 0 0 0 2px #fff; clip-path: polygon(0 3px, 3px 3px, 3px 0, calc(100% - 3px) 0, calc(100% - 3px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 3px calc(100% - 3px), 0 calc(100% - 3px)); }
 .theme-card[data-theme="arcade"] .tc-keys i { background: #170a35; box-shadow: none; }
 .theme-card[data-theme="arcade"] .tc-cap { background: #fff; box-shadow: 0 0 0 1.5px #000; }
 .theme-card[data-theme="arcade"] .tc-slot::before { width: 3px; margin-left: -1.5px; border-radius: 0; background: #5a3aa8; }
