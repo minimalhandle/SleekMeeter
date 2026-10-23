@@ -98,6 +98,8 @@
   let layout = null;
   function buildChannels(edition) {
     layout = layoutFor(edition);
+    let hw = 0;
+    for (const b of layout.buses) if (b.kind === "hw" && ++hw > 3) b.extra = true;
     if (drawerCh) closeDrawer();
     for (const id of ["#inputs", "#outputs", "#miniInputs", "#miniOutputs"]) $(id).textContent = "";
     chans.length = 0;
@@ -117,6 +119,7 @@
     // Potato has 16 channels: narrower strips so they still fit.
     document.body.classList.toggle("dense", chans.length > 10);
     applyVisibility();
+    applyExtraBuses();
     sizeToNames();
   }
 
@@ -372,6 +375,7 @@
         const b = document.createElement("button");
         b.type = "button";
         b.className = `route ${bus.kind === "hw" ? "a" : "b"}`;
+        if (bus.extra) b.classList.add("extra");
         if (bus.kind === "virt" && firstB) { b.classList.add("first-b"); firstB = false; }
         b.textContent = bus.id;
         b.title = `Send to ${bus.id}`;
@@ -860,13 +864,14 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setPanelDocked: "panelDocked",
+    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setPanelDocked: "panelDocked", setExtraBuses: "showExtraBuses",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
       settings[key] = e.target.checked;
       syncChecks();
       saveSettings();
+      if (key === "showExtraBuses") applyExtraBuses();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
     });
   }
@@ -875,6 +880,13 @@
     const tray = $("#setStartInTray");
     tray.disabled = !settings.startWithWindows;
     tray.closest(".check").classList.toggle("disabled", tray.disabled);
+    // Only Potato has the extra hardware buses (A4, A5) to show.
+    $("#extraBusesRow").hidden = !hasExtraBuses();
+  }
+  const hasExtraBuses = () => !!layout && layout.buses.some((b) => b.extra);
+  // A4 and A5 stay out of the way unless you turn them on (or a strip already sends there).
+  function applyExtraBuses() {
+    document.body.classList.toggle("show-extra-buses", !!settings.showExtraBuses);
   }
   $("#settingsBtn").addEventListener("click", () => {
     syncChecks();

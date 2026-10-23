@@ -284,6 +284,7 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 24%, var(--key)); 
 .route.a { --c: var(--amber); }
 .route.b { --c: var(--cyan); }
 .route.first-b { grid-column: 1; }
+body:not(.show-extra-buses) .route.extra:not([aria-pressed="true"]) { display: none; }
 .route[aria-pressed="true"], .modes .tog[aria-pressed="true"], .tog.mono[aria-pressed="true"] {
   background: var(--c, var(--amber)); color: var(--on-ink);
   box-shadow: 0 0 calc(14px * var(--glow)) color-mix(in srgb, var(--c, var(--amber)) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, .45);
