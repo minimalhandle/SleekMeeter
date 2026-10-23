@@ -188,7 +188,7 @@
 
   function paintLook(ch) {
     const lk = look(ch);
-    for (const c of ch.chips) { c.dataset.color = lk.color; c.innerHTML = svg(lk.icon, c.classList.contains("small") ? 14 : 18); }
+    for (const c of ch.chips) { c.dataset.color = lk.color; c.dataset.icon = lk.icon; c.innerHTML = svg(lk.icon, c.classList.contains("small") ? 14 : 18); }
     for (const r of ch.rows) r.dataset.color = lk.color;
   }
 
@@ -1704,6 +1704,8 @@
     ["ink", "Ink", "Light page, big thin numbers, no boxes"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
+    ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
+    ["clean", "Clean", "As little as possible: white, thin lines, no clutter"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
   const currentTheme = () => (THEMES.some((t) => t[0] === settings.theme) ? settings.theme : settings.oled ? "oled" : "console");
