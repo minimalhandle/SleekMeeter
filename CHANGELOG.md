@@ -5,6 +5,7 @@
 - **New themes:** **Blueprint** (white lines on a drafting-paper grid, monospace labels, tick-mark faders) and **Block** (flat and bold, with thick outlines, hard shadows and bright colour blocks)
 - **Twelve themes that look nothing alike.** Midnight, Minimal, Clean, Analog and Studio are gone because they looked too much like Console, OLED black and Ink. If you were using one, you're moved to the closest remaining theme (Console, or Ink for Clean and Studio), including in automatic per-app rules
 - **Three more new themes:** **Rack** (brushed-steel studio gear, black fader caps, amber LCD readouts), **Deco** (Art Deco black and brass gold, serif capitals, diamond fader caps) and **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks)
+- Fixed: header buttons (like Outputs with its live dot) could wrap onto two lines in the wider themes, and strips could end up wider than their names needed. Header buttons now never wrap, Arcade, Block and Deco no longer add extra spacing around strips and keys, and strips are re-measured whenever you switch theme
 - Fixed: the OLED black preview in the theme picker was unreadable while a light theme was active
 
 ## 0.11.1
