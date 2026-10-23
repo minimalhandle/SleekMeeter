@@ -48,6 +48,10 @@ pub fn defaults() -> Value {
         // Saved sets of output devices: [{ "name": "Headphones", "auto": false,
         //   "buses": [{ "bus": 0, "type": "wdm", "name": "Headphones (Arctis)" }] }]
         "outputProfiles": [],
+        // The tray panel snaps to the screen corner by the clock. Undocked, it can be moved and
+        // remembers where you left it: "panelPos": { "x": 1500, "y": 700 } (physical pixels).
+        "panelDocked": true,
+        "panelPos": null,
         // Push to talk: how long the mic stays open after the keys are let go.
         "hold": { "releaseMs": 250 }
     })

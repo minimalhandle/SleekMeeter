@@ -551,6 +551,8 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 24%, var(--key)); 
 /* ---------- tray volume panel ---------- */
 body:not(.is-panel) .panel-only { display: none !important; }
 .is-panel #pinBtn, .is-panel #miniBtn { display: none; }
+.is-panel #dockBtn[aria-pressed="true"] { color: var(--amber); }
+.is-panel.undocked .bar { cursor: grab; }
 body.is-panel { box-shadow: inset 0 0 0 1px var(--line); }
 .is-panel .bar { padding: 10px 12px 8px; }
 .is-panel #statusText { max-width: 170px; }

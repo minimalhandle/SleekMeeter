@@ -15,6 +15,7 @@
  *   recorderOpen() -> file name | null / recorderLoad(path)   a file for the recorder to play
  *   onEngineRestart(cb) / onSettingsChanged(cb) / onFileDrop(cb)
  *   appInfo() -> {version, logDir} / openLogs() / log(level, message)   Settings → About, the log file
+ *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
  *
@@ -60,6 +61,7 @@
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
     autoRestart: true,
     outputProfiles: [],
+    panelDocked: true, panelPos: null,
     hold: { releaseMs: 250 },
   };
 
@@ -105,6 +107,7 @@
     recorder(action) { return this.invoke("recorder_cmd", { action }); }
     recorderOpen() { return this.invoke("recorder_open"); }
     recorderLoad(path) { return this.invoke("recorder_load", { path }); }
+    panelDock(docked) { return this.invoke("panel_dock", { docked }); }
     outputsCapture() { return this.invoke("outputs_capture"); }
     outputsApply(name) { return this.invoke("outputs_apply", { name }); }
     appVolumes() { return this.invoke("app_volumes"); }
@@ -333,6 +336,7 @@
       return Promise.resolve({ state: rec.state, elapsed: rec.elapsed, since: rec.since });
     }
     recorderOpen() { return Promise.resolve("Interview take 3.wav"); }
+    panelDock() { return Promise.resolve(); }
     // Output profiles: capture reads the hardware outputs, apply puts a saved profile's devices back.
     outputsCapture() {
       const hb = this.layout.buses.filter((x) => x.kind === "hw").length;
