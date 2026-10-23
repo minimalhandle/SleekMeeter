@@ -70,6 +70,36 @@ fn state_of(snap: &Value, key: &str) -> Option<(f32, bool)> {
     ))
 }
 
+/// Put one channel back. The order matters: a level fade started just before a mute change
+/// fights it in Voicemeeter and makes the fader wobble, so each case does only what it needs.
+fn restore(app: &AppHandle, api: &crate::vm::Api, s: &Saved) -> Result<(), String> {
+    let vm = app.state::<Vm>();
+    let muted_now = {
+        let actual = api.get_bool(&format!("{}.Mute", s.key));
+        vm.smooth.lock().unwrap().is_muted(&s.key, actual)
+    };
+    let managed = vm.smooth.lock().unwrap().is_managed(&s.key);
+    if muted_now {
+        // Silent right now, so move the fader straight to its old level (nobody hears it),
+        // then unmute with the normal fade-in if it wasn't muted before.
+        if managed {
+            fades::glide(app, api, &s.key, s.gain)?;
+        } else {
+            fades::set_float(app, api, &format!("{}.Gain", s.key), s.gain)?;
+        }
+        if !s.mute {
+            fades::mute(app, api, &s.key, false)?;
+        }
+    } else if s.mute {
+        // Audible and should end up muted: fade out first; the level is kept for the unmute.
+        fades::mute(app, api, &s.key, true)?;
+        fades::glide(app, api, &s.key, s.gain)?;
+    } else {
+        fades::glide(app, api, &s.key, s.gain)?;
+    }
+    Ok(())
+}
+
 pub fn is_on(app: &AppHandle) -> bool {
     app.state::<Vm>().brb.lock().unwrap().saved.is_some()
 }
@@ -86,11 +116,8 @@ pub fn toggle(app: &AppHandle) -> Result<bool, String> {
     let saved = vm.brb.lock().unwrap().saved.take();
     if let Some(list) = saved {
         for s in &list {
-            if let Err(e) = fades::glide(app, &api, &s.key, s.gain) {
+            if let Err(e) = restore(app, &api, s) {
                 log_warn!("Be right back: couldn't restore {}: {e}", s.key);
-            }
-            if let Err(e) = fades::mute(app, &api, &s.key, s.mute) {
-                log_warn!("Be right back: couldn't restore mute on {}: {e}", s.key);
             }
         }
         log_info!("Be right back: off");
@@ -140,8 +167,15 @@ pub fn toggle(app: &AppHandle) -> Result<bool, String> {
         }
     }
     if !cfg.play.is_empty() {
-        let _ = fades::mute(app, &api, &cfg.play, false);
-        if let Err(e) = fades::glide(app, &api, &cfg.play, cfg.play_db) {
+        let was_muted = state_of(&snap, &cfg.play).map(|(_, m)| m).unwrap_or(false);
+        let result = if was_muted {
+            // Silent now: set the level first, then fade in, so the two fades don't fight.
+            fades::set_float(app, &api, &format!("{}.Gain", cfg.play), cfg.play_db)
+                .and_then(|_| fades::mute(app, &api, &cfg.play, false))
+        } else {
+            fades::glide(app, &api, &cfg.play, cfg.play_db)
+        };
+        if let Err(e) = result {
             log_warn!("Be right back: couldn't bring up {}: {e}", cfg.play);
         }
     }

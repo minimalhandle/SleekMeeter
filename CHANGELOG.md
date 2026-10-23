@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.10.2
+- Fixed: faders wobbled when turning Be right back off. Levels and mutes are now put back in an order that doesn't make Voicemeeter's fades fight each other
+
 ## 0.10.1
 - **Update in one click:** **Update now and restart** downloads the new version, verifies it, installs it and reopens Sleekmeeter. MSI installs get one Windows permission prompt; the portable exe replaces itself
 
