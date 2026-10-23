@@ -2506,8 +2506,38 @@
   }
   let themesOpen = false;
 
+  /* ---------- the app's own title bar buttons (the window has no Windows frame) ---------- */
+  function setupWindowChrome() {
+    const api = window.__TAURI__ && window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow
+      ? window.__TAURI__.window.getCurrentWindow() : null;
+    const preview = /[?&]chrome\b/.test(location.search); // the browser preview can show them too
+    if (PANEL || !((api && api.label === "main") || preview)) return;
+    document.body.classList.add("custom-chrome");
+    $("#winctl").hidden = false;
+    const run = (name) => { if (api) Promise.resolve(api[name]()).catch(() => {}); };
+    $("#wcMin").addEventListener("click", () => run("minimize"));
+    $("#wcMax").addEventListener("click", () => run("toggleMaximize"));
+    $("#wcClose").addEventListener("click", () => run("close"));
+    // Drag the window by the top bar; double-click it to maximise or restore.
+    $(".bar").addEventListener("mousedown", (e) => {
+      if (e.button !== 0 || e.target.closest("button, input, select, a, .menu, label")) return;
+      if (e.detail === 2) { if (!settings.mini) run("toggleMaximize"); return; }
+      run("startDragging");
+    });
+    if (api && api.onResized) {
+      let t = 0;
+      const sync = () => Promise.resolve(api.isMaximized()).then((m) => {
+        document.body.classList.toggle("maxed", !!m);
+        $("#wcMax").title = $("#wcMax").ariaLabel = m ? "Restore" : "Maximise";
+      }).catch(() => {});
+      api.onResized(() => { clearTimeout(t); t = setTimeout(sync, 120); }).catch(() => {});
+      sync();
+    }
+  }
+
   async function init() {
     await loadSettings();
+    setupWindowChrome();
     applyTheme();
     buildChannels(settings.edition || 2);
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));

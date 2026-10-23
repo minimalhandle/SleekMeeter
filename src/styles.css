@@ -184,6 +184,26 @@ button { cursor: default; }
 .status[data-state="offline"] .dot { background: var(--red); box-shadow: 0 0 calc(8px * var(--glow)) var(--red); }
 #statusText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .spacer { flex: 1; }
+/* ---------- window buttons (the app draws its own title bar, so it matches the theme) ---------- */
+.winctl { display: flex; align-self: flex-start; margin: -12px 0 0 8px; flex: none; }
+.winctl[hidden] { display: none; }
+.custom-chrome .bar { padding-right: 0; }
+.custom-chrome.is-mini .bar { padding-right: 0; }
+.is-mini .winctl { margin-top: -9px; }
+.wc {
+  display: grid; place-items: center; width: 46px; height: 34px; padding: 0; border: 0; border-radius: 0;
+  background: none; color: var(--ink-2); box-shadow: none; cursor: default;
+}
+.wc:hover { background: var(--key-hi); color: var(--ink); }
+.wc:active { background: var(--key); }
+.wc.close:hover { background: #e5384a; color: #fff; }
+.wc.close:active { background: #c62a3b; color: #fff; }
+.wc:focus-visible { outline: 2px solid var(--focus); outline-offset: -3px; }
+#wcMax .to-restore { display: none; }
+.maxed #wcMax .to-max { display: none; }
+.maxed #wcMax .to-restore { display: block; }
+.is-mini #wcMax { display: none; }
+.custom-chrome .bar { -webkit-user-select: none; user-select: none; }
 .scene-now { color: var(--ink-2); font-size: var(--s-1); margin-right: 4px; }
 .scene-now b { color: var(--amber); font-weight: 600; }
 #miniBtn .to-full { display: none; }
