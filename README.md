@@ -55,7 +55,7 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
-Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Midnight** (deep blue), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows), **Minimal** (flat graphite, no glow) or **OLED black**, where everything that isn't information turns true black. Four more change the shapes as well as the colours: **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps) **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel) and **Clean** (as little as possible: white, thin lines, no scale, no peak marks and no sub-labels). The tray panel and the volume overlay follow the theme too.
+Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows) or **OLED black**, where everything that isn't information turns true black. The rest change the shapes as well as the colours: **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders) and **Block** (bold and flat, with thick outlines and hard shadows). The tray panel and the volume overlay follow the theme too.
 
 
 <table>
@@ -66,6 +66,10 @@ Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk
 <tr>
 <td align="center"><img src="docs/screenshots/theme-glass.png" alt="The Glass theme" width="400"><br><sub><b>Glass</b></sub></td>
 <td align="center"><img src="docs/screenshots/mixer.png" alt="The Console theme" width="400"><br><sub><b>Console</b> (default)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-blueprint.png" alt="The Blueprint theme" width="400"><br><sub><b>Blueprint</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="400"><br><sub><b>Block</b></sub></td>
 </tr>
 </table>
 

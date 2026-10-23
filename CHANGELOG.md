@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0
+- **Two new themes:** **Blueprint** (white lines on a drafting-paper grid, monospace labels, tick-mark faders) and **Block** (flat and bold, with thick outlines, hard shadows and bright colour blocks)
+- **Fewer, more different themes:** Midnight, Minimal and Clean are gone because they looked too much like Console, OLED black and Ink. If you were using one, you're moved to the closest remaining theme (Console, or Ink for Clean), including in automatic per-app rules
+- Fixed: the OLED black preview in the theme picker was unreadable while a light theme was active
+
 ## 0.11.1
 - Fixed: the packaged Setup.exe and MSI could contain an older Sleekmeeter (the build script picked the first MSI it found). It now uses this version's MSI and checks its version
 - **Setup.exe has no console window:** questions are normal Windows message boxes, it asks for permission once, and it can open Sleekmeeter when it's done

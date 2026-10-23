@@ -1126,7 +1126,7 @@
       theme.setAttribute("aria-label", "Theme while it runs");
       theme.appendChild(new Option("Keep my theme", ""));
       for (const [id, name] of THEMES) theme.appendChild(new Option(`Theme: ${name}`, id));
-      theme.value = r.theme || "";
+      theme.value = RETIRED[r.theme] || r.theme || "";
       theme.addEventListener("change", () => { r.theme = theme.value; saveSettings(); });
       extra.append(Object.assign(document.createElement("span"), { textContent: "And while it runs" }), outs, theme, document.createElement("span"));
       wrap.append(row, extra);
@@ -2446,22 +2446,26 @@
   // Each theme is a set of colour and material tokens in styles.css, keyed by data-theme.
   const THEMES = [
     ["console", "Console", "Dark hardware desk with amber light"],
-    ["midnight", "Midnight", "Deep blue with periwinkle and mint"],
     ["analog", "Analog", "Warm walnut and cream, like vintage tape"],
     ["studio", "Studio", "Light desk with dark meter windows"],
-    ["minimal", "Minimal", "Flat graphite, no glow"],
     ["oled", "OLED black", "Pure black for OLED screens"],
     ["glass", "Glass", "Frosted cards over a soft glow, capsule faders"],
     ["ink", "Ink", "Light page, big thin numbers, no boxes"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
     ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
-    ["clean", "Clean", "As little as possible: white, thin lines, no clutter"],
+    ["blueprint", "Blueprint", "Drafting paper: white lines on blue, monospace, tick-mark faders"],
+    ["block", "Block", "Bold and flat: thick outlines, hard shadows, bright colour blocks"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
-  const currentTheme = () => (THEMES.some((t) => t[0] === settings.theme) ? settings.theme : settings.oled ? "oled" : "console");
+  // Themes that were retired map to their closest remaining one.
+  const RETIRED = { midnight: "console", minimal: "console", clean: "ink" };
+  const currentTheme = () => {
+    const t = RETIRED[settings.theme] || settings.theme;
+    return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "console";
+  };
   let autoTheme = "";
-  function applyTheme() { document.body.dataset.theme = autoTheme || currentTheme(); }
+  function applyTheme() { document.body.dataset.theme = RETIRED[autoTheme] || autoTheme || currentTheme(); }
   function renderThemes() {
     const grid = $("#themePicker");
     if (!grid.childElementCount) {
