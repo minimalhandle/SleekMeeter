@@ -1131,12 +1131,34 @@
       update = u;
       updateBtn.textContent = `Update to ${u.latest}`;
       $("#updateText").textContent = `Sleekmeeter ${u.latest} is out. You have ${u.current}.`;
+      updateNow.hidden = u.canInstall === false;
       $("#updateWrap").hidden = false;
     } catch (e) { /* offline or GitHub unreachable: try again next start */ }
   }
   const setUpdateMenu = (open) => { updateMenu.hidden = !open; updateBtn.setAttribute("aria-expanded", String(open)); };
   updateBtn.addEventListener("click", () => setUpdateMenu(updateMenu.hidden));
   document.addEventListener("click", (e) => { if (!e.target.closest("#updateWrap")) setUpdateMenu(false); });
+  let updating = false;
+  const updateNow = $("#updateNow");
+  engine.onUpdateProgress((p) => {
+    if (updating) updateBtn.textContent = p.percent >= 100 ? "Restarting…" : `Downloading ${p.percent}%`;
+  });
+  updateNow.addEventListener("click", async () => {
+    setUpdateMenu(false);
+    if (!update || updating) return;
+    updating = true;
+    updateBtn.disabled = true;
+    updateBtn.textContent = "Downloading 0%";
+    try {
+      await engine.updateInstall();
+      toast("Restarting to finish the update");
+    } catch (err) {
+      updating = false;
+      updateBtn.disabled = false;
+      updateBtn.textContent = `Update to ${update.latest}`;
+      fail(err);
+    }
+  });
   $("#updateGet").addEventListener("click", () => {
     setUpdateMenu(false);
     if (update) engine.openRelease(update.url).then(() => toast("Opening the download page")).catch(fail);

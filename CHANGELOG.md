@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.10.1
+- **Update in one click:** **Update now and restart** downloads the new version, verifies it, installs it and reopens Sleekmeeter. MSI installs get one Windows permission prompt; the portable exe replaces itself
+
 ## 0.10.0
 - **Installer:** a Windows MSI and a **Sleekmeeter-Setup.exe** that installs Voicemeeter first (downloaded from VB-Audio) if it's missing. The portable exe stays. Installed copies keep settings and scenes in `%APPDATA%\Sleekmeeter`
 - **Be right back:** a **BRB** button (and shortcut) that mutes your mic, turns the game down and plays music, all with fades, then puts everything back exactly as it was. Set it up in Settings → Stream mode
