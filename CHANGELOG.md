@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+- **The tray panel is docked by default:** double-click the tray icon and it snaps flush against the taskbar and clock, in exactly the same spot every time, whichever edge the taskbar is on. The pin button in its header (or Settings → Tray volume panel) undocks it so you can drag it by the header; it remembers where you put it
+- **Four new themes that change the whole look, not just the colours:** **Glass** (frosted cards, capsule faders), **Ink** (light, minimal, big thin numbers), **Neon** (glowing synth night) and **Terminal** (green phosphor). Everything works the same in all of them, including the tray panel, mini mode and the volume overlay
+
 ## 0.8.0
 - **Output profiles** (**Outputs** in the header): save the devices your outputs are using as a named setup, like Headphones or Speakers, and switch between setups in one click. Turn on **Auto** for a setup and Sleekmeeter switches to it by itself when one of its devices connects, such as when you turn on a different headset. Shortcuts can switch to a chosen profile or step to the next one, with the on-screen overlay naming it
 - **Push to talk and push to mute** shortcuts that only act while you hold the keys. With push to talk the mic starts out muted, opens when you press the keys and closes a moment after you let go (**Mic stays open** in Settings, so the end of a word isn't cut off). Push to mute does the opposite, and a channel you had already muted stays muted

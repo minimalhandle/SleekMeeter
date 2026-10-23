@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sleekmeeter</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="themes.css">
 </head>
 <body>
   <header class="bar">
@@ -26,6 +27,9 @@
       </div>
     </div>
     <button class="btn panel-only" id="openMixerBtn" type="button">Open mixer</button>
+    <button class="btn icon panel-only" id="dockBtn" type="button" aria-pressed="true" aria-label="Docked to the corner" title="Docked to the corner. Click to undock and move it">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M20.5 13.5H13.5v7" /><path d="M13.5 13.5h7v7h-7z" fill="currentColor"/></svg>
+    </button>
     <button class="btn icon panel-only" id="closePanelBtn" type="button" aria-label="Close volume panel" title="Close">
       <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
@@ -306,6 +310,10 @@
         <label class="check indent"><input type="checkbox" id="setStartInTray"><span>Start in the tray instead of opening the window</span></label>
         <label class="check"><input type="checkbox" id="setLaunchVoicemeeter"><span>Start Voicemeeter if it isn't running</span></label>
         <label class="check"><input type="checkbox" id="setHideVoicemeeter"><span>Hide Voicemeeter's own window when it starts</span></label>
+      </section>
+      <section>
+        <h3>Tray volume panel</h3>
+        <label class="check"><input type="checkbox" id="setPanelDocked"><span>Snap the panel to the corner next to the clock, flush with the taskbar. Turn this off to drag it wherever you like; it remembers where you leave it</span></label>
       </section>
       <section>
         <h3>Volume overlay</h3>

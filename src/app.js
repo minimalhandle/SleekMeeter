@@ -206,6 +206,7 @@
     const p = dbToPos(ch.gain), text = fmtDb(ch.gain);
     for (const c of ch.carriers) c.el.style.transform = c.h ? `translateX(${(p * 100).toFixed(2)}%)` : `translateY(${((1 - p) * 100).toFixed(2)}%)`;
     for (const f of ch.faders) {
+      f.style.setProperty("--p", p.toFixed(4)); // how far up: the look themes fill the track with it
       const db = f.querySelector(".db");
       if (db) db.textContent = text;
       f.setAttribute("aria-valuenow", ch.gain.toFixed(1));
@@ -855,7 +856,7 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart",
+    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setPanelDocked: "panelDocked",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
@@ -1663,6 +1664,24 @@
     const border = parseFloat(getComputedStyle(document.body).borderTopWidth) * 2;
     engine.fitPanel(Math.ceil($(".bar").offsetHeight + content + border), miniWidth() + border).catch(() => {});
   }
+  // The tray panel: docked to the corner by default; undocked, the header drags it.
+  const dockBtn = $("#dockBtn");
+  function applyPanelDock() {
+    if (!PANEL) return;
+    const docked = settings.panelDocked !== false;
+    dockBtn.setAttribute("aria-pressed", String(docked));
+    dockBtn.title = docked ? "Docked to the corner. Click to undock and move it" : "Click to dock it to the corner";
+    dockBtn.setAttribute("aria-label", docked ? "Docked to the corner" : "Undocked");
+    document.querySelectorAll(".bar, .bar .brand, .bar .brand *, .bar .status, .bar .status *, .bar .spacer").forEach((el) => {
+      if (docked) el.removeAttribute("data-tauri-drag-region"); else el.setAttribute("data-tauri-drag-region", "");
+    });
+    document.body.classList.toggle("undocked", !docked);
+  }
+  dockBtn.addEventListener("click", () => {
+    settings.panelDocked = settings.panelDocked === false;
+    applyPanelDock();
+    engine.panelDock(settings.panelDocked).catch(fail);
+  });
   async function loadSettings() {
     try {
       const s = await engine.getSettings();
@@ -1681,6 +1700,10 @@
     ["studio", "Studio", "Light desk with dark meter windows"],
     ["minimal", "Minimal", "Flat graphite, no glow"],
     ["oled", "OLED black", "Pure black for OLED screens"],
+    ["glass", "Glass", "Frosted cards over a soft glow, capsule faders"],
+    ["ink", "Ink", "Light page, big thin numbers, no boxes"],
+    ["neon", "Neon", "Dark synth night with glowing outlines"],
+    ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
   const currentTheme = () => (THEMES.some((t) => t[0] === settings.theme) ? settings.theme : settings.oled ? "oled" : "console");
@@ -1725,8 +1748,13 @@
       engine.onPanelShown(async () => {
         await loadSettings();
         applyTheme();
+        applyPanelDock();
         chans.forEach(paintLook);
         applyVisibility();
+      }).catch(() => {});
+      applyPanelDock();
+      engine.onSettingsChanged((s) => {
+        if (s && "panelDocked" in s) { settings.panelDocked = s.panelDocked; applyPanelDock(); }
       }).catch(() => {});
     } else {
       setMini(!!settings.mini, false);
@@ -1741,6 +1769,7 @@
       // A shortcut turned ducking on or off.
       engine.onSettingsChanged((s) => {
         if (s && s.ducking) settings.ducking = s.ducking;
+        if (s && "panelDocked" in s) { settings.panelDocked = s.panelDocked; if (settingsDlg.open) syncChecks(); }
         if (settingsDlg.open) syncFadeDuck();
       }).catch(() => {});
       engine.onFileDrop(onFilesDropped).catch(() => {});

@@ -817,6 +817,43 @@ fn flyout_size(app: &AppHandle) -> (f64, f64) {
     (400.0, 50.0 + list(ins) + gap + list(outs) + 14.0)
 }
 
+/// The usable screen (without the taskbar) and the whole screen of the monitor holding this
+/// point, each as (left, top, right, bottom) in physical pixels.
+#[cfg(windows)]
+fn monitor_areas(x: i32, y: i32) -> Option<((i32, i32, i32, i32), (i32, i32, i32, i32))> {
+    use windows_sys::Win32::Foundation::POINT;
+    use windows_sys::Win32::Graphics::Gdi::{
+        GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTONEAREST,
+    };
+    unsafe {
+        let m = MonitorFromPoint(POINT { x, y }, MONITOR_DEFAULTTONEAREST);
+        let mut info: MONITORINFO = std::mem::zeroed();
+        info.cbSize = std::mem::size_of::<MONITORINFO>() as u32;
+        if GetMonitorInfoW(m, &mut info) == 0 {
+            return None;
+        }
+        let (w, f) = (info.rcWork, info.rcMonitor);
+        Some((
+            (w.left, w.top, w.right, w.bottom),
+            (f.left, f.top, f.right, f.bottom),
+        ))
+    }
+}
+
+#[cfg(not(windows))]
+fn monitor_areas(_x: i32, _y: i32) -> Option<((i32, i32, i32, i32), (i32, i32, i32, i32))> {
+    None
+}
+
+/// Where a panel of this size sits when docked: in the corner by the clock, touching the
+/// taskbar, whichever edge the taskbar is on. `(x, y)` is any point on the right monitor.
+fn dock_spot(x: i32, y: i32, pw: i32, ph: i32) -> Option<(i32, i32)> {
+    let (work, full) = monitor_areas(x, y)?;
+    let px = if work.0 > full.0 { work.0 } else { work.2 - pw }; // taskbar on the left?
+    let py = if work.1 > full.1 { work.1 } else { work.3 - ph }; // taskbar on top?
+    Some((px, py))
+}
+
 /// Size the panel and put it next to the tray icon (or bottom-right when opened another way).
 fn place_flyout(app: &AppHandle, w: &WebviewWindow, anchor: Option<PhysicalPosition<f64>>) {
     let (lw, lh) = flyout_size(app);
@@ -843,6 +880,37 @@ fn place_flyout(app: &AppHandle, w: &WebviewWindow, anchor: Option<PhysicalPosit
         mx + mw - 40.0 * s,
         my + mh - 24.0 * s,
     ));
+    let (docked, saved) = {
+        let st = app.state::<Settings>();
+        let g = st.0.lock().unwrap();
+        (
+            settings::flag_or(&g, "panelDocked", true),
+            (
+                g["panelPos"]["x"].as_i64().map(|v| v as i32),
+                g["panelPos"]["y"].as_i64().map(|v| v as i32),
+            ),
+        )
+    };
+    // Docked: snug in the corner next to the clock, flush with the taskbar.
+    if docked {
+        if let Some((x, y)) = dock_spot(a.x as i32, a.y as i32, pw as i32, ph as i32) {
+            let _ = w.set_position(PhysicalPosition::new(x, y));
+            return;
+        }
+    } else if let (Some(x), Some(y)) = saved {
+        // Undocked: where you left it, if that spot is still on a screen.
+        let on_screen = monitors.iter().any(|m| {
+            let (p, z) = (m.position(), m.size());
+            x + 40 >= p.x
+                && x + 40 < p.x + z.width as i32
+                && y + 20 >= p.y
+                && y + 20 < p.y + z.height as i32
+        });
+        if on_screen {
+            let _ = w.set_position(PhysicalPosition::new(x, y));
+            return;
+        }
+    }
     // max/min rather than clamp: never panics when the panel is taller than the screen.
     let x = (a.x - pw / 2.0)
         .min(mx + mw - pw - 8.0 * s)
@@ -887,6 +955,31 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         place_flyout(app, &w, anchor);
         let _ = w.show();
         let _ = w.set_focus();
+    }
+}
+
+/// Dock the tray panel to the corner, or let it be moved (the panel's own button).
+#[tauri::command]
+fn panel_dock(app: AppHandle, docked: bool) {
+    let snapshot = {
+        let st = app.state::<Settings>();
+        let mut s = st.0.lock().unwrap();
+        s["panelDocked"] = json!(docked);
+        let _ = settings::save(&s);
+        s.clone()
+    };
+    log_info!("Tray panel {}", if docked { "docked" } else { "undocked" });
+    let _ = app.emit("settings-changed", snapshot);
+    if docked {
+        if let Some(w) = app.get_webview_window(FLYOUT) {
+            if let (Ok(p), Ok(z)) = (w.outer_position(), w.outer_size()) {
+                let anchor = PhysicalPosition::new(
+                    p.x as f64 + z.width as f64 / 2.0,
+                    p.y as f64 + z.height as f64 / 2.0,
+                );
+                place_flyout(&app, &w, Some(anchor));
+            }
+        }
     }
 }
 
@@ -938,6 +1031,27 @@ fn panel_fit(
     window
         .set_size(LogicalSize::new(width, height))
         .map_err(|e| e.to_string())?;
+    // Docked: stay snug in the corner at the new size.
+    let docked = settings::flag_or(
+        &app.state::<Settings>().0.lock().unwrap(),
+        "panelDocked",
+        true,
+    );
+    if docked {
+        let (nw, nh) = (
+            (width * scale).round() as i32,
+            (height * scale).round() as i32,
+        );
+        if let Some((x, y)) = dock_spot(
+            pos.x + inner.width as i32 / 2,
+            pos.y + inner.height as i32 / 2,
+            nw,
+            nh,
+        ) {
+            let _ = window.set_position(PhysicalPosition::new(x, y));
+            return Ok(());
+        }
+    }
     // Grow around the same centre, and upward when the panel sits above the taskbar.
     let y = if opens_upward { pos.y - dh } else { pos.y };
     let _ = window.set_position(PhysicalPosition::new(pos.x - dw / 2, y));
@@ -1265,6 +1379,7 @@ fn main() {
             settings_set,
             window_mini,
             open_mixer,
+            panel_dock,
             flyout_close,
             panel_fit,
             check_update,
@@ -1393,6 +1508,18 @@ fn main() {
             }
             WindowEvent::Resized(_) | WindowEvent::Moved(_) if window.label() == "main" => {
                 remember_window(window);
+            }
+            // An undocked tray panel remembers where you put it.
+            WindowEvent::Moved(pos) if window.label() == FLYOUT => {
+                let app = window.app_handle();
+                let st = app.state::<Settings>();
+                let mut s = st.0.lock().unwrap();
+                if !settings::flag_or(&s, "panelDocked", true)
+                    && window.is_visible().unwrap_or(false)
+                {
+                    s["panelPos"] = json!({ "x": pos.x, "y": pos.y });
+                    app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
+                }
             }
             _ => {}
         })

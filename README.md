@@ -40,7 +40,7 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
-Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Midnight** (deep blue), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows), **Minimal** (flat graphite, no glow) or **OLED black**, where everything that isn't information turns true black. The tray panel and the volume overlay follow the theme too.
+Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Midnight** (deep blue), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows), **Minimal** (flat graphite, no glow) or **OLED black**, where everything that isn't information turns true black. Four more change the shapes as well as the colours: **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps) and **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys). The tray panel and the volume overlay follow the theme too.
 
 ![The mixer in pure black for OLED screens](docs/screenshots/oled.png)
 
@@ -80,7 +80,7 @@ In **Settings → Shortcuts**, set an action to **Push to talk (hold)** or **Pus
 
 ### Tray volume panel
 
-Double-click the tray icon to open a small volume panel just above it: one fader and mute button per visible channel. It stays on top and can't be moved or resized; double-click the tray icon again or click **×** to close it, or **Open mixer** for the full window. A single click on the tray icon still shows or hides the mixer, and the tray menu has **Open volume panel** too.
+Double-click the tray icon to open a small volume panel: one fader and mute button per visible channel. By default it is **docked**: it snaps to the corner of the screen where the taskbar and clock are, flush against both, and opens in exactly the same place every time (it works with the taskbar on any edge). Click the pin button in its header, or untick **Dock the panel to the taskbar corner** in Settings, to undock it; an undocked panel can be dragged by its header and remembers where you left it. Double-click the tray icon again or click **×** to close it, or **Open mixer** for the full window. A single click on the tray icon still shows or hides the mixer, and the tray menu has **Open volume panel** too.
 
 ### Shortcuts and the volume overlay
 
