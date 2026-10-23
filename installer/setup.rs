@@ -80,27 +80,13 @@ fn install_voicemeeter() -> bool {
     ok
 }
 
-/// True when the MSI's own ProductCode is already installed (reads the
-/// code from the MSI, then looks for its uninstall entry).
-fn same_build_installed(msi: &std::path::Path) -> bool {
-    let script = format!(
-        "$ErrorActionPreference='Stop'\n\
-         try {{\n\
-         $i = New-Object -ComObject WindowsInstaller.Installer\n\
-         $db = $i.GetType().InvokeMember('OpenDatabase','InvokeMethod',$null,$i,@('{}',0))\n\
-         $v = $db.GetType().InvokeMember('OpenView','InvokeMethod',$null,$db,@(\"SELECT Value FROM Property WHERE Property='ProductCode'\"))\n\
-         $v.GetType().InvokeMember('Execute','InvokeMethod',$null,$v,$null) | Out-Null\n\
-         $r = $v.GetType().InvokeMember('Fetch','InvokeMethod',$null,$v,$null)\n\
-         $code = $r.GetType().InvokeMember('StringData','GetProperty',$null,$r,@(1))\n\
-         $p = 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + $code\n\
-         $q = 'SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + $code\n\
-         if ((Test-Path ('HKLM:\\' + $p)) -or (Test-Path ('HKLM:\\' + $q)) -or (Test-Path ('HKCU:\\' + $p))) {{ 'yes' }} else {{ 'no' }}\n\
-         }} catch {{ 'no' }}\n",
-        msi.display().to_string().replace('\'', "''")
-    );
+/// Product codes of any Sleekmeeter already installed through an MSI.
+fn installed_codes() -> Vec<String> {
+    let script = "$r = @('HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall','HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall','HKCU:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall')\n\
+        foreach ($k in $r) { if (Test-Path $k) { Get-ChildItem $k | ForEach-Object { $n = $_.PSChildName; $d = (Get-ItemProperty $_.PSPath).DisplayName; if ($d -eq 'Sleekmeeter' -and $n -match '^\\{[0-9A-Fa-f-]+\\}$') { $n } } } }\n";
     let ps1 = std::env::temp_dir().join("sleekmeeter-check.ps1");
     if std::fs::write(&ps1, script).is_err() {
-        return false;
+        return Vec::new();
     }
     let out = Command::new("powershell")
         .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
@@ -108,8 +94,12 @@ fn same_build_installed(msi: &std::path::Path) -> bool {
         .output();
     let _ = std::fs::remove_file(&ps1);
     match out {
-        Ok(o) => String::from_utf8_lossy(&o.stdout).trim() == "yes",
-        Err(_) => false,
+        Ok(o) => String::from_utf8_lossy(&o.stdout)
+            .lines()
+            .map(|l| l.trim().to_string())
+            .filter(|l| l.starts_with('{') && l.ends_with('}'))
+            .collect(),
+        Err(_) => Vec::new(),
     }
 }
 
@@ -143,18 +133,22 @@ fn main() {
         return;
     }
     println!("\nInstalling Sleekmeeter ...");
-    let mut cmd = Command::new("msiexec");
-    cmd.arg("/i").arg(&msi);
-    if same_build_installed(&msi) {
-        // This exact build is already installed: Windows would only offer
-        // Change/Repair/Remove, so repair it in place instead.
-        println!("Sleekmeeter is already installed. Repairing it in place ...");
-        cmd.args(["REINSTALL=ALL", "REINSTALLMODE=vomus", "/passive", "/norestart"]);
-    } else {
-        // A different (older or newer) build upgrades over the top by itself.
-        cmd.args(["/passive", "/norestart"]);
+    // Remove any earlier Sleekmeeter first (settings live in %APPDATA% and are
+    // kept), so an upgrade never lands on Windows' Change/Repair/Remove screen.
+    let old = installed_codes();
+    if !old.is_empty() {
+        println!("Replacing your existing Sleekmeeter ...");
+        for code in &old {
+            let _ = Command::new("msiexec")
+                .args(["/x", code.as_str(), "/passive", "/norestart"])
+                .status();
+        }
     }
-    let status = cmd.status();
+    let status = Command::new("msiexec")
+        .arg("/i")
+        .arg(&msi)
+        .args(["/passive", "/norestart"])
+        .status();
     let _ = std::fs::remove_file(&msi);
     match status {
         Ok(s) if s.success() => {
