@@ -68,22 +68,6 @@ body, [data-theme] {
   --cap-shadow: 0 10px 16px rgba(0, 0, 0, .55), 0 2px 3px rgba(0, 0, 0, .5), inset 0 1px 0 #fff, 0 0 0 1px rgba(0, 0, 0, .55);
   --cap-ink: #18181c;
 }
-/* Midnight: deep blue glass, periwinkle and mint light */
-[data-theme="midnight"] {
-  --bg: #0a0e1a; --bay: #060912; --bay-edge: rgba(150, 175, 255, .05);
-  --mod-a: #1a2140; --mod-b: #131933; --mod-edge: rgba(170, 195, 255, .1);
-  --mod-shadow: 0 1px 0 rgba(0, 0, 0, .6), 0 10px 24px rgba(2, 6, 20, .5);
-  --key: #1d2546; --key-hi: #263160; --key-edge: rgba(180, 205, 255, .08); --key-ink: #9ea9cf;
-  --well: #04060d; --flyout: #151b35; --line: #262f52;
-  --ink: #e9edff; --ink-2: #b0b9da; --muted: #7079a3;
-  --amber: #8fa4ff; --cyan: #5be3c7; --red: #ff5c7a; --solo: #d08cff; --on-ink: #0b0e1c;
-  --focus: #b9c6ff; --panel-hi: #232c50; --track: #070a16;
-  --led-g: #5be3a0; --led-y: #ffd75e; --led-r: #ff5c7a;
-  --led-g-off: #0d2420; --led-y-off: #2a2716; --led-r-off: #2b1220;
-  --c-amber: #ffc35e;
-  --scroll: #263054; --scroll-hi: #344070;
-  --cap-metal: linear-gradient(180deg, #f2f4fb, #c3c8da 46%, #8f95ab 52%, #d6dbea);
-}
 /* Analog: walnut and cream, like a vintage tape desk */
 [data-theme="analog"] {
   --bg: #17110d; --bay: #0f0b08; --bay-edge: rgba(255, 220, 180, .04);
@@ -120,20 +104,6 @@ body, [data-theme] {
   --cap-shadow: 0 6px 12px rgba(40, 30, 20, .28), 0 1px 2px rgba(40, 30, 20, .3), inset 0 1px 0 #fff, 0 0 0 1px rgba(40, 30, 20, .3);
   color-scheme: light;
 }
-/* Minimal: flat graphite, no glow or bevels, monochrome light */
-[data-theme="minimal"] {
-  --bg: #121214; --bay: #121214; --bay-edge: transparent; --bay-shadow: none;
-  --mod-a: #1b1b1f; --mod-b: #1b1b1f; --mod-edge: transparent; --mod-shadow: 0 0 0 1px #26262c;
-  --key: #232328; --key-hi: #2c2c33; --key-edge: transparent; --key-ink: #a3a3ad; --key-shadow: none;
-  --well: #0b0b0d; --flyout: #19191d; --line: #2a2a30;
-  --ink: #f2f2f5; --ink-2: #b4b4bd; --muted: #76767f;
-  --amber: #ececf1; --cyan: #8fa8ff; --red: #ff5f5f; --solo: #b79cff; --on-ink: #111114;
-  --focus: #ffffff; --panel-hi: #232328; --track: #0b0b0d;
-  --glow: 0;
-  --cap-metal: linear-gradient(180deg, #f4f4f7, #dcdce2);
-  --cap-ridge: transparent;
-  --cap-shadow: 0 3px 8px rgba(0, 0, 0, .5), 0 0 0 1px rgba(0, 0, 0, .4);
-}
 /* OLED black: black surfaces, light only where there's information */
 [data-theme="oled"] {
   --bg: #000; --bay: #000; --bay-edge: transparent; --bay-shadow: none;
@@ -141,7 +111,8 @@ body, [data-theme] {
   --key: #0c0c0f; --key-hi: #16161a; --key-edge: transparent;
   --well: #000; --flyout: #000; --line: #1c1c21; --track: #000; --panel-hi: #111;
   --led-g-off: #06100a; --led-y-off: #0e0c05; --led-r-off: #0f0606;
-  --glow: .6;
+  --ink: #eeedf2; --ink-2: #b6b5bf; --muted: #7f7e89; --key-ink: #a5a4af; --on-ink: #121212;
+  --glow: .6; color-scheme: dark;
 }
 [data-color="slate"] { --acc: var(--c-slate); }
 [data-color="amber"] { --acc: var(--c-amber); }
