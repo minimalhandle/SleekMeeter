@@ -22,7 +22,7 @@
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
  *   selftestInputs() -> {devices} / selftestRun(input, output, secs)   hear-yourself test
- *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPickPack() -> {folder,count}|null / soundPlay(name) / soundStop()   soundboard
+ *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPickPack() -> {folder,count}|null (copied into the data folder) / soundImport(paths) -> [copied paths] / soundPlay(name) / soundStop()   soundboard
  *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last} of the Twitch chat link
  *   remoteStatus() -> {running, message, urls}   the phone remote
  *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
@@ -142,6 +142,7 @@
     soundPick() { return this.invoke("sound_pick"); }
     soundPickFolder() { return this.invoke("sound_pick_folder"); }
     soundPickPack() { return this.invoke("sound_pick_pack"); }
+    soundImport(paths) { return this.invoke("sound_import", { paths }); }
     selftestInputs() { return this.invoke("selftest_inputs"); }
     selftestRun(input, output, secs) { return this.invoke("selftest_run", { input, output, secs }); }
     soundPlay(name) { return this.invoke("sound_play", { name }); }
@@ -444,6 +445,7 @@
     soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve([["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]]); }
     selftestInputs() { return Promise.resolve({ devices: ["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO)"] }); }
     selftestRun(input, output, secs) { return new Promise((r) => setTimeout(r, Math.min(secs, 2) * 1000)); }
+    soundImport(paths) { return Promise.resolve(paths); }
     soundPickPack() { return Promise.resolve({ folder: "C:\\Sounds\\Cheers", count: 6 }); }
     soundPickFolder() { return Promise.resolve(["rimshot.wav", "wilhelm-scream.mp3", "oof.ogg", "bell_ding.flac", "applause.wav"].map((f) => "C:\\Sounds\\Memes\\" + f)); }
     soundPlay(name) { this.played = name; return Promise.resolve(); }

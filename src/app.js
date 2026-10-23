@@ -2089,7 +2089,10 @@
     soundsDlg.showModal();
   });
   // Add any number of sound files (new ones only), each named after its file.
-  async function addSounds(paths) {
+  async function addSounds(picked) {
+    // Copy into Sleekmeeter's own folder first, so the originals can be moved or deleted.
+    let paths = picked || [];
+    if (paths.length) { try { paths = await engine.soundImport(paths); } catch (e) { fail(e); return; } }
     const list = SB().sounds || (SB().sounds = []);
     const have = new Set(list.map((s) => s.path.toLowerCase()));
     let added = 0;
@@ -2102,7 +2105,7 @@
       list.push(soundTab ? { name, path, volume: 100, tab: soundTab } : { name, path, volume: 100 });
       added++;
     }
-    if (!added) { toast(paths && paths.length ? "Those sounds are already on the board" : "No sounds found"); return; }
+    if (!added) { toast(picked && picked.length ? "Those sounds are already on the board" : "No sounds found"); return; }
     await saveNow();
     renderSounds();
     toast(added === 1 ? `Added “${list[list.length - 1].name}”` : `Added ${added} sounds`);
