@@ -61,6 +61,7 @@
         <button role="menuitem" type="button" data-action="show">Show Voicemeeter window</button>
         <button role="menuitem" type="button" data-action="restart">Restart audio engine</button>
         <button role="menuitem" type="button" data-action="unsolo">Clear all solos</button>
+        <button role="menuitem" type="button" data-action="options">Voicemeeter options…</button>
         <button role="menuitem" type="button" data-action="setup">Setup assistant…</button>
         <button role="menuitem" type="button" data-action="hear">Hear yourself…</button>
         <button role="menuitem" type="button" data-action="chain">Mic chain…</button>
@@ -191,6 +192,18 @@
     <div class="field wide" id="setupDiscordRow"><label for="setupDiscord">Discord / voice chat</label><select id="setupDiscord"></select></div>
     <ul class="setup-plan" id="setupPlan"></ul>
     <div class="btn-row"><button class="btn primary" id="setupApply" type="button">Apply routing</button></div>
+  </dialog>
+
+  <dialog class="dlg opt-dlg" id="optDlg" aria-labelledby="optTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="optTitle">Voicemeeter options</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint" id="optIntro">The engine settings from Voicemeeter's System Settings window. Changing the sample rate, a buffer size or a driver mode restarts the audio engine, so sound cuts out for a second.</p>
+    <div class="opt-body" id="optBody"></div>
+    <p class="hint" id="optNone" hidden>Voicemeeter didn't report any options. Is it running?</p>
   </dialog>
 
   <dialog class="dlg hear-dlg" id="hearDlg" aria-labelledby="hearTitle">
@@ -351,6 +364,19 @@
           <option value="32">32-bit float</option>
         </select>
       </div>
+      <div class="field rec-format">
+        <label for="recChannels">Channels</label>
+        <select id="recChannels"></select>
+      </div>
+      <div class="field rec-format">
+        <label for="recRate">Sample rate</label>
+        <select id="recRate"></select>
+      </div>
+      <div class="field rec-format" id="recKbpsRow" hidden>
+        <label for="recKbps">MP3 quality</label>
+        <select id="recKbps"></select>
+      </div>
+      <label class="check"><input type="checkbox" id="recMulti"><span>One file per channel (multitrack)</span></label>
       <p class="hint">Voicemeeter saves recordings in the folder set in its own recorder menu.</p>
     </section>
     <section class="rec-sec">
@@ -358,6 +384,13 @@
       <div class="rec-file">
         <button class="btn" type="button" id="recOpen">Open a file…</button>
         <span class="rec-file-name" id="recFile">or drop one on this window</span>
+      </div>
+      <label class="check"><input type="checkbox" id="recLoop"><span>Repeat the file</span></label>
+      <label class="check"><input type="checkbox" id="recPlayOnLoad"><span>Start playing as soon as a file is loaded</span></label>
+      <div class="field rec-format">
+        <label for="recGoto">Jump to</label>
+        <input type="text" id="recGoto" placeholder="0:00:00" inputmode="numeric" maxlength="8" aria-label="Jump to a time, hours:minutes:seconds">
+        <button class="btn" type="button" id="recGotoBtn">Go</button>
       </div>
       <div class="field">
         <label>Play into</label>

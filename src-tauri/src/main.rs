@@ -116,11 +116,28 @@ fn vm_get_floats(vm: State<'_, Vm>, names: Vec<String>) -> Result<Vec<Option<f32
     let a = api(&vm)?;
     Ok(names
         .iter()
-        .map(|n| if chain_param(n) { a.get_float(n) } else { None })
+        .map(|n| {
+            if readable_param(n) {
+                a.get_float(n)
+            } else {
+                None
+            }
+        })
         .collect())
 }
 
-/// "Strip[2].Comp", "Strip[0].Gate.Threshold", "Strip[1].Denoiser" and so on.
+/// Parameters the panels may read: the mic chain ("Strip[2].Comp", "Strip[0].Gate.Threshold",
+/// "Strip[1].Denoiser") and Voicemeeter's own options ("Option.sr", "Option.buffer.wdm").
+fn readable_param(name: &str) -> bool {
+    if let Some(rest) = name.strip_prefix("Option.") {
+        return rest.len() < 24
+            && rest
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '[' || c == ']');
+    }
+    chain_param(name)
+}
+
 fn chain_param(name: &str) -> bool {
     let Some(rest) = name.strip_prefix("Strip[") else {
         return false;

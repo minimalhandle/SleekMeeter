@@ -855,6 +855,7 @@
     setMenu(false);
     if (a === "show") engine.showWindow().catch(fail);
     if (a === "restart") engine.setFloat("Command.Restart", 1).then(() => toast("Restarting audio engine")).catch(fail);
+    if (a === "options") openOptions();
     if (a === "setup") openSetup();
     if (a === "hear") openHear();
     if (a === "chain") openChain();
@@ -1651,7 +1652,47 @@
     });
     const g = $("#recGain");
     if (rec.gain != null && document.activeElement !== g) { g.value = rec.gain; paintRecGain(); }
+    fillRecChoices();
+    const setSel = (id, v) => { const el = $(id); if (v != null && document.activeElement !== el) el.value = String(v); if (id !== "#recKbps") el.closest(".field").hidden = v == null; };
+    setSel("#recChannels", rec.channel); setSel("#recRate", rec.sampleRate); setSel("#recKbps", rec.kbps);
+    $("#recKbpsRow").hidden = rec.fileType !== 100 || rec.kbps == null;
+    for (const [id, v] of [["#recMulti", rec.multiTrack], ["#recLoop", rec.loop], ["#recPlayOnLoad", rec.playOnLoad]]) {
+      const el = $(id);
+      el.closest("label").hidden = v == null;
+      if (v != null && document.activeElement !== el) el.checked = !!v;
+    }
   }
+  let recChoicesDone = false;
+  function fillRecChoices() {
+    if (recChoicesDone) return;
+    recChoicesDone = true;
+    const names = { 1: "Mono", 2: "Stereo", 6: "5.1 surround (6)", 8: "7.1 surround (8)" };
+    for (let n = 1; n <= 8; n++) $("#recChannels").appendChild(new Option(names[n] || `${n} channels`, n));
+    for (const r of [22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000]) $("#recRate").appendChild(new Option(`${r / 1000} kHz`, r));
+    for (const k of [32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]) $("#recKbps").appendChild(new Option(`${k} kbps`, k));
+  }
+  const recSet = (name, v, key) => { if (rec) rec[key] = v; recHoldUntil = performance.now() + 600; sendFloat(name, v); };
+  $("#recChannels").addEventListener("change", (e) => recSet("Recorder.Channel", +e.target.value, "channel"));
+  $("#recRate").addEventListener("change", (e) => recSet("Recorder.samplerate", +e.target.value, "sampleRate"));
+  $("#recKbps").addEventListener("change", (e) => recSet("Recorder.kbps", +e.target.value, "kbps"));
+  $("#recMulti").addEventListener("change", (e) => recSet("Recorder.mode.MultiTrack", e.target.checked ? 1 : 0, "multiTrack"));
+  $("#recLoop").addEventListener("change", (e) => recSet("Recorder.mode.Loop", e.target.checked ? 1 : 0, "loop"));
+  $("#recPlayOnLoad").addEventListener("change", (e) => recSet("Recorder.mode.PlayOnLoad", e.target.checked ? 1 : 0, "playOnLoad"));
+  // "1:30", "90" or "0:01:30" all work.
+  function parseTime(text) {
+    const t = text.trim();
+    if (/^\d+$/.test(t)) { const n = +t; return [Math.floor(n / 3600), Math.floor(n / 60) % 60, n % 60]; }
+    const m = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})$/.exec(t);
+    return m ? [+(m[1] || 0), +m[2], +m[3]] : null;
+  }
+  async function recGoto() {
+    const p = parseTime($("#recGoto").value);
+    if (!p) { toast("Type a time like 1:30 or 0:01:30"); return; }
+    const hms = p.map((n) => String(n).padStart(2, "0")).join(":");
+    try { await engine.setString("Recorder.goto", hms); toast(`Jumped to ${hms}`); } catch (e) { fail(e); }
+  }
+  $("#recGotoBtn").addEventListener("click", recGoto);
+  $("#recGoto").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); recGoto(); } });
   // How loud the recording is: the channels being recorded, added together (the recorder mixes
   // them into one file). Over 0 dB the file distorts, so that gets a warning that stays a few seconds.
   let recLevel = -200, recOverAt = -1e9, recLevelDrawn = -1, recWarnText = null;
@@ -2434,6 +2475,78 @@
     }
   }
 
+
+  /* ---------- Voicemeeter options (System Settings) ---------- */
+  const optDlg = $("#optDlg");
+  const OPT_RATES = [44100, 48000, 88200, 96000, 176400, 192000];
+  const OPT_BUFFERS = [["mme", "MME buffer"], ["wdm", "WDM buffer"], ["ks", "KS buffer"], ["asio", "ASIO buffer (0 = driver default)"]];
+  async function openOptions() {
+    const hw = layout.buses.filter((b) => b.kind === "hw");
+    const names = ["Option.sr", "Option.ASIOsr", ...OPT_BUFFERS.map((b) => `Option.buffer.${b[0]}`), "Option.mode.exclusif", "Option.mode.swift", "Option.MonitorOnSEL", "Option.SliderMode", ...hw.map((_, i) => `Option.delay[${i}]`)];
+    let vals = [];
+    try { vals = await engine.getFloats(names); } catch (e) { fail(e); }
+    const V = Object.fromEntries(names.map((n, i) => [n, vals[i]]));
+    const body = $("#optBody");
+    body.textContent = "";
+    let any = false;
+    const write = (name, v) => { engine.setFloat(name, v).then(() => toast("Saved. Voicemeeter may restart its audio engine.")).catch(fail); };
+    const row = (label, ctl, hint) => {
+      const f = document.createElement("div"); f.className = "field wide";
+      const l = document.createElement("label"); l.textContent = label; f.append(l, ctl);
+      if (hint) { l.title = hint; }
+      body.appendChild(f); any = true;
+    };
+    const select = (name, choices, scale) => {
+      const el = document.createElement("select");
+      const cur = V[name];
+      for (const [v, t] of choices) el.appendChild(new Option(t, v));
+      if (![...el.options].some((o) => +o.value === cur)) el.appendChild(new Option(String(cur), cur));
+      el.value = String(cur);
+      el.addEventListener("change", () => write(name, +el.value));
+      return el;
+    };
+    const check = (name, text) => {
+      const lab = document.createElement("label"); lab.className = "check";
+      const i = document.createElement("input"); i.type = "checkbox"; i.checked = !!V[name];
+      const sp = document.createElement("span"); sp.textContent = text;
+      i.addEventListener("change", () => write(name, i.checked ? 1 : 0));
+      lab.append(i, sp); body.appendChild(lab); any = true;
+    };
+    const h = (t) => { const e = document.createElement("h3"); e.textContent = t; body.appendChild(e); };
+    if (V["Option.sr"] != null) {
+      h("Engine");
+      // Voicemeeter reports the rate in Hz (48000); if a version reports kHz (48) write it back the same way.
+      const khz = V["Option.sr"] < 1000;
+      const el = select("Option.sr", OPT_RATES.map((r) => [khz ? r / 1000 : r, `${r / 1000} kHz`]));
+      row("Sample rate", el, "The rate Voicemeeter mixes at");
+    }
+    if (V["Option.ASIOsr"] != null) check("Option.ASIOsr", "Use the ASIO device's preferred sample rate");
+    for (const [k, t] of OPT_BUFFERS) {
+      const n = `Option.buffer.${k}`;
+      if (V[n] == null) continue;
+      const el = document.createElement("input"); el.type = "number"; el.min = k === "asio" ? 0 : 128; el.max = 2048; el.step = 16; el.value = V[n];
+      el.addEventListener("change", () => { let v = Math.round(+el.value || 0); if (!(k === "asio" && v === 0)) v = Math.max(128, Math.min(2048, v)); el.value = v; write(n, v); });
+      row(t, el);
+    }
+    if (V["Option.mode.exclusif"] != null || V["Option.mode.swift"] != null || V["Option.MonitorOnSEL"] != null || V["Option.SliderMode"] != null) h("Behaviour");
+    if (V["Option.mode.exclusif"] != null) check("Option.mode.exclusif", "WDM exclusive mode (lower latency, other apps can't share the device)");
+    if (V["Option.mode.swift"] != null) check("Option.mode.swift", "Swift mode");
+    if (V["Option.MonitorOnSEL"] != null) check("Option.MonitorOnSEL", "Monitor the selected bus (Sel button)");
+    if (V["Option.SliderMode"] != null) check("Option.SliderMode", "Relative slider mode for MIDI controllers");
+    if (hw.some((_, i) => V[`Option.delay[${i}]`] != null)) {
+      h("Output delay (to line up speakers with video)");
+      hw.forEach((b, i) => {
+        const n = `Option.delay[${i}]`;
+        if (V[n] == null) return;
+        const el = document.createElement("input"); el.type = "number"; el.min = 0; el.max = 500; el.step = 1; el.value = V[n];
+        el.addEventListener("change", () => { const v = Math.max(0, Math.min(500, Math.round(+el.value || 0))); el.value = v; write(n, v); });
+        row(`${b.id} delay (ms)`, el);
+      });
+    }
+    $("#optNone").hidden = any;
+    optDlg.showModal();
+  }
+  optDlg.addEventListener("click", (e) => { if (e.target === optDlg) optDlg.close(); });
 
   /* ---------- hear yourself ---------- */
   const hearDlg = $("#hearDlg");
