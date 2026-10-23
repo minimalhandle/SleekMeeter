@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.11.1
-- **Setup.exe upgrades in place:** running Sleekmeeter-Setup.exe over an existing install now upgrades it (or repairs it if it's the same build) instead of showing Windows' Change/Repair/Remove screen
+- **Setup.exe upgrades in place:** running Sleekmeeter-Setup.exe over an existing install now removes the old copy first (settings are kept) and installs the new one, instead of stopping at Windows' Change/Repair/Remove screen
 
 ## 0.11.0
 - **Soundboard:** play wav, mp3, ogg and flac clips into your mix from buttons, shortcuts or chat, to any output device (like a Voicemeeter virtual input, so each sound is a channel you can route and fade)
