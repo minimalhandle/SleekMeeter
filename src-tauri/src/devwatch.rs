@@ -174,7 +174,8 @@ pub fn spawn(app: AppHandle) {
         loop {
             std::thread::sleep(EVERY);
             let (restart_on, auto) = {
-                let s = app.state::<Settings>().0.lock().unwrap();
+                let state = app.state::<Settings>();
+                let s = state.0.lock().unwrap();
                 (
                     settings::flag_or(&s, "autoRestart", true),
                     outputs::auto_devices(&s),
@@ -231,7 +232,8 @@ pub fn spawn(app: AppHandle) {
                     if let Some((profile, _)) = auto.iter().find(|(_, d)| *d == name) {
                         let current = app.state::<Vm>().last.lock().unwrap().clone();
                         let already = {
-                            let s = app.state::<Settings>().0.lock().unwrap();
+                            let state = app.state::<Settings>();
+                            let s = state.0.lock().unwrap();
                             outputs::current(&s, &current).as_deref() == Some(profile.as_str())
                         };
                         if !already {
