@@ -6,10 +6,14 @@
 mod logs;
 mod apps;
 mod appvol;
+mod brb;
 mod devwatch;
 mod fades;
+mod files;
 mod gain;
+mod health;
 mod hold;
+mod obs;
 mod outputs;
 mod recorder;
 mod settings;
@@ -47,9 +51,13 @@ struct Vm {
     rec: Mutex<recorder::RecState>,
     /// Push-to-talk and push-to-mute shortcuts that are being held (see hold.rs).
     holds: Mutex<hold::Holds>,
+    /// Be right back: what to put back when it ends (see brb.rs).
+    brb: Mutex<brb::Brb>,
 }
 
 struct Settings(Mutex<Value>);
+/// The theme an app rule asked for right now ("" = the one you chose). Not saved.
+static AUTO_THEME: Mutex<String> = Mutex::new(String::new());
 struct Hotkeys(Mutex<Vec<(Shortcut, Value)>>);
 struct NormalSize(Mutex<Option<LogicalSize<f64>>>);
 /// Last size the tray panel asked for (logical px), so it reopens at the right size.
@@ -337,6 +345,7 @@ fn scene_delete(name: String) -> Result<(), String> {
 fn settings_get(s: State<'_, Settings>) -> Value {
     let mut v = s.0.lock().unwrap().clone();
     v["startWithWindows"] = json!(win::autostart_enabled());
+    v["autoTheme"] = json!(AUTO_THEME.lock().unwrap().clone());
     v
 }
 
@@ -359,6 +368,9 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     }
     // The edition is recorded by the poller; keep it even if the window's copy is older.
     let mut value = value;
+    if let Value::Object(m) = &mut value {
+        m.remove("autoTheme"); // transient, set by app rules
+    }
     let state = app.state::<Settings>();
     let mut current = state.0.lock().unwrap();
     if !current["edition"].is_null() {
@@ -368,6 +380,8 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     if !current["window"].is_null() {
         value["window"] = current["window"].clone();
     }
+    // The tray panel's position is recorded in Rust too.
+    value["panelPos"] = current["panelPos"].clone();
     *current = value.clone();
     drop(current);
     settings::save(&value)?;
@@ -483,6 +497,12 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
         "window" => toggle_main(app),
         "output" if !target.is_empty() => outputs::switch_with_osd(app, &target, "shortcut"),
         "outputnext" => outputs::cycle(app),
+        "brb" => {
+            if let Err(e) = brb::toggle(app) {
+                log_warn!("Be right back: {e}");
+                show_osd_text(app, "Stream mode", "Not set up", false, "mic");
+            }
+        }
         "duck" => {
             let on = {
                 let st = app.state::<Settings>();
@@ -684,6 +704,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     let mut snap = api.snapshot(edition);
                     fades::dress(&app, &mut snap);
                     outputs::dress(&app, &mut snap);
+                    brb::dress(&app, &mut snap);
                     if edition >= 2 {
                         recorder::dress(&app, &mut snap, api.recorder(&layout));
                     }
@@ -1099,6 +1120,123 @@ fn open_release(url: String) -> Result<(), String> {
     update::open(&url)
 }
 
+/* ---------------- stream mode, OBS, backups, setup check ---------------- */
+
+/// Be right back on or off (the BRB button). Returns whether it is on now.
+#[tauri::command]
+fn brb_toggle(app: AppHandle) -> Result<bool, String> {
+    brb::toggle(&app)
+}
+
+/// What the OBS link is doing, for the mixer's status.
+#[tauri::command]
+fn obs_status() -> Value {
+    obs::status()
+}
+
+/// The "Check my setup" list.
+#[tauri::command]
+async fn health_check(app: AppHandle) -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || health::run(&app))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Save a copy of the settings (without this PC's window position or the OBS password).
+/// Returns the file, or null if cancelled.
+#[tauri::command]
+async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
+    let picked =
+        tauri::async_runtime::spawn_blocking(|| files::pick_save("Sleekmeeter settings.json"))
+            .await
+            .map_err(|e| e.to_string())?;
+    let Some(path) = picked else { return Ok(None) };
+    let mut value = app.state::<Settings>().0.lock().unwrap().clone();
+    if let Value::Object(m) = &mut value {
+        for k in ["window", "panelPos", "edition"] {
+            m.remove(k);
+        }
+    }
+    if value["obs"].is_object() {
+        value["obs"]["password"] = json!("");
+    }
+    let text = serde_json::to_string_pretty(&value).map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| format!("Couldn't save the backup: {e}"))?;
+    log_info!("Exported settings to {path}");
+    Ok(Some(path))
+}
+
+/// Restore settings from a backup. Returns the file, or null if cancelled. The page reloads after.
+#[tauri::command]
+async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
+    let picked = tauri::async_runtime::spawn_blocking(files::pick_open)
+        .await
+        .map_err(|e| e.to_string())?;
+    let Some(path) = picked else { return Ok(None) };
+    let text =
+        std::fs::read_to_string(&path).map_err(|e| format!("Couldn't read that file: {e}"))?;
+    let parsed: Value = serde_json::from_str(&text)
+        .map_err(|e| format!("That file isn't a Sleekmeeter backup ({e})"))?;
+    let Value::Object(saved) = parsed else {
+        return Err("That file isn't a Sleekmeeter backup".into());
+    };
+    if !["hotkeys", "theme", "appearance", "fades"]
+        .iter()
+        .any(|k| saved.contains_key(*k))
+    {
+        return Err("That file doesn't look like a Sleekmeeter backup".into());
+    }
+    let mut value = settings::defaults();
+    if let Value::Object(base) = &mut value {
+        for (k, v) in saved {
+            base.insert(k, v);
+        }
+    }
+    {
+        let state = app.state::<Settings>();
+        let cur = state.0.lock().unwrap();
+        for k in ["window", "panelPos", "edition"] {
+            value[k] = cur[k].clone();
+        }
+        // Backups don't carry the OBS password: keep the one this PC has.
+        let mine = cur["obs"]["password"].as_str().unwrap_or("").to_string();
+        if !mine.is_empty() && value["obs"]["password"].as_str().unwrap_or("").is_empty() {
+            value["obs"]["password"] = json!(mine);
+        }
+    }
+    settings_set(app.clone(), value)?;
+    log_info!("Restored settings from {path}");
+    let now = app.state::<Settings>().0.lock().unwrap().clone();
+    let _ = app.emit("settings-changed", now);
+    Ok(Some(path))
+}
+
+/// Put the window and the tray panel back where they start: default size, centred, panel docked.
+#[tauri::command]
+fn reset_layout(app: AppHandle) -> Result<(), String> {
+    let snapshot = {
+        let st = app.state::<Settings>();
+        let mut s = st.0.lock().unwrap();
+        s["window"] = Value::Null;
+        s["panelPos"] = Value::Null;
+        s["panelDocked"] = json!(true);
+        s["mini"] = json!(false);
+        settings::save(&s)?;
+        s.clone()
+    };
+    if let Some(w) = app.get_webview_window("main") {
+        if w.is_maximized().unwrap_or(false) {
+            let _ = w.unmaximize();
+        }
+        let _ = w.set_size(LogicalSize::new(1400.0, 800.0));
+        let _ = w.center();
+    }
+    *app.state::<NormalSize>().0.lock().unwrap() = None;
+    log_info!("Layout reset");
+    let _ = app.emit("settings-changed", snapshot);
+    Ok(())
+}
+
 /* ---------------- automatic scene switching ---------------- */
 
 #[tauri::command]
@@ -1118,47 +1256,103 @@ fn load_scene_auto(app: &AppHandle, name: &str, because: &str) {
     }
 }
 
-/// Every 2 s: when a rule's app starts, load its scene; when it closes, go back to the scene
-/// of the app that started before it, or to the rule's "when it closes" scene.
-/// Apps already running when Sleekmeeter starts don't trigger anything.
+/// One automatic rule: when `app` starts, load `scene`, switch to the `outputs` profile and
+/// use `theme` (each optional). When it closes, `restore` is loaded and the rest goes back.
+#[derive(Clone)]
+struct Rule {
+    app: String,
+    scene: String,
+    restore: String,
+    outputs: String,
+    theme: String,
+}
+
+/// An app with a rule started (or is the latest still running after another closed).
+/// `saved_outputs` remembers which output profile was in use before any rule changed it.
+fn enter_rule(app: &AppHandle, r: &Rule, saved_outputs: &mut Option<Option<String>>) {
+    if !r.scene.is_empty() {
+        load_scene_auto(app, &r.scene, &r.app);
+    }
+    if !r.outputs.is_empty() {
+        if saved_outputs.is_none() {
+            let settings = app.state::<Settings>().0.lock().unwrap().clone();
+            let snap = app.state::<Vm>().last.lock().unwrap().clone();
+            *saved_outputs = Some(outputs::current(&settings, &snap));
+        }
+        outputs::switch_with_osd(app, &r.outputs, &format!("{} started", r.app));
+    }
+    *AUTO_THEME.lock().unwrap() = r.theme.clone();
+    let _ = app.emit("theme-auto", json!({ "theme": r.theme }));
+}
+
+/// The last app with a rule closed: put things back.
+fn leave_rules(
+    app: &AppHandle,
+    restore: &str,
+    because: &str,
+    saved_outputs: &mut Option<Option<String>>,
+) {
+    if !restore.is_empty() {
+        load_scene_auto(app, restore, because);
+    }
+    if let Some(Some(name)) = saved_outputs.take() {
+        outputs::switch_with_osd(app, &name, &format!("{because} closed"));
+    }
+    AUTO_THEME.lock().unwrap().clear();
+    let _ = app.emit("theme-auto", json!({ "theme": "" }));
+}
+
+/// Every 2 s: when a rule's app starts, apply its rule; when it closes, go back to the rule of
+/// the app that started before it, or to what was there before. Apps already running when
+/// Sleekmeeter starts don't trigger anything.
 fn spawn_scene_rules(app: AppHandle) {
     std::thread::spawn(move || {
         let mut prev: Option<std::collections::BTreeSet<String>> = None;
         let mut active: Vec<String> = Vec::new();
+        let mut saved_outputs: Option<Option<String>> = None;
         loop {
             std::thread::sleep(Duration::from_secs(2));
-            let rules: Vec<(String, String, String)> = app.state::<Settings>().0.lock().unwrap()
-                ["sceneRules"]
+            let rules: Vec<Rule> = app.state::<Settings>().0.lock().unwrap()["sceneRules"]
                 .as_array()
                 .cloned()
                 .unwrap_or_default()
                 .iter()
                 .filter_map(|r| {
-                    let a = r["app"].as_str()?.trim().to_lowercase();
-                    let scene = r["scene"].as_str()?.to_string();
-                    let restore = r["restore"].as_str().unwrap_or("").to_string();
-                    (!a.is_empty() && !scene.is_empty()).then_some((a, scene, restore))
+                    let text = |k: &str| r[k].as_str().unwrap_or("").to_string();
+                    let rule = Rule {
+                        app: text("app").trim().to_lowercase(),
+                        scene: text("scene"),
+                        restore: text("restore"),
+                        outputs: text("outputs"),
+                        theme: text("theme"),
+                    };
+                    let does_something = !(rule.scene.is_empty()
+                        && rule.outputs.is_empty()
+                        && rule.theme.is_empty());
+                    (!rule.app.is_empty() && does_something).then_some(rule)
                 })
                 .collect();
             if rules.is_empty() {
                 prev = None;
                 active.clear();
+                saved_outputs = None;
                 continue;
             }
             let running = apps::running();
-            let rule_for = |a: &str| rules.iter().find(|r| r.0 == a).cloned();
+            let rule_for = |a: &str| rules.iter().find(|r| r.app == a).cloned();
             match &prev {
                 None => {
                     active = rules
                         .iter()
-                        .filter(|r| running.contains(&r.0))
-                        .map(|r| r.0.clone())
+                        .filter(|r| running.contains(&r.app))
+                        .map(|r| r.app.clone())
                         .collect();
                     active.dedup();
                 }
                 Some(before) => {
                     let mut seen = std::collections::BTreeSet::new();
-                    for (a, scene, restore) in rules.iter() {
+                    for rule in rules.iter() {
+                        let a = &rule.app;
                         if !seen.insert(a.clone()) {
                             continue; // first rule for an app wins
                         }
@@ -1167,13 +1361,13 @@ fn spawn_scene_rules(app: AppHandle) {
                         if now_on && !was_on {
                             active.retain(|x| x != a);
                             active.push(a.clone());
-                            load_scene_auto(&app, scene, a);
+                            enter_rule(&app, rule, &mut saved_outputs);
                         } else if !now_on && was_on {
                             active.retain(|x| x != a);
                             if let Some(top) = active.last().and_then(|t| rule_for(t.as_str())) {
-                                load_scene_auto(&app, &top.1, &top.0);
-                            } else if !restore.is_empty() {
-                                load_scene_auto(&app, restore, a);
+                                enter_rule(&app, &top, &mut saved_outputs);
+                            } else {
+                                leave_rules(&app, &rule.restore, a, &mut saved_outputs);
                             }
                         }
                     }
@@ -1339,6 +1533,7 @@ fn main() {
             duck_targets: Mutex::new(Vec::new()),
             rec: Mutex::new(recorder::RecState::default()),
             holds: Mutex::new(hold::Holds::default()),
+            brb: Mutex::new(brb::Brb::default()),
         })
         .manage(Settings(Mutex::new(settings.clone())))
         .manage(Hotkeys(Mutex::new(Vec::new())))
@@ -1386,7 +1581,13 @@ fn main() {
             ui_ready,
             window_fit,
             open_release,
-            running_apps
+            running_apps,
+            brb_toggle,
+            obs_status,
+            health_check,
+            settings_export,
+            settings_import,
+            reset_layout
         ])
         .setup(move |app| {
             // Tray icon: click shows/hides the mixer, double-click opens the volume panel,
@@ -1493,6 +1694,7 @@ fn main() {
             if let Some(api) = api_for_setup.clone() {
                 spawn_poller(handle.clone(), api);
                 spawn_scene_rules(handle.clone());
+                obs::spawn(handle.clone());
                 devwatch::spawn(handle);
             }
             Ok(())

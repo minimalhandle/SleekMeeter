@@ -1,6 +1,6 @@
 [package]
 name = "sleekmeeter"
-version = "0.9.0"
+version = "0.10.0"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
 license = "MIT"
@@ -16,6 +16,10 @@ libloading = "0.8"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-single-instance = "2"
 ureq = "2"
+# Link to OBS Studio (its WebSocket server): sockets and the sign-in proof.
+tungstenite = "0.24"
+sha2 = "0.10"
+base64 = "0.22"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

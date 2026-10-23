@@ -18,6 +18,12 @@
  *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
+ *   brbToggle() -> bool   Be right back on or off (state.brb tells which)
+ *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
+ *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
+ *   healthCheck() -> [{state: ok|warn|bad, label, detail}]   "Check my setup"
+ *   settingsExport() / settingsImport() -> file name or null   backup and restore
+ *   resetLayout()   default window size and position, panel docked
  *
  * Inside the Tauri app this goes to the Rust bridge (VoicemeeterRemote64.dll).
  * In a plain browser it runs a simulated Voicemeeter so the UI can be previewed
@@ -63,6 +69,9 @@
     outputProfiles: [],
     panelDocked: true, panelPos: null,
     hold: { releaseMs: 250 },
+    brb: { mute: [], lower: [], amount: 30, play: "", playDb: -8, overlay: true },
+    obs: { on: false, host: "127.0.0.1", port: 4455, password: "", rules: [], liveDo: "", liveScene: "", offDo: "", offScene: "" },
+    clipWarn: { on: false, target: "Strip[0]" },
   };
 
   /* ---------------- Tauri (real Voicemeeter) ---------------- */
@@ -112,6 +121,14 @@
     outputsApply(name) { return this.invoke("outputs_apply", { name }); }
     appVolumes() { return this.invoke("app_volumes"); }
     appVolumeSet(exe, volume, mute) { return this.invoke("app_volume_set", { exe, volume, mute }); }
+    brbToggle() { return this.invoke("brb_toggle"); }
+    obsStatus() { return this.invoke("obs_status"); }
+    onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
+    onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
+    healthCheck() { return this.invoke("health_check"); }
+    settingsExport() { return this.invoke("settings_export"); }
+    settingsImport() { return this.invoke("settings_import"); }
+    resetLayout() { return this.invoke("reset_layout"); }
     onEngineRestart(cb) { return this.listen("engine-restarted", (e) => cb(e.payload)); }
     onSettingsChanged(cb) { return this.listen("settings-changed", (e) => cb(e.payload)); }
     // Files dropped on the window (Tauri hands over their paths).
@@ -364,6 +381,45 @@
       if (mute !== null && mute !== undefined) a.mute = !!mute;
       return Promise.resolve();
     }
+    // Be right back: the simulator does what the real app does, on its own state.
+    brbToggle() {
+      const st = this.state, cfg = Object.assign({ mute: [], lower: [], amount: 30, play: "", playDb: -8 }, this.settings.brb);
+      const pick = (key) => {
+        const m = /^(Strip|Bus)\[(\d)\]$/.exec(key || "");
+        return m ? (m[1] === "Strip" ? st.strips : st.buses)[+m[2]] : null;
+      };
+      if (this.brbSaved) {
+        for (const [key, was] of this.brbSaved) { const c = pick(key); if (c) { c.gain = was.gain; c.mute = was.mute; } }
+        this.brbSaved = null; st.brb = false;
+      } else {
+        const keys = [...new Set([...cfg.mute, ...cfg.lower, cfg.play].filter(Boolean))];
+        if (!keys.length) return Promise.reject(new Error("Choose what Be right back does in Settings → Stream mode"));
+        this.brbSaved = keys.map((k) => [k, { gain: (pick(k) || {}).gain, mute: (pick(k) || {}).mute }]);
+        for (const k of cfg.lower) { const c = pick(k); if (c) c.gain = Math.max(-60, c.gain - cfg.amount); }
+        if (cfg.play) { const c = pick(cfg.play); if (c) { c.mute = false; c.gain = cfg.playDb; } }
+        for (const k of cfg.mute) { const c = pick(k); if (c) c.mute = true; }
+        st.brb = true;
+      }
+      this.emit();
+      return Promise.resolve(st.brb);
+    }
+    obsStatus() {
+      const live = /[?&]live\b/.test(location.search);
+      return Promise.resolve({ connected: true, live, scene: "Gameplay", scenes: ["Starting soon", "Gameplay", "Just chatting", "BRB", "Ending"], message: "Connected to OBS" });
+    }
+    onObsStatus() { return Promise.resolve(); }
+    onThemeAuto() { return Promise.resolve(); }
+    healthCheck() {
+      return new Promise((r) => setTimeout(() => r([
+        { state: "ok", label: "Voicemeeter", detail: "Running and connected." },
+        { state: "warn", label: "Audio devices", detail: "Windows doesn't list: Headphones (Arctis Nova Pro Wireless). Plug it in or switch it on; Sleekmeeter restarts the audio engine when it returns." },
+        { state: "ok", label: "Shortcuts", detail: "4 shortcuts working." },
+        { state: "ok", label: "Saving settings", detail: "Settings, scenes and logs can be saved." },
+      ]), 500));
+    }
+    settingsExport() { return Promise.resolve("Sleekmeeter settings.json"); }
+    settingsImport() { return Promise.resolve(null); }
+    resetLayout() { return Promise.resolve(); }
     appInfo() { return Promise.resolve({ version: "preview", logDir: null }); }
     openLogs() { return Promise.reject(new Error("The log is only kept by the Windows app")); }
     log(level, message) { (level === "error" ? console.error : console.log)("[log]", message); return Promise.resolve(); }

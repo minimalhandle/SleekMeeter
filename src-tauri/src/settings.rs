@@ -53,7 +53,15 @@ pub fn defaults() -> Value {
         "panelDocked": true,
         "panelPos": null,
         // Push to talk: how long the mic stays open after the keys are let go.
-        "hold": { "releaseMs": 250 }
+        "hold": { "releaseMs": 250 },
+        // Be right back: channels to mute, channels to turn down by `amount` dB, a channel to play.
+        "brb": { "mute": [], "lower": [], "amount": 30, "play": "", "playDb": -8, "overlay": true },
+        // OBS Studio link: scene rules [{ "obs": "BRB", "do": "brb-on" | "brb-off" | "scene", "scene": "" }],
+        // plus what to do when the stream starts (liveDo, liveScene) and ends (offDo, offScene).
+        "obs": { "on": false, "host": "127.0.0.1", "port": 4455, "password": "", "rules": [],
+                 "liveDo": "", "liveScene": "", "offDo": "", "offScene": "" },
+        // Warn when this channel's level goes over 0 dB.
+        "clipWarn": { "on": false, "target": "Strip[0]" }
     })
 }
 
