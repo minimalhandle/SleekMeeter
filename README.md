@@ -55,7 +55,7 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
-Pick a theme in **Settings → Appearance**. There are twelve, and they're built to look nothing alike, so they change the shapes and materials, not just the colours: **Console** (the dark hardware desk, the default), **OLED black** (everything that isn't information turns true black), **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders), **Block** (bold and flat, with thick outlines and hard shadows), **Rack** (brushed-steel studio gear with black fader caps and amber LCD readouts), **Deco** (Art Deco black and brass gold, with serif capitals and diamond fader caps) and **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks). The window buttons, the tray panel and the volume overlay follow the theme too.
+Pick a theme in **Settings → Appearance**. There are sixteen, and they're built to look nothing alike, so they change the shapes and materials, not just the colours: **Console** (the dark hardware desk, the default), **OLED black** (everything that isn't information turns true black), **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders), **Block** (bold and flat, with thick outlines and hard shadows), **Rack** (brushed-steel studio gear with black fader caps and amber LCD readouts), **Deco** (Art Deco black and brass gold, with serif capitals and diamond fader caps) **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks), **Peaches & Cream** (girly pink, with peach-capped faders, heart-shaped meters and scalloped cards), **Haunted** (every channel is a tombstone, fader caps are ghosts that turn into skulls when muted, and the meters are glowing slime), **Sticker Bomb** (tilted die-cut stickers on notebook paper, with starburst fader caps) and **Space Cadet** (spaceship pods with portholes, rocket fader caps, flame meters and a hazard-striped mute button). The window buttons, the tray panel and the volume overlay follow the theme too.
 
 
 <table>
@@ -78,6 +78,14 @@ Pick a theme in **Settings → Appearance**. There are twelve, and they're built
 <tr>
 <td align="center"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="400"><br><sub><b>Arcade</b></sub></td>
 <td align="center"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="400"><br><sub><b>OLED black</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-peach.png" alt="The Peaches &amp; Cream theme" width="400"><br><sub><b>Peaches &amp; Cream</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-haunted.png" alt="The Haunted theme" width="400"><br><sub><b>Haunted</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="400"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-cosmic.png" alt="The Space Cadet theme" width="400"><br><sub><b>Space Cadet</b></sub></td>
 </tr>
 </table>
 

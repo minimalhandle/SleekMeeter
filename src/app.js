@@ -2866,6 +2866,10 @@
     ["rack", "Rack", "Brushed steel studio gear, black fader caps, amber LCDs"],
     ["deco", "Deco", "Art Deco: black and brass gold, serif capitals, diamond caps"],
     ["arcade", "Arcade", "8-bit cabinet: pixel corners, chunky blocks, hot colours"],
+    ["peach", "Peaches & Cream", "Girly pink: peach faders, heart meters, scalloped cards"],
+    ["haunted", "Haunted", "Tombstone channels, ghost faders, slime meters, mute makes a skull"],
+    ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, starburst faders"],
+    ["cosmic", "Space Cadet", "Spaceship pods, rocket faders, flame meters, guarded mute"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
   // Themes that were retired map to their closest remaining one.
