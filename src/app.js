@@ -1734,8 +1734,21 @@
       }
     }
     const cur = currentTheme();
-    grid.querySelectorAll(".theme-card").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.theme === cur)));
+    const cards = [...grid.querySelectorAll(".theme-card")];
+    cards.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.theme === cur)));
+    // Closed: show three (the one in use plus the first others); the button shows the rest.
+    const keep = new Set([cur]);
+    for (const b of cards) if (keep.size < 3) keep.add(b.dataset.theme);
+    cards.forEach((b) => { b.hidden = !themesOpen && !keep.has(b.dataset.theme); });
+    const more = $("#themeMore");
+    more.setAttribute("aria-expanded", String(themesOpen));
+    $("#themeMoreText").textContent = themesOpen ? "Show fewer themes" : `Show all ${cards.length} themes (${cards.length - 3} more)`;
+    if (!more.dataset.bound) {
+      more.dataset.bound = "1";
+      more.addEventListener("click", () => { themesOpen = !themesOpen; renderThemes(); });
+    }
   }
+  let themesOpen = false;
 
   async function init() {
     await loadSettings();
