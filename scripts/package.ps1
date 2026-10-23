@@ -8,8 +8,11 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 $ver = (Get-Content package.json | ConvertFrom-Json).version
 $out = Join-Path $root 'dist\release'
-Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory $out | Out-Null
+New-Item -ItemType Directory $out -Force | Out-Null
+Get-ChildItem $out -Force | ForEach-Object {
+    try { Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop }
+    catch { throw "Couldn't clear $($_.FullName). Close anything using it (a running Setup.exe, Explorer preview, antivirus scan) and run again." }
+}
 
 Write-Host "Building Sleekmeeter $ver (exe and MSI)..."
 npx tauri build
