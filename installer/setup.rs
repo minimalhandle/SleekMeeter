@@ -104,7 +104,7 @@ fn installed_codes() -> Vec<String> {
 }
 
 fn main() {
-    println!("Sleekmeeter setup\n");
+    println!("Sleekmeeter setup (in-place upgrade build)\n");
     let mut reboot = false;
     if voicemeeter_installed() {
         println!("Voicemeeter is already installed.");
@@ -136,6 +136,13 @@ fn main() {
     // Remove any earlier Sleekmeeter first (settings live in %APPDATA% and are
     // kept), so an upgrade never lands on Windows' Change/Repair/Remove screen.
     let old = installed_codes();
+    // Also remove by this MSI's own product code, quietly (does nothing if it
+    // isn't installed). Catches installs the registry scan above misses.
+    let _ = Command::new("msiexec")
+        .arg("/x")
+        .arg(&msi)
+        .args(["/qn", "/norestart"])
+        .status();
     if !old.is_empty() {
         println!("Replacing your existing Sleekmeeter ...");
         for code in &old {
