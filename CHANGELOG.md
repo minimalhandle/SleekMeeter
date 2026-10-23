@@ -1,6 +1,8 @@
 # Changelog
 
 ## 0.11.1
+- Fixed: the packaged Setup.exe and MSI could contain an older Sleekmeeter (the build script picked the first MSI it found). It now uses this version's MSI and checks its version
+- **Setup.exe has no console window:** questions are normal Windows message boxes, it asks for permission once, and it can open Sleekmeeter when it's done
 - Fixed: updating from an installed copy could leave Windows still reporting the old version. The updater now removes the old install and installs the new one in a single step
 - **Cleaner Potato mixer:** the A4 and A5 buttons are hidden on each input by default. Turn them on in Settings → Extra outputs (only shown on Potato). A button still appears if that input already sends to it
 - Fixed: the talk-over ducking "turn down" choices didn't always stick (they could reset when you closed Settings)

@@ -187,6 +187,25 @@ fn download(app: &AppHandle, a: &Asset, dest: &Path) -> Result<(), String> {
 }
 
 /// A PowerShell string literal.
+/// Runs elevated: removes any installed Sleekmeeter (by its uninstall entries and by the new
+/// MSI's own product code), then installs the new MSI. `__MSI__` is a quoted path.
+const INSTALL_MSI: &str = r#"$msi = __MSI__
+$roots = @('HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall', 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall')
+foreach ($k in $roots) {
+  if (Test-Path $k) {
+    Get-ChildItem $k | ForEach-Object {
+      $n = $_.PSChildName
+      $d = (Get-ItemProperty $_.PSPath).DisplayName
+      if ($d -eq 'Sleekmeeter' -and $n -match '^\{[0-9A-Fa-f-]+\}$') {
+        Start-Process msiexec -Wait -ArgumentList ('/x ' + $n + ' /qn /norestart')
+      }
+    }
+  }
+}
+Start-Process msiexec -Wait -ArgumentList ('/x "' + $msi + '" /qn /norestart')
+Start-Process msiexec -Wait -ArgumentList ('/i "' + $msi + '" /passive /norestart')
+"#;
+
 fn ps(p: &Path) -> String {
     format!("'{}'", p.to_string_lossy().replace('\'', "''"))
 }
@@ -264,16 +283,8 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
         // same product: the install always ends up on the new version. Settings live in
         // %APPDATA%, so they are kept. Both steps run in one elevated script (one prompt).
         let inner = dir.join("install.ps1");
-        std::fs::write(
-            &inner,
-            format!(
-                "$msi = {msi}\n\
-                 Start-Process msiexec -Wait -ArgumentList ('/x \"' + $msi + '\" /qn /norestart')\n\
-                 Start-Process msiexec -Wait -ArgumentList ('/i \"' + $msi + '\" /passive /norestart')\n",
-                msi = ps(&file),
-            ),
-        )
-        .map_err(|e| format!("Couldn't prepare the update: {e}"))?;
+        let body = INSTALL_MSI.replace("__MSI__", &ps(&file));
+        std::fs::write(&inner, body).map_err(|e| format!("Couldn't prepare the update: {e}"))?;
         format!(
             "$inner = {inner}\n$exe = {exe}\n\
              try {{ Wait-Process -Id {pid} -Timeout 30 }} catch {{ }}\n\
