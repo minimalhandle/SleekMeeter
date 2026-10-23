@@ -1150,10 +1150,18 @@ fn sound_stop() {
     sounds::stop_all();
 }
 
-/// Ask for a sound file. Returns the path, or null if cancelled.
+/// Ask for one or more sound files. Returns their paths (empty if cancelled).
 #[tauri::command]
-async fn sound_pick() -> Result<Option<String>, String> {
-    tauri::async_runtime::spawn_blocking(files::pick_audio)
+async fn sound_pick() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(files::pick_audio_many)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Ask for a folder and return every sound file inside it.
+#[tauri::command]
+async fn sound_pick_folder() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(files::pick_audio_folder)
         .await
         .map_err(|e| e.to_string())
 }
@@ -1656,6 +1664,7 @@ fn main() {
             sound_play,
             sound_stop,
             sound_pick,
+            sound_pick_folder,
             twitch_status,
             remote_status,
             history_get,

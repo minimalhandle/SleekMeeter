@@ -195,8 +195,8 @@
       </button>
     </form>
     <div class="sound-grid" id="soundGrid"></div>
-    <p class="hint empty-note" id="soundsEmpty" hidden>No sounds yet. Add a sound file (wav, mp3, ogg or flac) and it shows up here as a button.</p>
-    <div class="btn-row"><button class="btn primary" id="soundAdd" type="button">Add a sound…</button><button class="btn" id="soundStop" type="button">Stop all sounds</button><button class="btn" id="soundEdit" type="button" aria-pressed="false">Edit</button></div>
+    <p class="hint empty-note" id="soundsEmpty" hidden>No sounds yet. Add sound files, or a whole folder of them (wav, mp3, ogg or flac), and each one shows up here as a button.</p>
+    <div class="btn-row"><button class="btn primary" id="soundAdd" type="button" title="Pick one or more sound files">Add sounds…</button><button class="btn" id="soundAddFolder" type="button" title="Add every sound in a folder">Add a folder…</button><button class="btn" id="soundStop" type="button">Stop all sounds</button><button class="btn" id="soundEdit" type="button" aria-pressed="false">Edit</button></div>
     <div class="field wide"><label for="soundDevice">Play to</label><select id="soundDevice"></select></div>
     <div class="field"><label for="soundVolume">Volume</label><input type="range" id="soundVolume" min="0" max="100" step="1"><output for="soundVolume"></output></div>
     <p class="hint">Sounds play to the device above. Pick one of Voicemeeter's virtual inputs and the sound appears in the mixer as its own channel, so you choose where it goes (stream, headphones or both) and turn it up or down with its fader. To trigger a sound from a key or from chat, add a shortcut or a Twitch command with the action <b>Play a sound</b>.</p>

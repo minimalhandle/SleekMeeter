@@ -2018,19 +2018,30 @@
     renderSounds(); soundRange._sync(); fillSoundDevices();
     soundsDlg.showModal();
   });
-  $("#soundAdd").addEventListener("click", async () => {
-    try {
-      const path = await engine.soundPick();
-      if (!path) return;
-      const list = SB().sounds || (SB().sounds = []);
-      let base = path.split(/[\\/]/).pop().replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 30) || "Sound";
+  // Add any number of sound files (new ones only), each named after its file.
+  async function addSounds(paths) {
+    const list = SB().sounds || (SB().sounds = []);
+    const have = new Set(list.map((s) => s.path.toLowerCase()));
+    let added = 0;
+    for (const path of paths || []) {
+      if (have.has(path.toLowerCase())) continue;
+      have.add(path.toLowerCase());
+      const base = path.split(/[\\/]/).pop().replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 30) || "Sound";
       let name = base, n = 2;
       while (list.some((s) => s.name.toLowerCase() === name.toLowerCase())) name = `${base} ${n++}`;
       list.push({ name, path, volume: 100 });
-      await saveNow();
-      renderSounds();
-      toast(`Added “${name}”`);
-    } catch (e) { fail(e); }
+      added++;
+    }
+    if (!added) { toast(paths && paths.length ? "Those sounds are already on the board" : "No sounds found"); return; }
+    await saveNow();
+    renderSounds();
+    toast(added === 1 ? `Added “${list[list.length - 1].name}”` : `Added ${added} sounds`);
+  }
+  $("#soundAdd").addEventListener("click", async () => {
+    try { await addSounds(await engine.soundPick()); } catch (e) { fail(e); }
+  });
+  $("#soundAddFolder").addEventListener("click", async () => {
+    try { await addSounds(await engine.soundPickFolder()); } catch (e) { fail(e); }
   });
   $("#soundStop").addEventListener("click", () => engine.soundStop().catch(fail));
   $("#soundEdit").addEventListener("click", (e) => {
