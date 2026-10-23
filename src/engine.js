@@ -216,7 +216,7 @@
         this.state.recorder = {
           armStrips: L.strips.map(() => false), armBuses: L.buses.map((_, j) => j === hb + vb - 1),
           recBus: true, a: Array.from({ length: hb }, (_, k) => k === 0), b: Array.from({ length: vb }, () => false),
-          fileType: 1, bits: 24, gain: 0, playing: null, recording: null, state: "stopped", elapsed: 0, since: null,
+          fileType: 1, bits: 24, gain: 0, channel: 2, kbps: 192, sampleRate: 48000, loop: false, multiTrack: false, playOnLoad: false, playing: null, recording: null, state: "stopped", elapsed: 0, since: null,
         };
       }
       this.glides = {};
@@ -266,7 +266,15 @@
 
     getFloats(names) {
       this._chain = this._chain || {};
+      const OPT = { "Option.sr": 48000, "Option.ASIOsr": 0, "Option.buffer.mme": 512, "Option.buffer.wdm": 512, "Option.buffer.ks": 512, "Option.buffer.asio": 0,
+        "Option.mode.exclusif": 0, "Option.mode.swift": 0, "Option.MonitorOnSEL": 0, "Option.SliderMode": 0,
+        "Option.delay[0]": 0, "Option.delay[1]": 0, "Option.delay[2]": 0, "Option.delay[3]": 0, "Option.delay[4]": 0 };
       return Promise.resolve(names.map((n) => {
+        if (n.startsWith("Option.")) {
+          if (!(n in OPT)) return null;
+          if (this.layout.edition < 3 && (n === "Option.MonitorOnSEL" || n === "Option.SliderMode")) return null;
+          return n in (this._opts || {}) ? this._opts[n] : OPT[n];
+        }
         const m = /^Strip\[(\d)\]\.(.+)$/.exec(n);
         if (!m || +m[1] > 1) return null;
         if (n in this._chain) return this._chain[n];
@@ -288,6 +296,13 @@
       if (rec && name === "Recorder.FileType") rec.fileType = value;
       if (rec && name === "Recorder.bitResolution") rec.bits = value;
       if (rec && name === "Recorder.gain") rec.gain = value;
+      if (rec && name === "Recorder.Channel") rec.channel = value;
+      if (rec && name === "Recorder.kbps") rec.kbps = value;
+      if (rec && name === "Recorder.samplerate") rec.sampleRate = value;
+      if (rec && name === "Recorder.mode.Loop") rec.loop = !!value;
+      if (rec && name === "Recorder.mode.MultiTrack") rec.multiTrack = !!value;
+      if (rec && name === "Recorder.mode.PlayOnLoad") rec.playOnLoad = !!value;
+      if (/^Option\./.test(name)) (this._opts = this._opts || {})[name] = value;
       const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+)$/.exec(name);
       if (m) {
         const obj = (m[1] === "Strip" ? this.state.strips : this.state.buses)[+m[2]];

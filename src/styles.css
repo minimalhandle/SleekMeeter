@@ -849,3 +849,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .sound-extra { display: flex; gap: 4px; margin-top: 4px; }
 .sound-extra .sound-tabname { flex: 1; min-width: 0; font: inherit; font-size: 11px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line, transparent); background: var(--well); color: inherit; }
 .sound-extra .keys { font-size: 11px; padding: 3px 8px; }
+
+/* Voicemeeter options */
+.opt-body { display: grid; gap: 8px; margin: 8px 0 4px; }
+.opt-body h3 { margin: 10px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.opt-body input[type=number] { width: 110px; }
+.rec-format input[type=text] { width: 90px; }

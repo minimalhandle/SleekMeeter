@@ -157,6 +157,12 @@ The **⋯** menu in the header has three helpers for a good stream voice:
 - **Setup assistant…** sets the A1 and B1 routing buttons for you. Choose **Just gaming + chat** (you hear everything, friends hear only your mic) or **Streamer + Discord** (the same, plus a second mix on B2 for OBS), pick your mic and your Discord channel, check the list of what will change and press **Apply routing**.
 - **Hear yourself…** records 5 seconds of your stream mix (one of Voicemeeter's virtual outputs, B2 by default) and plays it back on your headphones, so you hear exactly what your viewers hear.
 
+### Recorder and Voicemeeter options
+
+**Rec** opens the recorder: transport buttons, which channels to record, the file format and bit depth, **Channels** (mono up to 7.1), **Sample rate**, **MP3 quality**, and **One file per channel** for multitrack. Under **Play a file** you can repeat the file, start it as soon as it loads, and **Jump to** a time like `1:30`.
+
+**⋯ → Voicemeeter options…** shows the settings from Voicemeeter's System Settings window: sample rate, buffer sizes, exclusive and swift modes, monitor-on-select and the delay for each output. Changing the sample rate or a buffer restarts Voicemeeter's audio engine, so sound cuts out for a moment.
+
 ### OBS overlay
 
 Under **Settings → Phone remote** there is a second address for OBS. Add a **Browser** source in OBS, paste the address and you get a see-through overlay with a red **MUTED** or amber **BRB** badge, a meter for your mic and the name of the sound that just played. It works while Sleekmeeter is in the tray. If your mic isn't the first channel, add `&mic=1` (second channel), `&mic=2` and so on to the address, and use `&show=badge,meter` to pick which parts appear. It uses the same secret key as the phone remote, so keep the address private.

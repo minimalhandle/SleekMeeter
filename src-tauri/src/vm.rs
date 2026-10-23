@@ -387,6 +387,12 @@ impl Api {
             "fileType": self.get_float("Recorder.FileType").map(|v| v.round() as i32),
             "bits": self.get_float("Recorder.bitResolution").map(|v| v.round() as i32),
             "gain": self.get_float("Recorder.gain").map(|v| (v * 10.0).round() / 10.0),
+            "channel": self.get_float("Recorder.Channel").map(|v| v.round() as i32),
+            "kbps": self.get_float("Recorder.kbps").map(|v| v.round() as i32),
+            "sampleRate": self.get_float("Recorder.samplerate").map(|v| v.round() as i32),
+            "loop": opt("Recorder.mode.Loop"),
+            "multiTrack": opt("Recorder.mode.MultiTrack"),
+            "playOnLoad": opt("Recorder.mode.PlayOnLoad"),
             "playing": opt("Recorder.play"),
             "recording": opt("Recorder.record"),
         })
