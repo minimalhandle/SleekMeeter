@@ -414,7 +414,13 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
 /* ---------------- window: mini mode ---------------- */
 
 #[tauri::command]
-fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Result<(), String> {
+fn window_mini(
+    app: AppHandle,
+    mini: bool,
+    rows: u32,
+    width: Option<f64>,
+    height: Option<f64>,
+) -> Result<(), String> {
     let w = app.get_webview_window("main").ok_or("No main window")?;
     // Mark mini mode first, so the resize below isn't remembered as the normal window size.
     app.state::<Settings>().0.lock().unwrap()["mini"] = json!(mini);
@@ -428,7 +434,15 @@ fn window_mini(app: AppHandle, mini: bool, rows: u32, width: Option<f64>) -> Res
                 *saved.0.lock().unwrap() = Some(logical);
             }
         }
-        let h = 64.0 + 44.0 * rows.max(1) as f64;
+        // The page measures the height its channels need; the row count is only a fallback.
+        let mut h = match height {
+            Some(h) if h >= 100.0 => h,
+            _ => 64.0 + 44.0 * rows.max(1) as f64,
+        };
+        // Never taller than the screen (the list scrolls if there are very many channels).
+        if let Ok(Some(m)) = w.current_monitor() {
+            h = h.min(m.size().to_logical::<f64>(m.scale_factor()).height * 0.94);
+        }
         let width = width.unwrap_or(400.0).clamp(300.0, 900.0);
         let _ = w.set_min_size(Some(LogicalSize::new(300.0, 120.0)));
         w.set_size(LogicalSize::new(width, h))
