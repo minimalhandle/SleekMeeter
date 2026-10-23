@@ -2,11 +2,16 @@
 
 A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on top of Voicemeeter and controls it through the official Voicemeeter Remote API — Voicemeeter keeps doing the audio, Sleekmeeter is just a nicer mixer to look at and use.
 
-![Sleekmeeter's mixer: five input channels and two outputs, each with an LED meter, a metal fader cap and lit routing buttons](docs/screenshots/mixer.png)
+![Sleekmeeter's Glass theme: frosted cards, capsule faders, and the BRB, Rec, Apps, Outputs and Scenes buttons in the header](docs/screenshots/theme-glass.png)
 
 **Mini mode and the tray volume panel:** one slim row per channel, with a meter, a fader and a mute button. Double-click the tray icon to open it right above the tray.
 
-![Mini mode: one row per channel with an LED meter, a fader and a mute button](docs/screenshots/volume-panel.png)
+<table>
+<tr>
+<td><img src="docs/screenshots/mini-neon.png" alt="Mini mode in the Neon theme" width="320"></td>
+<td><img src="docs/screenshots/mini-bubblegum.png" alt="Mini mode in the Bubblegum theme" width="320"></td>
+</tr>
+</table>
 
 ## Requirements
 
@@ -42,6 +47,18 @@ Each strip is as wide as its name, so names show in full, and the input and outp
 
 Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Midnight** (deep blue), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows), **Minimal** (flat graphite, no glow) or **OLED black**, where everything that isn't information turns true black. Four more change the shapes as well as the colours: **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps) **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel) and **Clean** (as little as possible: white, thin lines, no scale, no peak marks and no sub-labels). The tray panel and the volume overlay follow the theme too.
 
+
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-neon.png" alt="The Neon theme" width="400"><br><sub><b>Neon</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-bubblegum.png" alt="The Bubblegum theme" width="400"><br><sub><b>Bubblegum</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-glass.png" alt="The Glass theme" width="400"><br><sub><b>Glass</b></sub></td>
+<td align="center"><img src="docs/screenshots/mixer.png" alt="The Console theme" width="400"><br><sub><b>Console</b> (default)</sub></td>
+</tr>
+</table>
+
 ![The mixer in pure black for OLED screens](docs/screenshots/oled.png)
 
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
@@ -69,6 +86,8 @@ Unplug USB headphones or let Bluetooth disconnect, and Voicemeeter often stays s
 ### Output profiles
 
 Switching between headphones and speakers usually means picking the device on each output by hand. In **Outputs** (header), name the devices your outputs are using now, like *Headphones* or *Speakers*, and click a setup to switch to it. Only the output devices change; levels, routing and the rest stay as they are. Turn on **Auto** for a setup and Sleekmeeter switches to it when one of its devices connects, then restarts the audio engine so the device is picked up. Shortcuts can switch to a chosen setup or step to the next one.
+
+![The Outputs window: saved device setups like Speakers and Headphones, with Auto switching](docs/screenshots/outputs.png)
 
 ### Push to talk and push to mute
 
@@ -108,7 +127,9 @@ Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1)
 
 ### Switching scenes automatically
 
-In **Scenes → Switch automatically**, add a rule such as: when `obs64.exe` starts, load **Streaming**; when it closes, load **Default**. Sleekmeeter checks running apps every couple of seconds. If several rule apps are open, closing one goes back to the scene of the one started before it. Apps that are already running when Sleekmeeter starts don't trigger a switch.
+In **Scenes → Switch automatically**, add a rule such as: when `obs64.exe` starts, load **Streaming**; when it closes, load **Default**. Sleekmeeter checks running apps every couple of seconds. If several rule apps are open, closing one goes back to the scene of the one started before it. Apps that are already running when Sleekmeeter starts don't trigger a switch. A rule can also switch your outputs and theme while the app runs (see Per-game profiles above).
+
+![A rule that loads a scene, switches outputs and changes the theme while an app runs](docs/screenshots/scenes-rules.png)
 
 ### Updates
 
