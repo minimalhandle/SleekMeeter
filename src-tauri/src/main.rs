@@ -1115,6 +1115,22 @@ async fn check_update() -> Result<Value, String> {
     result
 }
 
+/// Download the newest version, install it and start Sleekmeeter again.
+#[tauri::command]
+async fn update_install(app: tauri::AppHandle) -> Result<(), String> {
+    let a = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || update::install(&a))
+        .await
+        .map_err(|e| e.to_string())?;
+    if let Err(e) = &result {
+        log_warn!("Update: {e}");
+    }
+    result?;
+    log_info!("Update downloaded; restarting to install it");
+    app.exit(0);
+    Ok(())
+}
+
 #[tauri::command]
 fn open_release(url: String) -> Result<(), String> {
     update::open(&url)
@@ -1578,6 +1594,7 @@ fn main() {
             flyout_close,
             panel_fit,
             check_update,
+            update_install,
             ui_ready,
             window_fit,
             open_release,

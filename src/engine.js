@@ -8,7 +8,9 @@
  *   getSettings() / saveSettings(s) -> {problems:[...]}
  *   windowMini(mini, rows)     resize the window for mini mode
  *   openMixer() / closePanel() / onPanelShown(cb)   the tray volume panel
- *   checkUpdate() -> {current, latest, newer, url} / openRelease(url)
+ *   checkUpdate() -> {current, latest, newer, url, canInstall} / openRelease(url)
+ *   updateInstall() downloads and installs the newest version, then restarts (the app exits)
+ *   onUpdateProgress(cb)   cb({percent}) while it downloads
  *   runningApps() / onSceneAuto(cb)   automatic scene switching
  *   glide(key, db)             fade a strip or bus ("Strip[0]") to a level
  *   recorder(action) -> {state, elapsed, since}   record, play, replay, pause, stop, rew, ff
@@ -107,6 +109,8 @@
     fitWindow(width) { return this.invoke("window_fit", { width }); }
     checkUpdate() { return this.invoke("check_update"); }
     openRelease(url) { return this.invoke("open_release", { url }); }
+    updateInstall() { return this.invoke("update_install"); }
+    onUpdateProgress(cb) { return this.listen("update-progress", (e) => cb(e.payload)); }
     runningApps() { return this.invoke("running_apps"); }
     onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
     glide(key, value) { return this.invoke("vm_glide", { key, value }); }
@@ -314,9 +318,19 @@
     checkUpdate() {
       const newer = /[?&]update\b/.test(location.search);
       return Promise.resolve({ current: "0.4.0", latest: newer ? "0.4.1" : "0.4.0", newer,
-        url: "https://github.com/minimalhandle/SleekMeeter/releases/tag/v0.4.1" });
+        url: "https://github.com/minimalhandle/SleekMeeter/releases/tag/v0.4.1", canInstall: true });
     }
     openRelease() { return Promise.resolve(); }
+    updateInstall() {
+      return new Promise((resolve) => {
+        let p = 0;
+        const t = setInterval(() => {
+          p += 20; (this._upd || (() => {}))({ percent: Math.min(p, 100) });
+          if (p >= 100) { clearInterval(t); resolve(); }
+        }, 250);
+      });
+    }
+    onUpdateProgress(cb) { this._upd = cb; return Promise.resolve(); }
     runningApps() {
       return Promise.resolve(["discord.exe", "explorer.exe", "obs64.exe", "spotify.exe", "steam.exe", "valorant.exe"]);
     }
