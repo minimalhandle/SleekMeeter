@@ -19,13 +19,16 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
     };
     match kind {
         "mute" if is_channel(target) => {
-            fades::toggle_mute(app, &need_api()?, target)?;
+            let api = need_api()?;
+            fades::toggle_mute(app, &api, target)?;
         }
         "volup" if is_channel(target) => {
-            fades::nudge(app, &need_api()?, target, 2.0)?;
+            let api = need_api()?;
+            fades::nudge(app, &api, target, 2.0)?;
         }
         "voldown" if is_channel(target) => {
-            fades::nudge(app, &need_api()?, target, -2.0)?;
+            let api = need_api()?;
+            fades::nudge(app, &api, target, -2.0)?;
         }
         "window" => crate::toggle_main(app),
         "output" if !target.is_empty() => outputs::switch_with_osd(app, target, "shortcut"),
@@ -65,7 +68,8 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
             );
         }
         "record" => {
-            if let Ok(rec) = recorder::toggle_record(app, &need_api()?) {
+            let api = need_api()?;
+            if let Ok(rec) = recorder::toggle_record(app, &api) {
                 let text = if rec { "Recording" } else { "Stopped" };
                 show_osd_text(app, "Recorder", text, rec, "record");
             }
