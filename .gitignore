@@ -1,5 +1,6 @@
-node_modules/
-src-tauri/target/
-src-tauri/gen/
 dist/
+installer/Sleekmeeter.msi
+node_modules/
 preview/
+src-tauri/gen/
+src-tauri/target/

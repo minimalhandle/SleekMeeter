@@ -18,9 +18,19 @@ A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on t
 - Windows 10 or 11 (WebView2 comes with both)
 - Voicemeeter Standard, Banana or Potato installed (Sleekmeeter loads `VoicemeeterRemote64.dll` from its install folder and adapts its layout to the edition you run)
 
-## Run it
+## Install or run it
 
-Sleekmeeter is portable: put `Sleekmeeter.exe` in any folder and run it. Scenes are saved in a `scenes` folder next to the exe.
+Pick one from the [Releases](../../releases) page:
+
+| File | What it is |
+| --- | --- |
+| **Sleekmeeter-Setup.exe** | The easy way. Checks whether Voicemeeter is installed. If it isn't, it downloads VB-Audio's official installer for you and runs it first, then installs Sleekmeeter. |
+| **Sleekmeeter-*version*.msi** | Just Sleekmeeter, for PCs that already have Voicemeeter. |
+| **Sleekmeeter-*version*-portable.zip** | No install: unzip anywhere and run `Sleekmeeter.exe`. Settings and scenes are saved in a `scenes` folder next to the exe. |
+
+Voicemeeter is made by VB-Audio and is not included; Setup downloads it from vb-audio.com. After it installs Voicemeeter, Windows needs a restart before Voicemeeter's audio drivers work.
+
+When installed with the MSI, your settings, scenes and logs are kept in `%APPDATA%\Sleekmeeter` instead, since the install folder is read-only.
 
 If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window keeps Sleekmeeter in the tray; left-click the tray icon to bring it back, right-click → **Quit Sleekmeeter** to exit. Only one copy runs at a time, so starting Sleekmeeter again (say, from a pinned taskbar icon) brings back the one that's already running.
 
@@ -160,6 +170,7 @@ Push this folder to a GitHub repository. The included workflow (`.github/workflo
    npm run build
    ```
 3. The app is at `src-tauri\target\release\sleekmeeter.exe`.
+4. To make the installer, MSI and portable zip for a release, run `npm run package`. The files land in `dist\release`.
 
 For live development with Voicemeeter running: `npm run dev`.
 
