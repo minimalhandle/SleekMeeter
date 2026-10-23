@@ -68,42 +68,6 @@ body, [data-theme] {
   --cap-shadow: 0 10px 16px rgba(0, 0, 0, .55), 0 2px 3px rgba(0, 0, 0, .5), inset 0 1px 0 #fff, 0 0 0 1px rgba(0, 0, 0, .55);
   --cap-ink: #18181c;
 }
-/* Analog: walnut and cream, like a vintage tape desk */
-[data-theme="analog"] {
-  --bg: #17110d; --bay: #0f0b08; --bay-edge: rgba(255, 220, 180, .04);
-  --mod-a: #2c2219; --mod-b: #221a13; --mod-edge: rgba(255, 225, 190, .08);
-  --key: #30261d; --key-hi: #3b2f24; --key-edge: rgba(255, 225, 190, .07); --key-ink: #c4b39b;
-  --well: #0a0705; --flyout: #251d16; --line: #3c3026;
-  --ink: #f4e9d6; --ink-2: #cdbca3; --muted: #8f7e68;
-  --amber: #ff9d42; --cyan: #5fcdb3; --red: #ff5c47; --solo: #d39cff; --on-ink: #1a120b;
-  --focus: #ffc98f; --panel-hi: #3c2f24; --track: #0d0a07;
-  --led-g: #9fdc5a; --led-y: #ffc94a; --led-r: #ff5c47;
-  --led-g-off: #1b2410; --led-y-off: #2e2410; --led-r-off: #2e130e;
-  --scroll: #3b2f25; --scroll-hi: #4b3c2f;
-  --cap-metal: linear-gradient(180deg, #f5ecdb, #ddcfb4 46%, #bba98a 52%, #e9dec8);
-  --cap-ink: #2a1f15;
-}
-/* Studio: a light desk with dark meter windows */
-[data-theme="studio"] {
-  --bg: #e7e5e1; --bay: #d8d5cf; --bay-edge: rgba(255, 255, 255, .75);
-  --bay-shadow: inset 0 1px 4px rgba(60, 50, 40, .18);
-  --mod-a: #fcfbf9; --mod-b: #f2f0ec; --mod-edge: rgba(255, 255, 255, .95);
-  --mod-shadow: 0 1px 0 rgba(60, 50, 40, .12), 0 6px 14px rgba(60, 50, 40, .1);
-  --key: #e8e5e0; --key-hi: #dedad3; --key-edge: rgba(255, 255, 255, .9); --key-ink: #4d4b56;
-  --key-shadow: 0 1px 0 rgba(60, 50, 40, .18);
-  --well: #1b1b20; --flyout: #faf9f6; --line: #d3cfc8;
-  --ink: #1c1b21; --ink-2: #4b4a55; --muted: #85838d;
-  --amber: #e39b14; --cyan: #0ea5cf; --red: #e5484d; --solo: #7c5cff; --on-ink: #141414;
-  --focus: #b36a00; --panel-hi: #d6d2cb; --track: #b9b4ac;
-  --glow: .45;
-  --c-slate: #6f6e78; --c-amber: #d99312; --c-coral: #e5703d; --c-rose: #e04a85;
-  --c-violet: #7c5cff; --c-blue: #3b7bf0; --c-cyan: #0b9cc4; --c-green: #23a85b;
-  --pop-shadow: 0 14px 30px rgba(60, 50, 40, .2);
-  --scroll: #c6c1b9; --scroll-hi: #b3ada4;
-  --field: #ffffff; --rail: #d6d2cb; --switch: #cfcac2;
-  --cap-shadow: 0 6px 12px rgba(40, 30, 20, .28), 0 1px 2px rgba(40, 30, 20, .3), inset 0 1px 0 #fff, 0 0 0 1px rgba(40, 30, 20, .3);
-  color-scheme: light;
-}
 /* OLED black: black surfaces, light only where there's information */
 [data-theme="oled"] {
   --bg: #000; --bay: #000; --bay-edge: transparent; --bay-shadow: none;
@@ -330,11 +294,6 @@ body:not(.show-extra-buses) .route.extra:not([aria-pressed="true"]) { display: n
 [data-theme="oled"] .groove, [data-theme="oled"] .well, [data-theme="oled"] .fader.h .track { box-shadow: inset 0 0 0 1px #1d1d22; }
 [data-theme="oled"] .check input:not(:checked), [data-theme="oled"] .gain-row input, [data-theme="oled"] .scene-save input, [data-theme="oled"] .rule input { box-shadow: inset 0 0 0 1px #2c2c33; }
 [data-theme="oled"] input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px #2c2c33; }
-/* Studio is light: text boxes, switches and slider tracks get a fine edge instead of a deep inset */
-[data-theme="studio"] .gain-row input, [data-theme="studio"] .scene-save input, [data-theme="studio"] .rule input,
-[data-theme="studio"] .check input:not(:checked) { box-shadow: inset 0 0 0 1px #c9c4bc, inset 0 1px 2px rgba(60, 50, 40, .12); }
-[data-theme="studio"] input[type="range"]::-webkit-slider-runnable-track { box-shadow: inset 0 1px 2px rgba(60, 50, 40, .2); }
-[data-theme="studio"] .dlg::backdrop { background: rgba(40, 35, 30, .35); }
 
 .scale { position: relative; }
 .scale span { position: absolute; right: 0; transform: translateY(50%); font-size: 11px; color: var(--muted); line-height: 1; letter-spacing: 0; }

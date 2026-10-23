@@ -55,7 +55,7 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
-Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk, the default), **Analog** (warm walnut and cream), **Studio** (a light desk with dark meter windows) or **OLED black**, where everything that isn't information turns true black. The rest change the shapes as well as the colours: **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders) and **Block** (bold and flat, with thick outlines and hard shadows). The tray panel and the volume overlay follow the theme too.
+Pick a theme in **Settings → Appearance**. There are twelve, and they're built to look nothing alike, so they change the shapes and materials, not just the colours: **Console** (the dark hardware desk, the default), **OLED black** (everything that isn't information turns true black), **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Ink** (a light page with no boxes, big thin level numbers and hairline faders), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders), **Block** (bold and flat, with thick outlines and hard shadows), **Rack** (brushed-steel studio gear with black fader caps and amber LCD readouts), **Deco** (Art Deco black and brass gold, with serif capitals and diamond fader caps) and **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks). The window buttons, the tray panel and the volume overlay follow the theme too.
 
 
 <table>
@@ -71,9 +71,15 @@ Pick a theme in **Settings → Appearance**: **Console** (the dark hardware desk
 <td align="center"><img src="docs/screenshots/theme-blueprint.png" alt="The Blueprint theme" width="400"><br><sub><b>Blueprint</b></sub></td>
 <td align="center"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="400"><br><sub><b>Block</b></sub></td>
 </tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-rack.png" alt="The Rack theme" width="400"><br><sub><b>Rack</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-deco.png" alt="The Deco theme" width="400"><br><sub><b>Deco</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="400"><br><sub><b>Arcade</b></sub></td>
+<td align="center"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="400"><br><sub><b>OLED black</b></sub></td>
+</tr>
 </table>
-
-![The mixer in pure black for OLED screens](docs/screenshots/oled.png)
 
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
 
