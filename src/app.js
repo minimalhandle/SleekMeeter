@@ -78,6 +78,14 @@
       } catch (e) { fail(e); }
     }, 250);
   }
+  // Save right away (before something that reads the saved settings, like switching profiles).
+  async function saveNow() {
+    clearTimeout(saveTimer);
+    try {
+      const res = await engine.saveSettings(settings);
+      showProblems((res && res.problems) || []);
+    } catch (e) { fail(e); }
+  }
   function showProblems(list) {
     const el = $("#hotkeyProblems");
     el.hidden = !list.length;
@@ -441,6 +449,7 @@
       for (const r of ch.rows) r.classList.toggle("ducked", !!d.ducked);
     }
     applyRecorder(st.recorder);
+    applyOutputs(st);
     sizeToNames();
     if (drawerCh) renderDrawerValues();
     if (!fitted) { fitted = true; requestAnimationFrame(fitWindowToMixer); }
@@ -872,10 +881,29 @@
   });
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
 
-  const ACTIONS = [["mute", "Mute or unmute"], ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"],
+  const H = () => (settings.hold = Object.assign({}, DEFAULT_SETTINGS.hold, settings.hold));
+  const ACTIONS = [["mute", "Mute or unmute"], ["ptt", "Push to talk (hold)"], ["ptm", "Push to mute (hold)"],
+    ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"],
+    ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
     ["window", "Show or hide Sleekmeeter"], ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"]];
   // Actions that aren't about one channel.
-  const NO_TARGET = new Set(["window", "duck", "record"]);
+  const NO_TARGET = new Set(["window", "duck", "record", "outputnext"]);
+  // Fill the second box of a shortcut row: channels for most actions, profile names for "output".
+  function fillTarget(tgt, h) {
+    tgt.textContent = "";
+    if (h.action === "output") {
+      const names = (settings.outputProfiles || []).map((p) => p.name);
+      if (!names.length) { tgt.appendChild(new Option("Save a profile first", "")); tgt.value = ""; return; }
+      for (const n of names) tgt.appendChild(new Option(n, n));
+      if (!names.includes(h.target)) h.target = names[0];
+      tgt.value = h.target;
+      return;
+    }
+    tgt.setAttribute("aria-label", "Channel");
+    for (const ch of chans) tgt.appendChild(new Option(displayName(ch), ch.prefix));
+    if (!/^(Strip|Bus)\[/.test(h.target || "")) h.target = "Strip[0]";
+    tgt.value = h.target;
+  }
   function renderHotkeys() {
     const list = $("#hotkeyList");
     list.textContent = "";
@@ -887,14 +915,16 @@
       for (const [v, l] of ACTIONS) act.appendChild(new Option(l, v));
       act.value = h.action;
       const tgt = document.createElement("select");
-      tgt.setAttribute("aria-label", "Channel");
-      for (const ch of chans) tgt.appendChild(new Option(displayName(ch), ch.prefix));
-      tgt.value = h.target || "Strip[0]";
+      tgt.setAttribute("aria-label", h.action === "output" ? "Output profile" : "Channel");
+      fillTarget(tgt, h);
       tgt.disabled = NO_TARGET.has(h.action);
       act.addEventListener("change", () => {
         h.action = act.value;
         tgt.disabled = NO_TARGET.has(h.action);
-        h.target = tgt.disabled ? "" : tgt.value;
+        tgt.setAttribute("aria-label", h.action === "output" ? "Output profile" : "Channel");
+        if (tgt.disabled) h.target = "";
+        else { if (h.action !== "output" && !/^(Strip|Bus)\[/.test(h.target || "")) h.target = ""; fillTarget(tgt, h); }
+        syncHold();
         saveSettings();
       });
       tgt.addEventListener("change", () => { h.target = tgt.value; saveSettings(); });
@@ -911,6 +941,15 @@
       row.append(act, tgt, keys, del);
       list.appendChild(row);
     });
+    syncHold();
+  }
+  // "Mic stays open" only matters once there's a push-to-talk shortcut.
+  const holdRange = bindRange("holdTail", () => H().releaseMs, (v) => { H().releaseMs = v; }, (v) => fmtMs(v));
+  function syncHold() {
+    const any = (settings.hotkeys || []).some((h) => h.action === "ptt");
+    $("#holdRow").hidden = !any;
+    $("#holdHint").hidden = !any;
+    if (any) holdRange._sync();
   }
   $("#addHotkey").addEventListener("click", () => {
     settings.hotkeys = settings.hotkeys || [];
@@ -1090,6 +1129,189 @@
   });
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
+
+
+  /* ---------- output profiles ---------- */
+  // A profile is a saved set of output devices ("Headphones", "Speakers"). The app applies it
+  // and, with "Auto", applies it when one of its devices connects.
+  const outputsDlg = $("#outputsDlg"), outputsBtn = $("#outputsBtn"), profileUl = $("#profileList");
+  let activeProfile = null;
+  const profiles = () => (settings.outputProfiles || (settings.outputProfiles = []));
+  function profileSummary(p) {
+    return p.buses.map((e) => {
+      const b = layout && layout.buses[e.bus];
+      return `${b ? b.id : "A" + (e.bus + 1)} ${e.name || "none"}`;
+    }).join("   ·   ");
+  }
+  function applyOutputs(st) {
+    activeProfile = st.outputProfile || null;
+    outputsBtn.dataset.live = activeProfile ? "1" : "";
+    outputsBtn.title = activeProfile ? `Outputs: ${activeProfile}` : "Switch between saved output devices";
+    if (outputsDlg.open) markProfiles();
+  }
+  function markProfiles() {
+    profileUl.querySelectorAll("li[data-name]").forEach((li) => li.classList.toggle("live", li.dataset.name === activeProfile));
+  }
+  async function applyProfile(name) {
+    try {
+      await saveNow();
+      await engine.outputsApply(name);
+      toast(`Switched outputs to “${name}”`);
+    } catch (e) { fail(e); }
+  }
+  function renderProfiles() {
+    profileUl.textContent = "";
+    const list = profiles();
+    $("#profileNote").hidden = !list.length;
+    $("#profileNote").textContent = "Switching only changes the devices on your outputs. Levels, routing and everything else stay as they are. “Auto” switches to a setup by itself when one of its devices connects, like turning on your headset.";
+    if (!list.length) {
+      profileUl.appendChild(Object.assign(document.createElement("li"), { className: "empty", textContent: "Nothing saved yet. Pick the devices for your outputs, then name this setup below to save it." }));
+      return;
+    }
+    for (const p of list) {
+      const li = document.createElement("li");
+      li.dataset.name = p.name;
+      const load = document.createElement("button");
+      load.type = "button"; load.className = "load";
+      const nm = Object.assign(document.createElement("span"), { className: "pf-name", textContent: p.name });
+      const dev = Object.assign(document.createElement("span"), { className: "pf-devices", textContent: profileSummary(p) });
+      dev.title = profileSummary(p);
+      const live = Object.assign(document.createElement("span"), { className: "pf-live", textContent: "In use" });
+      load.append(nm, dev, live);
+      load.addEventListener("click", () => applyProfile(p.name));
+      const auto = document.createElement("button");
+      auto.type = "button"; auto.className = "tog auto-pf"; auto.textContent = "Auto";
+      auto.title = "Switch to this setup automatically when one of its devices connects";
+      auto.setAttribute("aria-pressed", String(!!p.auto));
+      auto.addEventListener("click", () => {
+        p.auto = !p.auto;
+        auto.setAttribute("aria-pressed", String(p.auto));
+        saveSettings();
+      });
+      const del = Object.assign(document.createElement("button"), { type: "button", className: "btn del", textContent: "Delete" });
+      del.setAttribute("aria-label", `Delete ${p.name}`);
+      let armed = false;
+      del.addEventListener("click", () => {
+        if (!armed) { armed = true; del.textContent = "Confirm"; setTimeout(() => { armed = false; del.textContent = "Delete"; }, 3000); return; }
+        const at = profiles().indexOf(p);
+        if (at >= 0) profiles().splice(at, 1);
+        saveSettings();
+        renderProfiles();
+        toast(`Deleted “${p.name}”`);
+      });
+      li.append(load, auto, del);
+      profileUl.appendChild(li);
+    }
+    markProfiles();
+  }
+  $("#profileSave").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("#profileName").value.trim().slice(0, 40);
+    if (!name) return;
+    try {
+      const buses = await engine.outputsCapture();
+      if (!buses.some((b) => b.name)) { toast("None of your outputs has a device yet"); return; }
+      const list = profiles();
+      const at = list.findIndex((p) => p.name.toLowerCase() === name.toLowerCase());
+      const entry = { name: at >= 0 ? list[at].name : name, auto: at >= 0 ? !!list[at].auto : false, buses };
+      if (at >= 0) list[at] = entry; else list.push(entry);
+      $("#profileName").value = "";
+      await saveNow();
+      renderProfiles();
+      toast(at >= 0 ? `Updated “${entry.name}”` : `Saved “${entry.name}”`);
+    } catch (err) { fail(err); }
+  });
+  outputsBtn.addEventListener("click", () => { renderProfiles(); outputsDlg.showModal(); });
+  outputsDlg.addEventListener("click", (e) => { if (e.target === outputsDlg) outputsDlg.close(); });
+
+  /* ---------- volume per app ---------- */
+  // Windows' own per-app volume (the volume mixer), read once a second while this window is open.
+  const appsDlg = $("#appsDlg"), appsBtn = $("#appsBtn"), appListEl = $("#appVolList");
+  const appRows = new Map(); // exe → { el, slider, out, mute, name, live, lockUntil }
+  let appsTimer = null, appsBusy = false, appsFailed = false;
+  function paintAppSlider(slider) {
+    const p = +slider.value;
+    slider.style.setProperty("--track-bg", `linear-gradient(to right, var(--amber) ${p}%, var(--rail) ${p}%)`);
+  }
+  function sendApp(exe, volume, mute) {
+    engine.appVolumeSet(exe, volume, mute).catch((e) => { fail(e); refreshApps(); });
+  }
+  const appPending = new Map();
+  function sendAppVolume(exe, v) {
+    if (appPending.has(exe)) { appPending.set(exe, v); return; }
+    appPending.set(exe, v);
+    setTimeout(() => { const val = appPending.get(exe); appPending.delete(exe); sendApp(exe, val, null); }, 60);
+  }
+  function makeAppRow(a) {
+    const el = document.createElement("div");
+    el.className = "app-row";
+    el.innerHTML = `<span class="app-name"><i class="live" aria-hidden="true"></i><span class="t"></span></span>`
+      + `<input type="range" min="0" max="100" step="1"><output></output><button type="button" class="tog mute" aria-pressed="false">Mute</button>`;
+    const row = { el, slider: $("input", el), out: $("output", el), mute: $(".mute", el), name: $(".t", el), live: $(".live", el), lockUntil: 0, isMuted: false };
+    row.slider.setAttribute("aria-label", `${a.name} volume`);
+    row.slider.addEventListener("input", () => {
+      row.lockUntil = Date.now() + 1200;
+      row.out.textContent = row.slider.value + "%";
+      paintAppSlider(row.slider);
+      sendAppVolume(a.exe, +row.slider.value);
+    });
+    row.slider.addEventListener("dblclick", () => {
+      row.slider.value = 100; row.slider.dispatchEvent(new Event("input"));
+    });
+    row.mute.addEventListener("click", () => {
+      row.lockUntil = Date.now() + 1200;
+      row.isMuted = !row.isMuted;
+      row.mute.setAttribute("aria-pressed", String(row.isMuted));
+      el.classList.toggle("muted", row.isMuted);
+      sendApp(a.exe, null, row.isMuted);
+    });
+    return row;
+  }
+  function updateAppRow(row, a) {
+    row.name.textContent = a.name;
+    row.name.title = a.exe;
+    row.live.classList.toggle("on", !!a.active);
+    row.live.title = a.active ? "Playing sound" : "Not playing right now";
+    if (Date.now() < row.lockUntil || document.activeElement === row.slider) return;
+    row.slider.value = a.volume;
+    row.out.textContent = a.volume + "%";
+    paintAppSlider(row.slider);
+    row.isMuted = !!a.mute;
+    row.mute.setAttribute("aria-pressed", String(row.isMuted));
+    row.el.classList.toggle("muted", row.isMuted);
+  }
+  async function refreshApps() {
+    if (appsBusy) return;
+    appsBusy = true;
+    try {
+      const list = await engine.appVolumes();
+      const seen = new Set();
+      for (const a of list) {
+        seen.add(a.exe);
+        let row = appRows.get(a.exe);
+        if (!row) { row = makeAppRow(a); appRows.set(a.exe, row); appListEl.appendChild(row.el); }
+        updateAppRow(row, a);
+      }
+      for (const [exe, row] of appRows) if (!seen.has(exe)) { row.el.remove(); appRows.delete(exe); }
+      $("#appVolEmpty").hidden = appRows.size > 0;
+      appsFailed = false;
+    } catch (e) {
+      if (!appsFailed) fail(e);
+      appsFailed = true;
+    } finally { appsBusy = false; }
+  }
+  appsBtn.addEventListener("click", () => {
+    appRows.clear();
+    appListEl.textContent = "";
+    $("#appVolEmpty").hidden = true;
+    appsFailed = false;
+    appsDlg.showModal();
+    refreshApps();
+    clearInterval(appsTimer);
+    appsTimer = setInterval(refreshApps, 1000);
+  });
+  appsDlg.addEventListener("close", () => { clearInterval(appsTimer); appsTimer = null; });
+  appsDlg.addEventListener("click", (e) => { if (e.target === appsDlg) appsDlg.close(); });
 
   /* ---------- settings: about and logs ---------- */
   let appInfo = null;

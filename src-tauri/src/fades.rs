@@ -144,6 +144,25 @@ pub fn mute(app: &AppHandle, api: &Api, key: &str, want: bool) -> Result<(), Str
     api.script(&lines)
 }
 
+/// Mute or unmute within `ms`, whatever the fade setting (push to talk needs to be quick).
+pub fn mute_quick(
+    app: &AppHandle,
+    api: &Api,
+    key: &str,
+    want: bool,
+    ms: u64,
+) -> Result<(), String> {
+    let gain = gain_of(api, key);
+    let muted = api.get_bool(&format!("{key}.Mute"));
+    let lines =
+        app.state::<Vm>()
+            .smooth
+            .lock()
+            .unwrap()
+            .mute(key, gain, muted, want, ms, Instant::now());
+    api.script(&lines)
+}
+
 /// Flip mute (shortcuts). Returns the new state.
 pub fn toggle_mute(app: &AppHandle, api: &Api, key: &str) -> Result<bool, String> {
     let actual = api.get_bool(&format!("{key}.Mute"));

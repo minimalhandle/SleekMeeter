@@ -691,6 +691,34 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .scene-list .empty { color: var(--ink-2); padding: 10px 0; }
 .scene-save { display: flex; gap: 8px; }
 .dlg.scenes { width: min(620px, calc(100vw - 32px)); }
+
+/* ---------- output profiles ---------- */
+.dlg.outputs-dlg { width: min(640px, calc(100vw - 32px)); }
+.profile-list li { gap: 6px; }
+.profile-list .load { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; height: 54px; min-width: 0; padding-right: 74px; }
+.profile-list .pf-name { font-size: var(--s1); font-weight: 600; }
+.profile-list .pf-devices { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--s-1); font-weight: 400; color: var(--ink-2); }
+.profile-list .pf-live { display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: var(--s-1); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--amber); }
+.profile-list li.live .pf-live { display: block; }
+.profile-list li.live .load { box-shadow: inset 0 0 0 1px var(--amber), 0 0 calc(12px * var(--glow)) color-mix(in srgb, var(--amber) 28%, transparent); }
+.profile-list .tog.auto-pf { width: 56px; height: 40px; flex: none; }
+.profile-list .tog.auto-pf[aria-pressed="true"] { background: var(--amber); color: var(--on-ink); }
+.field-note { margin: 12px 0 0; font-size: var(--s-1); color: var(--muted); }
+#outputsBtn[data-live="1"]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 7px; border-radius: 50%; vertical-align: 1px; background: var(--amber); box-shadow: 0 0 calc(6px * var(--glow)) var(--amber); }
+
+/* ---------- volume per app ---------- */
+.dlg.apps-dlg { width: min(580px, calc(100vw - 32px)); }
+.app-vols { display: flex; flex-direction: column; gap: 2px; max-height: min(56vh, 460px); overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+.app-row { display: grid; grid-template-columns: minmax(110px, 160px) 1fr 44px 62px; gap: 12px; align-items: center; padding: 5px 0; }
+.app-name { display: flex; align-items: center; gap: 9px; min-width: 0; font-weight: 600; }
+.app-name .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-name .live { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--rail); }
+.app-name .live.on { background: var(--led-g); box-shadow: 0 0 calc(8px * var(--glow)) var(--led-g); }
+.app-row output { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.app-row .tog.mute { height: 28px; width: 62px; }
+.app-row.muted .app-name, .app-row.muted output { opacity: .5; }
+.empty-note { margin: 10px 0 0; }
+
 .rules { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .rules .hint { margin: 0; }
 .rule-head, .rule { display: grid; grid-template-columns: 1.25fr 1fr 1fr 32px; gap: 6px; width: 100%; align-items: center; }

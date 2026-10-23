@@ -5,7 +5,7 @@
 //! watches the devices Voicemeeter is set to use; when one of them returns to Windows, it
 //! waits a moment for Windows to finish setting it up and restarts the engine for you.
 
-use crate::{settings, Settings, Vm};
+use crate::{outputs, settings, Settings, Vm};
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
@@ -173,13 +173,19 @@ pub fn spawn(app: AppHandle) {
         let mut last_restart: Option<Instant> = None;
         loop {
             std::thread::sleep(EVERY);
-            let on = settings::flag_or(
-                &app.state::<Settings>().0.lock().unwrap(),
-                "autoRestart",
-                true,
-            );
+            let (restart_on, auto) = {
+                let s = app.state::<Settings>().0.lock().unwrap();
+                (
+                    settings::flag_or(&s, "autoRestart", true),
+                    outputs::auto_devices(&s),
+                )
+            };
             let assigned = assigned_devices(&app);
-            if !on || (assigned.is_empty() && watch.is_empty()) {
+            // Devices that an output profile with "switch automatically" is waiting for.
+            let wanted: Vec<String> = auto.iter().map(|(_, d)| d.clone()).collect();
+            if (!restart_on && wanted.is_empty())
+                || (assigned.is_empty() && wanted.is_empty() && watch.is_empty())
+            {
                 watch.clear();
                 due = None;
                 continue;
@@ -189,7 +195,7 @@ pub fn spawn(app: AppHandle) {
                 continue; // couldn't read the device list this time
             }
             let present = |name: &str| system.iter().any(|s| same_device(name, s));
-            for name in &assigned {
+            for name in assigned.iter().chain(wanted.iter()) {
                 watch
                     .entry(name.clone())
                     .or_insert_with(|| present(name.as_str()));
@@ -206,7 +212,7 @@ pub fn spawn(app: AppHandle) {
                 *was = now;
                 // Keep watching a missing device even if Voicemeeter blanks its name;
                 // stop watching one that's here but no longer used.
-                assigned.contains(name) || !now
+                assigned.contains(name) || wanted.contains(name) || !now
             });
             if let Some(name) = back {
                 due = Some((Instant::now() + SETTLE, name));
@@ -220,6 +226,22 @@ pub fn spawn(app: AppHandle) {
                     let Some(api) = app.state::<Vm>().api.clone() else {
                         continue;
                     };
+                    // An output profile that wants this device: switch the outputs to it first.
+                    let mut switched = false;
+                    if let Some((profile, _)) = auto.iter().find(|(_, d)| *d == name) {
+                        let current = app.state::<Vm>().last.lock().unwrap().clone();
+                        let already = {
+                            let s = app.state::<Settings>().0.lock().unwrap();
+                            outputs::current(&s, &current).as_deref() == Some(profile.as_str())
+                        };
+                        if !already {
+                            outputs::switch_with_osd(&app, profile, &format!("{name} connected"));
+                            switched = true;
+                        }
+                    }
+                    if !restart_on && !switched {
+                        continue;
+                    }
                     match api.set_float("Command.Restart", 1.0) {
                         Ok(()) => {
                             log_info!("Restarted the audio engine because {name} came back");

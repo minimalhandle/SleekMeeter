@@ -44,7 +44,12 @@ pub fn defaults() -> Value {
             "attackMs": 150, "releaseMs": 800, "holdMs": 700
         },
         // Restart Voicemeeter's audio engine when a device it uses comes back.
-        "autoRestart": true
+        "autoRestart": true,
+        // Saved sets of output devices: [{ "name": "Headphones", "auto": false,
+        //   "buses": [{ "bus": 0, "type": "wdm", "name": "Headphones (Arctis)" }] }]
+        "outputProfiles": [],
+        // Push to talk: how long the mic stays open after the keys are let go.
+        "hold": { "releaseMs": 250 }
     })
 }
 
