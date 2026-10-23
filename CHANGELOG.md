@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.11.1
+- **Setup.exe upgrades in place:** running Sleekmeeter-Setup.exe over an existing install now upgrades it (or repairs it if it's the same build) instead of showing Windows' Change/Repair/Remove screen
+
 ## 0.11.0
 - **Soundboard:** play wav, mp3, ogg and flac clips into your mix from buttons, shortcuts or chat, to any output device (like a Voicemeeter virtual input, so each sound is a channel you can route and fade)
 - **Twitch chat commands:** `!brb`, `!scene`, `!sound` and more, from you, your mods or everyone. Joins chat anonymously; nothing is ever posted

@@ -80,6 +80,39 @@ fn install_voicemeeter() -> bool {
     ok
 }
 
+/// True when the MSI's own ProductCode is already installed (reads the
+/// code from the MSI, then looks for its uninstall entry).
+fn same_build_installed(msi: &std::path::Path) -> bool {
+    let script = format!(
+        "$ErrorActionPreference='Stop'\n\
+         try {{\n\
+         $i = New-Object -ComObject WindowsInstaller.Installer\n\
+         $db = $i.GetType().InvokeMember('OpenDatabase','InvokeMethod',$null,$i,@('{}',0))\n\
+         $v = $db.GetType().InvokeMember('OpenView','InvokeMethod',$null,$db,@(\"SELECT Value FROM Property WHERE Property='ProductCode'\"))\n\
+         $v.GetType().InvokeMember('Execute','InvokeMethod',$null,$v,$null) | Out-Null\n\
+         $r = $v.GetType().InvokeMember('Fetch','InvokeMethod',$null,$v,$null)\n\
+         $code = $r.GetType().InvokeMember('StringData','GetProperty',$null,$r,@(1))\n\
+         $p = 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + $code\n\
+         $q = 'SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + $code\n\
+         if ((Test-Path ('HKLM:\\' + $p)) -or (Test-Path ('HKLM:\\' + $q)) -or (Test-Path ('HKCU:\\' + $p))) {{ 'yes' }} else {{ 'no' }}\n\
+         }} catch {{ 'no' }}\n",
+        msi.display().to_string().replace('\'', "''")
+    );
+    let ps1 = std::env::temp_dir().join("sleekmeeter-check.ps1");
+    if std::fs::write(&ps1, script).is_err() {
+        return false;
+    }
+    let out = Command::new("powershell")
+        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+        .arg(&ps1)
+        .output();
+    let _ = std::fs::remove_file(&ps1);
+    match out {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).trim() == "yes",
+        Err(_) => false,
+    }
+}
+
 fn main() {
     println!("Sleekmeeter setup\n");
     let mut reboot = false;
@@ -110,7 +143,18 @@ fn main() {
         return;
     }
     println!("\nInstalling Sleekmeeter ...");
-    let status = Command::new("msiexec").arg("/i").arg(&msi).status();
+    let mut cmd = Command::new("msiexec");
+    cmd.arg("/i").arg(&msi);
+    if same_build_installed(&msi) {
+        // This exact build is already installed: Windows would only offer
+        // Change/Repair/Remove, so repair it in place instead.
+        println!("Sleekmeeter is already installed. Repairing it in place ...");
+        cmd.args(["REINSTALL=ALL", "REINSTALLMODE=vomus", "/passive", "/norestart"]);
+    } else {
+        // A different (older or newer) build upgrades over the top by itself.
+        cmd.args(["/passive", "/norestart"]);
+    }
+    let status = cmd.status();
     let _ = std::fs::remove_file(&msi);
     match status {
         Ok(s) if s.success() => {
