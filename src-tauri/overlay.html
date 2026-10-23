@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sleekmeeter overlay</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* Transparent so OBS shows only the badge, meter and sound name over your scene. */
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  body { font: 600 22px/1.2 "Segoe UI", system-ui, sans-serif; color: #fff; padding: 12px; }
+  .wrap { display: inline-flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .badge { display: none; padding: 8px 16px; border-radius: 999px; letter-spacing: .08em; text-transform: uppercase; font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.45); }
+  .badge.show { display: inline-block; }
+  .badge.muted { background: #d63a3a; }
+  .badge.brb { background: #e0a030; color: #1b1300; }
+  .meter { width: 260px; height: 14px; border-radius: 7px; background: rgba(0,0,0,.55); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+  .meter i { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #36c46a 0 70%, #e8c23a 70% 88%, #e0503a 88%); transition: transform 70ms linear; }
+  .meter.off { display: none; }
+  .sound { display: none; padding: 6px 14px; border-radius: 10px; background: rgba(20,20,28,.78); font-size: 18px; box-shadow: 0 4px 16px rgba(0,0,0,.45); }
+  .sound.show { display: inline-block; animation: pop .25s ease-out; }
+  .sound::before { content: "♪ "; opacity: .7; }
+  @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="badge" id="badge"></div>
+  <div class="meter" id="meter"><i id="fill"></i></div>
+  <div class="sound" id="sound"></div>
+</div>
+<script>
+(() => {
+  // Options go in the address: ?k=KEY&mic=0&show=badge,meter,sound&secs=4
+  const q = new URLSearchParams(location.search);
+  const key = q.get("k") || "";
+  const mic = parseInt(q.get("mic") || "0", 10) || 0;
+  const show = (q.get("show") || "badge,meter,sound").split(",");
+  const secs = Math.max(1, parseFloat(q.get("secs") || "4"));
+  const $ = (id) => document.getElementById(id);
+  $("meter").classList.toggle("off", !show.includes("meter"));
+  let shown = -200;
+  async function tick() {
+    try {
+      const r = await fetch("/api/overlay", { headers: { "X-Key": key }, cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      const muted = !!(d.strips[mic] && d.strips[mic].mute);
+      const b = $("badge");
+      const text = d.brb ? "BRB" : muted ? "Muted" : "";
+      b.textContent = text;
+      b.className = "badge" + (show.includes("badge") && text ? " show " + (d.brb ? "brb" : "muted") : "");
+      const pair = d.levels && d.levels.inputs && d.levels.inputs[mic];
+      const db = pair ? Math.max(pair[0], pair[1]) : -200;
+      shown = db > shown ? db : Math.max(db, shown - 3);
+      $("fill").style.transform = "scaleX(" + Math.max(0, Math.min(1, (shown + 60) / 60)).toFixed(3) + ")";
+      const s = $("sound");
+      const on = show.includes("sound") && d.sound && d.sound.ageMs < secs * 1000;
+      if (on && s.textContent !== d.sound.name) s.textContent = d.sound.name;
+      if (on && !s.classList.contains("show")) { s.classList.remove("show"); void s.offsetWidth; }
+      s.classList.toggle("show", !!on);
+    } catch (e) { /* the app may be restarting; keep trying */ }
+  }
+  setInterval(tick, 100);
+  tick();
+})();
+</script>
+</body>
+</html>

@@ -91,7 +91,7 @@ A scene fades its levels first and then loads everything else (routing, devices,
 
 ### Talk-over ducking
 
-Turn other audio down while you talk, like a radio DJ. In **Settings → Talk-over ducking**, pick the channel that talks (usually your mic), the channels to turn down (music, game, desktop audio) and by how much. The **Starts at** slider lights up with your voice; put the knob just under your speaking level. When you stop talking, the channels fade back after the **Back after** time.
+Turn other audio down while you talk, like a radio DJ. In **Settings → Talk-over ducking**, pick the channel that talks (usually your mic), the channels to turn down (music, game, desktop audio) and by how much. Under **Or when these talk** you can add more channels, such as Discord, so the game also turns down when a friend speaks. The **Starts at** slider lights up with your voice; put the knob just under your speaking level. When you stop talking, the channels fade back after the **Back after** time.
 
 A ducked channel shows **Ducking** on its meter. Its fader stays at your level, so you can still move it while ducked, and moving it anywhere else (Voicemeeter's own window, a MIDI controller) takes it out of ducking. You can also add a shortcut that turns ducking on or off.
 
@@ -145,7 +145,21 @@ Click **Sounds** in the header to play short clips into your stream: an airhorn,
 
 ![The soundboard: a button for each sound, a device to play to and a volume](docs/screenshots/soundboard.png)
 
+In **Edit** mode every sound also gets a **Group** box and a **Key** button. Type a group name (Memes, Alerts, Music) and a tab bar appears above the buttons so a big board stays easy to scan, and press **Key** to give that one sound its own shortcut that works from any app. **Random pack…** turns a whole folder into a single button (marked with a dice) that plays a different sound from the folder each press and never repeats the one before: handy for ten different cheers or fail sounds.
+
 Sounds can also be played from a **shortcut** or a **Twitch chat command** (the action *Play a sound*).
+
+### Mic chain, setup assistant and hear-yourself test
+
+The **⋯** menu in the header has three helpers for a good stream voice:
+
+- **Mic chain…** has sliders for the noise gate, compressor and denoiser on your microphone, with one-click presets (**Streamer voice**, **Gentle**, **Noisy room**, **All off**) and a live meter so you can watch the effect. Only the controls your Voicemeeter edition has are shown, and Potato also gets threshold and ratio sliders.
+- **Setup assistant…** sets the A1 and B1 routing buttons for you. Choose **Just gaming + chat** (you hear everything, friends hear only your mic) or **Streamer + Discord** (the same, plus a second mix on B2 for OBS), pick your mic and your Discord channel, check the list of what will change and press **Apply routing**.
+- **Hear yourself…** records 5 seconds of your stream mix (one of Voicemeeter's virtual outputs, B2 by default) and plays it back on your headphones, so you hear exactly what your viewers hear.
+
+### OBS overlay
+
+Under **Settings → Phone remote** there is a second address for OBS. Add a **Browser** source in OBS, paste the address and you get a see-through overlay with a red **MUTED** or amber **BRB** badge, a meter for your mic and the name of the sound that just played. It works while Sleekmeeter is in the tray. If your mic isn't the first channel, add `&mic=1` (second channel), `&mic=2` and so on to the address, and use `&show=badge,meter` to pick which parts appear. It uses the same secret key as the phone remote, so keep the address private.
 
 ### Twitch chat commands
 

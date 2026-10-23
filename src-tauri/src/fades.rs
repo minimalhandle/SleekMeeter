@@ -37,6 +37,8 @@ pub fn fades(s: &Value) -> Fades {
 pub struct Ducking {
     pub on: bool,
     pub trigger: usize,
+    /// Other channels that also start ducking when they talk (a friend on Discord).
+    pub also: Vec<usize>,
     pub targets: Vec<String>,
     pub amount: f32,
     pub threshold: f32,
@@ -53,12 +55,25 @@ fn strip_index(key: &str) -> Option<usize> {
 pub fn ducking(s: &Value) -> Ducking {
     let d = &s["ducking"];
     let trigger = d["trigger"].as_str().and_then(strip_index).unwrap_or(0);
+    let also: Vec<usize> = d["also"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|t| t.as_str().and_then(strip_index))
+                .filter(|i| *i != trigger)
+                .collect()
+        })
+        .unwrap_or_default();
     let targets = d["targets"]
         .as_array()
         .map(|a| {
             a.iter()
                 .filter_map(|t| t.as_str())
-                .filter(|t| strip_index(t).map(|i| i != trigger).unwrap_or(false))
+                .filter(|t| {
+                    strip_index(t)
+                        .map(|i| i != trigger && !also.contains(&i))
+                        .unwrap_or(false)
+                })
                 .map(String::from)
                 .collect()
         })
@@ -66,6 +81,7 @@ pub fn ducking(s: &Value) -> Ducking {
     Ducking {
         on: d["on"].as_bool().unwrap_or(false),
         trigger,
+        also,
         targets,
         amount: d["amount"].as_f64().unwrap_or(12.0).clamp(1.0, 60.0) as f32,
         threshold: d["threshold"].as_f64().unwrap_or(-40.0).clamp(-80.0, 0.0) as f32,
@@ -223,7 +239,11 @@ pub fn tick(app: &AppHandle, api: &Api, layout: &Layout) {
         if smooth.ducked && *used != d.targets {
             lines.extend(smooth.unduck(300, now));
         }
-        let level = api.strip_level(layout, d.trigger);
+        let level = std::iter::once(d.trigger)
+            .chain(d.also.iter().copied())
+            .filter(|i| *i < layout.strips())
+            .map(|i| api.strip_level(layout, i))
+            .fold(f32::MIN, f32::max);
         match smooth.sense(level, d.threshold, d.hold_ms, now) {
             Some(true) => {
                 let targets: Vec<(String, f32)> = d
