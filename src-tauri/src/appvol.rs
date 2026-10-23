@@ -37,6 +37,8 @@ struct Row {
     muted: bool,
     active: bool,
     seen: bool,
+    /// Process ids with a session, so the app's output device can be changed.
+    pids: Vec<u32>,
 }
 
 /// Fold one session into its program's row: loudest volume, muted only if all are, active if any is.
@@ -47,6 +49,7 @@ fn merge(row: &mut Row, volume: f32, muted: bool, active: bool) {
             muted,
             active,
             seen: true,
+            pids: std::mem::take(&mut row.pids),
         };
         return;
     }
@@ -72,6 +75,7 @@ fn rows_to_json(rows: BTreeMap<String, Row>) -> Vec<Value> {
                 "volume": (r.volume * 100.0).round(),
                 "mute": r.muted,
                 "active": r.active,
+                "pids": r.pids,
             })
         })
         .collect()
@@ -189,7 +193,11 @@ pub fn list() -> Result<Vec<Value>, String> {
             return;
         }
         let (level, muted) = sessions::read(volume);
-        merge(rows.entry(exe).or_default(), level, muted, active);
+        let row = rows.entry(exe).or_default();
+        if pid != 0 && !row.pids.contains(&pid) {
+            row.pids.push(pid);
+        }
+        merge(row, level, muted, active);
     })?;
     Ok(rows_to_json(rows))
 }

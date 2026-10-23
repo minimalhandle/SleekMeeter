@@ -20,6 +20,11 @@
  *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
+ *   soundDevices() -> {devices, auto} / soundPick() -> path|null / soundPlay(name) / soundStop()   soundboard
+ *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last} of the Twitch chat link
+ *   remoteStatus() -> {running, message, urls}   the phone remote
+ *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
+ *   appRouteDevices() -> [{id, name}] / appRouteSet(pids, deviceId)   send an app to another output
  *   brbToggle() -> bool   Be right back on or off (state.brb tells which)
  *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
@@ -74,6 +79,11 @@
     brb: { mute: [], lower: [], amount: 30, play: "", playDb: -8, overlay: true },
     obs: { on: false, host: "127.0.0.1", port: 4455, password: "", rules: [], liveDo: "", liveScene: "", offDo: "", offScene: "" },
     clipWarn: { on: false, target: "Strip[0]" },
+    soundboard: { device: "", volume: 100, sounds: [] },
+    twitch: { on: false, channel: "", who: "mods", cooldown: 3, commands: [] },
+    remote: { on: false, port: 8787, key: "" },
+    history: { on: true },
+    appRoutes: {},
   };
 
   /* ---------------- Tauri (real Voicemeeter) ---------------- */
@@ -125,6 +135,17 @@
     outputsApply(name) { return this.invoke("outputs_apply", { name }); }
     appVolumes() { return this.invoke("app_volumes"); }
     appVolumeSet(exe, volume, mute) { return this.invoke("app_volume_set", { exe, volume, mute }); }
+    soundDevices() { return this.invoke("sound_devices"); }
+    soundPick() { return this.invoke("sound_pick"); }
+    soundPlay(name) { return this.invoke("sound_play", { name }); }
+    soundStop() { return this.invoke("sound_stop"); }
+    twitchStatus() { return this.invoke("twitch_status"); }
+    onTwitchStatus(cb) { return this.listen("twitch-status", (e) => cb(e.payload)); }
+    remoteStatus() { return this.invoke("remote_status"); }
+    historyGet(minutes) { return this.invoke("history_get", { minutes }); }
+    historyClear() { return this.invoke("history_clear"); }
+    appRouteDevices() { return this.invoke("app_route_devices"); }
+    appRouteSet(pids, device) { return this.invoke("app_route_set", { pids, device }); }
     brbToggle() { return this.invoke("brb_toggle"); }
     obsStatus() { return this.invoke("obs_status"); }
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
@@ -192,11 +213,11 @@
       }
       this.glides = {};
       this.apps = [
-        { exe: "spotify.exe", name: "Spotify", volume: 70, mute: false, active: true },
-        { exe: "discord.exe", name: "Discord", volume: 100, mute: false, active: true },
-        { exe: "chrome.exe", name: "Chrome", volume: 45, mute: false, active: false },
-        { exe: "valorant.exe", name: "Valorant", volume: 85, mute: false, active: true },
-        { exe: "system sounds", name: "System sounds", volume: 100, mute: true, active: false },
+        { exe: "spotify.exe", name: "Spotify", volume: 70, mute: false, active: true, pids: [4120] },
+        { exe: "discord.exe", name: "Discord", volume: 100, mute: false, active: true, pids: [5210, 5230] },
+        { exe: "chrome.exe", name: "Chrome", volume: 45, mute: false, active: false, pids: [6100] },
+        { exe: "valorant.exe", name: "Valorant", volume: 85, mute: false, active: true, pids: [7300] },
+        { exe: "system sounds", name: "System sounds", volume: 100, mute: true, active: false, pids: [] },
       ];
       this.scenes = ["Streaming", "Gaming", "Late night"];
       this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -396,6 +417,38 @@
       return Promise.resolve();
     }
     // Be right back: the simulator does what the real app does, on its own state.
+    soundDevices() {
+      return Promise.resolve({ devices: ["Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
+    }
+    soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve(["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]); }
+    soundPlay(name) { this.played = name; return Promise.resolve(); }
+    soundStop() { return Promise.resolve(); }
+    twitchStatus() { return Promise.resolve(this._twitch || { connected: false, message: "Off", last: "" }); }
+    onTwitchStatus(cb) { this._twitchCb = cb; return Promise.resolve(); }
+    remoteStatus() {
+      const r = this.settings && this.settings.remote;
+      return Promise.resolve(r && r.on && r.key ? { running: true, message: "On", urls: [`http://192.168.1.23:${r.port}/?k=${r.key}`] } : { running: false, message: r && r.on ? "Make a key first" : "Off", urls: [] });
+    }
+    historyGet(minutes) {
+      const n = 360, bucket = Math.ceil(minutes * 60 / n), now = Math.floor(Date.now() / 1000);
+      const keys = ["Strip[0]", "Strip[1]", "Strip[2]", "Strip[3]", "Strip[4]", "Bus[0]", "Bus[1]"];
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      const series = keys.map((k, i) => Array.from({ length: n }, (_, j) => {
+        if (i === 0) { const talk = Math.sin(j / 9) + Math.sin(j / 23) > 0.2; return talk ? -20 + Math.sin(j * 1.7) * 6 + rnd() * 5 + (j === 204 ? 21 : 0) : -52 + rnd() * 3; }
+        if (i === 1) return -30 + Math.sin(j / 30) * 5 + rnd() * 1.5;
+        if (i === 3) return j < 60 ? null : -26 + Math.sin(j / 12) * 7 + rnd() * 2;
+        if (i === 5) return -18 + Math.sin(j / 15) * 4 + rnd() * 2;
+        return -44 + Math.sin(j / 40 + i) * 6 + rnd() * 2;
+      }));
+      const stats = series.map((s, i) => { const v = s.filter((x) => x != null); const peak = v.length ? Math.max(...v) : null;
+        return { key: keys[i], peak, clipSeconds: v.filter((x) => x >= 0).length * bucket, activeSeconds: v.filter((x) => x > -60).length * bucket }; });
+      return Promise.resolve({ from: now - minutes * 60, now, bucket, keys, series, stats });
+    }
+    historyClear() { return Promise.resolve(); }
+    appRouteDevices() {
+      return Promise.resolve([{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" }, { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" }, { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" }]);
+    }
+    appRouteSet(pids, device) { this.routed = { pids, device }; return Promise.resolve(); }
     brbToggle() {
       const st = this.state, cfg = Object.assign({ mute: [], lower: [], amount: 30, play: "", playDb: -8 }, this.settings.brb);
       const pick = (key) => {

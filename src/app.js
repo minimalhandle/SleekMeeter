@@ -851,6 +851,7 @@
     setMenu(false);
     if (a === "show") engine.showWindow().catch(fail);
     if (a === "restart") engine.setFloat("Command.Restart", 1).then(() => toast("Restarting audio engine")).catch(fail);
+    if (a === "history") openHistory();
     if (a === "unsolo") chans.forEach((ch) => { if (ch.kind === "strip" && ch.data && ch.data.solo) sendFloat(`${ch.prefix}.Solo`, 0); });
   });
 
@@ -883,6 +884,9 @@
     syncBrb();
     syncObs();
     syncClip();
+    syncTwitch();
+    syncRemote();
+    $("#historyOn").checked = HI().on !== false;
     renderHotkeys();
     settingsDlg.showModal();
   });
@@ -893,15 +897,21 @@
     ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"],
     ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
     ["window", "Show or hide Sleekmeeter"], ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"],
-    ["brb", "Be right back on or off"]];
+    ["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"]];
   // Actions that aren't about one channel.
-  const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb"]);
+  const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb", "soundstop"]);
+  // Actions whose second box is a list of names, not channels.
+  const NAMED = { output: "Output profile", scene: "Scene", sound: "Sound" };
+  let knownScenes = [];
+  const namesFor = (action) => action === "output" ? (settings.outputProfiles || []).map((p) => p.name)
+    : action === "scene" ? knownScenes : action === "sound" ? ((settings.soundboard || {}).sounds || []).map((s) => s.name) : [];
   // Fill the second box of a shortcut row: channels for most actions, profile names for "output".
   function fillTarget(tgt, h) {
     tgt.textContent = "";
-    if (h.action === "output") {
-      const names = (settings.outputProfiles || []).map((p) => p.name);
-      if (!names.length) { tgt.appendChild(new Option("Save a profile first", "")); tgt.value = ""; return; }
+    if (NAMED[h.action]) {
+      tgt.setAttribute("aria-label", NAMED[h.action]);
+      const names = namesFor(h.action);
+      if (!names.length) { tgt.appendChild(new Option(h.action === "output" ? "Save a profile first" : h.action === "scene" ? "Save a scene first" : "Add a sound first", "")); tgt.value = ""; return; }
       for (const n of names) tgt.appendChild(new Option(n, n));
       if (!names.includes(h.target)) h.target = names[0];
       tgt.value = h.target;
@@ -913,6 +923,7 @@
     tgt.value = h.target;
   }
   function renderHotkeys() {
+    engine.listScenes().then((n) => { if (n.join("|") !== knownScenes.join("|")) { knownScenes = n; if ((settings.hotkeys || []).some((h) => h.action === "scene")) renderHotkeys(); } }).catch(() => {});
     const list = $("#hotkeyList");
     list.textContent = "";
     (settings.hotkeys || []).forEach((h, idx) => {
@@ -923,15 +934,13 @@
       for (const [v, l] of ACTIONS) act.appendChild(new Option(l, v));
       act.value = h.action;
       const tgt = document.createElement("select");
-      tgt.setAttribute("aria-label", h.action === "output" ? "Output profile" : "Channel");
       fillTarget(tgt, h);
       tgt.disabled = NO_TARGET.has(h.action);
       act.addEventListener("change", () => {
         h.action = act.value;
         tgt.disabled = NO_TARGET.has(h.action);
-        tgt.setAttribute("aria-label", h.action === "output" ? "Output profile" : "Channel");
         if (tgt.disabled) h.target = "";
-        else { if (h.action !== "output" && !/^(Strip|Bus)\[/.test(h.target || "")) h.target = ""; fillTarget(tgt, h); }
+        else { if (!NAMED[h.action] && !/^(Strip|Bus)\[/.test(h.target || "")) h.target = ""; else if (NAMED[h.action]) h.target = ""; fillTarget(tgt, h); }
         syncHold();
         saveSettings();
       });
@@ -1292,12 +1301,36 @@
     appPending.set(exe, v);
     setTimeout(() => { const val = appPending.get(exe); appPending.delete(exe); sendApp(exe, val, null); }, 60);
   }
+  let routeDevices = [];
+  function fillRoute(row, a) {
+    const sel = row.route, saved = (settings.appRoutes || {})[a.exe] || "";
+    sel.textContent = "";
+    sel.appendChild(new Option("Windows default", ""));
+    for (const d of routeDevices) sel.appendChild(new Option(d.name, d.id));
+    if (saved && !routeDevices.some((d) => d.id === saved)) sel.appendChild(new Option("Chosen device (not found)", saved));
+    sel.value = saved;
+    sel.disabled = !(a.pids && a.pids.length);
+  }
   function makeAppRow(a) {
     const el = document.createElement("div");
     el.className = "app-row";
     el.innerHTML = `<span class="app-name"><i class="live" aria-hidden="true"></i><span class="t"></span></span>`
-      + `<input type="range" min="0" max="100" step="1"><output></output><button type="button" class="tog mute" aria-pressed="false">Mute</button>`;
-    const row = { el, slider: $("input", el), out: $("output", el), mute: $(".mute", el), name: $(".t", el), live: $(".live", el), lockUntil: 0, isMuted: false };
+      + `<input type="range" min="0" max="100" step="1"><output></output><button type="button" class="tog mute" aria-pressed="false">Mute</button>`
+      + `<select class="route" title="Which output this app plays to"></select>`;
+    const row = { el, slider: $("input", el), out: $("output", el), mute: $(".mute", el), name: $(".t", el), live: $(".live", el), route: $(".route", el), pids: a.pids || [], lockUntil: 0, isMuted: false };
+    row.route.setAttribute("aria-label", `${a.name} output`);
+    fillRoute(row, a);
+    row.route.addEventListener("change", async () => {
+      const dev = row.route.value, before = (settings.appRoutes || {})[a.exe] || "";
+      try {
+        await engine.appRouteSet(row.pids, dev);
+        settings.appRoutes = settings.appRoutes || {};
+        if (dev) settings.appRoutes[a.exe] = dev; else delete settings.appRoutes[a.exe];
+        saveSettings();
+        const d = routeDevices.find((x) => x.id === dev);
+        toast(dev ? `${a.name} now plays to ${d ? d.name : "that device"}` : `${a.name} is back on the Windows default`);
+      } catch (err) { row.route.value = before; fail(err); }
+    });
     row.slider.setAttribute("aria-label", `${a.name} volume`);
     row.slider.addEventListener("input", () => {
       row.lockUntil = Date.now() + 1200;
@@ -1320,6 +1353,8 @@
   function updateAppRow(row, a) {
     row.name.textContent = a.name;
     row.name.title = a.exe;
+    row.pids = a.pids || [];
+    row.route.disabled = !row.pids.length;
     row.live.classList.toggle("on", !!a.active);
     row.live.title = a.active ? "Playing sound" : "Not playing right now";
     if (Date.now() < row.lockUntil || document.activeElement === row.slider) return;
@@ -1357,6 +1392,7 @@
     appsFailed = false;
     appsDlg.showModal();
     refreshApps();
+    engine.appRouteDevices().then((d) => { routeDevices = d || []; for (const [, row] of appRows) fillRoute(row, { exe: row.name.title, pids: row.pids }); }).catch(() => {});
     clearInterval(appsTimer);
     appsTimer = setInterval(refreshApps, 1000);
   });
@@ -1895,6 +1931,339 @@
     if (inputs.length) inputs[inputs.length - 1].focus();
   });
 
+
+  /* ---------- soundboard ---------- */
+  const SB = () => (settings.soundboard = Object.assign({}, DEFAULT_SETTINGS.soundboard, settings.soundboard));
+  const soundsDlg = $("#soundsDlg");
+  let soundEdit = false;
+  const soundRange = bindRange("soundVolume", () => SB().volume, (v) => { SB().volume = v; }, (v) => v + "%");
+  function renderSounds() {
+    const grid = $("#soundGrid");
+    grid.textContent = "";
+    const list = SB().sounds || (SB().sounds = []);
+    $("#soundsEmpty").hidden = list.length > 0;
+    list.forEach((s, idx) => {
+      const tile = document.createElement("div");
+      tile.className = "sound-tile";
+      tile.dataset.n = String(idx % 6);
+      const play = document.createElement("button");
+      play.type = "button"; play.className = "sound-play";
+      play.textContent = s.name;
+      play.title = s.path;
+      play.addEventListener("click", () => {
+        if (soundEdit) return;
+        tile.classList.add("hit"); setTimeout(() => tile.classList.remove("hit"), 350);
+        engine.soundPlay(s.name).catch(fail);
+      });
+      tile.appendChild(play);
+      if (soundEdit) {
+        const del = document.createElement("button");
+        del.type = "button"; del.className = "sound-del"; del.setAttribute("aria-label", `Remove ${s.name}`);
+        del.innerHTML = `<svg viewBox="0 0 20 20" width="12" height="12" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+        del.addEventListener("click", () => { list.splice(idx, 1); saveSettings(); renderSounds(); });
+        const name = document.createElement("input");
+        name.type = "text"; name.className = "sound-name"; name.value = s.name; name.maxLength = 30; name.setAttribute("aria-label", "Sound name");
+        name.addEventListener("change", () => {
+          const n = name.value.trim().replace(/\s+/g, " ");
+          if (!n || list.some((o, i) => i !== idx && o.name.toLowerCase() === n.toLowerCase())) { name.value = s.name; return; }
+          s.name = n; saveSettings();
+        });
+        play.replaceWith(name);
+        tile.appendChild(del);
+      }
+      grid.appendChild(tile);
+    });
+  }
+  async function fillSoundDevices() {
+    const sel = $("#soundDevice");
+    let info = { devices: [], auto: "" };
+    try { info = await engine.soundDevices(); } catch (e) { fail(e); }
+    sel.textContent = "";
+    sel.appendChild(new Option(info.auto ? `Automatic (${info.auto})` : "Automatic (the Windows default)", ""));
+    for (const d of info.devices) sel.appendChild(new Option(d, d));
+    const cur = SB().device || "";
+    if (cur && !info.devices.includes(cur)) sel.appendChild(new Option(`${cur} (not found)`, cur));
+    sel.value = cur;
+  }
+  $("#soundDevice").addEventListener("change", (e) => { SB().device = e.target.value; saveSettings(); });
+  $("#soundsBtn").addEventListener("click", () => {
+    soundEdit = false;
+    $("#soundEdit").setAttribute("aria-pressed", "false");
+    renderSounds(); soundRange._sync(); fillSoundDevices();
+    soundsDlg.showModal();
+  });
+  $("#soundAdd").addEventListener("click", async () => {
+    try {
+      const path = await engine.soundPick();
+      if (!path) return;
+      const list = SB().sounds || (SB().sounds = []);
+      let base = path.split(/[\\/]/).pop().replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 30) || "Sound";
+      let name = base, n = 2;
+      while (list.some((s) => s.name.toLowerCase() === name.toLowerCase())) name = `${base} ${n++}`;
+      list.push({ name, path, volume: 100 });
+      await saveNow();
+      renderSounds();
+      toast(`Added “${name}”`);
+    } catch (e) { fail(e); }
+  });
+  $("#soundStop").addEventListener("click", () => engine.soundStop().catch(fail));
+  $("#soundEdit").addEventListener("click", (e) => {
+    soundEdit = !soundEdit;
+    e.currentTarget.setAttribute("aria-pressed", String(soundEdit));
+    renderSounds();
+  });
+  soundsDlg.addEventListener("click", (e) => { if (e.target === soundsDlg) soundsDlg.close(); });
+
+  /* ---------- Twitch chat commands ---------- */
+  const TW = () => (settings.twitch = Object.assign({}, DEFAULT_SETTINGS.twitch, settings.twitch));
+  const TW_ACTIONS = [["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"],
+    ["mute", "Mute or unmute"], ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
+    ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"]];
+  const TW_NO_TARGET = new Set(["brb", "soundstop", "outputnext", "duck", "record"]);
+  let twitchState = null;
+  function applyTwitch(st) {
+    twitchState = st || null;
+    const on = !!(st && st.connected);
+    const note = $("#twitchNote");
+    note.textContent = !TW().on ? "" : on ? "In chat" : "Not connected";
+    note.dataset.ok = on ? "1" : "";
+    const text = $("#twitchStatusText");
+    text.textContent = st ? [st.message, st.last ? `Last: ${st.last}` : ""].filter(Boolean).join(". ") : "";
+    text.dataset.ok = on ? "1" : "";
+  }
+  const twRange = bindRange("twitchCooldown", () => TW().cooldown, (v) => { TW().cooldown = v; }, (v) => (v ? `${v} s` : "none"));
+  function twTarget(sel, cmd) {
+    sel.textContent = "";
+    const none = TW_NO_TARGET.has(cmd.action);
+    sel.style.visibility = none ? "hidden" : "visible";
+    if (none) { cmd.target = ""; return; }
+    sel.setAttribute("aria-label", "On");
+    if (cmd.action === "scene" || cmd.action === "sound") sel.appendChild(new Option("What's typed after it", ""));
+    const names = cmd.action === "mute" ? chans.map((ch) => [displayName(ch), ch.prefix]) : namesFor(cmd.action).map((n) => [n, n]);
+    for (const [label, value] of names) sel.appendChild(new Option(label, value));
+    if (cmd.action === "mute" && !/^(Strip|Bus)\[/.test(cmd.target || "")) cmd.target = "Strip[0]";
+    if (cmd.target && ![...sel.options].some((o) => o.value === cmd.target)) sel.appendChild(new Option(`${cmd.target} (gone)`, cmd.target));
+    sel.value = cmd.target || (sel.options[0] ? sel.options[0].value : "");
+    if ((cmd.action === "output") && !cmd.target && sel.value) cmd.target = sel.value;
+  }
+  function renderTwitchCmds() {
+    const list = $("#twitchCmds");
+    list.textContent = "";
+    const cmds = TW().commands || (TW().commands = []);
+    $("#twitchHead").hidden = cmds.length === 0;
+    cmds.forEach((c, idx) => {
+      const row = document.createElement("div");
+      row.className = "rule twitch-rule";
+      const cmd = document.createElement("input");
+      cmd.type = "text"; cmd.value = c.cmd || ""; cmd.placeholder = "!brb"; cmd.spellcheck = false; cmd.autocomplete = "off"; cmd.setAttribute("aria-label", "Chat command");
+      cmd.addEventListener("change", () => { let v = cmd.value.trim().toLowerCase().replace(/\s+/g, ""); if (v && !v.startsWith("!")) v = "!" + v; c.cmd = v; cmd.value = v; saveSettings(); });
+      const act = document.createElement("select");
+      act.setAttribute("aria-label", "What it does");
+      for (const [v, l] of TW_ACTIONS) act.appendChild(new Option(l, v));
+      act.value = c.action || "brb";
+      const tgt = document.createElement("select");
+      twTarget(tgt, c);
+      act.addEventListener("change", () => { c.action = act.value; c.target = ""; twTarget(tgt, c); saveSettings(); });
+      tgt.addEventListener("change", () => { c.target = tgt.value; saveSettings(); });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn icon"; del.setAttribute("aria-label", "Remove command");
+      del.innerHTML = `<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      del.addEventListener("click", () => { cmds.splice(idx, 1); saveSettings(); renderTwitchCmds(); });
+      row.append(cmd, act, tgt, del);
+      list.appendChild(row);
+    });
+  }
+  function syncTwitch() {
+    engine.listScenes().then((n) => { knownScenes = n; renderTwitchCmds(); }).catch(() => renderTwitchCmds());
+    const t = TW();
+    $("#twitchOn").checked = !!t.on;
+    $("#twitchOpts").hidden = !t.on;
+    $("#twitchChannel").value = t.channel || "";
+    $("#twitchWho").value = t.who || "mods";
+    twRange._sync();
+    applyTwitch(twitchState);
+  }
+  $("#twitchOn").addEventListener("change", (e) => { TW().on = e.target.checked; saveSettings(); syncTwitch(); });
+  $("#twitchChannel").addEventListener("change", (e) => { TW().channel = e.target.value.trim().replace(/^#/, "").toLowerCase(); e.target.value = TW().channel; saveSettings(); });
+  $("#twitchWho").addEventListener("change", (e) => { TW().who = e.target.value; saveSettings(); });
+  $("#addTwitchCmd").addEventListener("click", () => {
+    TW().commands.push({ cmd: "", action: "brb", target: "" });
+    renderTwitchCmds();
+    const inputs = document.querySelectorAll("#twitchCmds input");
+    inputs[inputs.length - 1].focus();
+  });
+
+  /* ---------- phone remote ---------- */
+  const RM = () => (settings.remote = Object.assign({}, DEFAULT_SETTINGS.remote, settings.remote));
+  const newKey = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
+  let remoteTimer = null;
+  async function refreshRemote() {
+    let st = { running: false, message: "", urls: [] };
+    try { st = await engine.remoteStatus(); } catch (e) { /* keep the blank state */ }
+    const on = !!st.running;
+    $("#remoteNote").textContent = !RM().on ? "" : on ? "On" : "Not running";
+    $("#remoteNote").dataset.ok = on ? "1" : "";
+    const url = (st.urls || [])[0] || "";
+    $("#remoteUrl").hidden = !url;
+    $("#remoteUrlText").textContent = url;
+    const text = $("#remoteStatusText");
+    text.textContent = RM().on ? (on ? "Open this address on your phone while it's on the same Wi-Fi as this PC." : st.message || "") : "";
+    text.dataset.ok = on ? "1" : "";
+  }
+  function syncRemote() {
+    const r = RM();
+    $("#remoteOn").checked = !!r.on;
+    $("#remoteOpts").hidden = !r.on;
+    $("#remotePort").value = r.port || 8787;
+    refreshRemote();
+    clearInterval(remoteTimer);
+    remoteTimer = setInterval(() => { if (!settingsDlg.open) { clearInterval(remoteTimer); remoteTimer = null; } else refreshRemote(); }, 2000);
+  }
+  const remoteSaved = async () => { await saveNow(); setTimeout(refreshRemote, 700); };
+  $("#remoteOn").addEventListener("change", async (e) => {
+    RM().on = e.target.checked;
+    if (RM().on && !RM().key) RM().key = newKey();
+    $("#remoteOpts").hidden = !RM().on;
+    await remoteSaved();
+  });
+  $("#remotePort").addEventListener("change", async (e) => { RM().port = Math.max(1024, Math.min(65535, +e.target.value || 8787)); e.target.value = RM().port; await remoteSaved(); });
+  $("#remoteNewKey").addEventListener("click", async () => { RM().key = newKey(); await remoteSaved(); toast("Made a new key"); });
+  $("#remoteCopy").addEventListener("click", async () => {
+    const text = $("#remoteUrlText").textContent;
+    try { await navigator.clipboard.writeText(text); toast("Address copied"); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents($("#remoteUrlText")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Press Ctrl+C to copy"); }
+  });
+
+  /* ---------- level history ---------- */
+  const HI = () => (settings.history = Object.assign({}, DEFAULT_SETTINGS.history, settings.history));
+  $("#historyOn").addEventListener("change", (e) => { HI().on = e.target.checked; saveSettings(); });
+  const historyDlg = $("#historyDlg"), histCanvas = $("#histCanvas");
+  const HIST_RANGES = [[5, "5 min"], [15, "15 min"], [60, "1 hour"], [180, "3 hours"]];
+  let histMinutes = 15, histTimer = null, histData = null;
+  const histHidden = new Set();
+  const colorCache = new Map();
+  function chanColor(key) {
+    const ch = chans.find((c) => c.prefix === key);
+    const name = ch ? look(ch).color : "slate";
+    if (!colorCache.has(name)) {
+      const el = document.createElement("span");
+      el.dataset.color = name; el.hidden = true;
+      document.body.appendChild(el);
+      colorCache.set(name, getComputedStyle(el).getPropertyValue("--acc").trim() || "#8aa");
+      el.remove();
+    }
+    return colorCache.get(name);
+  }
+  const chanName = (key) => { const ch = chans.find((c) => c.prefix === key); return ch ? displayName(ch) : key; };
+  const fmtSecs = (s) => (s < 1 ? "none" : s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`);
+  function buildHistControls() {
+    const seg = $("#histRange");
+    seg.textContent = "";
+    for (const [m, label] of HIST_RANGES) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "tog"; b.textContent = label;
+      b.setAttribute("aria-pressed", String(m === histMinutes));
+      b.addEventListener("click", () => { histMinutes = m; buildHistControls(); refreshHistory(); });
+      seg.appendChild(b);
+    }
+  }
+  function drawHistory() {
+    const d = histData, c = histCanvas;
+    const dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth || 640, h = 240;
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    const g = c.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const cs = getComputedStyle(document.body);
+    const ink = cs.getPropertyValue("--ink-2").trim() || "#999", red = cs.getPropertyValue("--red").trim() || "#f55", rail = cs.getPropertyValue("--rail").trim() || "#444";
+    const L = 38, R = 8, T = 8, B = 20, MAXDB = 6, MINDB = -60;
+    const X = (i, n) => L + ((w - L - R) * i) / Math.max(1, n - 1);
+    const Y = (db) => T + ((MAXDB - Math.max(MINDB, Math.min(MAXDB, db))) / (MAXDB - MINDB)) * (h - T - B);
+    g.font = "11px system-ui, sans-serif"; g.textBaseline = "middle"; g.lineWidth = 1;
+    for (const db of [0, -10, -20, -40, -60]) {
+      g.strokeStyle = db === 0 ? red : rail; g.globalAlpha = db === 0 ? 0.9 : 0.6;
+      g.beginPath(); g.moveTo(L, Y(db) + 0.5); g.lineTo(w - R, Y(db) + 0.5); g.stroke();
+      g.globalAlpha = 1; g.fillStyle = db === 0 ? red : ink; g.textAlign = "right";
+      g.fillText(String(db), L - 6, Y(db));
+    }
+    g.textAlign = "left"; g.fillStyle = ink; g.textBaseline = "alphabetic";
+    g.fillText(`−${HIST_RANGES.find((r) => r[0] === histMinutes)[1]}`, L, h - 4);
+    g.textAlign = "right"; g.fillText("now", w - R, h - 4);
+    if (!d) return;
+    const dots = [];
+    d.keys.forEach((key, i) => {
+      if (histHidden.has(key)) return;
+      const s = d.series[i], n = s.length;
+      g.strokeStyle = chanColor(key); g.lineWidth = 1.6; g.lineJoin = "round";
+      g.beginPath();
+      let pen = false;
+      s.forEach((v, j) => {
+        if (v == null || v <= MINDB) { pen = false; return; }
+        const x = X(j, n), y = Y(v);
+        if (!pen) { g.moveTo(x, y); pen = true; } else g.lineTo(x, y);
+        if (v >= 0) dots.push([x, y]);
+      });
+      g.stroke();
+    });
+    g.fillStyle = red;
+    for (const [x, y] of dots) { g.beginPath(); g.arc(x, y, 2.6, 0, 7); g.fill(); }
+  }
+  function renderHistory() {
+    const d = histData;
+    const empty = !d || !d.stats.some((s) => s.peak != null);
+    $("#histEmpty").hidden = !empty;
+    const keysEl = $("#histKeys");
+    keysEl.textContent = "";
+    if (d) for (const key of d.keys) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "hist-key";
+      b.setAttribute("aria-pressed", String(!histHidden.has(key)));
+      b.style.setProperty("--k", chanColor(key));
+      b.textContent = chanName(key);
+      b.addEventListener("click", () => { if (histHidden.has(key)) histHidden.delete(key); else histHidden.add(key); renderHistory(); });
+      keysEl.appendChild(b);
+    }
+    const stats = $("#histStats");
+    stats.textContent = "";
+    if (d && !empty) {
+      const head = document.createElement("div");
+      head.className = "hist-row head";
+      head.innerHTML = "<span>Channel</span><span>Loudest</span><span>Over 0 dB</span><span>Had sound</span>";
+      stats.appendChild(head);
+      for (const s of d.stats) {
+        if (s.peak == null) continue;
+        const row = document.createElement("div");
+        row.className = "hist-row";
+        if (s.clipSeconds > 0) row.dataset.clip = "1";
+        const cells = [chanName(s.key), `${s.peak > 0 ? "+" : ""}${s.peak.toFixed(1)} dB`, fmtSecs(s.clipSeconds), fmtSecs(s.activeSeconds)];
+        for (const t of cells) row.appendChild(Object.assign(document.createElement("span"), { textContent: t }));
+        stats.appendChild(row);
+      }
+    }
+    drawHistory();
+  }
+  async function refreshHistory() {
+    try { histData = await engine.historyGet(histMinutes); renderHistory(); } catch (e) { fail(e); }
+  }
+  function openHistory() {
+    buildHistControls();
+    historyDlg.showModal();
+    refreshHistory();
+    clearInterval(histTimer);
+    histTimer = setInterval(refreshHistory, 2000);
+  }
+  historyDlg.addEventListener("close", () => { clearInterval(histTimer); histTimer = null; });
+  historyDlg.addEventListener("click", (e) => { if (e.target === historyDlg) historyDlg.close(); });
+  $("#historyOpen").addEventListener("click", () => { settingsDlg.close(); openHistory(); });
+  let histClearArmed = false;
+  $("#histClear").addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (!histClearArmed) { histClearArmed = true; b.textContent = "Confirm"; setTimeout(() => { histClearArmed = false; b.textContent = "Clear"; }, 3000); return; }
+    histClearArmed = false; b.textContent = "Clear";
+    try { await engine.historyClear(); await refreshHistory(); } catch (err) { fail(err); }
+  });
+
   /* ---------- mic level: clip warning and the level check ---------- */
   const CW = () => (settings.clipWarn = Object.assign({}, DEFAULT_SETTINGS.clipWarn, settings.clipWarn));
   function syncClip() {
@@ -2147,6 +2516,8 @@
     if (!PANEL) {
       engine.obsStatus().then(applyObs).catch(() => {});
       engine.onObsStatus(applyObs).catch(() => {});
+      engine.twitchStatus().then(applyTwitch).catch(() => {});
+      engine.onTwitchStatus(applyTwitch).catch(() => {});
     }
     engine.onSceneAuto((e) => {
       setScene(e.scene);
