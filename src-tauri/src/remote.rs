@@ -237,8 +237,13 @@ fn state_json(app: &AppHandle) -> Value {
                 .unwrap_or(false);
         (sounds, profiles, brb_set)
     };
+    let duck = app.state::<Settings>().0.lock().unwrap()["ducking"]["on"]
+        .as_bool()
+        .unwrap_or(false);
     json!({
         "connected": snap["connected"].as_bool().unwrap_or(false),
+        "recording": snap["recorder"]["recording"].as_bool().unwrap_or(false),
+        "duck": duck,
         "brb": snap["brb"].as_bool().unwrap_or(false),
         "brbSet": brb_set,
         "strips": list("strips", "Strip", "Input"),
