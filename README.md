@@ -181,6 +181,10 @@ Sleekmeeter joins your chat as a silent, anonymous viewer: **no sign-in, nothing
 
 Turn on **Settings → Phone remote** and open the address it shows on a phone or tablet on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles. The long code in the address is the password, so don't share it, and **Make a new key** signs every phone out. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
 
+### Stream Deck
+
+There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels, load scenes, play sounds, and turn Be right back, recording and ducking on or off, with the keys lighting up to match. Double-click `Sleekmeeter.streamDeckPlugin` to install it, then paste the phone-remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
+
 ### Level history
 
 **⋯ → Level history** (or Settings) shows how loud each channel was over the last 5 minutes to 3 hours, with a red line at 0 dB where audio distorts, plus the loudest level, the seconds spent over 0 dB and how long each channel had sound. It's the quick way to check after a stream if your mic clipped or your game drowned out your voice. It's kept in memory only while Sleekmeeter runs, and you can turn it off or clear it.

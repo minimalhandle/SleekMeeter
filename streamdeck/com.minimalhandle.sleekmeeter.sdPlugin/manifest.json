@@ -1,0 +1,206 @@
+{
+  "Name": "Sleekmeeter",
+  "Version": "0.13.0.0",
+  "Author": "minimalhandle",
+  "Description": "Control Voicemeeter through Sleekmeeter: channel levels on the dials, mute, scenes, sounds, Be right back, recording and more.",
+  "Category": "Sleekmeeter",
+  "CategoryIcon": "imgs/category",
+  "Icon": "imgs/plugin",
+  "CodePath": "bin/plugin.js",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.4"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "UUID": "com.minimalhandle.sleekmeeter",
+  "Actions": [
+    {
+      "Name": "Channel level",
+      "UUID": "com.minimalhandle.sleekmeeter.channel",
+      "Icon": "imgs/actions/channel",
+      "Tooltip": "Turn the dial to change a channel's level. Press to mute.",
+      "Controllers": [
+        "Encoder"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "Encoder": {
+        "layout": "layouts/channel.json",
+        "Icon": "imgs/states/channel",
+        "TriggerDescription": {
+          "Rotate": "Change level",
+          "Push": "Mute or unmute",
+          "Touch": "Mute or unmute"
+        }
+      },
+      "States": [
+        {
+          "Image": "imgs/states/channel",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Mute channel",
+      "UUID": "com.minimalhandle.sleekmeeter.mute",
+      "Icon": "imgs/actions/mute",
+      "Tooltip": "Mute or unmute a channel. The key shows its level.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/mute",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Level step",
+      "UUID": "com.minimalhandle.sleekmeeter.level",
+      "Icon": "imgs/actions/level",
+      "Tooltip": "Turn a channel up or down, or jump to a level.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/level",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Load scene",
+      "UUID": "com.minimalhandle.sleekmeeter.scene",
+      "Icon": "imgs/actions/scene",
+      "Tooltip": "Load a Sleekmeeter scene.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/scene",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Play sound",
+      "UUID": "com.minimalhandle.sleekmeeter.sound",
+      "Icon": "imgs/actions/sound",
+      "Tooltip": "Play a soundboard sound.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/sound",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Stop sounds",
+      "UUID": "com.minimalhandle.sleekmeeter.soundstop",
+      "Icon": "imgs/actions/soundstop",
+      "Tooltip": "Stop every sound that is playing.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/soundstop",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Be right back",
+      "UUID": "com.minimalhandle.sleekmeeter.brb",
+      "Icon": "imgs/actions/brb",
+      "Tooltip": "Turn Be right back on or off.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/brb",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Record",
+      "UUID": "com.minimalhandle.sleekmeeter.record",
+      "Icon": "imgs/actions/record",
+      "Tooltip": "Start or stop the Voicemeeter recorder.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/record",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Talk-over ducking",
+      "UUID": "com.minimalhandle.sleekmeeter.duck",
+      "Icon": "imgs/actions/duck",
+      "Tooltip": "Turn talk-over ducking on or off.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/duck",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Output profile",
+      "UUID": "com.minimalhandle.sleekmeeter.output",
+      "Icon": "imgs/actions/output",
+      "Tooltip": "Switch to an output profile, or the next one.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/output",
+          "ShowTitle": false
+        }
+      ]
+    }
+  ]
+}

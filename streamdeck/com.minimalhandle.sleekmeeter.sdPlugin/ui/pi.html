@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sleekmeeter</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 10px 12px 16px; background: #2d2d2d; color: #d8d8d8; font: 13px "Segoe UI", sans-serif; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 30px; margin: 4px 0; }
+  .row > label { flex: 0 0 92px; color: #a8a8a8; }
+  select, input[type="text"], input[type="number"] { flex: 1; min-width: 0; height: 28px; padding: 0 8px; border: 0; border-radius: 3px; background: #3d3d3d; color: #fff; font: inherit; }
+  button { height: 28px; padding: 0 12px; border: 0; border-radius: 3px; background: #4a4a4a; color: #fff; font: inherit; cursor: pointer; }
+  button:hover { background: #5a5a5a; }
+  h4 { margin: 16px 0 4px; font-size: 12px; font-weight: 600; color: #8c8c8c; letter-spacing: .04em; text-transform: uppercase; }
+  .status { margin: 6px 0 0; padding: 6px 8px; border-radius: 3px; background: #383838; color: #bbb; line-height: 1.35; }
+  .status.ok { color: #7fe0a3; } .status.bad { color: #ff9a9a; }
+  .hint { margin: 2px 0 0; color: #8c8c8c; line-height: 1.35; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="fields"></div>
+
+<h4>Connection</h4>
+<div class="row"><label for="address">Address</label><input type="text" id="address" placeholder="http://192.168.1.20:8787/?k=…" spellcheck="false"></div>
+<div class="row"><label></label><button id="save" type="button">Connect</button></div>
+<div class="status" id="status">Looking for Sleekmeeter…</div>
+<p class="hint">In Sleekmeeter, turn on the phone remote under Settings, then use Copy next to the address and paste it here. You only do this once for every button.</p>
+
+<script>
+"use strict";
+let ws, uuid, actionInfo, action = "", settings = {}, lists = null;
+const $ = (s) => document.querySelector(s);
+const NAME = (a) => a.replace(/^com\.minimalhandle\.sleekmeeter\./, "");
+
+function connectElgatoStreamDeckSocket(port, inUUID, registerEvent, info, actionInfoJson) {
+  uuid = inUUID;
+  actionInfo = JSON.parse(actionInfoJson);
+  action = NAME(actionInfo.action);
+  settings = (actionInfo.payload && actionInfo.payload.settings) || {};
+  ws = new WebSocket("ws://127.0.0.1:" + port);
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ event: registerEvent, uuid }));
+    toPlugin({ event: "lists" });
+    buildFields();
+  };
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.event === "sendToPropertyInspector" && m.payload && m.payload.event === "lists") { lists = m.payload; buildFields(); showStatus(); }
+    if (m.event === "didReceiveSettings") { settings = (m.payload && m.payload.settings) || settings; }
+  };
+}
+window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;
+
+const toPlugin = (payload) => ws.send(JSON.stringify({ event: "sendToPlugin", action: actionInfo.action, context: uuid, payload }));
+function save(key, value) {
+  settings[key] = value;
+  ws.send(JSON.stringify({ event: "setSettings", context: uuid, payload: settings }));
+}
+
+function opts(list, current, empty) {
+  let h = empty ? `<option value="">${empty}</option>` : "";
+  for (const o of list) h += `<option value="${esc(o.v)}"${o.v === current ? " selected" : ""}>${esc(o.t)}</option>`;
+  return h;
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function channelSelect() {
+  const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
+  const buses = (lists ? lists.buses : []).map((c) => ({ v: c.key, t: c.name }));
+  const cur = settings.channel || "";
+  return `<select data-k="channel"><option value="">Pick a channel…</option>` +
+    (strips.length ? `<optgroup label="Inputs">${opts(strips, cur)}</optgroup>` : "") +
+    (buses.length ? `<optgroup label="Outputs">${opts(buses, cur)}</optgroup>` : "") + `</select>`;
+}
+function simple(k, list, empty) {
+  return `<select data-k="${k}">${opts(list.map((x) => ({ v: x, t: x })), settings[k] || "", empty)}</select>`;
+}
+
+function buildFields() {
+  const f = $("#fields");
+  const active = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
+  let h = "";
+  const row = (label, control) => `<div class="row"><label>${label}</label>${control}</div>`;
+  if (action === "channel") {
+    h += row("Channel", channelSelect());
+    h += row("Dial step", `<select data-k="step">${opts([{ v: "0.5", t: "0.5 dB per click" }, { v: "1", t: "1 dB per click" }, { v: "2", t: "2 dB per click" }, { v: "3", t: "3 dB per click" }], settings.step || "1")}</select>`);
+    h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "zero", t: "Set to 0 dB" }, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
+    h += row("Touch", `<select data-k="tap">${opts([{ v: "mute", t: "Tap to mute or unmute" }, { v: "none", t: "Do nothing" }], settings.tap || "mute")}</select>`);
+  } else if (action === "mute") {
+    h += row("Channel", channelSelect());
+  } else if (action === "level") {
+    h += row("Channel", channelSelect());
+    h += row("What it does", `<select data-k="mode">${opts([{ v: "up", t: "Turn up" }, { v: "down", t: "Turn down" }, { v: "set", t: "Jump to a level" }], settings.mode || "up")}</select>`);
+    h += row((settings.mode || "up") === "set" ? "Level (dB)" : "Amount (dB)", `<input type="number" data-k="amount" step="0.5" min="-60" max="12" value="${esc(settings.amount !== undefined ? settings.amount : 2)}">`);
+  } else if (action === "scene") {
+    h += row("Scene", simple("scene", lists ? lists.scenes : [], "Pick a scene…"));
+  } else if (action === "sound") {
+    h += row("Sound", simple("sound", lists ? lists.sounds : [], "Pick a sound…"));
+  } else if (action === "output") {
+    h += row("Profile", simple("output", lists ? lists.outputs : [], "Next profile"));
+    h += `<p class="hint">Leave on "Next profile" to cycle through your output profiles.</p>`;
+  }
+  if (f.dataset.built === h) return;
+  f.dataset.built = h;
+  f.innerHTML = h;
+  for (const el of f.querySelectorAll("[data-k]")) {
+    el.addEventListener("change", () => {
+      let v = el.value;
+      if (el.type === "number") v = v === "" ? undefined : Number(v);
+      save(el.dataset.k, v);
+      if (el.dataset.k === "mode") buildFields();
+    });
+  }
+  if (active) { const el = f.querySelector(`[data-k="${active}"]`); if (el) el.focus(); }
+}
+
+function showStatus() {
+  const s = $("#status");
+  if (!lists) return;
+  const a = $("#address");
+  if (document.activeElement !== a && !a.value) a.value = lists.address || "";
+  const t = {
+    ok: ["Connected to Sleekmeeter.", "ok"],
+    novm: ["Sleekmeeter is running, but Voicemeeter isn't.", "bad"],
+    key: ["Sleekmeeter says the key is wrong. Paste the address again.", "bad"],
+    offline: ["Can't reach Sleekmeeter. Is it open, with the phone remote turned on?", "bad"],
+  }[lists.status] || ["", ""];
+  s.textContent = t[0];
+  s.className = "status " + t[1];
+}
+
+$("#save").addEventListener("click", () => { $("#status").textContent = "Connecting…"; $("#status").className = "status"; toPlugin({ event: "address", value: $("#address").value }); });
+$("#address").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#save").click(); });
+setInterval(() => { if (ws && ws.readyState === 1) toPlugin({ event: "lists" }); }, 4000);
+</script>
+</body>
+</html>

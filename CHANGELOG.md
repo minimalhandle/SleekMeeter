@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.13.0
+- **Stream Deck plugin:** dials for channel levels (Stream Deck +), plus keys for mute, level steps, scenes, sounds, Be right back, recording, talk-over ducking and output profiles. The keys show the live state. It's in the `streamdeck` folder; double-click the `.streamDeckPlugin` file to install. The phone-remote server also reports recording and ducking now
 - Fixed: faders could wobble a little when you muted or unmuted a channel. The cap now holds still while the mute fades
 - **Two more themes (twelve in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps). Ink and Deco are gone; if you were using them you're moved to Console
 - **Mic chain:** **⋯ → Mic chain…** has noise gate, compressor and denoiser sliders for your microphone, one-click presets (Streamer voice, Gentle, Noisy room, All off) and a live meter. Only the controls your Voicemeeter edition has are shown
