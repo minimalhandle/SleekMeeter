@@ -1434,16 +1434,25 @@
   let routeQueue = Promise.resolve();
 
   const virtualStrips = () => chans.filter((c) => c.kind === "strip" && !isHw(c));
-  // Voicemeeter's virtual inputs, in order: VAIO, AUX, then VAIO3 (Potato).
+  // Which Windows playback device feeds a channel?
+  //  - Voicemeeter's own virtual inputs, in order: VAIO, AUX, then VAIO3 (Potato).
+  //  - A hardware input that listens to a virtual cable (VB-Cable): the cable's "Input" playback
+  //    device is the other end of that cable, so an app played into it arrives on this channel.
+  const adapterOf = (name) => { const m = /\(([^)]+)\)\s*$/.exec(name || ""); return m ? m[1].trim().toLowerCase() : ""; };
   function deviceForChannel(ch) {
-    const at = virtualStrips().indexOf(ch);
-    if (at < 0) return null;
-    const vm = routeDevices.filter((d) => /voicemeeter/i.test(d.name));
-    if (at === 0) return vm.find((d) => !/aux|vaio3/i.test(d.name)) || null;
-    if (at === 1) return vm.find((d) => /aux/i.test(d.name)) || null;
-    return vm.find((d) => /vaio3/i.test(d.name)) || null;
+    if (ch.kind !== "strip") return null;
+    if (!isHw(ch)) {
+      const at = virtualStrips().indexOf(ch);
+      const vm = routeDevices.filter((d) => /voicemeeter/i.test(d.name));
+      if (at === 0) return vm.find((d) => !/aux|vaio3/i.test(d.name)) || null;
+      if (at === 1) return vm.find((d) => /aux/i.test(d.name)) || null;
+      return vm.find((d) => /vaio3/i.test(d.name)) || null;
+    }
+    const heard = adapterOf(ch.data && ch.data.device);
+    if (!heard || !/vb-?audio/i.test(heard) || /voicemeeter/i.test(heard)) return null;
+    return routeDevices.find((d) => adapterOf(d.name) === heard && !/voicemeeter/i.test(d.name)) || null;
   }
-  const channelForDevice = (id) => virtualStrips().find((c) => { const d = deviceForChannel(c); return d && d.id === id; }) || null;
+  const channelForDevice = (id) => chans.find((c) => { const d = deviceForChannel(c); return d && d.id === id; }) || null;
   const exeName = (exe) => { const t = exe.replace(/\.exe$/i, ""); return exe === "system sounds" ? "System sounds" : t.charAt(0).toUpperCase() + t.slice(1); };
   const hueOf = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   const initialOf = (name) => (name.trim().charAt(0) || "?").toUpperCase();
@@ -1451,7 +1460,7 @@
 
   async function routeApp(a, ch) {
     const dev = ch ? deviceForChannel(ch) : null;
-    if (ch && !dev) { toast("Windows doesn't list that channel's input. Is Voicemeeter running?"); return; }
+    if (ch && !dev) { toast("Windows doesn't list a playback device for that channel"); return; }
     const name = a.name || exeName(a.exe);
     const pids = a.pids || [];
     try {
@@ -1473,7 +1482,7 @@
     b.className = "app-chip" + (a.active ? " on" : "") + (a.pids && a.pids.length ? "" : " idle") + (a.exe === "system sounds" ? " fixed" : "");
     b.dataset.exe = a.exe;
     b.style.setProperty("--hue", hueOf(a.exe));
-    b.title = a.exe === "system sounds" ? "Windows system sounds can't be moved" : `${a.name}: drag onto an input channel`;
+    b.title = a.exe === "system sounds" ? "Windows system sounds can't be moved" : `${a.name}: drag onto a channel`;
     b.innerHTML = `<span class="av"><span></span><i></i></span><span class="nm"></span>`;
     $(".av span", b).textContent = initialOf(a.name);
     $(".nm", b).textContent = a.name;
@@ -1506,7 +1515,7 @@
   function paintStripApps() {
     const routes = settings.appRoutes || {};
     const running = new Set(trayRunning.filter((a) => a.pids && a.pids.length).map((a) => a.exe));
-    for (const ch of virtualStrips()) {
+    for (const ch of chans.filter((c) => c.kind === "strip")) {
       let box = $(".app-chips", ch.mixerEl);
       if (!box) {
         box = document.createElement("div");
@@ -1514,7 +1523,7 @@
         box.hidden = true;
         $(".head", ch.mixerEl).after(box);
       }
-      const mine = Object.keys(routes).filter((exe) => { const c = channelForDevice(routes[exe]); return c === ch; });
+      const mine = Object.keys(routes).filter((exe) => channelForDevice(routes[exe]) === ch);
       const sig = mine.map((e) => e + (running.has(e) ? "+" : "-")).join(",");
       if (box.dataset.sig === sig) continue;
       box.dataset.sig = sig;
@@ -1562,7 +1571,7 @@
       move.target = null;
       if (target) {
         lastStrip = strip;
-        if (target.kind === "strip" && !isHw(target)) { mode = "channel"; strip.classList.add("drop-ok"); }
+        if (deviceForChannel(target)) { mode = "channel"; strip.classList.add("drop-ok"); }
         else { mode = "bad"; strip.classList.add("drop-no"); }
         move.target = target;
       } else if (t && t.closest && t.closest("#appTray")) {
@@ -1582,7 +1591,7 @@
       if (!ghost || ev.type === "pointercancel") return;
       if (mode === "channel") routeApp(a, target);
       else if (mode === "home") routeApp(a, null);
-      else if (mode === "bad") toast("Apps can only go onto input channels that come from Voicemeeter's virtual inputs, not onto hardware or outputs");
+      else if (mode === "bad") toast("That channel has no playback device to send an app to. Apps go onto Voicemeeter's virtual inputs or channels that listen to a virtual cable (like CABLE-A)");
     };
     const esc = (ev) => { if (ev.key === "Escape") { mode = "none"; end({ type: "pointercancel" }); } };
     window.addEventListener("pointermove", move);
