@@ -123,6 +123,12 @@ In **Settings → Shortcuts**, set an action to **Push to talk (hold)** or **Pus
 
 **Send an app to another output.** The box on the right of each app chooses which playback device it plays to, for example Discord into a Voicemeeter virtual input, the same setting as Windows' *App volume and device preferences*. This one is new and uses an internal Windows feature, so if your version of Windows doesn't accept it you'll see a message instead and nothing changes.
 
+### Apps tray: drag an app onto a channel
+
+Click **Apps** in the top bar to open the apps tray along the bottom. Every program that's making sound appears there as a chip. Drag one onto an input channel from Voicemeeter's virtual inputs (VAIO, AUX and, on Potato, VAIO3) and that app plays through that channel from then on, so you get a fader, routing and mute for it. A small chip on the channel shows what's on it; click the chip, or drag the app back onto the tray, to return it to the Windows default. Sleekmeeter remembers where each program goes, even when it isn't running. **Volumes…** opens the per-app volume list.
+
+Hardware inputs and outputs can't take apps. Some programs only move when their sound restarts, so pause and play once if one doesn't switch straight away. Windows has no public setting for this, so Sleekmeeter uses the same call Windows' own "App volume and device preferences" page uses, run in a separate helper so a problem can't crash Sleekmeeter.
+
 ### Stream mode: Be right back
 
 The **BRB** button in the header does your whole "be right back" in one press, with fades: it mutes the channels you pick (your mic), turns others down (the game), and brings up a channel to play (music). Press it again (**Back live**) and everything returns exactly as it was. Choose what it does in **Settings → Stream mode: Be right back**. A shortcut can do it too (**Be right back on or off**), and so can an OBS scene.

@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.13.0
+- **Apps tray, like Wave Link:** **Apps** now opens a tray of the programs making sound. Drag one onto a virtual input channel and it plays through that channel; chips on the channel show what's on it, and Sleekmeeter remembers each program's channel. The per-app volume list is under **Volumes…** in the tray
 - **Stream Deck plugin:** dials for channel levels (Stream Deck +), plus keys for mute, level steps, scenes, sounds, Be right back, recording, talk-over ducking and output profiles. The keys show the live state. It's in the `streamdeck` folder; double-click the `.streamDeckPlugin` file to install. The phone-remote server also reports recording and ducking now
 - Fixed: faders could wobble a little when you muted or unmuted a channel. The cap now holds still while the mute fades
 - **Two more themes (twelve in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps). Ink and Deco are gone; if you were using them you're moved to Console
