@@ -178,7 +178,7 @@
       const L = this.layout;
       const sampleStrips = [
         { label: "Mic", device: "Shure MV7", gain: -2.5, mono: true, comp: 3.5, gate: 2 },
-        { label: "Guitar", device: "Focusrite Scarlett 2i2", gain: -8, pan: -0.15 },
+        { label: "Guitar", device: "CABLE-A Output (VB-Audio Cable A)", gain: -8, pan: -0.15 },
         { label: "", device: "", gain: 0, mute: true },
         { label: "Synth", device: "Arturia MiniFuse", gain: -10 },
         { label: "", device: "", gain: 0, mute: true },
@@ -488,7 +488,7 @@
     }
     historyClear() { return Promise.resolve(); }
     appRouteDevices() {
-      return Promise.resolve([{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" }, { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" }, { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" }]);
+      return Promise.resolve([{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" }, { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" }, { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" }, { id: "{0.0.0.00000000}.{dddd}", name: "CABLE-A Input (VB-Audio Cable A)" }]);
     }
     appRouteSet(pids, device) { this.routed = { pids, device }; return Promise.resolve(); }
     brbToggle() {
