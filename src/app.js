@@ -121,6 +121,7 @@
     applyVisibility();
     applyExtraBuses();
     sizeToNames();
+    paintStripApps();
   }
 
   /* ---------- size strips and the mini/panel name column to the names ---------- */
@@ -1407,7 +1408,7 @@
       appsFailed = true;
     } finally { appsBusy = false; }
   }
-  appsBtn.addEventListener("click", () => {
+  function openAppVolumes() {
     appRows.clear();
     appListEl.textContent = "";
     $("#appVolEmpty").hidden = true;
@@ -1417,9 +1418,222 @@
     engine.appRouteDevices().then((d) => { routeDevices = d || []; for (const [, row] of appRows) fillRoute(row, { exe: row.name.title, pids: row.pids }); }).catch(() => {});
     clearInterval(appsTimer);
     appsTimer = setInterval(refreshApps, 1000);
-  });
+  }
   appsDlg.addEventListener("close", () => { clearInterval(appsTimer); appsTimer = null; });
   appsDlg.addEventListener("click", (e) => { if (e.target === appsDlg) appsDlg.close(); });
+
+
+  /* ---------- apps tray: drag an app onto a channel (like Wave Link) ---------- */
+  // Voicemeeter's virtual inputs are Windows playback devices, so "putting an app on a channel"
+  // means pointing that app's output at the channel's device. Routes are remembered by program
+  // name and put back when the program starts again.
+  const trayEl = $("#appTray"), trayAppsEl = $("#trayApps"), trayEmpty = $("#trayEmpty");
+  let trayRunning = []; // from the last poll: [{exe, name, pids, active}]
+  let trayTimer = null, trayBusy = false, trayPolls = 0;
+  const trayApplied = new Map(); // exe → process ids already pointed at their device this session
+  let routeQueue = Promise.resolve();
+
+  const virtualStrips = () => chans.filter((c) => c.kind === "strip" && !isHw(c));
+  // Voicemeeter's virtual inputs, in order: VAIO, AUX, then VAIO3 (Potato).
+  function deviceForChannel(ch) {
+    const at = virtualStrips().indexOf(ch);
+    if (at < 0) return null;
+    const vm = routeDevices.filter((d) => /voicemeeter/i.test(d.name));
+    if (at === 0) return vm.find((d) => !/aux|vaio3/i.test(d.name)) || null;
+    if (at === 1) return vm.find((d) => /aux/i.test(d.name)) || null;
+    return vm.find((d) => /vaio3/i.test(d.name)) || null;
+  }
+  const channelForDevice = (id) => virtualStrips().find((c) => { const d = deviceForChannel(c); return d && d.id === id; }) || null;
+  const exeName = (exe) => { const t = exe.replace(/\.exe$/i, ""); return exe === "system sounds" ? "System sounds" : t.charAt(0).toUpperCase() + t.slice(1); };
+  const hueOf = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+  const initialOf = (name) => (name.trim().charAt(0) || "?").toUpperCase();
+  const pidsOf = (exe) => { const a = trayRunning.find((x) => x.exe === exe); return a ? a.pids || [] : []; };
+
+  async function routeApp(a, ch) {
+    const dev = ch ? deviceForChannel(ch) : null;
+    if (ch && !dev) { toast("Windows doesn't list that channel's input. Is Voicemeeter running?"); return; }
+    const name = a.name || exeName(a.exe);
+    const pids = a.pids || [];
+    try {
+      if (pids.length) await engine.appRouteSet(pids, dev ? dev.id : "");
+    } catch (e) { fail(e); return; }
+    settings.appRoutes = settings.appRoutes || {};
+    if (dev) settings.appRoutes[a.exe] = dev.id; else delete settings.appRoutes[a.exe];
+    trayApplied.set(a.exe, new Set(pids));
+    saveSettings();
+    paintTray();
+    paintStripApps();
+    if (ch) toast(`${name} now plays through ${displayName(ch)}. If it doesn't move, pause and play it once.`);
+    else toast(`${name} is back on the Windows default`);
+  }
+
+  function chipFor(a, routedCh) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "app-chip" + (a.active ? " on" : "") + (a.pids && a.pids.length ? "" : " idle") + (a.exe === "system sounds" ? " fixed" : "");
+    b.dataset.exe = a.exe;
+    b.style.setProperty("--hue", hueOf(a.exe));
+    b.title = a.exe === "system sounds" ? "Windows system sounds can't be moved" : `${a.name}: drag onto an input channel`;
+    b.innerHTML = `<span class="av"><span></span><i></i></span><span class="nm"></span>`;
+    $(".av span", b).textContent = initialOf(a.name);
+    $(".nm", b).textContent = a.name;
+    if (routedCh) { const t = document.createElement("span"); t.className = "to"; t.textContent = displayName(routedCh); b.appendChild(t); }
+    if (a.exe !== "system sounds") b.addEventListener("pointerdown", (e) => startAppDrag(e, a, b));
+    return b;
+  }
+
+  function trayModel() {
+    const routes = settings.appRoutes || {};
+    const list = trayRunning.map((a) => ({ exe: a.exe, name: a.name, pids: a.pids || [], active: !!a.active }));
+    // Remembered routes whose program isn't making sound right now.
+    for (const exe of Object.keys(routes)) if (!list.some((a) => a.exe === exe)) list.push({ exe, name: exeName(exe), pids: [], active: false });
+    return list;
+  }
+  let lastTraySig = "";
+  function paintTray() {
+    if (!settings.appTray) return;
+    const list = trayModel();
+    const sig = JSON.stringify(list.map((a) => [a.exe, a.active, a.pids.length, (settings.appRoutes || {})[a.exe] || "", a.pids.length ? 1 : 0])) + chans.map((c) => displayName(c)).join("|");
+    if (sig === lastTraySig) return;
+    lastTraySig = sig;
+    trayAppsEl.textContent = "";
+    const routes = settings.appRoutes || {};
+    for (const a of list) trayAppsEl.appendChild(chipFor(a, routes[a.exe] ? channelForDevice(routes[a.exe]) : null));
+    trayEmpty.hidden = list.length > 0;
+  }
+
+  // Small chips on a channel strip for the apps that play through it.
+  function paintStripApps() {
+    const routes = settings.appRoutes || {};
+    const running = new Set(trayRunning.filter((a) => a.pids && a.pids.length).map((a) => a.exe));
+    for (const ch of virtualStrips()) {
+      let box = $(".app-chips", ch.mixerEl);
+      if (!box) {
+        box = document.createElement("div");
+        box.className = "app-chips";
+        box.hidden = true;
+        $(".head", ch.mixerEl).after(box);
+      }
+      const mine = Object.keys(routes).filter((exe) => { const c = channelForDevice(routes[exe]); return c === ch; });
+      const sig = mine.map((e) => e + (running.has(e) ? "+" : "-")).join(",");
+      if (box.dataset.sig === sig) continue;
+      box.dataset.sig = sig;
+      box.textContent = "";
+      for (const exe of mine) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "sa-chip" + (running.has(exe) ? "" : " idle");
+        b.style.setProperty("--hue", hueOf(exe));
+        b.title = `${exeName(exe)} plays through this channel. Click to put it back on the Windows default.`;
+        b.innerHTML = `<span class="av"></span><span class="t"></span>`;
+        $(".av", b).textContent = initialOf(exeName(exe));
+        $(".t", b).textContent = exeName(exe);
+        b.addEventListener("click", () => routeApp({ exe, name: exeName(exe), pids: pidsOf(exe) }, null));
+        box.appendChild(b);
+      }
+      box.hidden = mine.length === 0;
+    }
+  }
+
+  // Drag with the pointer (works the same in every theme, and doesn't depend on the webview's file-drop handling).
+  function startAppDrag(e, a, chipEl) {
+    if (e.button !== 0) return;
+    const sx = e.clientX, sy = e.clientY;
+    let ghost = null, lastStrip = null, mode = "none";
+    const clear = () => {
+      if (lastStrip) lastStrip.classList.remove("drop-ok", "drop-no");
+      lastStrip = null;
+      trayEl.classList.remove("drop-home");
+    };
+    const move = (ev) => {
+      if (!ghost) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+        ghost = chipEl.cloneNode(true);
+        ghost.classList.add("app-ghost");
+        document.body.appendChild(ghost);
+        document.body.classList.add("app-dragging");
+      }
+      ghost.style.transform = `translate(${ev.clientX + 8}px, ${ev.clientY + 8}px)`;
+      clear();
+      const t = document.elementFromPoint(ev.clientX, ev.clientY);
+      const strip = t && t.closest ? t.closest(".strip") : null;
+      const target = strip ? chans.find((c) => c.mixerEl === strip) : null;
+      mode = "none";
+      move.target = null;
+      if (target) {
+        lastStrip = strip;
+        if (target.kind === "strip" && !isHw(target)) { mode = "channel"; strip.classList.add("drop-ok"); }
+        else { mode = "bad"; strip.classList.add("drop-no"); }
+        move.target = target;
+      } else if (t && t.closest && t.closest("#appTray")) {
+        mode = "home";
+        trayEl.classList.add("drop-home");
+      }
+    };
+    const end = (ev) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      window.removeEventListener("keydown", esc);
+      document.body.classList.remove("app-dragging");
+      if (ghost) ghost.remove();
+      const target = move.target;
+      clear();
+      if (!ghost || ev.type === "pointercancel") return;
+      if (mode === "channel") routeApp(a, target);
+      else if (mode === "home") routeApp(a, null);
+      else if (mode === "bad") toast("Apps can only go onto input channels that come from Voicemeeter's virtual inputs, not onto hardware or outputs");
+    };
+    const esc = (ev) => { if (ev.key === "Escape") { mode = "none"; end({ type: "pointercancel" }); } };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    window.addEventListener("keydown", esc);
+  }
+
+  // Put remembered routes back on programs that have started since (Windows keeps its own copy,
+  // so this mostly confirms it).
+  function applyRemembered() {
+    const routes = settings.appRoutes || {};
+    for (const a of trayRunning) {
+      const id = routes[a.exe];
+      if (!id || !a.pids || !a.pids.length || !routeDevices.some((d) => d.id === id)) continue;
+      const done = trayApplied.get(a.exe) || new Set();
+      const fresh = a.pids.filter((p) => !done.has(p));
+      if (!fresh.length) continue;
+      trayApplied.set(a.exe, new Set([...done, ...fresh]));
+      routeQueue = routeQueue.then(() => engine.appRouteSet(fresh, id)).catch(() => {});
+    }
+  }
+
+  async function pollTray() {
+    if (trayBusy || PANEL || settings.mini || document.hidden) return;
+    trayBusy = true;
+    try {
+      if (!routeDevices.length || trayPolls++ % 20 === 0) routeDevices = (await engine.appRouteDevices().catch(() => routeDevices)) || routeDevices;
+      trayRunning = (await engine.appVolumes()) || [];
+      applyRemembered();
+      paintStripApps();
+      paintTray();
+    } catch (_) { /* Windows audio unavailable; the tray just stays as it was */ } finally { trayBusy = false; }
+  }
+  function startTray() {
+    if (PANEL || trayTimer) return;
+    pollTray();
+    trayTimer = setInterval(() => { if (settings.appTray || Object.keys(settings.appRoutes || {}).length) pollTray(); }, settings.appTray ? 1500 : 3000);
+  }
+  function applyTray() {
+    const on = !PANEL && !!settings.appTray;
+    trayEl.hidden = !on;
+    appsBtn.setAttribute("aria-pressed", String(on));
+    clearInterval(trayTimer); trayTimer = null;
+    lastTraySig = "";
+    startTray();
+    if (on) paintTray();
+  }
+  appsBtn.addEventListener("click", () => { settings.appTray = !settings.appTray; saveSettings(); applyTray(); });
+  $("#trayClose").addEventListener("click", () => { settings.appTray = false; saveSettings(); applyTray(); });
+  $("#trayVolumes").addEventListener("click", openAppVolumes);
 
   /* ---------- settings: about and logs ---------- */
   let appInfo = null;
@@ -2961,6 +3175,7 @@
     setupWindowChrome();
     applyTheme();
     buildChannels(settings.edition || 2);
+    applyTray();
     pinBtn.setAttribute("aria-pressed", String(!!settings.alwaysOnTop));
     if (PANEL) {
       // Pinned, fixed panel: mini rows only. Looks and hidden channels come from the mixer's settings.

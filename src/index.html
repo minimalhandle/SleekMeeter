@@ -39,7 +39,7 @@
     <button class="btn rec-btn full-only" id="recBtn" type="button" hidden aria-label="Recorder" title="Recorder">
       <span class="rec-dot" aria-hidden="true"></span><span id="recLabel">Rec</span>
     </button>
-    <button class="btn full-only" id="appsBtn" type="button" title="Volume for each app">Apps</button>
+    <button class="btn full-only" id="appsBtn" type="button" aria-pressed="false" title="Apps: drag an app onto a channel to play it through that channel">Apps</button>
     <button class="btn full-only" id="soundsBtn" type="button" title="Play sounds into your mix">Sounds</button>
     <button class="btn full-only" id="outputsBtn" type="button" title="Switch between saved output devices">Outputs</button>
     <button class="btn full-only" id="scenesBtn" type="button">Scenes</button>
@@ -94,6 +94,16 @@
       <div class="strips" id="outputs"></div>
     </section>
   </main>
+
+  <section class="app-tray full-only" id="appTray" hidden aria-label="Apps">
+    <span class="tray-title">Apps</span>
+    <div class="tray-apps" id="trayApps"></div>
+    <span class="tray-empty" id="trayEmpty" hidden>Play something and it shows up here. Drag it onto an input channel to send its sound there.</span>
+    <button class="btn" id="trayVolumes" type="button" title="Volume and mute for each app">Volumes…</button>
+    <button class="btn icon" id="trayClose" type="button" aria-label="Hide the apps tray" title="Hide the apps tray">
+      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </section>
 
   <main class="mini-view" id="miniView" hidden>
     <div class="mini-list" id="miniInputs" aria-label="Inputs"></div>
