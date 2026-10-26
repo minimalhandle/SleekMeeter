@@ -70,7 +70,7 @@
       { keys: "Ctrl+Alt+S", action: "window", target: "" },
     ],
     startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
-    overlay: true, alwaysOnTop: false, mini: false,
+    overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true,
     sceneRules: [], checkUpdates: true, skippedVersion: "", oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },

@@ -182,7 +182,7 @@ button { cursor: default; }
   background: var(--flyout); border-radius: 10px; padding: 5px;
   box-shadow: 0 0 0 1px var(--line), var(--pop-shadow);
 }
-.menu button { display: block; width: 100%; text-align: left; padding: 7px 12px; border: 0; border-radius: 6px; background: none; color: var(--ink); }
+.menu button { display: block; width: 100%; text-align: left; white-space: nowrap; padding: 7px 12px; border: 0; border-radius: 6px; background: none; color: var(--ink); }
 .menu button:hover, .menu button:focus-visible { background: var(--key); }
 
 /* ---------- desk: recessed bays that hug their modules and stay centred ---------- */
@@ -252,6 +252,11 @@ body:not(.show-extra-buses) .route.extra:not([aria-pressed="true"]) { display: n
 .toggles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; flex: none; }
 .toggles .tog { height: 28px; }
 .toggles .tog.mute, .tog.wide { grid-column: 1 / -1; height: 32px; font-size: var(--s0); }
+/* Solo, Mono and EQ can be hidden; one that's switched on stays visible so it can be switched off.
+   The output row keeps its space so the faders stay lined up with the inputs. */
+body.hide-solo-mono .toggles .tog:is(.solo, .mono):not([aria-pressed="true"]) { display: none; }
+body.hide-solo-mono .strip .modes .tog:not([aria-pressed="true"]) { visibility: hidden; }
+.drawer-togs { height: auto; }
 .tog.mute[aria-pressed="true"] {
   background: var(--red); color: #fff;
   box-shadow: 0 0 calc(16px * var(--glow)) color-mix(in srgb, var(--red) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
@@ -395,7 +400,11 @@ body:not(.show-extra-buses) .route.extra:not([aria-pressed="true"]) { display: n
 .is-mini .bar { padding: 9px 12px; }
 
 /* ---------- recorder ---------- */
-.rec-btn { display: inline-flex; align-items: center; gap: 8px; padding: 0 12px; min-width: 64px; justify-content: center; }
+/* A small key while stopped; it grows to show the clock while it records or plays. */
+.rec-btn:is([data-state="recording"], [data-state="playing"], [data-state="paused"]) {
+  display: inline-flex; align-items: center; gap: 8px; width: auto; padding: 0 12px;
+}
+.rec-btn #recLabel:empty { display: none; }
 .rec-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); opacity: .55; flex: none; }
 .rec-btn[data-state="recording"] { color: var(--ink); background: color-mix(in srgb, var(--red) 18%, var(--key)); }
 .rec-btn[data-state="recording"] .rec-dot, .rec-key[aria-pressed="true"] .rec-dot { opacity: 1; box-shadow: 0 0 calc(8px * var(--glow)) var(--red); animation: breathe 1.2s ease-in-out infinite; }
@@ -755,7 +764,11 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .rule-extra select { min-width: 0; }
 
 /* ---------- header: Be right back and LIVE ---------- */
+/* A small key; while you're away it widens to say "Back live" so the way back is obvious. */
 .brb-btn { font-weight: 600; letter-spacing: .06em; }
+.brb-btn .brb-label { display: none; }
+.brb-btn[aria-pressed="true"] { display: inline-flex; align-items: center; gap: 7px; width: auto; padding: 0 12px; }
+.brb-btn[aria-pressed="true"] .brb-label { display: inline; }
 .brb-btn[aria-pressed="true"] {
   background: var(--red); color: #fff;
   box-shadow: 0 0 calc(16px * var(--glow)) color-mix(in srgb, var(--red) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
@@ -875,8 +888,33 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .strip.drop-ok { outline: 2px dashed var(--cyan); outline-offset: -3px; }
 .strip.drop-no { outline: 2px dashed var(--red); outline-offset: -3px; }
 .app-tray.drop-home { outline: 2px dashed var(--cyan); outline-offset: -3px; }
-.app-chips { display: flex; flex-wrap: wrap; gap: 4px; max-height: 48px; overflow: hidden; margin: -2px 0; }
-.app-chips[hidden] { display: none; }
+/* Apps on a channel: badges in the corner, and a list that floats over the strip while you hover its top. */
+.strip { position: relative; }
+.app-stack {
+  position: absolute; top: 2px; right: 5px; display: inline-flex; align-items: center; gap: 3px;
+  height: 13px; padding: 0 4px; border-radius: 7px; pointer-events: none;
+  background: color-mix(in srgb, var(--acc) 20%, transparent); color: var(--acc);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 35%, transparent);
+  font-size: 9px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.app-stack:empty { display: none; }
+.app-stack svg { width: 8px; height: 8px; }
+/* On themes with very round channels, sit further in along the top edge so the corner doesn't clip it. */
+:is([data-theme="glass"], [data-theme="bubblegum"], [data-theme="sticker"]) .app-stack { top: 4px; right: 13px; }
+[data-theme="peach"] .app-stack { top: 5px; right: 14px; }
+body.no-streamer .streamer { display: none !important; }
+.app-stack svg { opacity: .85; }
+/* In the list, each app takes the channel's colour. */
+.app-chips .sa-chip .av { background: color-mix(in srgb, var(--acc) 70%, #000); }
+.app-chips {
+  position: absolute; top: 46px; left: 8px; right: 8px; z-index: 5; display: none;
+  flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; max-height: 180px; overflow-y: auto;
+  background: var(--flyout); border-radius: 9px; box-shadow: 0 0 0 1px var(--line), var(--pop-shadow);
+}
+.dense .app-chips { top: 44px; left: 5px; right: 5px; }
+.strip .head:hover + .app-chips:not(:empty), .app-chips:not(:empty):hover, .app-chips:not(:empty):focus-within { display: flex; }
+.app-chips .sa-chip { height: 22px; }
+body.reorder-active .app-chips { display: none !important; }
 .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; height: 20px; padding: 0 7px 0 3px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--acc) 18%, var(--key)); color: var(--ink); font: inherit; font-size: 11px; font-weight: 600; line-height: 1; cursor: pointer; }
 .sa-chip:hover { background: color-mix(in srgb, var(--red) 28%, var(--key)); }
 .sa-chip .av { width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center; background: hsl(var(--hue, 210) 55% 48%); color: #fff; font-size: 9px; font-weight: 700; flex: none; }
