@@ -84,6 +84,23 @@
       ]
     },
     {
+      "Name": "Route to bus",
+      "UUID": "com.minimalhandle.sleekmeeter.route",
+      "Icon": "imgs/actions/route",
+      "Tooltip": "Turn one of an input's A or B buses on or off, for example your mic to B3. The key lights up and pulses slowly while the route is on.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/route",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
       "Name": "Level step",
       "UUID": "com.minimalhandle.sleekmeeter.level",
       "Icon": "imgs/actions/level",

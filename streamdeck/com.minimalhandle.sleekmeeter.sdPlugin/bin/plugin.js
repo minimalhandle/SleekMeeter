@@ -112,6 +112,30 @@ const speaker = (x, y, s, color, slash) => `<g transform="translate(${x} ${y}) s
 const micGlyph = (color) => `<g fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"><rect x="58" y="22" width="28" height="52" rx="14" fill="${color}" stroke="none"/><path d="M46 60a26 26 0 0 0 52 0"/><path d="M72 88v14M58 104h28"/></g>`;
 const MIC_DEFAULT = 'Strip[0]';
 
+// Is this input routed to bus "A1".."B8"? (Sleekmeeter reports a[] and b[] as 1/0.)
+function routeOf(ch, bus) {
+  const l = local[`${ch.key}#${bus}`];
+  if (l && Date.now() < l.until) return l.v;
+  const list = bus[0] === 'A' ? ch.a : ch.b;
+  const n = Number(bus.slice(1)) - 1;
+  return Array.isArray(list) && n >= 0 && n < list.length ? !!list[n] : null; // null: this bus doesn't exist on this Voicemeeter
+}
+// 0..1, one slow breath every 3.2 seconds, in steps so the key isn't redrawn needlessly.
+const breath = () => Math.round((0.5 - 0.5 * Math.cos(((Date.now() % 3200) / 3200) * 2 * Math.PI)) * 16) / 16;
+function routeKey(ch, bus) {
+  const hw = bus[0] === 'A';
+  const col = hw ? AMBER : CYAN;
+  const on = routeOf(ch, bus);
+  const name = `<text x="72" y="25" ${FONT} font-size="${ch.name.length > 9 ? 14 : 17}" font-weight="700" fill="${on ? col : '#8b93a3'}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>`;
+  if (on === null) return keySvg('#16181d', `${name}<text x="72" y="82" ${FONT} font-size="44" font-weight="800" fill="#4b5262" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="15" fill="#6c7585" text-anchor="middle">not available</text>`);
+  if (!on) return keySvg('#16181d', `${name}<text x="72" y="84" ${FONT} font-size="48" font-weight="800" fill="#5b6475" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="18" font-weight="700" fill="#5b6475" text-anchor="middle" letter-spacing="2">OFF</text>`);
+  const p = breath();
+  const bg = hw ? '#2e2208' : '#0c2a35';
+  const glow = (0.28 + 0.5 * p).toFixed(3);
+  const ring = (0.45 + 0.55 * p).toFixed(3);
+  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><defs><radialGradient id="g" cx="50%" cy="48%" r="62%"><stop offset="0" stop-color="${col}" stop-opacity="${glow}"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></radialGradient></defs><rect width="144" height="144" rx="14" fill="${bg}"/><rect width="144" height="144" rx="14" fill="url(#g)"/><rect x="3" y="3" width="138" height="138" rx="12" fill="none" stroke="${col}" stroke-width="4" stroke-opacity="${ring}"/>${name}<text x="72" y="84" ${FONT} font-size="52" font-weight="800" fill="${hw ? '#ffe2a8' : '#c9f3ff'}" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="18" font-weight="800" fill="${col}" text-anchor="middle" letter-spacing="2">ON</text></svg>`);
+}
+
 function offlineKey(title) {
   const msg = status === 'key' ? ['Wrong key', 'Open the action settings'] : status === 'novm' ? ['Voicemeeter', 'isn’t running'] : ['Sleekmeeter', 'not found'];
   return keySvg('#16181d', `${label(title)}<text x="72" y="74" ${FONT} font-size="17" font-weight="700" fill="#e8ebf2" text-anchor="middle">${esc(msg[0])}</text><text x="72" y="98" ${FONT} font-size="13" fill="#8b93a3" text-anchor="middle">${esc(msg[1])}</text>`);
@@ -138,6 +162,12 @@ function renderKey(c) {
         return keySvg('#5a1224', `${name}${micGlyph('#ffb3bd')}<path d="M40 42L108 110" stroke="#5a1224" stroke-width="17" stroke-linecap="round"/><path d="M40 42L108 110" stroke="${RED}" stroke-width="9" stroke-linecap="round"/><text x="72" y="134" ${FONT} font-size="20" font-weight="800" fill="#ffd0d6" text-anchor="middle" letter-spacing="2">MUTED</text>`, RED);
       }
       return keySvg('#0d2a1c', `${name}${micGlyph(GREEN)}<text x="72" y="134" ${FONT} font-size="20" font-weight="800" fill="#a8f0c9" text-anchor="middle" letter-spacing="2">LIVE</text>`, GREEN);
+    }
+    case 'route': {
+      if (!ok) return offlineKey('ROUTE');
+      const ch = chan(s.channel || MIC_DEFAULT);
+      if (!ch) return keySvg('#16181d', `${label('ROUTE')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
+      return routeKey(ch, s.bus || 'B1');
     }
     case 'level': {
       const ch = ok && chan(s.channel);
@@ -224,6 +254,15 @@ const renderAll = () => { for (const k of contexts.keys()) render(k); };
 
 /* ------------------------------------------------------------------ polling */
 let pollTimer = null;
+let pulseTimer = null;
+// Lit route keys breathe slowly, so they're redrawn a few times a second.
+function pulseTick() {
+  for (const [ctx, c] of contexts) {
+    if (c.action !== 'route' || status !== 'ok' || !st) continue;
+    const ch = chan((c.settings || {}).channel || MIC_DEFAULT);
+    if (ch && routeOf(ch, (c.settings || {}).bus || 'B1')) render(ctx);
+  }
+}
 let polling = false;
 async function poll() {
   if (polling) return;
@@ -243,9 +282,11 @@ function startPolling() {
   if (pollTimer) return;
   poll();
   pollTimer = setInterval(poll, 450);
+  if (!pulseTimer) pulseTimer = setInterval(pulseTick, 220);
 }
 function stopPollingIfIdle() {
   if (contexts.size === 0 && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (contexts.size === 0 && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
 }
 
 /* ------------------------------------------------------------------ doing things */
@@ -286,6 +327,14 @@ function toggleMute(context, key) {
   act(context, 'mute', key);
 }
 
+function toggleRoute(context, key, bus) {
+  const ch = chan(key);
+  if (!ch || routeOf(ch, bus) === null) { showAlert(context); return; }
+  local[`${key}#${bus}`] = { v: !routeOf(ch, bus), until: Date.now() + 900 };
+  renderAll();
+  act(context, 'route', `${key}.${bus}`);
+}
+
 function rotate(c, ticks) {
   const ch = chan((c.settings || {}).channel);
   if (!ch) return;
@@ -299,6 +348,7 @@ function onKeyDown(context, c) {
   const s = c.settings || {};
   switch (c.action) {
     case 'mute': return toggleMute(context, s.channel);
+    case 'route': return toggleRoute(context, s.channel || MIC_DEFAULT, s.bus || 'B1');
     case 'mic': {
       const key = s.channel || MIC_DEFAULT;
       const ch = chan(key);

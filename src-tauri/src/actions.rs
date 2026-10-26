@@ -30,6 +30,22 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
             let api = need_api()?;
             fades::nudge(app, &api, target, -2.0)?;
         }
+        "route" => {
+            // target looks like "Strip[0].B3": switch that input's A or B bus on or off.
+            let api = need_api()?;
+            let bus = target.rsplit('.').next().unwrap_or("").to_string();
+            let mut chars = bus.chars();
+            let (kind_ch, num_ch) = (chars.next(), chars.next());
+            let valid = target.starts_with("Strip[")
+                && chars.next().is_none()
+                && matches!(kind_ch, Some('A') | Some('B'))
+                && matches!(num_ch, Some('1'..='9'));
+            if !valid {
+                return Err("Not a bus route".to_string());
+            }
+            let on = api.get_bool(target);
+            fades::set_float(app, &api, target, if on { 0.0 } else { 1.0 })?;
+        }
         "window" => crate::toggle_main(app),
         "output" if !target.is_empty() => outputs::switch_with_osd(app, target, "shortcut"),
         "outputnext" => outputs::cycle(app),

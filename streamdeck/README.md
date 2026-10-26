@@ -14,6 +14,7 @@ A Stream Deck plugin for Sleekmeeter. Built for the **Stream Deck +** (four dial
 | --- | --- | --- |
 | **Channel level** | Dial | Turn to change the level, press to mute or unmute, tap the screen to mute. The screen shows the name, level and a bar. |
 | **Mute mic** | Key | A key just for your microphone. Green **LIVE** with a mic when it's open, red **MUTED** with the mic crossed out when it's muted, so you can see it at a glance. Uses your first input unless you pick another channel, and can be set to **Hold to talk**. |
+| **Route to bus** | Key | Switch one input's A1 to A5 or B1 to B3 route on or off, for example your mic to B3 to put it into a game. The key is dark when the route is off, and lit with a slow pulse (amber for A buses, blue for B buses) when it's on. One key per route. |
 | **Mute channel** | Key | Mute or unmute; turns red when muted and shows the level. |
 | **Level step** | Key | Turn a channel up or down by a set amount, or jump it to a fixed level. |
 | **Load scene** | Key | Load a Sleekmeeter scene. |
