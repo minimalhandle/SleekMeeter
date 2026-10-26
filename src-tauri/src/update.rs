@@ -113,11 +113,22 @@ fn asset(release: &Value, ends_with: &str) -> Option<Asset> {
 /// The file this copy of Sleekmeeter updates itself with: the MSI if it was installed with one,
 /// the portable zip otherwise.
 fn newer_assets(release: &Value) -> Option<Asset> {
-    if installed() {
+    if user_installed() {
+        asset(release, "-user-setup.exe")
+    } else if installed() {
         asset(release, ".msi")
     } else {
         asset(release, "-portable.zip")
     }
+}
+
+/// True when this copy was put in the user's own folder by the per-user setup (its uninstaller
+/// sits next to the exe). Updating it needs no administrator rights.
+pub fn user_installed() -> bool {
+    std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(|d| d.join("uninstall.exe").exists()))
+        .unwrap_or(false)
 }
 
 /// True when this exe sits in Program Files, i.e. it was put there by the MSI.
@@ -258,8 +269,9 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
         return Err("You already have the newest version".into());
     }
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let msi = installed();
-    if !msi {
+    let user = user_installed();
+    let msi = !user && installed();
+    if !msi && !user {
         let dir = exe.parent().unwrap_or(Path::new("."));
         let probe = dir.join(".sleekmeeter-update-test");
         if std::fs::write(&probe, b"").is_err() {
@@ -277,7 +289,18 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
     download(app, &a, &file)?;
 
     let pid = std::process::id();
-    let script = if msi {
+    let script = if user {
+        // The per-user setup runs silently without any Windows prompt, replaces the files in
+        // place and keeps the settings (they live in %APPDATA%).
+        format!(
+            "$setup = {setup}\n$exe = {exe}\n\
+             try {{ Wait-Process -Id {pid} -Timeout 30 }} catch {{ }}\n\
+             try {{ Start-Process $setup -ArgumentList '/S' -Wait }} catch {{ }}\n\
+             Start-Process $exe\n",
+            setup = ps(&file),
+            exe = ps(&exe),
+        )
+    } else if msi {
         // Removing the old copy first (with this MSI's own product code) and then installing
         // means it doesn't matter whether Windows sees the new MSI as an upgrade or as the
         // same product: the install always ends up on the new version. Settings live in

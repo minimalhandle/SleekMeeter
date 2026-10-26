@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.13.0
+- **Installer without administrator rights:** Sleekmeeter-Setup.exe now opens a normal installer window (no PowerShell, no Windows prompt for Sleekmeeter) and installs just for you. Voicemeeter's download shows a progress window; only VB-Audio's own driver installer asks for permission. There's a plain `-user-setup.exe` too, and in-app updates for that install are silent. An older all-users (MSI) copy is removed once, with one prompt. The MSI is still published
 - **Rearrange channels:** drag the top of a channel left or right to move it; the order is remembered and mini mode follows it. **⋯ → Reset channel order** undoes it
 - **Click a channel's name** to hide or show the device line under it. Double-click still renames
 - **Apps tray, like Wave Link:** **Apps** now opens a tray of the programs making sound. Drag one onto a channel (Voicemeeter's virtual inputs, or any input that listens to a virtual cable like CABLE-A) and it plays through that channel; chips on the channel show what's on it, and Sleekmeeter remembers each program's channel. The per-app volume list is under **Volumes…** in the tray
