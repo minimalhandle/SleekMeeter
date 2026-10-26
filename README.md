@@ -24,13 +24,14 @@ Pick one from the [Releases](../../releases) page:
 
 | File | What it is |
 | --- | --- |
-| **Sleekmeeter-Setup.exe** | The easy way. Checks whether Voicemeeter is installed. If it isn't, it downloads VB-Audio's official installer for you and runs it first, then installs Sleekmeeter. |
-| **Sleekmeeter-*version*.msi** | Just Sleekmeeter, for PCs that already have Voicemeeter. |
+| **Sleekmeeter-Setup.exe** | The easy way. Checks whether Voicemeeter is installed. If it isn't, it downloads VB-Audio's official installer for you (with a progress window) and runs it first, then opens Sleekmeeter's installer. Sleekmeeter installs just for you and needs no administrator rights. |
+| **Sleekmeeter-*version*-user-setup.exe** | Just Sleekmeeter, for PCs that already have Voicemeeter. A normal installer window, no administrator rights. |
+| **Sleekmeeter-*version*.msi** | The same, installed for all users in Program Files (asks for administrator rights). |
 | **Sleekmeeter-*version*-portable.zip** | No install: unzip anywhere and run `Sleekmeeter.exe`. Settings and scenes are saved in a `scenes` folder next to the exe. |
 
 Voicemeeter is made by VB-Audio and is not included; Setup downloads it from vb-audio.com. After it installs Voicemeeter, Windows needs a restart before Voicemeeter's audio drivers work.
 
-When installed with the MSI, your settings, scenes and logs are kept in `%APPDATA%\Sleekmeeter` instead, since the install folder is read-only.
+When installed (either way), your settings, scenes and logs are kept in `%APPDATA%\Sleekmeeter` instead, so updates never touch them.
 
 If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window keeps Sleekmeeter in the tray; left-click the tray icon to bring it back, right-click → **Quit Sleekmeeter** to exit. Only one copy runs at a time, so starting Sleekmeeter again (say, from a pinned taskbar icon) brings back the one that's already running.
 
@@ -223,6 +224,7 @@ In **Scenes → Switch automatically**, add a rule such as: when `obs64.exe` sta
 
 When Sleekmeeter starts it checks this repository's latest release. If there's a newer version, an **Update to …** button appears in the header. Choose **Update now and restart** and Sleekmeeter downloads the new version, checks it against GitHub's checksum, installs it and opens again by itself, with progress shown on the button.
 
+- **Installed with Setup or the user-setup file:** installs silently in the background with no Windows prompt.
 - **Installed with the MSI:** Windows asks once for permission (the usual yes/no prompt) while it installs.
 - **Portable:** it replaces its own `Sleekmeeter.exe` in place, with no prompt. If the folder is read-only, use **Open the download page** instead.
 

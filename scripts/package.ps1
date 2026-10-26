@@ -1,6 +1,7 @@
 # Builds everything you'd put on a GitHub release, into dist\release:
-#   Sleekmeeter-Setup.exe        installer: installs Voicemeeter first if it's missing, then Sleekmeeter
-#   Sleekmeeter-<ver>.msi        the plain MSI (for people who already have Voicemeeter)
+#   Sleekmeeter-Setup.exe        installer: installs Voicemeeter first if it's missing, then Sleekmeeter (no admin needed for Sleekmeeter)
+#   Sleekmeeter-<ver>-user-setup.exe   the plain per-user installer (also what in-app updates use)
+#   Sleekmeeter-<ver>.msi        the all-users MSI (needs administrator rights)
 #   Sleekmeeter-<ver>-portable.zip   Sleekmeeter.exe + README, no install
 # Run from the repo root:  npm run package
 $ErrorActionPreference = 'Stop'
@@ -17,8 +18,9 @@ Get-ChildItem $out -Force | ForEach-Object {
 # Old MSIs from earlier versions pile up in the bundle folder; clear them so only this
 # build's MSI can be picked up.
 Remove-Item 'src-tauri\target\release\bundle\msi\*.msi' -Force -ErrorAction SilentlyContinue
+Remove-Item 'src-tauri\target\release\bundle\nsis\*.exe' -Force -ErrorAction SilentlyContinue
 
-Write-Host "Building Sleekmeeter $ver (exe and MSI)..."
+Write-Host "Building Sleekmeeter $ver (exe, MSI and per-user setup)..."
 npx tauri build
 if ($LASTEXITCODE -ne 0) { throw 'tauri build failed' }
 
@@ -40,11 +42,15 @@ Write-Host "MSI: $($msi.Name) (version $msiVer)"
 
 Copy-Item $msi.FullName (Join-Path $out "Sleekmeeter-$ver.msi")
 
+$nsis = Get-ChildItem 'src-tauri\target\release\bundle\nsis' -Filter "*_$($ver)_*-setup.exe" | Select-Object -First 1
+if (-not $nsis) { throw "No per-user setup for version $ver was produced" }
+Copy-Item $nsis.FullName (Join-Path $out "Sleekmeeter-$ver-user-setup.exe")
+
 Write-Host 'Building the installer that checks for Voicemeeter...'
-Copy-Item $msi.FullName 'installer\Sleekmeeter.msi' -Force
+Copy-Item $nsis.FullName 'installer\Sleekmeeter-user-setup.exe' -Force
 rustc --edition 2021 -O installer\setup.rs -o (Join-Path $out 'Sleekmeeter-Setup.exe')
 $rc = $LASTEXITCODE
-Remove-Item 'installer\Sleekmeeter.msi' -Force
+Remove-Item 'installer\Sleekmeeter-user-setup.exe' -Force
 if ($rc -ne 0) { throw 'Could not build the installer' }
 
 Write-Host 'Making the portable zip...'

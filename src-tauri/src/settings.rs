@@ -13,7 +13,8 @@ pub fn app_dir() -> PathBuf {
             .ok()
             .and_then(|p| p.parent().map(|d| d.to_path_buf()))
             .unwrap_or_else(|| PathBuf::from("."));
-        if writable(&exe_dir) {
+        // A per-user install replaces its folder on every update, so settings stay in %APPDATA%.
+        if writable(&exe_dir) && !exe_dir.join("uninstall.exe").exists() {
             return exe_dir;
         }
         match std::env::var_os("APPDATA") {

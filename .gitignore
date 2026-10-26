@@ -1,5 +1,6 @@
 dist/
 installer/Sleekmeeter.msi
+installer/Sleekmeeter-user-setup.exe
 node_modules/
 preview/
 src-tauri/gen/
