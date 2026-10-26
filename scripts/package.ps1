@@ -1,6 +1,5 @@
 # Builds everything you'd put on a GitHub release, into dist\release:
-#   Sleekmeeter-Setup.exe        installer: installs Voicemeeter first if it's missing, then Sleekmeeter (no admin needed for Sleekmeeter)
-#   Sleekmeeter-<ver>-user-setup.exe   the plain per-user installer (also what in-app updates use)
+#   Sleekmeeter-<ver>-setup.exe  the installer: per-user, no administrator rights; points you to Voicemeeter if it's missing
 #   Sleekmeeter-<ver>.msi        the all-users MSI (needs administrator rights)
 #   Sleekmeeter-<ver>-portable.zip   Sleekmeeter.exe + README, no install
 # Run from the repo root:  npm run package
@@ -20,7 +19,7 @@ Get-ChildItem $out -Force | ForEach-Object {
 Remove-Item 'src-tauri\target\release\bundle\msi\*.msi' -Force -ErrorAction SilentlyContinue
 Remove-Item 'src-tauri\target\release\bundle\nsis\*.exe' -Force -ErrorAction SilentlyContinue
 
-Write-Host "Building Sleekmeeter $ver (exe, MSI and per-user setup)..."
+Write-Host "Building Sleekmeeter $ver (exe, installer and MSI)..."
 npx tauri build
 if ($LASTEXITCODE -ne 0) { throw 'tauri build failed' }
 
@@ -44,14 +43,7 @@ Copy-Item $msi.FullName (Join-Path $out "Sleekmeeter-$ver.msi")
 
 $nsis = Get-ChildItem 'src-tauri\target\release\bundle\nsis' -Filter "*_$($ver)_*-setup.exe" | Select-Object -First 1
 if (-not $nsis) { throw "No per-user setup for version $ver was produced" }
-Copy-Item $nsis.FullName (Join-Path $out "Sleekmeeter-$ver-user-setup.exe")
-
-Write-Host 'Building the installer that checks for Voicemeeter...'
-Copy-Item $nsis.FullName 'installer\Sleekmeeter-user-setup.exe' -Force
-rustc --edition 2021 -O installer\setup.rs -o (Join-Path $out 'Sleekmeeter-Setup.exe')
-$rc = $LASTEXITCODE
-Remove-Item 'installer\Sleekmeeter-user-setup.exe' -Force
-if ($rc -ne 0) { throw 'Could not build the installer' }
+Copy-Item $nsis.FullName (Join-Path $out "Sleekmeeter-$ver-setup.exe")
 
 Write-Host 'Making the portable zip...'
 $tmp = Join-Path $out 'portable'
