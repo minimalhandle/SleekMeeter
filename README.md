@@ -47,11 +47,15 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | Double-click a name (or F2) | Rename the strip or bus in Voicemeeter |
 | Click a strip's icon | Open its panel: color, icon, hide, device, pan, compressor, gate, EQ (virtual inputs) or bus mode (outputs) |
 | **Scenes** | Save or recall your whole Voicemeeter setup |
-| **Rec** | Open Voicemeeter's recorder (Banana and Potato) |
+| Cup button | Be right back (it widens to **Back live** while you're away) |
+| Record button (red dot) | Open Voicemeeter's recorder (Banana and Potato); shows the clock while recording |
+| Note button | Sounds: play clips into your mix |
 | Pin button | Keep Sleekmeeter on top of other windows |
 | Mini mode button | Switch to a small window with one row per channel |
 | Gear button | Settings: themes, fades, talk-over ducking, audio devices, startup, volume overlay, updates and global shortcuts |
 | **⋯** menu | Show the Voicemeeter window, restart the audio engine, clear solos |
+
+The cup, record and note buttons are for streamers. Turn off **Settings → Streamer mode** to hide them; their shortcuts keep working.
 
 Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
 
@@ -107,7 +111,7 @@ A ducked channel shows **Ducking** on its meter. Its fader stays at your level, 
 
 ### Recorder
 
-On Banana and Potato, **Rec** in the header opens Voicemeeter's built-in recorder: record, play, pause, stop, rewind and fast forward, with a running clock that also shows in the header while you record. Choose whether to record inputs or outputs and which ones, the file format and, for WAV, AIFF and BWF, the bit depth (MP3 always records at 16-bit, because Voicemeeter's MP3 encoder distorts at higher bit depths). A meter shows how loud the recording is; if it goes over 0 dB the file will distort, so the recorder warns you to turn down what you're recording (channels you record together are added up). To play a file, click **Open a file…** or drop an audio file on the window, then pick which outputs it plays into and its level. Recordings go to the folder set in Voicemeeter's own recorder menu. A shortcut can start and stop recording from any app.
+On Banana and Potato, the record button (red dot) in the header opens Voicemeeter's built-in recorder: record, play, pause, stop, rewind and fast forward, with a running clock that also shows in the header while you record. Choose whether to record inputs or outputs and which ones, the file format and, for WAV, AIFF and BWF, the bit depth (MP3 always records at 16-bit, because Voicemeeter's MP3 encoder distorts at higher bit depths). A meter shows how loud the recording is; if it goes over 0 dB the file will distort, so the recorder warns you to turn down what you're recording (channels you record together are added up). To play a file, click **Open a file…** or drop an audio file on the window, then pick which outputs it plays into and its level. Recordings go to the folder set in Voicemeeter's own recorder menu. A shortcut can start and stop recording from any app.
 
 ### Devices that come back
 
@@ -131,7 +135,7 @@ In **Settings → Shortcuts**, set an action to **Push to talk (hold)** or **Pus
 
 ### Apps tray: drag an app onto a channel
 
-Click **Apps** in the top bar to open the apps tray along the bottom. Every program that's making sound appears there as a chip. Drag one onto a channel and that app plays through that channel from then on, so you get a fader, routing and mute for it. A small chip on the channel shows what's on it; click the chip, or drag the app back onto the tray, to return it to the Windows default. Sleekmeeter remembers where each program goes, even when it isn't running. **Volumes…** opens the per-app volume list.
+Click **Apps** in the top bar to open the apps tray along the bottom. Every program that's making sound appears there as a chip. Drag one onto a channel and that app plays through that channel from then on, so you get a fader, routing and mute for it. Small badges in the channel's top corner show which apps are on it, and hovering the top of the channel lists them by name; click one there, or drag the app back onto the tray, to return it to the Windows default. Sleekmeeter remembers where each program goes, even when it isn't running. **Volumes…** opens the per-app volume list.
 
 Which channels accept apps: Voicemeeter's own virtual inputs (VAIO, AUX and, on Potato, VAIO3), and any hardware input that listens to a virtual cable such as VB-Cable. For a cable channel Sleekmeeter sends the app to the other end of that cable (CABLE-A Input for a channel listening to CABLE-A Output). You hear it the usual way: with the channel's A1 (or A2…) button on. Channels with a real microphone or other hardware, and outputs, can't take apps.
 
@@ -139,7 +143,7 @@ Some programs only move when their sound restarts, so pause and play once if one
 
 ### Stream mode: Be right back
 
-The **BRB** button in the header does your whole "be right back" in one press, with fades: it mutes the channels you pick (your mic), turns others down (the game), and brings up a channel to play (music). Press it again (**Back live**) and everything returns exactly as it was. Choose what it does in **Settings → Stream mode: Be right back**. A shortcut can do it too (**Be right back on or off**), and so can an OBS scene.
+The cup button in the header (**Be right back**) does your whole "be right back" in one press, with fades: it mutes the channels you pick (your mic), turns others down (the game), and brings up a channel to play (music). Press it again (**Back live**) and everything returns exactly as it was. Choose what it does in **Settings → Stream mode: Be right back**. A shortcut can do it too (**Be right back on or off**), and so can an OBS scene.
 
 ### OBS Studio
 
@@ -159,7 +163,7 @@ In **Settings → OBS Studio**, connect Sleekmeeter to OBS (in OBS turn on **Too
 
 ### Soundboard
 
-Click **Sounds** in the header to play short clips into your stream: an airhorn, a sad trombone, a bit of music. **Add sounds…** takes one or several wav, mp3, ogg or flac files (hold Ctrl or Shift to pick more than one) and turns each into a button, and **Add a folder…** adds every sound inside a folder and its subfolders in one go. Sounds are copied into a `sounds` folder next to Sleekmeeter's settings, so you can move or delete the originals afterwards. Sounds you already added are skipped. Sounds play to the output device you pick under **Play to**. Choose one of Voicemeeter's virtual inputs (like *Voicemeeter Aux Input*) and each sound shows up in the mixer as a channel of its own, so you decide where it goes (stream, headphones or both) and turn it up or down with its fader. **Automatic** picks a Voicemeeter virtual input for you when there is one. **Edit** renames or removes sounds.
+Click the note button (**Sounds**) in the header to play short clips into your stream: an airhorn, a sad trombone, a bit of music. **Add sounds…** takes one or several wav, mp3, ogg or flac files (hold Ctrl or Shift to pick more than one) and turns each into a button, and **Add a folder…** adds every sound inside a folder and its subfolders in one go. Sounds are copied into a `sounds` folder next to Sleekmeeter's settings, so you can move or delete the originals afterwards. Sounds you already added are skipped. Sounds play to the output device you pick under **Play to**. Choose one of Voicemeeter's virtual inputs (like *Voicemeeter Aux Input*) and each sound shows up in the mixer as a channel of its own, so you decide where it goes (stream, headphones or both) and turn it up or down with its fader. **Automatic** picks a Voicemeeter virtual input for you when there is one. **Edit** renames or removes sounds.
 
 ![The soundboard: a button for each sound, a device to play to and a volume](docs/screenshots/soundboard.png)
 
@@ -171,13 +175,13 @@ Sounds can also be played from a **shortcut** or a **Twitch chat command** (the 
 
 The **⋯** menu in the header has three helpers for a good stream voice:
 
-- **Mic chain…** has sliders for the noise gate, compressor and denoiser on your microphone, with one-click presets (**Streamer voice**, **Gentle**, **Noisy room**, **All off**) and a live meter so you can watch the effect. Only the controls your Voicemeeter edition has are shown, and Potato also gets threshold and ratio sliders.
+- **Mic chain…** has sliders for the noise gate, compressor and denoiser on your microphone, with one-click presets (**Streamer voice**, **Gentle**, **Noisy room**, **All off**) and a live meter so you can watch the effect. Only the controls your Voicemeeter edition has are shown, and Potato also gets threshold and ratio sliders. Compressor threshold runs from −40 to −3 dB; gate threshold runs from −60 to −10 dB.
 - **Setup assistant…** sets the A1 and B1 routing buttons for you. Choose **Just gaming + chat** (you hear everything, friends hear only your mic) or **Streamer + Discord** (the same, plus a second mix on B2 for OBS), pick your mic and your Discord channel, check the list of what will change and press **Apply routing**.
 - **Hear yourself…** records 5 seconds of your stream mix (one of Voicemeeter's virtual outputs, B2 by default) and plays it back on your headphones, so you hear exactly what your viewers hear.
 
 ### Recorder and Voicemeeter options
 
-**Rec** opens the recorder: transport buttons, which channels to record, the file format and bit depth, **Channels** (mono up to 7.1), **Sample rate**, **MP3 quality**, and **One file per channel** for multitrack. Under **Play a file** you can repeat the file, start it as soon as it loads, and **Jump to** a time like `1:30`.
+The record button opens the recorder: transport buttons, which channels to record, the file format and bit depth, **Channels** (mono up to 7.1), **Sample rate**, **MP3 quality**, and **One file per channel** for multitrack. Under **Play a file** you can repeat the file, start it as soon as it loads, and **Jump to** a time like `1:30`.
 
 **⋯ → Voicemeeter options…** shows the settings from Voicemeeter's System Settings window: sample rate, buffer sizes, exclusive and swift modes, monitor-on-select and the delay for each output. Changing the sample rate or a buffer restarts Voicemeeter's audio engine, so sound cuts out for a moment.
 
@@ -232,6 +236,8 @@ You can also skip a version or turn the check off in Settings. Versions before 0
 ### Startup
 
 In Settings you can start Sleekmeeter with Windows (optionally straight to the tray), start Voicemeeter automatically, and hide Voicemeeter's own window when it starts. **⋯ → Show Voicemeeter window** always brings it back.
+
+For a cleaner mixer, **Settings → Channel buttons** leaves just Mute under each input and hides the Mono and EQ buttons on outputs. They're still in each channel's settings (click its icon), and one that's switched on keeps showing so you can turn it off. New installs start with them hidden. **⋯ → Simple mode** goes further: it also hides every device name and the A4/A5 buttons, and turning it off puts back what you had.
 
 All of this is saved in `settings.json` next to the exe.
 

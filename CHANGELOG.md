@@ -4,6 +4,14 @@
 - **Stream Deck: Route to bus key.** Turn an input's A1–A5 or B1–B3 route on or off from a key (say your mic to B3 for a game). It lights up and pulses slowly while the route is on. Needs the new Sleekmeeter build (the phone-remote server now reports routes) and the updated plugin
 - **Stream Deck: Mute mic key.** A dedicated key that shows your microphone's state: green LIVE, or red MUTED with the mic crossed out. Optional Hold to talk mode. Update the plugin by double-clicking `streamdeck/Sleekmeeter.streamDeckPlugin`
 
+- Fixed: mic-chain threshold sliders now match Voicemeeter's supported ranges: compressor −40 to −3 dB and gate −60 to −10 dB
+- **Hide Solo, Mono and EQ:** **Settings → Channel buttons** leaves just Mute under each input and hides the Mono and EQ buttons on outputs, for a cleaner mixer. They're still in each channel's settings (click its icon), and a button that's switched on keeps showing so you can turn it off. New installs start with them hidden; if you already use Sleekmeeter nothing changes until you turn it on
+- **Cleaner header:** BRB, Rec and Sounds are now small icon buttons next to the pin and mini-mode buttons. BRB still widens to **Back live** while you're away, and Rec shows its clock while it records. Don't stream? Turn off **Settings → Streamer mode** to hide all three (their shortcuts still work)
+- Fixed: items in the **⋯** menu could wrap onto two lines in some themes
+- **Tidier apps on channels:** apps dragged onto a channel no longer take up room under its name. A small tag in the channel's top corner shows how many apps are on it, and hovering the top of the channel lists them all by name (click one to put it back on the Windows default). Every channel's A1/A2 buttons stay lined up however many apps it has
+- **Simple mode:** **⋯ → Simple mode** hides Solo, Mono and EQ, every device name and the A4/A5 buttons in one click. Turn it off to get back exactly what you had
+c7ded5a (Local work: simple mode, cleaner header, tidier apps tray, mic chain ranges)
+
 ## 0.13.1
 - **Centred channel names**, and **⋯ → Show / hide all device names** hides or shows the device line under every channel's name in one click (clicking a single name still toggles just that one)
 - **Installer without administrator rights:** the installer is now a normal setup window (`Sleekmeeter-<version>-setup.exe`) that installs just for you with no Windows prompt, and in-app updates for it are silent. It no longer downloads or runs anything itself (that made antivirus programs flag the old Setup.exe): if Voicemeeter is missing it says so and offers to open VB-Audio's download page. The MSI is still published; if you used it before, uninstall that copy in Windows Settings first

@@ -120,6 +120,8 @@
     document.body.classList.toggle("dense", chans.length > 10);
     applyVisibility();
     applyExtraBuses();
+    applySoloMono();
+    applyStreamer();
     sizeToNames();
     paintStripApps();
   }
@@ -369,6 +371,10 @@
     ch.chips.push(chip);
     $(".head", el).addEventListener("pointerdown", (e) => startReorder(e, ch));
     chip.addEventListener("click", () => openDrawer(ch));
+    if (ch.kind === "strip") {
+      $(".head", el).append(Object.assign(document.createElement("span"), { className: "app-stack" }));
+      $(".head", el).after(Object.assign(document.createElement("div"), { className: "app-chips" }));
+    }
     makeName($(".name", el), $(".name-edit", el), ch);
     ch.subs.push($(".sub", el));
     buildScale($(".scale", el));
@@ -847,6 +853,25 @@
       sel.addEventListener("change", () => sendFloat(`${ch.prefix}.mode.${sel.value}`, 1));
       modeSec.appendChild(sel);
     }
+    // With Solo, Mono and EQ hidden from the mixer, they're still here.
+    if (settings.hideSoloMono) {
+      const btnSec = section("Buttons");
+      const row = document.createElement("div");
+      row.className = "routes modes drawer-togs";
+      const keys = ch.kind === "strip"
+        ? [["Solo", "solo", "Solo"], isHw(ch) ? ["Mono", "mono", "Mono"] : ["MC", "mono", "M.C."]]
+        : [["Mono", "mono", "Mono"], ["EQ.on", "eq", "EQ"]];
+      for (const [param, cls, label] of keys) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = `tog ${cls}`; b.dataset.param = param; b.textContent = label;
+        b.addEventListener("click", () => {
+          const t = ch.toggles.find((x) => x.param === param);
+          if (t) { t.btn.click(); renderDrawerValues(); }
+        });
+        row.appendChild(b);
+      }
+      btnSec.appendChild(row);
+    }
     renderDrawerHead();
     renderDrawerValues();
   }
@@ -894,6 +919,10 @@
     });
     const mode = $("#busMode");
     if (mode && document.activeElement !== mode) mode.value = d.mode || "normal";
+    drawerBody.querySelectorAll(".drawer-togs .tog").forEach((b) => {
+      const t = ch.toggles.find((x) => x.param === b.dataset.param);
+      if (t) b.setAttribute("aria-pressed", t.btn.getAttribute("aria-pressed"));
+    });
   }
 
   /* ---------- offline overlay ---------- */
@@ -963,6 +992,7 @@
       saveSettings(); chs.forEach(paintLook);
       toast(hide ? "Device names hidden" : "Device names shown");
     }
+    if (a === "simple") setSimple(!settings.simpleMode);
     if (a === "resetorder") { settings.order = {}; applyOrder(); saveSettings(); toast("Channels are back in Voicemeeter's order"); }
     if (a === "unsolo") chans.forEach((ch) => { if (ch.kind === "strip" && ch.data && ch.data.solo) sendFloat(`${ch.prefix}.Solo`, 0); });
   });
@@ -973,6 +1003,7 @@
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
     setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setPanelDocked: "panelDocked", setExtraBuses: "showExtraBuses",
+    setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
@@ -980,6 +1011,8 @@
       syncChecks();
       saveSettings();
       if (key === "showExtraBuses") applyExtraBuses();
+      if (key === "hideSoloMono") applySoloMono();
+      if (key === "streamerMode") applyStreamer();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
     });
   }
@@ -995,6 +1028,39 @@
   // A4 and A5 stay out of the way unless you turn them on (or a strip already sends there).
   function applyExtraBuses() {
     document.body.classList.toggle("show-extra-buses", !!settings.showExtraBuses);
+  }
+  // Streamer mode off hides Be right back, Rec and Sounds from the header.
+  function applyStreamer() {
+    document.body.classList.toggle("no-streamer", settings.streamerMode === false);
+  }
+  function applySoloMono() {
+    document.body.classList.toggle("hide-solo-mono", !!settings.hideSoloMono);
+    $('#moreMenu [data-action="simple"]').textContent = settings.simpleMode ? "Turn off simple mode" : "Simple mode";
+    if (drawerCh) buildDrawerBody();
+  }
+  // Simple mode hides Solo, Mono and EQ, every device line and the A4/A5 buttons in one go;
+  // turning it off puts back what you had before.
+  function setSimple(on) {
+    settings.appearance = settings.appearance || {};
+    const setSubs = (hidden) => {
+      for (const c of chans) settings.appearance[c.key] = Object.assign({}, settings.appearance[c.key], { hideSub: hidden(c) });
+    };
+    if (on) {
+      settings.simplePrev = {
+        hideSoloMono: !!settings.hideSoloMono, showExtraBuses: !!settings.showExtraBuses,
+        hideSub: chans.filter((c) => look(c).hideSub).map((c) => c.key),
+      };
+      settings.hideSoloMono = true; settings.showExtraBuses = false;
+      setSubs(() => true);
+    } else {
+      const p = Object.assign({ hideSoloMono: false, showExtraBuses: false, hideSub: [] }, settings.simplePrev);
+      settings.hideSoloMono = p.hideSoloMono; settings.showExtraBuses = p.showExtraBuses;
+      setSubs((c) => p.hideSub.includes(c.key));
+      delete settings.simplePrev;
+    }
+    settings.simpleMode = on;
+    saveSettings(); chans.forEach(paintLook); applyExtraBuses(); applySoloMono();
+    toast(on ? "Simple mode on: just faders, routing and Mute" : "Simple mode off");
   }
   $("#settingsBtn").addEventListener("click", () => {
     syncChecks();
@@ -1623,22 +1689,19 @@
   }
 
   // Small chips on a channel strip for the apps that play through it.
+  // Apps on a channel take no room in the strip: a small tag in the corner says how many there
+  // are, and hovering the top of the channel opens the list with their names.
+  const APPS_GLYPH = `<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true" fill="currentColor"><rect x="0.5" y="0.5" width="4.5" height="4.5" rx="1.2"/><rect x="7" y="0.5" width="4.5" height="4.5" rx="1.2"/><rect x="0.5" y="7" width="4.5" height="4.5" rx="1.2"/><rect x="7" y="7" width="4.5" height="4.5" rx="1.2"/></svg>`;
   function paintStripApps() {
     const routes = settings.appRoutes || {};
     const running = new Set(trayRunning.filter((a) => a.pids && a.pids.length).map((a) => a.exe));
     for (const ch of chans.filter((c) => c.kind === "strip")) {
-      let box = $(".app-chips", ch.mixerEl);
-      if (!box) {
-        box = document.createElement("div");
-        box.className = "app-chips";
-        box.hidden = true;
-        $(".head", ch.mixerEl).after(box);
-      }
+      const box = $(".app-chips", ch.mixerEl), stack = $(".app-stack", ch.mixerEl);
       const mine = Object.keys(routes).filter((exe) => channelForDevice(routes[exe]) === ch);
       const sig = mine.map((e) => e + (running.has(e) ? "+" : "-")).join(",");
       if (box.dataset.sig === sig) continue;
       box.dataset.sig = sig;
-      box.textContent = "";
+      box.textContent = ""; stack.textContent = "";
       for (const exe of mine) {
         const b = document.createElement("button");
         b.type = "button";
@@ -1651,7 +1714,7 @@
         b.addEventListener("click", () => routeApp({ exe, name: exeName(exe), pids: pidsOf(exe) }, null));
         box.appendChild(b);
       }
-      box.hidden = mine.length === 0;
+      if (mine.length) stack.innerHTML = `${APPS_GLYPH}<b>${mine.length}</b>`;
     }
   }
 
@@ -1917,7 +1980,7 @@
     if (!rec) return;
     const state = rec.state || "stopped";
     recBtn.dataset.state = state;
-    $("#recLabel").textContent = state === "stopped" ? "Rec" : state === "paused" ? "Paused" : recClock();
+    $("#recLabel").textContent = state === "stopped" ? "" : state === "paused" ? "Paused" : recClock();
     recBtn.title = state === "stopped" ? "Recorder" : `Recorder: ${REC_STATES[state].toLowerCase()}`;
     clearInterval(recTimer);
     if (recRunning()) recTimer = setInterval(tickRecClock, 250);
@@ -2218,7 +2281,7 @@
   function applyBrb(st) {
     const on = !!st.brb;
     brbBtn.setAttribute("aria-pressed", String(on));
-    brbBtn.textContent = on ? "Back live" : "BRB";
+    brbBtn.setAttribute("aria-label", on ? "Back live" : "Be right back");
   }
   const brbRanges = [
     bindRange("brbAmount", () => B().amount, (v) => { B().amount = v; }, (v) => fmtDbShort(-v)),
@@ -2995,9 +3058,9 @@
   ];
   // Potato exposes the detail behind each knob; shown only when the probe finds it.
   const CHAIN_DETAIL = [
-    ["Comp.Threshold", "Comp threshold", -40, 0, 1, " dB"],
+    ["Comp.Threshold", "Comp threshold", -40, -3, 1, " dB"],
     ["Comp.Ratio", "Comp ratio", 1, 8, 0.1, ":1"],
-    ["Gate.Threshold", "Gate threshold", -70, -20, 1, " dB"],
+    ["Gate.Threshold", "Gate threshold", -60, -10, 1, " dB"],
   ];
   const CHAIN_PRESETS = {
     off: { Gate: 0, Comp: 0, Denoiser: 0 },

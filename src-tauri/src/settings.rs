@@ -78,6 +78,10 @@ pub fn defaults() -> Value {
         // remembers where you left it: "panelPos": { "x": 1500, "y": 700 } (physical pixels).
         "panelDocked": true,
         "panelPos": null,
+        // Hide Solo and Mono under inputs, and Mono and EQ on outputs. On for new installs only (see `load`).
+        "hideSoloMono": true,
+        // Show the Be right back, Rec and Sounds buttons in the header.
+        "streamerMode": true,
         // Push to talk: how long the mic stays open after the keys are let go.
         "hold": { "releaseMs": 250 },
         // Be right back: channels to mute, channels to turn down by `amount` dB, a channel to play.
@@ -107,6 +111,10 @@ pub fn load() -> Value {
         match serde_json::from_str::<Value>(&text) {
             Ok(Value::Object(saved)) => {
                 if let Value::Object(base) = &mut s {
+                    // People who already use Sleekmeeter keep seeing Solo and Mono.
+                    if !saved.contains_key("hideSoloMono") {
+                        base.insert("hideSoloMono".into(), Value::Bool(false));
+                    }
                     for (k, v) in saved {
                         base.insert(k, v);
                     }
