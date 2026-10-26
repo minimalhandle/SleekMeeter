@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.13.0
+- **Centred channel names**, and **⋯ → Show / hide all device names** hides or shows the device line under every channel's name in one click (clicking a single name still toggles just that one)
 - **Installer without administrator rights:** Sleekmeeter-Setup.exe now opens a normal installer window (no PowerShell, no Windows prompt for Sleekmeeter) and installs just for you. Voicemeeter's download shows a progress window; only VB-Audio's own driver installer asks for permission. There's a plain `-user-setup.exe` too, and in-app updates for that install are silent. An older all-users (MSI) copy is removed once, with one prompt. The MSI is still published
 - **Rearrange channels:** drag the top of a channel left or right to move it; the order is remembered and mini mode follows it. **⋯ → Reset channel order** undoes it
 - **Click a channel's name** to hide or show the device line under it. Double-click still renames
