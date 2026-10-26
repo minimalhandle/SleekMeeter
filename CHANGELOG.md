@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Stream Deck: Mute mic key.** A dedicated key that shows your microphone's state: green LIVE, or red MUTED with the mic crossed out. Optional Hold to talk mode. Update the plugin by double-clicking `streamdeck/Sleekmeeter.streamDeckPlugin`
+
 ## 0.13.1
 - **Centred channel names**, and **⋯ → Show / hide all device names** hides or shows the device line under every channel's name in one click (clicking a single name still toggles just that one)
 - **Installer without administrator rights:** the installer is now a normal setup window (`Sleekmeeter-<version>-setup.exe`) that installs just for you with no Windows prompt, and in-app updates for it are silent. It no longer downloads or runs anything itself (that made antivirus programs flag the old Setup.exe): if Voicemeeter is missing it says so and offers to open VB-Audio's download page. The MSI is still published; if you used it before, uninstall that copy in Windows Settings first

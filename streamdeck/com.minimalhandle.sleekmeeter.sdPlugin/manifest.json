@@ -67,6 +67,23 @@
       ]
     },
     {
+      "Name": "Mute mic",
+      "UUID": "com.minimalhandle.sleekmeeter.mic",
+      "Icon": "imgs/actions/mic",
+      "Tooltip": "Mute or unmute your microphone. The key shows LIVE (green) or MUTED (red, mic crossed out).",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/states/mic",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
       "Name": "Level step",
       "UUID": "com.minimalhandle.sleekmeeter.level",
       "Icon": "imgs/actions/level",
