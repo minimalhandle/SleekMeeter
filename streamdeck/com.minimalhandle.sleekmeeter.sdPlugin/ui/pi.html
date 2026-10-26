@@ -87,6 +87,10 @@ function buildFields() {
     h += row("Dial step", `<select data-k="step">${opts([{ v: "0.5", t: "0.5 dB per click" }, { v: "1", t: "1 dB per click" }, { v: "2", t: "2 dB per click" }, { v: "3", t: "3 dB per click" }], settings.step || "1")}</select>`);
     h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "zero", t: "Set to 0 dB" }, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
     h += row("Touch", `<select data-k="tap">${opts([{ v: "mute", t: "Tap to mute or unmute" }, { v: "none", t: "Do nothing" }], settings.tap || "mute")}</select>`);
+  } else if (action === "route") {
+    h += row("Input", channelSelect("Strip[0]"));
+    h += row("Bus", `<select data-k="bus">${opts(["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x })), settings.bus || "B1")}</select>`);
+    h += `<p class="hint">Turns this input's route to that bus on or off. The key lights up and pulses slowly while it's on (amber for A buses, blue for B buses). Use one key per route, for example your mic to B3 to put it into a game.</p>`;
   } else if (action === "mic") {
     h += row("Channel", channelSelect("Strip[0]"));
     h += row("When pressed", `<select data-k="mode">${opts([{ v: "toggle", t: "Mute or unmute" }, { v: "ptt", t: "Hold to talk" }], settings.mode || "toggle")}</select>`);

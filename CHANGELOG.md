@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Stream Deck: Route to bus key.** Turn an input's A1–A5 or B1–B3 route on or off from a key (say your mic to B3 for a game). It lights up and pulses slowly while the route is on. Needs the new Sleekmeeter build (the phone-remote server now reports routes) and the updated plugin
 - **Stream Deck: Mute mic key.** A dedicated key that shows your microphone's state: green LIVE, or red MUTED with the mic crossed out. Optional Hold to talk mode. Update the plugin by double-clicking `streamdeck/Sleekmeeter.streamDeckPlugin`
 
 ## 0.13.1
