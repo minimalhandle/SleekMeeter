@@ -954,6 +954,15 @@
     if (a === "hear") openHear();
     if (a === "chain") openChain();
     if (a === "history") openHistory();
+    if (a === "subs") {
+      // One click: if any device line is showing, hide them all; otherwise show them all.
+      const chs = chans;
+      const hide = chs.some((c) => !look(c).hideSub);
+      settings.appearance = settings.appearance || {};
+      for (const c of chs) settings.appearance[c.key] = Object.assign({}, settings.appearance[c.key], { hideSub: hide });
+      saveSettings(); chs.forEach(paintLook);
+      toast(hide ? "Device names hidden" : "Device names shown");
+    }
     if (a === "resetorder") { settings.order = {}; applyOrder(); saveSettings(); toast("Channels are back in Voicemeeter's order"); }
     if (a === "unsolo") chans.forEach((ch) => { if (ch.kind === "strip" && ch.data && ch.data.solo) sendFloat(`${ch.prefix}.Solo`, 0); });
   });

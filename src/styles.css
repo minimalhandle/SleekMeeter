@@ -888,3 +888,8 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .strip.sub-off .sub { display: none; }
 .strip.reordering { z-index: 2; opacity: .92; outline: 2px solid var(--amber); outline-offset: -2px; }
 body.reorder-active, body.reorder-active * { cursor: grabbing !important; }
+
+/* channel names centred in the strip header */
+.strip .head { justify-content: center; }
+.strip .titles { flex: 0 1 auto; width: auto; align-items: center; text-align: center; }
+.strip .name, .strip .sub { text-align: center; max-width: 100%; }
