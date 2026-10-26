@@ -1448,11 +1448,25 @@
       if (at === 1) return vm.find((d) => /aux/i.test(d.name)) || null;
       return vm.find((d) => /vaio3/i.test(d.name)) || null;
     }
-    const heard = adapterOf(ch.data && ch.data.device);
-    if (!heard || !/vb-?audio/i.test(heard) || /voicemeeter/i.test(heard)) return null;
-    return routeDevices.find((d) => adapterOf(d.name) === heard && !/voicemeeter/i.test(d.name)) || null;
+    const dev = (ch.data && ch.data.device) || "";
+    if (!/cable|vb-?audio/i.test(dev) || /voicemeeter/i.test(dev)) return null;
+    const render = routeDevices.filter((d) => !/voicemeeter/i.test(d.name));
+    const heard = adapterOf(dev), sameName = dev.replace(/output/i, "input").toLowerCase();
+    const letter = (n) => { const m = /cable[\s-]*([a-z])\b/i.exec(n || ""); return m ? m[1].toLowerCase() : ""; };
+    return render.find((d) => d.name.toLowerCase() === sameName)
+      || (heard && render.find((d) => adapterOf(d.name) === heard))
+      || (letter(dev) && render.find((d) => letter(d.name) === letter(dev)))
+      || null;
   }
   const channelForDevice = (id) => chans.find((c) => { const d = deviceForChannel(c); return d && d.id === id; }) || null;
+  function whyNot(ch) {
+    if (!ch || ch.kind !== "strip") return "Outputs can't take apps. Drop it on an input channel";
+    const dev = (ch.data && ch.data.device) || "";
+    if (!isHw(ch)) return "Windows doesn't list a playback device for this Voicemeeter input. Is Voicemeeter running?";
+    if (!/cable|vb-?audio/i.test(dev)) return `“${displayName(ch)}” listens to a real device, so apps can't be sent to it. Use a channel that listens to a virtual cable, or one of Voicemeeter's own inputs`;
+    const found = routeDevices.filter((d) => /cable/i.test(d.name)).map((d) => d.name);
+    return `“${displayName(ch)}” listens to “${dev}”, but Windows doesn't list a matching playback device. Cable playback devices found: ${found.length ? found.join(", ") : "none"}`;
+  }
   const exeName = (exe) => { const t = exe.replace(/\.exe$/i, ""); return exe === "system sounds" ? "System sounds" : t.charAt(0).toUpperCase() + t.slice(1); };
   const hueOf = (s) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
   const initialOf = (name) => (name.trim().charAt(0) || "?").toUpperCase();
@@ -1460,7 +1474,7 @@
 
   async function routeApp(a, ch) {
     const dev = ch ? deviceForChannel(ch) : null;
-    if (ch && !dev) { toast("Windows doesn't list a playback device for that channel"); return; }
+    if (ch && !dev) { toast(whyNot(ch)); return; }
     const name = a.name || exeName(a.exe);
     const pids = a.pids || [];
     try {
@@ -1591,7 +1605,7 @@
       if (!ghost || ev.type === "pointercancel") return;
       if (mode === "channel") routeApp(a, target);
       else if (mode === "home") routeApp(a, null);
-      else if (mode === "bad") toast("That channel has no playback device to send an app to. Apps go onto Voicemeeter's virtual inputs or channels that listen to a virtual cable (like CABLE-A)");
+      else if (mode === "bad") toast(whyNot(target));
     };
     const esc = (ev) => { if (ev.key === "Escape") { mode = "none"; end({ type: "pointercancel" }); } };
     window.addEventListener("pointermove", move);
