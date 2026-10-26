@@ -162,7 +162,7 @@
 
   function look(ch) {
     const saved = (settings.appearance || {})[ch.key] || {};
-    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden };
+    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden, hideSub: !!saved.hideSub };
   }
   function setLook(ch, patch) {
     settings.appearance = settings.appearance || {};
@@ -192,7 +192,7 @@
   function paintLook(ch) {
     const lk = look(ch);
     for (const c of ch.chips) { c.dataset.color = lk.color; c.dataset.icon = lk.icon; c.innerHTML = svg(lk.icon, c.classList.contains("small") ? 14 : 18); }
-    for (const r of ch.rows) r.dataset.color = lk.color;
+    for (const r of ch.rows) { r.dataset.color = lk.color; r.classList.toggle("sub-off", lk.hideSub); }
   }
 
   /* ---------- fader component (vertical in the mixer, horizontal in mini mode) ---------- */
@@ -333,7 +333,13 @@
       const v = input.value.trim();
       if (commit && v !== original) engine.setString(`${ch.prefix}.Label`, v).catch(fail);
     };
-    btn.addEventListener("dblclick", open);
+    // One click shows or hides the device line under the name; a double-click renames.
+    let clickTimer = null;
+    btn.addEventListener("click", () => {
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => setLook(ch, { hideSub: !look(ch).hideSub }), 230);
+    });
+    btn.addEventListener("dblclick", () => { clearTimeout(clickTimer); open(); });
     btn.addEventListener("keydown", (e) => { if (e.key === "F2" || e.key === "Enter") { e.preventDefault(); open(); } });
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); close(true); btn.focus(); }
@@ -361,6 +367,7 @@
     ch.rows.push(el);
     const chip = $(".chip", el);
     ch.chips.push(chip);
+    $(".head", el).addEventListener("pointerdown", (e) => startReorder(e, ch));
     chip.addEventListener("click", () => openDrawer(ch));
     makeName($(".name", el), $(".name-edit", el), ch);
     ch.subs.push($(".sub", el));
@@ -438,7 +445,7 @@
       if (!d) continue;
       ch.data = d;
       const name = displayName(ch);
-      for (const n of ch.names) { n.textContent = name; n.title = `${name}\nDouble-click to rename`; }
+      for (const n of ch.names) { n.textContent = name; n.title = `${name}\nClick: show or hide the device name. Double-click: rename. Drag the top of the channel to move it`; }
       for (const n of ch.miniNames) { n.textContent = name; n.title = name; }
       for (const s of ch.subs) {
         const sub = subText(ch);
@@ -479,8 +486,88 @@
     engine.fitWindow(Math.ceil(width)).catch(() => {});
   }
 
+  /* ---------- channel order: drag the top of a channel to move it ---------- */
+  function orderList(kind) {
+    const all = chans.filter((c) => c.kind === kind).map((c) => c.i);
+    const out = (((settings.order || {})[kind]) || []).filter((i) => all.includes(i));
+    for (const i of all) if (!out.includes(i)) out.push(i);
+    return out;
+  }
+  // The window shows channels in this order (CSS `order`), so the underlying lists never change.
+  function applyOrder() {
+    for (const kind of ["strip", "bus"]) {
+      orderList(kind).forEach((idx, pos) => {
+        const ch = chans.find((c) => c.kind === kind && c.i === idx);
+        if (ch && ch.mixerEl) { ch.mixerEl.style.order = pos; ch.miniEl.style.order = pos; }
+      });
+    }
+  }
+  // Slide the channels from where they were to where they are now.
+  function reorderAnimated(kind, list) {
+    const els = chans.filter((c) => c.kind === kind).map((c) => c.mixerEl);
+    const before = new Map(els.map((el) => [el, el.getBoundingClientRect().left]));
+    settings.order = Object.assign({}, settings.order, { [kind]: list });
+    applyOrder();
+    for (const el of els) {
+      const dx = before.get(el) - el.getBoundingClientRect().left;
+      if (!dx) continue;
+      el.style.transition = "none";
+      el.style.transform = `translateX(${dx}px)`;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.transition = "transform .18s ease";
+        el.style.transform = "";
+        setTimeout(() => { el.style.transition = ""; }, 220);
+      }));
+    }
+  }
+  function startReorder(e, ch) {
+    if (e.button !== 0 || e.target.closest(".name-edit")) return;
+    const sx = e.clientX, sy = e.clientY;
+    let dragging = false;
+    const move = (ev) => {
+      if (!dragging) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 8) return;
+        dragging = true;
+        ch.mixerEl.classList.add("reordering");
+        document.body.classList.add("reorder-active");
+      }
+      const box = ch.mixerEl.parentElement.getBoundingClientRect();
+      if (ev.clientX < box.left || ev.clientX > box.right) return;
+      // Layout positions, so the sliding animation of the others doesn't confuse the hit test.
+      const x0 = box.left - ch.mixerEl.parentElement.scrollLeft;
+      const target = chans.find((c) => c.kind === ch.kind && c !== ch && !c.mixerEl.hidden
+        && ev.clientX >= x0 + c.mixerEl.offsetLeft - ch.mixerEl.parentElement.offsetLeft
+        && ev.clientX <= x0 + c.mixerEl.offsetLeft - ch.mixerEl.parentElement.offsetLeft + c.mixerEl.offsetWidth);
+      if (!target) return;
+      const list = orderList(ch.kind);
+      const from = list.indexOf(ch.i), to = list.indexOf(target.i);
+      if (from < 0 || to < 0 || from === to) return;
+      list.splice(from, 1);
+      list.splice(to, 0, ch.i);
+      reorderAnimated(ch.kind, list);
+    };
+    const end = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+      ch.mixerEl.classList.remove("reordering");
+      document.body.classList.remove("reorder-active");
+      if (dragging) {
+        saveSettings();
+        // The release must not count as a click on the icon or name underneath.
+        const swallow = (c) => { c.stopPropagation(); c.preventDefault(); };
+        window.addEventListener("click", swallow, true);
+        setTimeout(() => window.removeEventListener("click", swallow, true), 60);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  }
+
   /* ---------- visibility (hidden strips) ---------- */
   function applyVisibility() {
+    applyOrder();
     const hiddenCount = { strip: 0, bus: 0 };
     for (const ch of chans) {
       const h = look(ch).hidden;
@@ -867,6 +954,7 @@
     if (a === "hear") openHear();
     if (a === "chain") openChain();
     if (a === "history") openHistory();
+    if (a === "resetorder") { settings.order = {}; applyOrder(); saveSettings(); toast("Channels are back in Voicemeeter's order"); }
     if (a === "unsolo") chans.forEach((ch) => { if (ch.kind === "strip" && ch.data && ch.data.solo) sendFloat(`${ch.prefix}.Solo`, 0); });
   });
 

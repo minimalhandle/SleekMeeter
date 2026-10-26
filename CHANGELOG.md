@@ -1,6 +1,8 @@
 # Changelog
 
 ## 0.13.0
+- **Rearrange channels:** drag the top of a channel left or right to move it; the order is remembered and mini mode follows it. **⋯ → Reset channel order** undoes it
+- **Click a channel's name** to hide or show the device line under it. Double-click still renames
 - **Apps tray, like Wave Link:** **Apps** now opens a tray of the programs making sound. Drag one onto a channel (Voicemeeter's virtual inputs, or any input that listens to a virtual cable like CABLE-A) and it plays through that channel; chips on the channel show what's on it, and Sleekmeeter remembers each program's channel. The per-app volume list is under **Volumes…** in the tray
 - **Stream Deck plugin:** dials for channel levels (Stream Deck +), plus keys for mute, level steps, scenes, sounds, Be right back, recording, talk-over ducking and output profiles. The keys show the live state. It's in the `streamdeck` folder; double-click the `.streamDeckPlugin` file to install. The phone-remote server also reports recording and ducking now
 - Fixed: faders could wobble a little when you muted or unmuted a channel. The cap now holds still while the mute fades

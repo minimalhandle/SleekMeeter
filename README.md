@@ -87,6 +87,12 @@ Pick a theme in **Settings → Appearance**. There are twelve, and they're built
 
 Meters show post-fader levels on the same scale as the fader, so you can see signal and fader position together. Everything stays in sync with Voicemeeter itself, MIDI controllers and other remote apps.
 
+### Rearranging channels
+
+Drag the top of any channel (its icon and name area) left or right to move it, so you can put Desktop at the end and Aux before it, or keep the channels you use most together. Inputs and outputs are ordered separately, and mini mode follows the same order. **⋯ → Reset channel order** puts everything back as Voicemeeter has it.
+
+Click a channel's name to hide or show the device line under it (for example "CABLE-A Output"). Double-click the name to rename it.
+
 ### Smooth fades
 
 Mute fades out before it mutes, and unmute fades back in, so nothing clicks or jumps. Typed levels, double-click to 0 dB, volume shortcuts and scene changes glide too. Set the mute and scene fade times in **Settings → Smooth fades**, or turn fades off there. Dragging a fader is always direct.

@@ -882,3 +882,9 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .sa-chip .av { width: 14px; height: 14px; border-radius: 50%; display: grid; place-items: center; background: hsl(var(--hue, 210) 55% 48%); color: #fff; font-size: 9px; font-weight: 700; flex: none; }
 .sa-chip .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .sa-chip.idle { opacity: .55; }
+
+/* ---------- channel order and the device line ---------- */
+.strip .head { cursor: grab; }
+.strip.sub-off .sub { display: none; }
+.strip.reordering { z-index: 2; opacity: .92; outline: 2px solid var(--amber); outline-offset: -2px; }
+body.reorder-active, body.reorder-active * { cursor: grabbing !important; }
