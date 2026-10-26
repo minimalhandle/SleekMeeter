@@ -127,6 +127,7 @@ function routeKey(ch, bus) {
   const col = hw ? AMBER : CYAN;
   const on = routeOf(ch, bus);
   const name = `<text x="72" y="25" ${FONT} font-size="${ch.name.length > 9 ? 14 : 17}" font-weight="700" fill="${on ? col : '#8b93a3'}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>`;
+  if (on === null && !Array.isArray(ch.a) && !Array.isArray(ch.b)) return keySvg('#16181d', `${name}<text x="72" y="72" ${FONT} font-size="44" font-weight="800" fill="#4b5262" text-anchor="middle">${bus}</text><text x="72" y="104" ${FONT} font-size="15" font-weight="700" fill="#ffb02e" text-anchor="middle">Update the</text><text x="72" y="124" ${FONT} font-size="15" font-weight="700" fill="#ffb02e" text-anchor="middle">Sleekmeeter app</text>`);
   if (on === null) return keySvg('#16181d', `${name}<text x="72" y="82" ${FONT} font-size="44" font-weight="800" fill="#4b5262" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="15" fill="#6c7585" text-anchor="middle">not available</text>`);
   if (!on) return keySvg('#16181d', `${name}<text x="72" y="84" ${FONT} font-size="48" font-weight="800" fill="#5b6475" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="18" font-weight="700" fill="#5b6475" text-anchor="middle" letter-spacing="2">OFF</text>`);
   const p = breath();
