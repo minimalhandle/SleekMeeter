@@ -3,7 +3,7 @@
 Guidance for AI coding agents (Claude Code and others) working on Sleekmeeter.
 
 ## What this is
-Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Standard, Banana, Potato) a modern UI. Rust backend in `src-tauri/`, plain HTML/CSS/JS frontend in `src/` (no framework, no bundler). Repo: `minimalhandle/SleekMeeter`. Owner: Josh (GitHub `minimalhandle`). Licence: MIT.
+Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Standard, Banana, Potato) a modern UI. Rust backend in `src-tauri/`, plain HTML/CSS/JS frontend in `src/` (no framework, no bundler). Repo: `minimalhandle/SleekMeeter`. Licence: MIT.
 
 ## Layout
 - `src/index.html`, `app.js`, `styles.css`: the UI. `themes.css` holds every theme, keyed by `[data-theme="id"]`. `engine.js` talks to Rust through Tauri, or runs a simulated Voicemeeter when opened in a plain browser. `osd.html` / `osd.js` is the volume overlay.
@@ -31,8 +31,8 @@ Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Stan
 ## Docs and releases
 - Update `CHANGELOG.md` (top section = current version) and the README for any user-visible change. The README is shown on GitHub, so check that tables, images and links render correctly there.
 - Version lives in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`; keep them equal. The packaging script refuses mismatches.
-- Releases are built and published by hand by Josh from his PC (`npm run package`, then upload the files to a GitHub release). Release files: `Sleekmeeter-<ver>-setup.exe` (in-app updates look for the `-setup.exe` name), `Sleekmeeter-<ver>.msi`, `Sleekmeeter-<ver>-portable.zip`.
+- Releases are built and published by hand by the maintainer from their own PC (`npm run package`, then upload the files to a GitHub release). Release files: `Sleekmeeter-<ver>-setup.exe` (in-app updates look for the `-setup.exe` name), `Sleekmeeter-<ver>.msi`, `Sleekmeeter-<ver>-portable.zip`.
 - Never store or reuse tokens or credentials. Don't push tags or create releases unless asked.
 
 ## Held features
-Not built until Josh asks: VBAN, MIDI, audio callback / spectrum / loudness, FX / Karaoke / Pitch, parametric EQ, Patch, macro buttons, push-to-talk in the Stream Deck plugin. Sample-rate matching was declined; don't build it.
+Not built until the maintainer asks: VBAN, MIDI, audio callback / spectrum / loudness, FX / Karaoke / Pitch, parametric EQ, Patch, macro buttons, push-to-talk in the Stream Deck plugin. Sample-rate matching was declined; don't build it.
