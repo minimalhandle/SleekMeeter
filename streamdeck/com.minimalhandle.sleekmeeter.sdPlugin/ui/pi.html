@@ -65,10 +65,10 @@ function opts(list, current, empty) {
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function channelSelect() {
+function channelSelect(def) {
   const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
   const buses = (lists ? lists.buses : []).map((c) => ({ v: c.key, t: c.name }));
-  const cur = settings.channel || "";
+  const cur = settings.channel || def || "";
   return `<select data-k="channel"><option value="">Pick a channel…</option>` +
     (strips.length ? `<optgroup label="Inputs">${opts(strips, cur)}</optgroup>` : "") +
     (buses.length ? `<optgroup label="Outputs">${opts(buses, cur)}</optgroup>` : "") + `</select>`;
@@ -87,6 +87,10 @@ function buildFields() {
     h += row("Dial step", `<select data-k="step">${opts([{ v: "0.5", t: "0.5 dB per click" }, { v: "1", t: "1 dB per click" }, { v: "2", t: "2 dB per click" }, { v: "3", t: "3 dB per click" }], settings.step || "1")}</select>`);
     h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "zero", t: "Set to 0 dB" }, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
     h += row("Touch", `<select data-k="tap">${opts([{ v: "mute", t: "Tap to mute or unmute" }, { v: "none", t: "Do nothing" }], settings.tap || "mute")}</select>`);
+  } else if (action === "mic") {
+    h += row("Channel", channelSelect("Strip[0]"));
+    h += row("When pressed", `<select data-k="mode">${opts([{ v: "toggle", t: "Mute or unmute" }, { v: "ptt", t: "Hold to talk" }], settings.mode || "toggle")}</select>`);
+    h += `<p class="hint">The key shows LIVE in green, or MUTED in red with the mic crossed out. It starts on your first input; pick a different channel if your mic is elsewhere. "Hold to talk" opens the mic only while you hold the key.</p>`;
   } else if (action === "mute") {
     h += row("Channel", channelSelect());
   } else if (action === "level") {

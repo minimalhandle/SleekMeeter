@@ -108,6 +108,10 @@ function keySvg(bg, inner, border) {
 const label = (text, color = '#9aa3b2') => `<text x="72" y="22" ${FONT} font-size="15" font-weight="600" fill="${color}" text-anchor="middle" letter-spacing="1">${esc(text)}</text>`;
 const speaker = (x, y, s, color, slash) => `<g transform="translate(${x} ${y}) scale(${s})" fill="${color}"><path d="M-22 -9h12l16 -14v46l-16 -14h-12z"/>${slash ? '' : `<path d="M14 -12q10 12 0 24" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"/><path d="M22 -22q18 22 0 44" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"/>`}${slash ? `<path d="M12 -14l22 28M34 -14l-22 28" stroke="${RED}" stroke-width="6" stroke-linecap="round"/>` : ''}</g>`;
 
+// A big microphone: green LIVE when open, red with a line through it when muted.
+const micGlyph = (color) => `<g fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"><rect x="58" y="22" width="28" height="52" rx="14" fill="${color}" stroke="none"/><path d="M46 60a26 26 0 0 0 52 0"/><path d="M72 88v14M58 104h28"/></g>`;
+const MIC_DEFAULT = 'Strip[0]';
+
 function offlineKey(title) {
   const msg = status === 'key' ? ['Wrong key', 'Open the action settings'] : status === 'novm' ? ['Voicemeeter', 'isn’t running'] : ['Sleekmeeter', 'not found'];
   return keySvg('#16181d', `${label(title)}<text x="72" y="74" ${FONT} font-size="17" font-weight="700" fill="#e8ebf2" text-anchor="middle">${esc(msg[0])}</text><text x="72" y="98" ${FONT} font-size="13" fill="#8b93a3" text-anchor="middle">${esc(msg[1])}</text>`);
@@ -123,6 +127,17 @@ function renderKey(c) {
       if (!ch) return keySvg('#16181d', `${label('MUTE')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
       const m = muteOf(ch);
       return keySvg(m ? '#4a1822' : '#16181d', `<text x="72" y="26" ${FONT} font-size="${ch.name.length > 9 ? 15 : 18}" font-weight="700" fill="${m ? '#ffd0d6' : typeColor(ch.key)}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>${speaker(72, 70, 1.15, m ? '#ffd0d6' : '#e8ebf2', m)}<text x="72" y="124" ${FONT} font-size="20" font-weight="700" fill="${m ? '#ffd0d6' : '#9aa3b2'}" text-anchor="middle">${m ? 'MUTED' : `${fmtDb(gainOf(ch))} dB`}</text>`, m ? RED : null);
+    }
+    case 'mic': {
+      if (!ok) return offlineKey('MIC');
+      const ch = chan(s.channel || MIC_DEFAULT);
+      if (!ch) return keySvg('#16181d', `${label('MIC')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
+      const m = muteOf(ch);
+      const name = `<text x="72" y="24" ${FONT} font-size="${ch.name.length > 9 ? 14 : 17}" font-weight="700" fill="${m ? '#ffc2ca' : '#8be8b3'}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>`;
+      if (m) {
+        return keySvg('#5a1224', `${name}${micGlyph('#ffb3bd')}<path d="M40 42L108 110" stroke="#5a1224" stroke-width="17" stroke-linecap="round"/><path d="M40 42L108 110" stroke="${RED}" stroke-width="9" stroke-linecap="round"/><text x="72" y="134" ${FONT} font-size="20" font-weight="800" fill="#ffd0d6" text-anchor="middle" letter-spacing="2">MUTED</text>`, RED);
+      }
+      return keySvg('#0d2a1c', `${name}${micGlyph(GREEN)}<text x="72" y="134" ${FONT} font-size="20" font-weight="800" fill="#a8f0c9" text-anchor="middle" letter-spacing="2">LIVE</text>`, GREEN);
     }
     case 'level': {
       const ch = ok && chan(s.channel);
@@ -284,6 +299,14 @@ function onKeyDown(context, c) {
   const s = c.settings || {};
   switch (c.action) {
     case 'mute': return toggleMute(context, s.channel);
+    case 'mic': {
+      const key = s.channel || MIC_DEFAULT;
+      const ch = chan(key);
+      if (!ch) return showAlert(context);
+      // "Hold to talk": the mic opens only while the key is held.
+      if (s.mode === 'ptt') { if (muteOf(ch)) toggleMute(context, key); return; }
+      return toggleMute(context, key);
+    }
     case 'level': {
       const ch = chan(s.channel);
       if (!ch) return showAlert(context);
@@ -360,6 +383,15 @@ function onMessage(raw) {
     case 'didReceiveSettings': {
       const c = contexts.get(ctx);
       if (c) { c.settings = (m.payload && m.payload.settings) || {}; lastDrawn.delete(ctx); render(ctx); }
+      break;
+    }
+    case 'keyUp': {
+      const c = contexts.get(ctx);
+      if (c && c.action === 'mic' && (c.settings || {}).mode === 'ptt') {
+        const key = (c.settings || {}).channel || MIC_DEFAULT;
+        const ch = chan(key);
+        if (ch && !muteOf(ch)) toggleMute(ctx, key);
+      }
       break;
     }
     case 'keyDown': {
