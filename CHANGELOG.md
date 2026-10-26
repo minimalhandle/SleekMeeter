@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.0
+## 0.13.1
 - **Centred channel names**, and **⋯ → Show / hide all device names** hides or shows the device line under every channel's name in one click (clicking a single name still toggles just that one)
 - **Installer without administrator rights:** the installer is now a normal setup window (`Sleekmeeter-<version>-setup.exe`) that installs just for you with no Windows prompt, and in-app updates for it are silent. It no longer downloads or runs anything itself (that made antivirus programs flag the old Setup.exe): if Voicemeeter is missing it says so and offers to open VB-Audio's download page. The MSI is still published; if you used it before, uninstall that copy in Windows Settings first
 - **Rearrange channels:** drag the top of a channel left or right to move it; the order is remembered and mini mode follows it. **⋯ → Reset channel order** undoes it
@@ -9,14 +9,16 @@
 - **Stream Deck plugin:** dials for channel levels (Stream Deck +), plus keys for mute, level steps, scenes, sounds, Be right back, recording, talk-over ducking and output profiles. The keys show the live state. It's in the `streamdeck` folder; double-click the `.streamDeckPlugin` file to install. The phone-remote server also reports recording and ducking now
 - Fixed: faders could wobble a little when you muted or unmuted a channel. The cap now holds still while the mute fades
 - **Two more themes (twelve in all):** **Peaches & Cream** (girly pink with peach fader caps, heart meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, starburst caps). Ink and Deco are gone; if you were using them you're moved to Console
+- **Full recorder:** channels (mono to 7.1), sample rate, MP3 quality, one file per channel, repeat, start-on-load and jump to a time
+- **Voicemeeter options:** **⋯ → Voicemeeter options…** has the engine settings: sample rate, ASIO preferred rate, MME/WDM/KS/ASIO buffers, exclusive and swift modes, monitor-on-select, slider mode and per-output delay. Only the ones your edition has are shown
+
+## 0.13.0
 - **Mic chain:** **⋯ → Mic chain…** has noise gate, compressor and denoiser sliders for your microphone, one-click presets (Streamer voice, Gentle, Noisy room, All off) and a live meter. Only the controls your Voicemeeter edition has are shown
 - **Setup assistant:** **⋯ → Setup assistant…** sets the A1 and B1 routing for every channel for "Just gaming + chat" or "Streamer + Discord" (which also builds a stream mix on B2)
 - **OBS overlay:** a see-through browser-source page with a MUTED or BRB badge, a mic meter and the name of the last sound played. The address is under Settings → Phone remote
 - **Duck for friends too:** talk-over ducking can now start from more than one channel (your mic or Discord), under "Or when these talk"
 - **Smarter soundboard:** a shortcut for each sound, groups with a tab bar, and **Random pack…** to turn a folder into one button that plays a random sound from it
 - **Sounds are copied into Sleekmeeter's own `sounds` folder** when you add them, so you can move or delete the originals. Random packs copy their folder too
-- **Full recorder:** channels (mono to 7.1), sample rate, MP3 quality, one file per channel, repeat, start-on-load and jump to a time
-- **Voicemeeter options:** **⋯ → Voicemeeter options…** has the engine settings: sample rate, ASIO preferred rate, MME/WDM/KS/ASIO buffers, exclusive and swift modes, monitor-on-select, slider mode and per-output delay. Only the ones your edition has are shown
 - **Hear yourself:** **⋯ → Hear yourself…** records 5 seconds of your stream mix and plays it back on your headphones
 
 ## 0.12.0
