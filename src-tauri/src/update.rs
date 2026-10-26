@@ -114,7 +114,7 @@ fn asset(release: &Value, ends_with: &str) -> Option<Asset> {
 /// the portable zip otherwise.
 fn newer_assets(release: &Value) -> Option<Asset> {
     if user_installed() {
-        asset(release, "-user-setup.exe")
+        asset(release, "-setup.exe")
     } else if installed() {
         asset(release, ".msi")
     } else {
