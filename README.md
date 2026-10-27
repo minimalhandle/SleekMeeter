@@ -2,7 +2,7 @@
 
 A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on top of Voicemeeter and controls it through the official Voicemeeter Remote API — Voicemeeter keeps doing the audio, Sleekmeeter is just a nicer mixer to look at and use.
 
-![Sleekmeeter's Glass theme: frosted cards, capsule faders, and the BRB, Rec, Apps, Outputs and Scenes buttons in the header](docs/screenshots/theme-glass.png)
+![Sleekmeeter’s Onyx theme: dark mix bays, electric-blue meters and sculpted faders](docs/screenshots/theme-onyx.png)
 
 **Mini mode and the tray volume panel:** one slim row per channel, with a meter, a fader and a mute button. Double-click the tray icon to open it right above the tray.
 
@@ -53,14 +53,29 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | Pin button | Keep Sleekmeeter on top of other windows |
 | Mini mode button | Switch to a small window with one row per channel |
 | Gear button | Settings: themes, fades, talk-over ducking, audio devices, startup, volume overlay, updates and global shortcuts |
-| **⋯** menu | Show the Voicemeeter window, restart the audio engine, clear solos |
+| **⋯** menu | Grouped audio tools and appearance options; a checkmark shows Simple mode is on. Navigate with ↑/↓ or Home/End, activate with Enter and close with Escape |
 
 The cup, record and note buttons are for streamers. Turn off **Settings → Streamer mode** to hide them; their shortcuts keep working.
 
-Each strip is as wide as its name, so names show in full, and the input and output sections stay centred in the window. Click the dB readout under a fader to type an exact level.
+Channels use a consistent width to keep the mixer tidy, and the input and output sections stay centred in the window. Long names are shortened with an ellipsis; hover over a name to read it in full. Click the dB readout under a fader to type an exact level.
 
-Pick a theme in **Settings → Appearance**. There are twelve, and they're built to look nothing alike, so they change the shapes and materials, not just the colours: **Console** (the dark hardware desk, the default), **OLED black** (everything that isn't information turns true black), **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders), **Block** (bold and flat, with thick outlines and hard shadows), **Rack** (brushed-steel studio gear with black fader caps and amber LCD readouts), **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks), **Peaches & Cream** (girly pink, with peach-capped faders, heart-shaped meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, with starburst fader caps). The window buttons, the tray panel and the volume overlay follow the theme too.
+### Themes
 
+All **15 themes** shown below are included in the [current release](https://github.com/minimalhandle/SleekMeeter/releases/latest). Pick one in **Settings → Appearance → Show all 15 themes**. They change the shapes and materials as well as the colours.
+
+The available themes are: **Console** (the dark hardware desk, the default), **OLED black** (everything that isn't information turns true black), **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders), **Block** (bold and flat, with thick outlines and hard shadows), **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks), **Peaches & Cream** (girly pink, with peach-capped faders, heart-shaped meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, with starburst fader caps that keep their cut-out outline while dragged). The current selection also includes **Afterburner** (graphite panels, orange LEDs and faceted metal faders), **Lunar** (satin aluminium, violet keys and circular fader pucks), **Onyx** (dark mix bays, electric blue and sculpted faders) and **Opal** (pearlescent white, mist and lilac, with satin slide controls). The window buttons, the tray panel and the volume overlay follow the theme too.
+
+
+<table>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-afterburner.png" alt="Afterburner: graphite panels and orange meters" width="400"><br><sub><b>Afterburner</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-lunar.png" alt="Lunar: satin aluminium and violet circular faders" width="400"><br><sub><b>Lunar</b></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/theme-onyx.png" alt="Onyx: dark mix bays with electric-blue details" width="400"><br><sub><b>Onyx</b></sub></td>
+<td align="center"><img src="docs/screenshots/theme-opal.png" alt="Opal: pearlescent white and lilac satin faders" width="400"><br><sub><b>Opal</b></sub></td>
+</tr>
+</table>
 
 <table>
 <tr>
@@ -76,8 +91,7 @@ Pick a theme in **Settings → Appearance**. There are twelve, and they're built
 <td align="center"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="400"><br><sub><b>Block</b></sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/theme-rack.png" alt="The Rack theme" width="400"><br><sub><b>Rack</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="400"><br><sub><b>Arcade</b></sub></td>
+<td align="center" colspan="2"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="400"><br><sub><b>Arcade</b></sub></td>
 </tr>
 <tr>
 <td align="center"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="400"><br><sub><b>OLED black</b></sub></td>
@@ -93,7 +107,7 @@ Meters show post-fader levels on the same scale as the fader, so you can see sig
 
 ### Rearranging channels
 
-Drag the top of any channel (its icon and name area) left or right to move it, so you can put Desktop at the end and Aux before it, or keep the channels you use most together. Inputs and outputs are ordered separately, and mini mode follows the same order. **⋯ → Reset channel order** puts everything back as Voicemeeter has it.
+Drag the top of any channel (its icon and name area) left or right to move it, so you can put Desktop at the end and Aux before it, or keep the channels you use most together. Inputs and outputs are ordered separately, and mini mode follows the same order. **⋯ → Reset channel order** puts everything back as Voicemeeter has it. Turn on **Settings → Channel arrangement → Lock channel arrangement** to prevent accidental reordering; faders and buttons keep working.
 
 Click a channel's name to hide or show the device line under it (for example "CABLE-A Output"). Double-click the name to rename it.
 
@@ -135,7 +149,7 @@ In **Settings → Shortcuts**, set an action to **Push to talk (hold)** or **Pus
 
 ### Apps tray: drag an app onto a channel
 
-Click **Apps** in the top bar to open the apps tray along the bottom. Every program that's making sound appears there as a chip. Drag one onto a channel and that app plays through that channel from then on, so you get a fader, routing and mute for it. Small badges in the channel's top corner show which apps are on it, and hovering the top of the channel lists them by name; click one there, or drag the app back onto the tray, to return it to the Windows default. Sleekmeeter remembers where each program goes, even when it isn't running. **Volumes…** opens the per-app volume list.
+Click **Apps** in the top bar to open the apps tray along the bottom. Every program that's making sound appears there as a chip. Drag one onto a channel and that app plays through that channel from then on, so you get a fader, routing and mute for it. A small badge in the channel's top corner shows its app count. Hover the header to see the names, or click the badge to keep the list open. Click outside, click the badge again or press Escape to close it. Each app has a small **×** button to return it to the Windows default; clicking the app name does nothing. You can also drag the app back onto the tray. Sleekmeeter remembers where each program goes, even when it isn't running. **Volumes…** opens the per-app volume list.
 
 Which channels accept apps: Voicemeeter's own virtual inputs (VAIO, AUX and, on Potato, VAIO3), and any hardware input that listens to a virtual cable such as VB-Cable. For a cable channel Sleekmeeter sends the app to the other end of that cable (CABLE-A Input for a channel listening to CABLE-A Output). You hear it the usual way: with the channel's A1 (or A2…) button on. Channels with a real microphone or other hardware, and outputs, can't take apps.
 

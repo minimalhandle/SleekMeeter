@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.14.0
+- **App lists that stay open:** click a channel's app-count badge to pin its list open; click outside, click the badge again or press Escape to close it
+- **Safer app removal:** each app has an explicit × button to return it to the Windows default; clicking its name no longer disconnects it
+- **Tidier ⋯ menu:** grouped actions, a checkmark for Simple mode, and ↑/↓, Home/End, Enter and Escape keyboard controls
+- **Lock channel arrangement:** prevent accidental header dragging in Settings while keeping all faders and buttons usable
+- **Rack theme retired:** existing Rack users switch to Console. There are now fifteen themes
+- Fixed: dragging a Sticker Bomb fader no longer adds a black halo around its starburst cap (including mini mode and the tray panel)
+- **Four new themes:** **Afterburner** (graphite, orange LEDs and faceted metal faders), **Lunar** (satin aluminium, violet keys and circular fader pucks), **Onyx** (dark mix bays, electric blue and sculpted faders) and **Opal** (pearlescent white, mist and lilac). Each includes its own appearance card, mini mode, tray panel and matching volume overlay
 - **Stream Deck: Route to bus key.** Turn an input's A1–A5 or B1–B3 route on or off from a key (say your mic to B3 for a game). It lights up and pulses slowly while the route is on. Needs the new Sleekmeeter build (the phone-remote server now reports routes) and the updated plugin
 - **Stream Deck: Mute mic key.** A dedicated key that shows your microphone's state: green LIVE, or red MUTED with the mic crossed out. Optional Hold to talk mode. Update the plugin by double-clicking `streamdeck/Sleekmeeter.streamDeckPlugin`
 
@@ -8,9 +15,8 @@
 - **Hide Solo, Mono and EQ:** **Settings → Channel buttons** leaves just Mute under each input and hides the Mono and EQ buttons on outputs, for a cleaner mixer. They're still in each channel's settings (click its icon), and a button that's switched on keeps showing so you can turn it off. New installs start with them hidden; if you already use Sleekmeeter nothing changes until you turn it on
 - **Cleaner header:** BRB, Rec and Sounds are now small icon buttons next to the pin and mini-mode buttons. BRB still widens to **Back live** while you're away, and Rec shows its clock while it records. Don't stream? Turn off **Settings → Streamer mode** to hide all three (their shortcuts still work)
 - Fixed: items in the **⋯** menu could wrap onto two lines in some themes
-- **Tidier apps on channels:** apps dragged onto a channel no longer take up room under its name. A small tag in the channel's top corner shows how many apps are on it, and hovering the top of the channel lists them all by name (click one to put it back on the Windows default). Every channel's A1/A2 buttons stay lined up however many apps it has
+- **Tidier apps on channels:** apps dragged onto a channel no longer take up room under its name. A small tag in the channel's top corner shows how many apps are on it, and hovering the top of the channel lists them all by name (use × to put an app back on the Windows default). Every channel's A1/A2 buttons stay lined up however many apps it has
 - **Simple mode:** **⋯ → Simple mode** hides Solo, Mono and EQ, every device name and the A4/A5 buttons in one click. Turn it off to get back exactly what you had
-c7ded5a (Local work: simple mode, cleaner header, tidier apps tray, mic chain ranges)
 
 ## 0.13.1
 - **Centred channel names**, and **⋯ → Show / hide all device names** hides or shows the device line under every channel's name in one click (clicking a single name still toggles just that one)
