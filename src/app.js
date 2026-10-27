@@ -122,6 +122,7 @@
     applyExtraBuses();
     applySoloMono();
     applyStreamer();
+    applyArrangementLock();
     sizeToNames();
     paintStripApps();
   }
@@ -361,6 +362,28 @@
     }
   }
 
+  function closeAppLists(except = null, restoreFocus = false) {
+    let closed = false, focus = null;
+    document.querySelectorAll(".strip").forEach((strip) => {
+      const box = $(".app-chips", strip);
+      if (strip === except || !box || (!strip.classList.contains("app-list-open") && getComputedStyle(box).display === "none")) return;
+      if (box.contains(document.activeElement) || !focus) focus = $(".app-stack", strip);
+      strip.classList.remove("app-list-open");
+      strip.classList.add("apps-dismissed");
+      $(".app-stack", strip).setAttribute("aria-expanded", "false");
+      closed = true;
+    });
+    if (restoreFocus && focus && !focus.hidden) focus.focus();
+    return closed;
+  }
+  document.addEventListener("click", (e) => {
+    // Removal can rebuild a row before this click reaches document. Use its original path.
+    if (!e.composedPath().some((node) => node.matches?.(".app-stack, .app-chips"))) closeAppLists();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !document.querySelector("dialog[open]") && closeAppLists(null, true)) e.preventDefault();
+  });
+
   function buildMixerStrip(ch) {
     const tpl = ch.kind === "strip" ? "#inputTpl" : "#outputTpl";
     const el = $(tpl).content.firstElementChild.cloneNode(true);
@@ -372,8 +395,22 @@
     $(".head", el).addEventListener("pointerdown", (e) => startReorder(e, ch));
     chip.addEventListener("click", () => openDrawer(ch));
     if (ch.kind === "strip") {
-      $(".head", el).append(Object.assign(document.createElement("span"), { className: "app-stack" }));
-      $(".head", el).after(Object.assign(document.createElement("div"), { className: "app-chips" }));
+      const stack = Object.assign(document.createElement("button"), { type: "button", className: "app-stack", hidden: true });
+      const box = Object.assign(document.createElement("div"), { className: "app-chips", id: `apps-${ch.key}` });
+      stack.setAttribute("aria-expanded", "false");
+      stack.setAttribute("aria-controls", box.id);
+      box.setAttribute("role", "group");
+      stack.addEventListener("click", () => {
+        const open = !el.classList.contains("app-list-open");
+        closeAppLists(el);
+        el.classList.toggle("app-list-open", open);
+        el.classList.toggle("apps-dismissed", !open);
+        stack.setAttribute("aria-expanded", String(open));
+      });
+      el.addEventListener("pointerleave", () => el.classList.remove("apps-dismissed"));
+      el.addEventListener("pointerenter", () => el.classList.remove("apps-dismissed"));
+      $(".head", el).append(stack);
+      $(".head", el).after(box);
     }
     makeName($(".name", el), $(".name-edit", el), ch);
     ch.subs.push($(".sub", el));
@@ -451,7 +488,7 @@
       if (!d) continue;
       ch.data = d;
       const name = displayName(ch);
-      for (const n of ch.names) { n.textContent = name; n.title = `${name}\nClick: show or hide the device name. Double-click: rename. Drag the top of the channel to move it`; }
+      for (const n of ch.names) { n.textContent = name; n.title = channelNameHint(name); }
       for (const n of ch.miniNames) { n.textContent = name; n.title = name; }
       for (const s of ch.subs) {
         const sub = subText(ch);
@@ -527,7 +564,7 @@
     }
   }
   function startReorder(e, ch) {
-    if (e.button !== 0 || e.target.closest(".name-edit")) return;
+    if (settings.lockArrangement || e.button !== 0 || e.target.closest(".name-edit, .app-stack")) return;
     const sx = e.clientX, sy = e.clientY;
     let dragging = false;
     const move = (ev) => {
@@ -968,14 +1005,35 @@
   miniBtn.addEventListener("click", () => setMini(!settings.mini, true));
 
   const moreBtn = $("#moreBtn"), moreMenu = $("#moreMenu");
-  const setMenu = (open) => { moreMenu.hidden = !open; moreBtn.setAttribute("aria-expanded", String(open)); if (open) moreMenu.querySelector("button").focus(); };
+  const menuItems = () => [...moreMenu.querySelectorAll("button")].filter((b) => !b.hidden && !b.disabled);
+  const setMenu = (open, last = false) => {
+    moreMenu.hidden = !open;
+    moreBtn.setAttribute("aria-expanded", String(open));
+    if (open) {
+      const items = menuItems();
+      (last ? items[items.length - 1] : items[0])?.focus();
+    }
+  };
   moreBtn.addEventListener("click", () => setMenu(moreMenu.hidden));
+  moreBtn.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); setMenu(true, e.key === "ArrowUp"); }
+  });
   document.addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) setMenu(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !moreMenu.hidden) { setMenu(false); moreBtn.focus(); } });
+  moreMenu.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") { setMenu(false); moreBtn.focus(); return; }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const items = menuItems(), at = items.indexOf(document.activeElement);
+    const next = e.key === "Home" ? 0 : e.key === "End" ? items.length - 1
+      : (at + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    items[next]?.focus();
+  });
   moreMenu.addEventListener("click", (e) => {
     const a = e.target.closest("button")?.dataset.action;
     if (!a) return;
     setMenu(false);
+    moreBtn.focus();
     if (a === "show") engine.showWindow().catch(fail);
     if (a === "restart") engine.setFloat("Command.Restart", 1).then(() => toast("Restarting audio engine")).catch(fail);
     if (a === "options") openOptions();
@@ -1003,7 +1061,7 @@
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
     setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setPanelDocked: "panelDocked", setExtraBuses: "showExtraBuses",
-    setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode",
+    setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode", setLockArrangement: "lockArrangement",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
@@ -1013,6 +1071,7 @@
       if (key === "showExtraBuses") applyExtraBuses();
       if (key === "hideSoloMono") applySoloMono();
       if (key === "streamerMode") applyStreamer();
+      if (key === "lockArrangement") applyArrangementLock();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
     });
   }
@@ -1033,9 +1092,16 @@
   function applyStreamer() {
     document.body.classList.toggle("no-streamer", settings.streamerMode === false);
   }
+  function applyArrangementLock() {
+    document.body.classList.toggle("arrangement-locked", !!settings.lockArrangement);
+    for (const ch of chans) for (const n of ch.names) n.title = channelNameHint(displayName(ch));
+  }
+  function channelNameHint(name) {
+    return `${name}\nClick: show or hide the device name. Double-click: rename. ${settings.lockArrangement ? "Channel arrangement is locked" : "Drag the top of the channel to move it"}`;
+  }
   function applySoloMono() {
     document.body.classList.toggle("hide-solo-mono", !!settings.hideSoloMono);
-    $('#moreMenu [data-action="simple"]').textContent = settings.simpleMode ? "Turn off simple mode" : "Simple mode";
+    $('#moreMenu [data-action="simple"]').setAttribute("aria-checked", String(!!settings.simpleMode));
     if (drawerCh) buildDrawerBody();
   }
   // Simple mode hides Solo, Mono and EQ, every device line and the A4/A5 buttons in one go;
@@ -1698,23 +1764,40 @@
     for (const ch of chans.filter((c) => c.kind === "strip")) {
       const box = $(".app-chips", ch.mixerEl), stack = $(".app-stack", ch.mixerEl);
       const mine = Object.keys(routes).filter((exe) => channelForDevice(routes[exe]) === ch);
-      const sig = mine.map((e) => e + (running.has(e) ? "+" : "-")).join(",");
+      const sig = displayName(ch) + "|" + mine.map((e) => e + (running.has(e) ? "+" : "-")).join(",");
       if (box.dataset.sig === sig) continue;
       box.dataset.sig = sig;
+      const focusedExe = box.contains(document.activeElement) ? document.activeElement.dataset.exe : null;
       box.textContent = ""; stack.textContent = "";
+      box.setAttribute("aria-label", `Apps on ${displayName(ch)}`);
       for (const exe of mine) {
-        const b = document.createElement("button");
-        b.type = "button";
+        const b = document.createElement("div");
         b.className = "sa-chip" + (running.has(exe) ? "" : " idle");
         b.style.setProperty("--hue", hueOf(exe));
-        b.title = `${exeName(exe)} plays through this channel. Click to put it back on the Windows default.`;
-        b.innerHTML = `<span class="av"></span><span class="t"></span>`;
+        b.title = `${exeName(exe)} plays through this channel${running.has(exe) ? "" : " (not running)"}`;
+        b.innerHTML = `<span class="av" aria-hidden="true"></span><span class="t"></span><button class="sa-remove" type="button">×</button>`;
         $(".av", b).textContent = initialOf(exeName(exe));
         $(".t", b).textContent = exeName(exe);
-        b.addEventListener("click", () => routeApp({ exe, name: exeName(exe), pids: pidsOf(exe) }, null));
+        const remove = $(".sa-remove", b);
+        remove.dataset.exe = exe;
+        remove.setAttribute("aria-label", `Remove ${exeName(exe)} from ${displayName(ch)}`);
+        remove.title = `Return ${exeName(exe)} to the Windows default`;
+        remove.addEventListener("click", () => routeApp({ exe, name: exeName(exe), pids: pidsOf(exe) }, null));
         box.appendChild(b);
       }
+      stack.hidden = !mine.length;
+      stack.setAttribute("aria-label", `${mine.length} ${mine.length === 1 ? "app" : "apps"} on ${displayName(ch)}`);
+      stack.title = "Click to keep the app list open";
       if (mine.length) stack.innerHTML = `${APPS_GLYPH}<b>${mine.length}</b>`;
+      else {
+        ch.mixerEl.classList.remove("app-list-open");
+        stack.setAttribute("aria-expanded", "false");
+      }
+      if (focusedExe) {
+        const next = [...box.querySelectorAll(".sa-remove")].find((b) => b.dataset.exe === focusedExe)
+          || $(".sa-remove", box) || (!stack.hidden ? stack : $(".chip", ch.mixerEl));
+        next.focus();
+      }
     }
   }
 
@@ -3259,20 +3342,23 @@
   const THEMES = [
     ["console", "Console", "Dark hardware desk with amber light"],
     ["oled", "OLED black", "Pure black for OLED screens"],
+    ["afterburner", "Afterburner", "Graphite panels, orange LEDs and faceted metal faders"],
+    ["lunar", "Lunar", "Satin aluminium, violet keys and circular fader pucks"],
+    ["onyx", "Onyx", "Polished dark mix bays, electric blue and sculpted faders"],
+    ["opal", "Opal", "Pearlescent white, mist and lilac, satin slide controls"],
     ["glass", "Glass", "Frosted cards over a soft glow, capsule faders"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
     ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
     ["blueprint", "Blueprint", "Drafting paper: white lines on blue, monospace, tick-mark faders"],
     ["block", "Block", "Bold and flat: thick outlines, hard shadows, bright colour blocks"],
-    ["rack", "Rack", "Brushed steel studio gear, black fader caps, amber LCDs"],
     ["arcade", "Arcade", "8-bit cabinet: pixel corners, chunky blocks, hot colours"],
     ["peach", "Peaches & Cream", "Girly pink: peach faders, heart meters, scalloped cards"],
     ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, starburst faders"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
   // Themes that were retired map to their closest remaining one.
-  const RETIRED = { midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console", ink: "console", deco: "console", haunted: "console", cosmic: "console" };
+  const RETIRED = { midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console", ink: "console", deco: "console", haunted: "console", cosmic: "console", rack: "console" };
   const currentTheme = () => {
     const t = RETIRED[settings.theme] || settings.theme;
     return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "console";

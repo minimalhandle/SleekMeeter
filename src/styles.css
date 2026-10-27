@@ -184,6 +184,9 @@ button { cursor: default; }
 }
 .menu button { display: block; width: 100%; text-align: left; white-space: nowrap; padding: 7px 12px; border: 0; border-radius: 6px; background: none; color: var(--ink); }
 .menu button:hover, .menu button:focus-visible { background: var(--key); }
+#moreMenu hr { height: 1px; border: 0; background: var(--line); margin: 5px 8px; }
+#moreMenu button { position: relative; padding-left: 29px; }
+#moreMenu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 10px; color: var(--amber); }
 
 /* ---------- desk: recessed bays that hug their modules and stay centred ---------- */
 .desk {
@@ -892,12 +895,14 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .strip { position: relative; }
 .app-stack {
   position: absolute; top: 2px; right: 5px; display: inline-flex; align-items: center; gap: 3px;
-  height: 13px; padding: 0 4px; border-radius: 7px; pointer-events: none;
+  height: 13px; padding: 0 4px; border: 0; border-radius: 7px; cursor: pointer;
   background: color-mix(in srgb, var(--acc) 20%, transparent); color: var(--acc);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 35%, transparent);
   font-size: 9px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
 }
 .app-stack:empty { display: none; }
+.app-stack::before { content: ""; position: absolute; inset: -4px; }
+.app-stack:hover { color: var(--ink); }
 .app-stack svg { width: 8px; height: 8px; }
 /* On themes with very round channels, sit further in along the top edge so the corner doesn't clip it. */
 :is([data-theme="glass"], [data-theme="bubblegum"], [data-theme="sticker"]) .app-stack { top: 4px; right: 13px; }
@@ -912,8 +917,16 @@ body.no-streamer .streamer { display: none !important; }
   background: var(--flyout); border-radius: 9px; box-shadow: 0 0 0 1px var(--line), var(--pop-shadow);
 }
 .dense .app-chips { top: 44px; left: 5px; right: 5px; }
-.strip .head:hover + .app-chips:not(:empty), .app-chips:not(:empty):hover, .app-chips:not(:empty):focus-within { display: flex; }
+.strip:not(.apps-dismissed) .head:hover + .app-chips:not(:empty),
+.strip:not(.apps-dismissed) .app-chips:not(:empty):hover,
+.strip:not(.apps-dismissed) .app-chips:not(:empty):focus-within,
+.strip.app-list-open > .app-chips:not(:empty) { display: flex; }
 .app-chips .sa-chip { height: 22px; }
+.app-chips .sa-chip { cursor: default; padding-right: 2px; }
+.app-chips .sa-chip:hover { background: color-mix(in srgb, var(--acc) 18%, var(--key)); }
+.app-chips .sa-chip .t { flex: 1; }
+.sa-remove { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-2); font: 17px/1 var(--font); cursor: pointer; }
+.sa-remove:hover, .sa-remove:focus-visible { background: var(--red); color: #fff; }
 body.reorder-active .app-chips { display: none !important; }
 .sa-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; height: 20px; padding: 0 7px 0 3px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--acc) 18%, var(--key)); color: var(--ink); font: inherit; font-size: 11px; font-weight: 600; line-height: 1; cursor: pointer; }
 .sa-chip:hover { background: color-mix(in srgb, var(--red) 28%, var(--key)); }
@@ -923,6 +936,7 @@ body.reorder-active .app-chips { display: none !important; }
 
 /* ---------- channel order and the device line ---------- */
 .strip .head { cursor: grab; }
+body.arrangement-locked .strip .head { cursor: default; }
 .strip.sub-off .sub { display: none; }
 .strip.reordering { z-index: 2; opacity: .92; outline: 2px solid var(--amber); outline-offset: -2px; }
 body.reorder-active, body.reorder-active * { cursor: grabbing !important; }

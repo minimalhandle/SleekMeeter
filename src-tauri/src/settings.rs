@@ -82,6 +82,8 @@ pub fn defaults() -> Value {
         "hideSoloMono": true,
         // Show the Be right back, Rec and Sounds buttons in the header.
         "streamerMode": true,
+        // Prevent header dragging from moving channels, without locking mixer controls.
+        "lockArrangement": false,
         // Push to talk: how long the mic stays open after the keys are let go.
         "hold": { "releaseMs": 250 },
         // Be right back: channels to mute, channels to turn down by `amount` dB, a channel to play.
@@ -140,7 +142,9 @@ pub fn theme(s: &Value) -> String {
     match s["theme"].as_str() {
         // Retired themes show as their closest remaining one.
         Some("midnight") | Some("minimal") | Some("analog") | Some("clean") | Some("studio")
-        | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") => "console".into(),
+        | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") | Some("rack") => {
+            "console".into()
+        }
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
         _ => "console".into(),

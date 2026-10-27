@@ -67,12 +67,15 @@
         <button role="menuitem" type="button" data-action="restart">Restart audio engine</button>
         <button role="menuitem" type="button" data-action="unsolo">Clear all solos</button>
         <button role="menuitem" type="button" data-action="options">Voicemeeter options…</button>
+        <hr role="separator">
         <button role="menuitem" type="button" data-action="setup">Setup assistant…</button>
         <button role="menuitem" type="button" data-action="hear">Hear yourself…</button>
         <button role="menuitem" type="button" data-action="chain">Mic chain…</button>
         <button role="menuitem" type="button" data-action="history">Level history</button>
+        <hr role="separator">
         <button role="menuitem" type="button" data-action="subs">Show / hide all device names</button>
-        <button role="menuitem" type="button" data-action="simple">Simple mode</button>
+        <button role="menuitemcheckbox" aria-checked="false" type="button" data-action="simple">Simple mode</button>
+        <hr role="separator">
         <button role="menuitem" type="button" data-action="resetorder">Reset channel order</button>
       </div>
     </div>
@@ -602,6 +605,10 @@
       <section>
         <h3>Channel buttons</h3>
         <label class="check"><input type="checkbox" id="setHideSoloMono"><span>Hide the Solo and Mono buttons under each input and the Mono and EQ buttons on each output, for a cleaner mixer. They're still in each channel's settings (click its icon), and a button that's switched on keeps showing</span></label>
+      </section>
+      <section>
+        <h3>Channel arrangement</h3>
+        <label class="check"><input type="checkbox" id="setLockArrangement"><span>Lock channel arrangement to prevent accidental reordering. Faders and buttons still work</span></label>
       </section>
       <section id="extraBusesRow" hidden>
         <h3>Extra outputs</h3>
