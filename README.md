@@ -68,38 +68,29 @@ The available themes are: **Console** (the dark hardware desk, the default), **O
 
 <table>
 <tr>
-<td align="center"><img src="docs/screenshots/theme-afterburner.png" alt="Afterburner: graphite panels and orange meters" width="400"><br><sub><b>Afterburner</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-lunar.png" alt="Lunar: satin aluminium and violet circular faders" width="400"><br><sub><b>Lunar</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-afterburner.png" alt="Afterburner: graphite panels and orange meters" width="260" height="161"><br><sub><b>Afterburner</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-lunar.png" alt="Lunar: satin aluminium and violet circular faders" width="260" height="161"><br><sub><b>Lunar</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-onyx.png" alt="Onyx: dark mix bays with electric-blue details" width="260" height="161"><br><sub><b>Onyx</b></sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/theme-onyx.png" alt="Onyx: dark mix bays with electric-blue details" width="400"><br><sub><b>Onyx</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-opal.png" alt="Opal: pearlescent white and lilac satin faders" width="400"><br><sub><b>Opal</b></sub></td>
-</tr>
-</table>
-
-<table>
-<tr>
-<td align="center"><img src="docs/screenshots/theme-neon.png" alt="The Neon theme" width="400"><br><sub><b>Neon</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-bubblegum.png" alt="The Bubblegum theme" width="400"><br><sub><b>Bubblegum</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-opal.png" alt="Opal: pearlescent white and lilac satin faders" width="260" height="161"><br><sub><b>Opal</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-glass.png" alt="The Glass theme" width="260" height="161"><br><sub><b>Glass</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/mixer.png" alt="The Console theme" width="260" height="161"><br><sub><b>Console</b> (default)</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/theme-glass.png" alt="The Glass theme" width="400"><br><sub><b>Glass</b></sub></td>
-<td align="center"><img src="docs/screenshots/mixer.png" alt="The Console theme" width="400"><br><sub><b>Console</b> (default)</sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-neon.png" alt="The Neon theme" width="260" height="161"><br><sub><b>Neon</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-bubblegum.png" alt="The Bubblegum theme" width="260" height="161"><br><sub><b>Bubblegum</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-blueprint.png" alt="The Blueprint theme" width="260" height="161"><br><sub><b>Blueprint</b></sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/theme-blueprint.png" alt="The Blueprint theme" width="400"><br><sub><b>Blueprint</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="400"><br><sub><b>Block</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="260" height="161"><br><sub><b>Block</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="260" height="161"><br><sub><b>Arcade</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-terminal.png" alt="The Terminal theme" width="260" height="161"><br><sub><b>Terminal</b></sub></td>
 </tr>
 <tr>
-<td align="center" colspan="2"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="400"><br><sub><b>Arcade</b></sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="400"><br><sub><b>OLED black</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-peach.png" alt="The Peaches &amp; Cream theme" width="400"><br><sub><b>Peaches &amp; Cream</b></sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="400"><br><sub><b>Sticker Bomb</b></sub></td>
-<td align="center"><img src="docs/screenshots/theme-terminal.png" alt="The Terminal theme" width="400"><br><sub><b>Terminal</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="260" height="161"><br><sub><b>OLED black</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-peach.png" alt="The Peaches &amp; Cream theme" width="260" height="161"><br><sub><b>Peaches &amp; Cream</b></sub></td>
+<td align="center" valign="top"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="260" height="161"><br><sub><b>Sticker Bomb</b></sub></td>
 </tr>
 </table>
 
