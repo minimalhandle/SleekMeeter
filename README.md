@@ -2,7 +2,7 @@
 
 A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on top of Voicemeeter and controls it through the official Voicemeeter Remote API — Voicemeeter keeps doing the audio, Sleekmeeter is just a nicer mixer to look at and use.
 
-![Sleekmeeter’s Onyx theme: dark mix bays, electric-blue meters and sculpted faders](docs/screenshots/theme-onyx.png)
+![Sleekmeeter’s Glass theme: frosted channel cards, colourful lighting and capsule faders](docs/screenshots/theme-glass.png)
 
 **Mini mode and the tray volume panel:** one slim row per channel, with a meter, a fader and a mute button. Double-click the tray icon to open it right above the tray.
 
