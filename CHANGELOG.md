@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.15.1
+- Fixed: **Update now and restart** closed Sleekmeeter without installing the update or reopening. Copies older than this fix need the new version from the download page once
+
 ## 0.15.0
 - **Stream Deck plugin offer:** Sleekmeeter finds the Stream Deck app or a Stream Deck that has been connected, and offers to install or update its plugin, which comes inside Sleekmeeter. It asks once per plugin version, and **Settings → Stream Deck** keeps the button. With a Stream Deck but no app, it offers Elgato's download page
 - **New Stream Deck look (plugin 0.16.0.2):** Studio has dark surfaces, one clear symbol or value on each key, and short colour rails. Action IDs are unchanged, so your keys and dials carry over
