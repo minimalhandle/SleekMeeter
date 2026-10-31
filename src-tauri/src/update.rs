@@ -227,24 +227,27 @@ fn run_after_exit(script: &str) -> Result<(), String> {
     let path: PathBuf = std::env::temp_dir().join("sleekmeeter-update.ps1");
     std::fs::write(&path, script).map_err(|e| format!("Couldn't prepare the update: {e}"))?;
     let mut cmd = std::process::Command::new("powershell");
-    cmd.args([
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-WindowStyle",
-        "Hidden",
-        "-File",
-    ])
-    .arg(&path);
+    cmd.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+        .arg(&path);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        // CREATE_NO_WINDOW | DETACHED_PROCESS: no console, and it outlives this process.
-        cmd.creation_flags(0x0800_0008);
+        // CREATE_NO_WINDOW alone: it still outlives this process. Adding DETACHED_PROCESS makes
+        // PowerShell exit at once without running the script.
+        cmd.creation_flags(0x0800_0000);
     }
-    cmd.spawn()
-        .map(|_| ())
-        .map_err(|e| format!("Couldn't start the update: {e}"))
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Couldn't start the update: {e}"))?;
+    // The script waits for this process, so ending now means it failed. Stay open if so.
+    let started = Instant::now();
+    while started.elapsed() < Duration::from_millis(800) {
+        if let Ok(Some(_)) = child.try_wait() {
+            return Err("Couldn't start the update. Use the download page instead".to_string());
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    Ok(())
 }
 
 static BUSY: AtomicBool = AtomicBool::new(false);
