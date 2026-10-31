@@ -53,6 +53,9 @@ async function api(method, path, body) {
 
 /* ------------------------------------------------------------------ state */
 let st = null;          // last /api/state
+let levels = null;      // last /api/levels: { inputs, outputs }, each [[left, right] in dB]
+let apps = [];          // last /api/apps
+let appsStatus = 'offline'; // 'ok' | 'offline' | 'key' | 'old'
 let status = 'offline'; // 'ok' | 'offline' | 'key' | 'novm'
 const local = {};       // key -> { db, until }: levels we just set, shown until Sleekmeeter catches up
 const contexts = new Map(); // context -> { action, settings, controller, last }
@@ -76,172 +79,50 @@ const setFeedback = (context, payload) => send({ event: 'setFeedback', context, 
 const showAlert = (context) => send({ event: 'showAlert', context });
 const showOk = (context) => send({ event: 'showOk', context });
 
-/* ------------------------------------------------------------------ drawing */
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const svgUri = (svg) => `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
-const FONT = "font-family=\"Segoe UI, Arial, sans-serif\"";
-const AMBER = '#ffb02e', CYAN = '#3ec6e8', RED = '#ff4d5e', GREEN = '#43e08a', PINK = '#ff7ab6', VIOLET = '#a98bff';
-const fmtDb = (v) => (v <= -60 ? '-∞' : `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toFixed(1)}`);
+/* ------------------------------------------------------------------ live Studio artwork */
+const studio = require('./studio');
+const { MediaSession } = require('./media-session');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const typeColor = (key) => (String(key).startsWith('Bus') ? CYAN : AMBER);
-
-function fit(text, max) {
-  const t = String(text);
-  return t.length > max ? `${t.slice(0, max - 1)}…` : t;
-}
-// Up to two lines of centred text, sized to fit.
-function lines(text, x, y, color, size) {
-  const t = String(text).trim();
-  const per = Math.floor(120 / (size * 0.56));
-  let rows = [t];
-  if (t.length > per) {
-    const cut = t.lastIndexOf(' ', per);
-    const at = cut > 2 ? cut : per;
-    rows = [t.slice(0, at).trim(), fit(t.slice(at).trim(), per)];
-  }
-  const start = y - ((rows.length - 1) * size * 1.15) / 2;
-  return rows.map((r, i) => `<text x="${x}" y="${start + i * size * 1.15}" ${FONT} font-size="${size}" font-weight="700" fill="${color}" text-anchor="middle" dominant-baseline="middle">${esc(r)}</text>`).join('');
-}
-function keySvg(bg, inner, border) {
-  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" rx="14" fill="${bg}"/>${border ? `<rect x="3" y="3" width="138" height="138" rx="12" fill="none" stroke="${border}" stroke-width="4"/>` : ''}${inner}</svg>`);
-}
-const label = (text, color = '#9aa3b2') => `<text x="72" y="22" ${FONT} font-size="15" font-weight="600" fill="${color}" text-anchor="middle" letter-spacing="1">${esc(text)}</text>`;
-const speaker = (x, y, s, color, slash) => `<g transform="translate(${x} ${y}) scale(${s})" fill="${color}"><path d="M-22 -9h12l16 -14v46l-16 -14h-12z"/>${slash ? '' : `<path d="M14 -12q10 12 0 24" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"/><path d="M22 -22q18 22 0 44" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"/>`}${slash ? `<path d="M12 -14l22 28M34 -14l-22 28" stroke="${RED}" stroke-width="6" stroke-linecap="round"/>` : ''}</g>`;
-
-// A big microphone: green LIVE when open, red with a line through it when muted.
-const micGlyph = (color) => `<g fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"><rect x="58" y="22" width="28" height="52" rx="14" fill="${color}" stroke="none"/><path d="M46 60a26 26 0 0 0 52 0"/><path d="M72 88v14M58 104h28"/></g>`;
 const MIC_DEFAULT = 'Strip[0]';
 
-// Is this input routed to bus "A1".."B8"? (Sleekmeeter reports a[] and b[] as 1/0.)
+// Optimistic route state remains shared by rendering and action handling.
 function routeOf(ch, bus) {
   const l = local[`${ch.key}#${bus}`];
   if (l && Date.now() < l.until) return l.v;
   const list = bus[0] === 'A' ? ch.a : ch.b;
   const n = Number(bus.slice(1)) - 1;
-  return Array.isArray(list) && n >= 0 && n < list.length ? !!list[n] : null; // null: this bus doesn't exist on this Voicemeeter
+  return Array.isArray(list) && n >= 0 && n < list.length ? !!list[n] : null;
 }
-// 0..1, one slow breath every 3.2 seconds, in steps so the key isn't redrawn needlessly.
 const breath = () => Math.round((0.5 - 0.5 * Math.cos(((Date.now() % 3200) / 3200) * 2 * Math.PI)) * 16) / 16;
-function routeKey(ch, bus) {
-  const hw = bus[0] === 'A';
-  const col = hw ? AMBER : CYAN;
-  const on = routeOf(ch, bus);
-  const name = `<text x="72" y="25" ${FONT} font-size="${ch.name.length > 9 ? 14 : 17}" font-weight="700" fill="${on ? col : '#8b93a3'}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>`;
-  if (on === null && !Array.isArray(ch.a) && !Array.isArray(ch.b)) return keySvg('#16181d', `${name}<text x="72" y="72" ${FONT} font-size="44" font-weight="800" fill="#4b5262" text-anchor="middle">${bus}</text><text x="72" y="104" ${FONT} font-size="15" font-weight="700" fill="#ffb02e" text-anchor="middle">Update the</text><text x="72" y="124" ${FONT} font-size="15" font-weight="700" fill="#ffb02e" text-anchor="middle">Sleekmeeter app</text>`);
-  if (on === null) {
-    const have = (bus[0] === 'A' ? ch.a : ch.b);
-    const note = Array.isArray(have) ? (have.length ? `Only ${bus[0]}1–${bus[0]}${have.length}` : `No ${bus[0]} buses`) : 'not available';
-    return keySvg('#16181d', `${name}<text x="72" y="82" ${FONT} font-size="44" font-weight="800" fill="#4b5262" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="15" fill="#6c7585" text-anchor="middle">${esc(note)}</text>`);
-  }
-  if (!on) return keySvg('#16181d', `${name}<text x="72" y="84" ${FONT} font-size="48" font-weight="800" fill="#5b6475" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="18" font-weight="700" fill="#5b6475" text-anchor="middle" letter-spacing="2">OFF</text>`);
-  const p = breath();
-  const bg = hw ? '#2e2208' : '#0c2a35';
-  const glow = (0.28 + 0.5 * p).toFixed(3);
-  const ring = (0.45 + 0.55 * p).toFixed(3);
-  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><defs><radialGradient id="g" cx="50%" cy="48%" r="62%"><stop offset="0" stop-color="${col}" stop-opacity="${glow}"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></radialGradient></defs><rect width="144" height="144" rx="14" fill="${bg}"/><rect width="144" height="144" rx="14" fill="url(#g)"/><rect x="3" y="3" width="138" height="138" rx="12" fill="none" stroke="${col}" stroke-width="4" stroke-opacity="${ring}"/>${name}<text x="72" y="84" ${FONT} font-size="52" font-weight="800" fill="${hw ? '#ffe2a8' : '#c9f3ff'}" text-anchor="middle">${bus}</text><text x="72" y="124" ${FONT} font-size="18" font-weight="800" fill="${col}" text-anchor="middle" letter-spacing="2">ON</text></svg>`);
+// Meter reading for a channel in whole dB, so a steady signal doesn't redraw the dial.
+function levelOf(ch) {
+  const m = /^(Strip|Bus)\[(\d+)\]$/.exec(ch.key);
+  const pair = m && levels && (m[1] === 'Strip' ? levels.inputs : levels.outputs);
+  const reading = pair && pair[Number(m[2])];
+  return Array.isArray(reading) ? Math.round(Math.max(...reading)) : null;
 }
-
-function offlineKey(title) {
-  const msg = status === 'key' ? ['Wrong key', 'Open the action settings'] : status === 'novm' ? ['Voicemeeter', 'isn’t running'] : ['Sleekmeeter', 'not found'];
-  return keySvg('#16181d', `${label(title)}<text x="72" y="74" ${FONT} font-size="17" font-weight="700" fill="#e8ebf2" text-anchor="middle">${esc(msg[0])}</text><text x="72" y="98" ${FONT} font-size="13" fill="#8b93a3" text-anchor="middle">${esc(msg[1])}</text>`);
-}
-
-function renderKey(c) {
-  const s = c.settings || {};
-  const ok = status === 'ok' && st;
-  switch (c.action) {
-    case 'mute': {
-      const ch = ok && chan(s.channel);
-      if (!ok) return offlineKey('MUTE');
-      if (!ch) return keySvg('#16181d', `${label('MUTE')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
-      const m = muteOf(ch);
-      return keySvg(m ? '#4a1822' : '#16181d', `<text x="72" y="26" ${FONT} font-size="${ch.name.length > 9 ? 15 : 18}" font-weight="700" fill="${m ? '#ffd0d6' : typeColor(ch.key)}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>${speaker(72, 70, 1.15, m ? '#ffd0d6' : '#e8ebf2', m)}<text x="72" y="124" ${FONT} font-size="20" font-weight="700" fill="${m ? '#ffd0d6' : '#9aa3b2'}" text-anchor="middle">${m ? 'MUTED' : `${fmtDb(gainOf(ch))} dB`}</text>`, m ? RED : null);
-    }
-    case 'mic': {
-      if (!ok) return offlineKey('MIC');
-      const ch = chan(s.channel || MIC_DEFAULT);
-      if (!ch) return keySvg('#16181d', `${label('MIC')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
-      const m = muteOf(ch);
-      const name = `<text x="72" y="24" ${FONT} font-size="${ch.name.length > 9 ? 14 : 17}" font-weight="700" fill="${m ? '#ffc2ca' : '#8be8b3'}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>`;
-      if (m) {
-        return keySvg('#5a1224', `${name}${micGlyph('#ffb3bd')}<path d="M40 42L108 110" stroke="#5a1224" stroke-width="17" stroke-linecap="round"/><path d="M40 42L108 110" stroke="${RED}" stroke-width="9" stroke-linecap="round"/><text x="72" y="134" ${FONT} font-size="20" font-weight="800" fill="#ffd0d6" text-anchor="middle" letter-spacing="2">MUTED</text>`, RED);
-      }
-      return keySvg('#0d2a1c', `${name}${micGlyph(GREEN)}<text x="72" y="134" ${FONT} font-size="20" font-weight="800" fill="#a8f0c9" text-anchor="middle" letter-spacing="2">LIVE</text>`, GREEN);
-    }
-    case 'route': {
-      if (!ok) return offlineKey('ROUTE');
-      const ch = chan(s.channel || MIC_DEFAULT);
-      if (!ch) return keySvg('#16181d', `${label('ROUTE')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
-      return routeKey(ch, s.bus || 'B1');
-    }
-    case 'level': {
-      const ch = ok && chan(s.channel);
-      if (!ok) return offlineKey('LEVEL');
-      if (!ch) return keySvg('#16181d', `${label('LEVEL')}${lines('Pick a channel', 72, 78, '#e8ebf2', 17)}`);
-      const mode = s.mode || 'up';
-      const amt = Number(s.amount) || 2;
-      const big = mode === 'set' ? `${fmtDb(Number(s.amount) || 0)}` : `${mode === 'up' ? '+' : '−'}${amt}`;
-      const arrow = mode === 'up' ? '<path d="M72 36l22 26h-14v18h-16v-18h-14z" fill="#43e08a"/>' : mode === 'down' ? '<path d="M72 80l22 -26h-14v-18h-16v18h-14z" fill="#ff7ab6"/>' : '<rect x="30" y="52" width="84" height="8" rx="4" fill="#4b5262"/><circle cx="84" cy="56" r="13" fill="#a98bff"/>';
-      return keySvg('#16181d', `<text x="72" y="24" ${FONT} font-size="${ch.name.length > 9 ? 15 : 18}" font-weight="700" fill="${typeColor(ch.key)}" text-anchor="middle">${esc(fit(ch.name, 12))}</text>${arrow}<text x="72" y="116" ${FONT} font-size="24" font-weight="700" fill="#e8ebf2" text-anchor="middle">${esc(big)} dB</text>`);
-    }
-    case 'scene': {
-      if (!ok) return offlineKey('SCENE');
-      return keySvg('#241b3a', `${label('SCENE', '#b9a4ff')}${s.scene ? lines(s.scene, 72, 80, '#f3eeff', 22) : lines('Pick a scene', 72, 80, '#e8ebf2', 17)}`, VIOLET);
-    }
-    case 'sound': {
-      if (!ok) return offlineKey('SOUND');
-      return keySvg('#3a1d2c', `<path d="M58 34l30 18l-30 18z" fill="${PINK}" transform="translate(-2 -2)"/>${s.sound ? lines(s.sound, 72, 106, '#ffe3ef', 19) : lines('Pick a sound', 72, 106, '#e8ebf2', 16)}`, PINK);
-    }
-    case 'soundstop':
-      return keySvg('#16181d', `<rect x="48" y="30" width="48" height="48" rx="8" fill="#e8ebf2"/>${lines('Stop sounds', 72, 108, '#9aa3b2', 17)}`);
-    case 'brb': {
-      if (!ok) return offlineKey('BRB');
-      const on = !!st.brb;
-      return keySvg(on ? '#46300a' : '#16181d', `${label('BE RIGHT BACK', on ? '#ffd27a' : '#9aa3b2')}<g fill="${on ? AMBER : '#e8ebf2'}"><rect x="52" y="38" width="14" height="44" rx="4"/><rect x="78" y="38" width="14" height="44" rx="4"/></g><text x="72" y="116" ${FONT} font-size="22" font-weight="700" fill="${on ? '#ffd27a' : '#9aa3b2'}" text-anchor="middle">${on ? 'ON' : st.brbSet ? 'off' : 'not set up'}</text>`, on ? AMBER : null);
-    }
-    case 'record': {
-      if (!ok) return offlineKey('RECORD');
-      const on = !!st.recording;
-      return keySvg(on ? '#4a1822' : '#16181d', `${label('RECORD', on ? '#ffd0d6' : '#9aa3b2')}<circle cx="72" cy="66" r="${on ? 26 : 24}" fill="${on ? RED : '#e8ebf2'}"/><text x="72" y="116" ${FONT} font-size="22" font-weight="700" fill="${on ? '#ffd0d6' : '#9aa3b2'}" text-anchor="middle">${on ? 'REC' : 'off'}</text>`, on ? RED : null);
-    }
-    case 'duck': {
-      if (!ok) return offlineKey('DUCKING');
-      const on = !!st.duck;
-      const bars = [46, 34, 22, 14].map((h, i) => `<rect x="${34 + i * 20}" y="${74 - h}" width="12" height="${h}" rx="4" fill="${on ? GREEN : '#e8ebf2'}" opacity="${1 - i * 0.12}"/>`).join('');
-      return keySvg(on ? '#10372a' : '#16181d', `${label('TALK-OVER', on ? '#a8f0c9' : '#9aa3b2')}${bars}<text x="72" y="116" ${FONT} font-size="22" font-weight="700" fill="${on ? '#a8f0c9' : '#9aa3b2'}" text-anchor="middle">${on ? 'ON' : 'off'}</text>`, on ? GREEN : null);
-    }
-    case 'output': {
-      if (!ok) return offlineKey('OUTPUT');
-      const name = s.output || '';
-      const active = name && st.outputNow === name;
-      return keySvg(active ? '#0f2f3a' : '#16181d', `${label('OUTPUT', active ? '#9fe3f7' : '#9aa3b2')}<path d="M34 64h44m-14 -16l16 16l-16 16" fill="none" stroke="${active ? CYAN : '#e8ebf2'}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><rect x="88" y="46" width="24" height="36" rx="5" fill="${active ? CYAN : '#e8ebf2'}"/>${lines(name || 'Next output', 72, 114, active ? '#9fe3f7' : '#e8ebf2', 17)}`, active ? CYAN : null);
-    }
-    default:
-      return null;
+const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf });
+const MEDIA_ACTIONS = ['nowplaying', 'nowplayingkey', 'trackdial'];
+const media = new MediaSession(() => { for (const [context, c] of contexts) if (MEDIA_ACTIONS.includes(c.action)) render(context); });
+// Changing page or opening a folder hides every action for a moment, so the worker outlives that.
+const MEDIA_LINGER_MS = 60000;
+let mediaLinger = null;
+const syncMedia = () => {
+  if ([...contexts.values()].some(c => MEDIA_ACTIONS.includes(c.action))) {
+    clearTimeout(mediaLinger); mediaLinger = null;
+    media.start();
+  } else if (!mediaLinger) {
+    mediaLinger = setTimeout(() => { mediaLinger = null; media.stop(); }, MEDIA_LINGER_MS);
   }
-}
-
-// The touch-strip panel for a dial: 200 x 100.
-function renderDial(c) {
-  const s = c.settings || {};
-  const wrap = (inner, bg = '#14171c') => svgUri(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100"><rect width="200" height="100" rx="10" fill="${bg}"/>${inner}</svg>`);
-  if (status !== 'ok' || !st) {
-    const msg = status === 'key' ? 'Wrong key' : status === 'novm' ? 'Voicemeeter not running' : 'Sleekmeeter not found';
-    return wrap(`<text x="100" y="46" ${FONT} font-size="16" font-weight="700" fill="#e8ebf2" text-anchor="middle">${esc(msg)}</text><text x="100" y="68" ${FONT} font-size="12" fill="#8b93a3" text-anchor="middle">${status === 'key' ? 'Check the action settings' : 'Is Sleekmeeter open?'}</text>`);
-  }
-  const ch = chan(s.channel);
-  if (!ch) return wrap(`<text x="100" y="50" ${FONT} font-size="16" font-weight="700" fill="#e8ebf2" text-anchor="middle">Pick a channel</text><text x="100" y="72" ${FONT} font-size="12" fill="#8b93a3" text-anchor="middle">Open the action settings</text>`);
-  const g = gainOf(ch), m = muteOf(ch);
-  const col = typeColor(ch.key);
-  const frac = clamp((g + 60) / 72, 0, 1);
-  const unity = (60 / 72) * 170 + 15;
-  const bar = `<rect x="15" y="80" width="170" height="8" rx="4" fill="#2a2f39"/><rect x="15" y="80" width="${(170 * frac).toFixed(1)}" height="8" rx="4" fill="${m ? '#4b5262' : col}"/><rect x="${unity.toFixed(1)}" y="76" width="2" height="16" fill="#8b93a3"/>`;
-  const name = `<text x="15" y="25" ${FONT} font-size="${ch.name.length > 11 ? 14 : 17}" font-weight="700" fill="${m ? '#8b93a3' : col}">${esc(fit(ch.name, 16))}</text>`;
-  if (m) {
-    return wrap(`${name}<text x="185" y="25" ${FONT} font-size="12" font-weight="700" fill="${RED}" text-anchor="end" letter-spacing="1">MUTED</text>${speaker(52, 54, 0.8, '#8b93a3', true)}<text x="185" y="62" ${FONT} font-size="30" font-weight="700" fill="#6c7585" text-anchor="end">${esc(fmtDb(g))}</text>${bar}`, '#241418');
-  }
-  return wrap(`${name}<text x="185" y="62" ${FONT} font-size="${Math.abs(g) >= 10 ? 38 : 42}" font-weight="700" fill="#f2f4f8" text-anchor="end">${esc(fmtDb(g))}<tspan font-size="14" fill="#8b93a3" dx="3">dB</tspan></text>${bar}`);
-}
+};
+const mediaFor = (c) => media.snapshot((c.settings || {}).mediaSource);
+const renderKey = (c) => c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c, mediaFor(c)) : studio.renderKey(c, drawingState());
+const renderDial = (c) => {
+  if (c.action === 'nowplaying') return studio.renderNowPlaying(c, drawingState(), mediaFor(c));
+  if (c.action === 'trackdial') return studio.renderTrackDial(c, mediaFor(c));
+  if (c.action === 'appvolume') return studio.renderAppDial(c, { status: appsStatus, app: appOf((c.settings || {}).exe) });
+  return studio.renderDial(c, drawingState());
+};
 
 const lastDrawn = new Map();
 function render(context) {
@@ -260,6 +141,8 @@ const renderAll = () => { for (const k of contexts.keys()) render(k); };
 /* ------------------------------------------------------------------ polling */
 let pollTimer = null;
 let pulseTimer = null;
+let levelTimer = null;
+let appTimer = null;
 // Lit route keys breathe slowly, so they're redrawn a few times a second.
 function pulseTick() {
   for (const [ctx, c] of contexts) {
@@ -267,6 +150,37 @@ function pulseTick() {
     const ch = chan((c.settings || {}).channel || MIC_DEFAULT);
     if (ch && routeOf(ch, (c.settings || {}).bus || 'B1')) render(ctx);
   }
+}
+// Dials with a meter ask for levels on their own fast timer; an older app has no such route.
+let levelsBusy = false;
+let levelsRetry = 0;
+const wantsLevels = () => status === 'ok' && [...contexts.values()].some(c => ['channel', 'nowplaying'].includes(c.action) && (c.settings || {}).showMeter !== false);
+async function levelTick() {
+  if (levelsBusy || Date.now() < levelsRetry || !wantsLevels()) return;
+  levelsBusy = true;
+  try {
+    levels = (await api('GET', '/api/levels')).levels;
+    for (const [ctx, c] of contexts) if (['channel', 'nowplaying'].includes(c.action)) render(ctx);
+  } catch (_) {
+    levels = null;
+    levelsRetry = Date.now() + 30000;
+  } finally {
+    levelsBusy = false;
+  }
+}
+// App volumes are only read while an app dial is on screen or its settings are open.
+async function pollApps() {
+  try {
+    apps = (await api('GET', '/api/apps')).apps || [];
+    appsStatus = 'ok';
+  } catch (e) {
+    apps = [];
+    appsStatus = e.status === 401 ? 'key' : e.status === 400 ? 'old' : 'offline';
+  }
+  for (const [ctx, c] of contexts) if (c.action === 'appvolume') render(ctx);
+}
+function appTick() {
+  if ([...contexts.values()].some(c => c.action === 'appvolume')) pollApps();
 }
 let polling = false;
 async function poll() {
@@ -281,17 +195,24 @@ async function poll() {
   } finally {
     polling = false;
   }
+  syncMedia();
   renderAll();
 }
 function startPolling() {
+  syncMedia();
   if (pollTimer) return;
   poll();
   pollTimer = setInterval(poll, 450);
   if (!pulseTimer) pulseTimer = setInterval(pulseTick, 220);
+  if (!levelTimer) levelTimer = setInterval(levelTick, 125);
+  if (!appTimer) { appTimer = setInterval(appTick, 1500); appTick(); }
 }
 function stopPollingIfIdle() {
+  syncMedia();
   if (contexts.size === 0 && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   if (contexts.size === 0 && pulseTimer) { clearInterval(pulseTimer); pulseTimer = null; }
+  if (contexts.size === 0 && levelTimer) { clearInterval(levelTimer); levelTimer = null; }
+  if (contexts.size === 0 && appTimer) { clearInterval(appTimer); appTimer = null; }
 }
 
 /* ------------------------------------------------------------------ doing things */
@@ -349,6 +270,56 @@ function rotate(c, ticks) {
   setLevel(ch.key, gainOf(ch) + t * step);
 }
 
+/* ------------------------------------------------------------------ media and app dials */
+function mediaCommand(context, what, source) {
+  if (!media.command(what, source)) showAlert(context);
+}
+// A fast spin skips one track, not ten.
+let lastSkip = 0;
+function skipTrack(context, c, ticks) {
+  if (!ticks || Date.now() - lastSkip < 350) return;
+  lastSkip = Date.now();
+  mediaCommand(context, ticks > 0 ? 'next' : 'previous', (c.settings || {}).mediaSource);
+}
+
+const appLocal = {}; // exe -> { volume?, mute?, until }: changes we just made, shown until Windows catches up
+function appOf(exe) {
+  const app = apps.find((a) => a.exe === exe);
+  if (!app) return null;
+  const l = appLocal[exe];
+  return l && Date.now() < l.until ? { ...app, ...l } : app;
+}
+const appSending = {};
+async function sendAppVolume(context, exe) {
+  if (appSending[exe]) { appSending[exe] = 'again'; return; }
+  appSending[exe] = 'yes';
+  try {
+    await api('POST', '/api/appvolume', { exe, volume: appLocal[exe].volume });
+  } catch (_) {
+    showAlert(context);
+  }
+  const again = appSending[exe] === 'again';
+  delete appSending[exe];
+  if (again) sendAppVolume(context, exe);
+}
+function rotateApp(context, c, ticks) {
+  const s = c.settings || {};
+  const app = appOf(s.exe);
+  if (!app) { showAlert(context); return; }
+  const volume = clamp(Math.round(app.volume + ticks * (Number(s.step) || 2)), 0, 100);
+  appLocal[s.exe] = { ...appLocal[s.exe], volume, until: Date.now() + 1800 };
+  render(context);
+  sendAppVolume(context, s.exe);
+}
+async function toggleAppMute(context, c) {
+  const exe = (c.settings || {}).exe;
+  const app = appOf(exe);
+  if (!app) { showAlert(context); return; }
+  appLocal[exe] = { ...appLocal[exe], mute: !app.mute, until: Date.now() + 1800 };
+  render(context);
+  try { await api('POST', '/api/appvolume', { exe, mute: !app.mute }); } catch (_) { showAlert(context); }
+}
+
 function onKeyDown(context, c) {
   const s = c.settings || {};
   switch (c.action) {
@@ -377,6 +348,7 @@ function onKeyDown(context, c) {
     case 'record': return act(context, 'record');
     case 'duck': return act(context, 'duck');
     case 'output': return s.output ? act(context, 'output', s.output) : act(context, 'outputnext');
+    case 'nowplayingkey': return (s.press || 'playpause') === 'none' ? undefined : mediaCommand(context, s.press || 'playpause', s.mediaSource);
     default: return undefined;
   }
 }
@@ -392,6 +364,8 @@ function listsFor(context) {
     scenes: st ? st.scenes : [],
     sounds: st ? st.sounds : [],
     outputs: st ? st.outputs : [],
+    apps: apps.map((a) => ({ exe: a.exe, name: a.name })),
+    appsStatus,
   };
 }
 function toPI(action, context, payload) {
@@ -437,7 +411,7 @@ function onMessage(raw) {
       break;
     case 'didReceiveSettings': {
       const c = contexts.get(ctx);
-      if (c) { c.settings = (m.payload && m.payload.settings) || {}; lastDrawn.delete(ctx); render(ctx); }
+      if (c) { c.settings = (m.payload && m.payload.settings) || {}; syncMedia(); lastDrawn.delete(ctx); render(ctx); }
       break;
     }
     case 'keyUp': {
@@ -456,28 +430,35 @@ function onMessage(raw) {
     }
     case 'dialRotate': {
       const c = contexts.get(ctx);
-      if (c && c.action === 'channel') rotate(c, (m.payload && m.payload.ticks) || 0);
+      if (c && ['channel', 'nowplaying'].includes(c.action)) rotate(c, (m.payload && m.payload.ticks) || 0);
+      else if (c && c.action === 'trackdial') skipTrack(ctx, c, (m.payload && m.payload.ticks) || 0);
+      else if (c && c.action === 'appvolume') rotateApp(ctx, c, (m.payload && m.payload.ticks) || 0);
       break;
     }
     case 'dialDown': {
       const c = contexts.get(ctx);
-      if (!c || c.action !== 'channel') break;
+      if (c && c.action === 'appvolume') { if (((c.settings || {}).press || 'mute') === 'mute') toggleAppMute(ctx, c); break; }
+      if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
-      const what = s.press || 'mute';
+      const what = s.press || (c.action === 'trackdial' ? 'playpause' : 'mute');
       if (what === 'mute') toggleMute(ctx, s.channel);
       else if (what === 'zero') { const ch = chan(s.channel); if (ch) setLevel(ch.key, 0); }
+      else if (['playpause', 'next', 'previous'].includes(what)) { if (!media.command(what, s.mediaSource)) showAlert(ctx); }
       break;
     }
     case 'touchTap': {
       const c = contexts.get(ctx);
-      if (!c || c.action !== 'channel') break;
+      if (c && c.action === 'appvolume') { if (((c.settings || {}).tap || 'mute') === 'mute') toggleAppMute(ctx, c); break; }
+      if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
-      if ((s.tap || 'mute') === 'mute') toggleMute(ctx, s.channel);
+      const what = s.tap || (c.action === 'channel' ? 'mute' : 'playpause');
+      if (what === 'mute') toggleMute(ctx, s.channel);
+      else if (['playpause', 'next', 'previous'].includes(what)) { if (!media.command(what, s.mediaSource)) showAlert(ctx); }
       break;
     }
     case 'sendToPlugin': {
       const p = m.payload || {};
-      if (p.event === 'lists') { poll().then(() => toPI(m.action, ctx, listsFor(ctx))); toPI(m.action, ctx, listsFor(ctx)); }
+      if (p.event === 'lists') { const fresh = contexts.get(ctx) && contexts.get(ctx).action === 'appvolume' ? Promise.all([poll(), pollApps()]) : poll(); fresh.then(() => toPI(m.action, ctx, listsFor(ctx))); toPI(m.action, ctx, listsFor(ctx)); }
       else if (p.event === 'address') { setAddress(p.value); setTimeout(() => toPI(m.action, ctx, listsFor(ctx)), 900); }
       break;
     }
@@ -492,8 +473,8 @@ function connect() {
     send({ event: 'getGlobalSettings', context: args.pluginUUID });
   });
   ws.on('message', onMessage);
-  ws.on('close', () => process.exit(0));
-  ws.on('error', () => process.exit(1));
+  ws.on('close', () => { media.stop(); process.exit(0); });
+  ws.on('error', () => { media.stop(); process.exit(1); });
 }
 
 if (args.port && args.pluginUUID && args.registerEvent) connect();

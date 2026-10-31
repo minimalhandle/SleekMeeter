@@ -1,8 +1,8 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.13.0.0",
+  "Version": "0.16.0.2",
   "Author": "minimalhandle",
-  "Description": "Control Voicemeeter through Sleekmeeter: channel levels on the dials, mute, scenes, sounds, Be right back, recording and more.",
+  "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
   "CategoryIcon": "imgs/category",
   "Icon": "imgs/plugin",
@@ -35,7 +35,7 @@
       "UserTitleEnabled": false,
       "Encoder": {
         "layout": "layouts/channel.json",
-        "Icon": "imgs/states/channel",
+        "Icon": "imgs/keys/channel",
         "TriggerDescription": {
           "Rotate": "Change level",
           "Push": "Mute or unmute",
@@ -44,7 +44,7 @@
       },
       "States": [
         {
-          "Image": "imgs/states/channel",
+          "Image": "imgs/keys/channel",
           "ShowTitle": false
         }
       ]
@@ -61,7 +61,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/mute",
+          "Image": "imgs/keys/mute",
           "ShowTitle": false
         }
       ]
@@ -70,7 +70,7 @@
       "Name": "Mute mic",
       "UUID": "com.minimalhandle.sleekmeeter.mic",
       "Icon": "imgs/actions/mic",
-      "Tooltip": "Mute or unmute your microphone. The key shows LIVE (green) or MUTED (red, mic crossed out).",
+      "Tooltip": "Mute or unmute your microphone. Green means active; red with a slash means muted.",
       "Controllers": [
         "Keypad"
       ],
@@ -78,7 +78,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/mic",
+          "Image": "imgs/keys/mic",
           "ShowTitle": false
         }
       ]
@@ -95,7 +95,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/route",
+          "Image": "imgs/keys/route",
           "ShowTitle": false
         }
       ]
@@ -112,7 +112,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/level",
+          "Image": "imgs/keys/level",
           "ShowTitle": false
         }
       ]
@@ -129,7 +129,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/scene",
+          "Image": "imgs/keys/scene",
           "ShowTitle": false
         }
       ]
@@ -146,7 +146,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/sound",
+          "Image": "imgs/keys/sound",
           "ShowTitle": false
         }
       ]
@@ -163,7 +163,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/soundstop",
+          "Image": "imgs/keys/soundstop",
           "ShowTitle": false
         }
       ]
@@ -180,7 +180,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/brb",
+          "Image": "imgs/keys/brb",
           "ShowTitle": false
         }
       ]
@@ -197,7 +197,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/record",
+          "Image": "imgs/keys/record",
           "ShowTitle": false
         }
       ]
@@ -214,7 +214,7 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/duck",
+          "Image": "imgs/keys/duck",
           "ShowTitle": false
         }
       ]
@@ -231,7 +231,102 @@
       "UserTitleEnabled": false,
       "States": [
         {
-          "Image": "imgs/states/output",
+          "Image": "imgs/keys/output",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Now Playing + channel",
+      "UUID": "com.minimalhandle.sleekmeeter.nowplaying",
+      "Icon": "imgs/actions/nowplaying",
+      "Tooltip": "Album art, artist, elapsed and total time. Turn to adjust a Sleekmeeter channel, press to mute, tap to play or pause.",
+      "Controllers": [
+        "Encoder"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "Encoder": {
+        "layout": "layouts/channel.json",
+        "TriggerDescription": {
+          "Push": "Mute channel (configurable)",
+          "Rotate": "Adjust channel level",
+          "Touch": "Play / pause (configurable)"
+        },
+        "Icon": "imgs/keys/nowplaying"
+      },
+      "States": [
+        {
+          "ShowTitle": false,
+          "Image": "imgs/keys/nowplaying"
+        }
+      ]
+    },
+    {
+      "Name": "Now Playing key",
+      "UUID": "com.minimalhandle.sleekmeeter.nowplayingkey",
+      "Icon": "imgs/actions/nowplayingkey",
+      "Tooltip": "Album art, title and track progress on a key. Press to play or pause.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/nowplayingkey",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Now Playing + tracks",
+      "UUID": "com.minimalhandle.sleekmeeter.trackdial",
+      "Icon": "imgs/actions/trackdial",
+      "Tooltip": "Album art and track time. Turn to change track, press or tap to play or pause.",
+      "Controllers": [
+        "Encoder"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "Encoder": {
+        "layout": "layouts/channel.json",
+        "Icon": "imgs/keys/trackdial",
+        "TriggerDescription": {
+          "Rotate": "Next or previous track",
+          "Push": "Play / pause (configurable)",
+          "Touch": "Play / pause (configurable)"
+        }
+      },
+      "States": [
+        {
+          "Image": "imgs/keys/trackdial",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "App volume",
+      "UUID": "com.minimalhandle.sleekmeeter.appvolume",
+      "Icon": "imgs/actions/appvolume",
+      "Tooltip": "Turn to change one app's volume, for example Discord or a game. Press or tap to mute it.",
+      "Controllers": [
+        "Encoder"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "Encoder": {
+        "layout": "layouts/channel.json",
+        "Icon": "imgs/keys/appvolume",
+        "TriggerDescription": {
+          "Rotate": "Change app volume",
+          "Push": "Mute or unmute app",
+          "Touch": "Mute or unmute app"
+        }
+      },
+      "States": [
+        {
+          "Image": "imgs/keys/appvolume",
           "ShowTitle": false
         }
       ]

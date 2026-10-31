@@ -657,6 +657,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .scene-list .del { color: var(--ink-2); }
 .scene-list .empty { color: var(--ink-2); padding: 10px 0; }
 .scene-save { display: flex; gap: 8px; }
+.dlg.streamdeck-dlg { width: min(440px, calc(100vw - 32px)); }
 .dlg.scenes { width: min(620px, calc(100vw - 32px)); }
 
 /* ---------- output profiles ---------- */

@@ -1,0 +1,4463 @@
+[
+  {
+    "service": "Philips-Hue",
+    "id": "launch",
+    "label": "OPEN PHILIPS HUE",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "Philips-Hue/launch.png"
+  },
+  {
+    "service": "OBS",
+    "id": "launch",
+    "label": "OPEN OBS",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "OBS/launch.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "launch",
+    "label": "OPEN SLEEKMEETER",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "Sleekmeeter/launch.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "launch",
+    "label": "OPEN REVIDI",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "Revidi/launch.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "launch",
+    "label": "OPEN TWITCH",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "Twitch/launch.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "launch",
+    "label": "OPEN SPOTIFY",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "Spotify/launch.png"
+  },
+  {
+    "service": "Discord",
+    "id": "launch",
+    "label": "OPEN DISCORD",
+    "glyph": "blank",
+    "state": "launcher",
+    "support": "Stream Deck System / Open; choose your installed app",
+    "file": "Discord/launch.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "channel-level",
+    "label": "CHANNEL LEVEL",
+    "glyph": "faders",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/channel-level.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mute-channel",
+    "label": "MUTE CHANNEL",
+    "glyph": "speaker",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/mute-channel.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mute-mic",
+    "label": "MUTE MIC",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/mute-mic.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-to-bus",
+    "label": "ROUTE TO BUS",
+    "glyph": "route",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/route-to-bus.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "level-step",
+    "label": "LEVEL STEP",
+    "glyph": "faders",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/level-step.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "level-up",
+    "label": "LEVEL UP",
+    "glyph": "up",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/level-up.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "level-down",
+    "label": "LEVEL DOWN",
+    "glyph": "down",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/level-down.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "set-level",
+    "label": "SET LEVEL",
+    "glyph": "faders",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/set-level.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "load-scene",
+    "label": "LOAD SCENE",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/load-scene.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "play-sound",
+    "label": "PLAY SOUND",
+    "glyph": "play",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/play-sound.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "stop-sounds",
+    "label": "STOP SOUNDS",
+    "glyph": "stop",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/stop-sounds.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "brb",
+    "label": "BE RIGHT BACK",
+    "glyph": "coffee",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/brb.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "record",
+    "label": "RECORD",
+    "glyph": "record",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/record.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "ducking",
+    "label": "TALK OVER",
+    "glyph": "duck",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/ducking.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-profile",
+    "label": "OUTPUT PROFILE",
+    "glyph": "route",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/output-profile.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "next-output",
+    "label": "NEXT OUTPUT",
+    "glyph": "next",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/next-output.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mic-on",
+    "label": "MICROPHONE",
+    "glyph": "mic",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "color": "#43e08a",
+    "file": "Sleekmeeter/mic-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mic-off",
+    "label": "MICROPHONE",
+    "glyph": "mic",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "slash": true,
+    "color": "#ff5972",
+    "file": "Sleekmeeter/mic-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "channel-on",
+    "label": "CHANNEL ON",
+    "glyph": "speaker",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/channel-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "channel-off",
+    "label": "CH MUTED",
+    "glyph": "speaker",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "slash": true,
+    "file": "Sleekmeeter/channel-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "brb-state-on",
+    "label": "BRB ON",
+    "glyph": "coffee",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/brb-state-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "brb-state-off",
+    "label": "BACK LIVE",
+    "glyph": "coffee",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "slash": true,
+    "file": "Sleekmeeter/brb-state-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "record-state-on",
+    "label": "RECORD ON",
+    "glyph": "record",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/record-state-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "record-state-off",
+    "label": "REC STOPPED",
+    "glyph": "record",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "slash": true,
+    "file": "Sleekmeeter/record-state-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "duck-state-on",
+    "label": "DUCKING ON",
+    "glyph": "duck",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "file": "Sleekmeeter/duck-state-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "duck-state-off",
+    "label": "DUCKING OFF",
+    "glyph": "duck",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin",
+    "slash": true,
+    "file": "Sleekmeeter/duck-state-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "push-to-talk",
+    "label": "HOLD TO TALK",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Sleekmeeter global shortcut via Stream Deck Hotkey",
+    "file": "Sleekmeeter/push-to-talk.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "push-to-mute",
+    "label": "HOLD TO MUTE",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Sleekmeeter global shortcut via Stream Deck Hotkey",
+    "slash": true,
+    "file": "Sleekmeeter/push-to-mute.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "show-hide",
+    "label": "SHOW / HIDE",
+    "glyph": "monitor",
+    "state": "action",
+    "support": "Sleekmeeter global shortcut via Stream Deck Hotkey",
+    "file": "Sleekmeeter/show-hide.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a1-on",
+    "label": "ROUTE A1 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A1",
+    "color": "#ffbe55",
+    "routeBus": "A1",
+    "file": "Sleekmeeter/route-a1-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a1-off",
+    "label": "ROUTE A1 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A1",
+    "color": "#ffbe55",
+    "routeBus": "A1",
+    "file": "Sleekmeeter/route-a1-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a2-on",
+    "label": "ROUTE A2 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A2",
+    "color": "#ffbe55",
+    "routeBus": "A2",
+    "file": "Sleekmeeter/route-a2-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a2-off",
+    "label": "ROUTE A2 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A2",
+    "color": "#ffbe55",
+    "routeBus": "A2",
+    "file": "Sleekmeeter/route-a2-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a3-on",
+    "label": "ROUTE A3 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A3",
+    "color": "#ffbe55",
+    "routeBus": "A3",
+    "file": "Sleekmeeter/route-a3-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a3-off",
+    "label": "ROUTE A3 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A3",
+    "color": "#ffbe55",
+    "routeBus": "A3",
+    "file": "Sleekmeeter/route-a3-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a4-on",
+    "label": "ROUTE A4 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A4",
+    "color": "#ffbe55",
+    "routeBus": "A4",
+    "file": "Sleekmeeter/route-a4-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a4-off",
+    "label": "ROUTE A4 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A4",
+    "color": "#ffbe55",
+    "routeBus": "A4",
+    "file": "Sleekmeeter/route-a4-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a5-on",
+    "label": "ROUTE A5 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A5",
+    "color": "#ffbe55",
+    "routeBus": "A5",
+    "file": "Sleekmeeter/route-a5-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-a5-off",
+    "label": "ROUTE A5 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "A5",
+    "color": "#ffbe55",
+    "routeBus": "A5",
+    "file": "Sleekmeeter/route-a5-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-b1-on",
+    "label": "ROUTE B1 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "B1",
+    "color": "#53bfff",
+    "routeBus": "B1",
+    "file": "Sleekmeeter/route-b1-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-b1-off",
+    "label": "ROUTE B1 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "B1",
+    "color": "#53bfff",
+    "routeBus": "B1",
+    "file": "Sleekmeeter/route-b1-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-b2-on",
+    "label": "ROUTE B2 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "B2",
+    "color": "#53bfff",
+    "routeBus": "B2",
+    "file": "Sleekmeeter/route-b2-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-b2-off",
+    "label": "ROUTE B2 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "B2",
+    "color": "#53bfff",
+    "routeBus": "B2",
+    "file": "Sleekmeeter/route-b2-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-b3-on",
+    "label": "ROUTE B3 ON",
+    "glyph": "route",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "B3",
+    "color": "#53bfff",
+    "routeBus": "B3",
+    "file": "Sleekmeeter/route-b3-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "route-b3-off",
+    "label": "ROUTE B3 OFF",
+    "glyph": "route",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Route to bus (available buses depend on Voicemeeter edition)",
+    "badge": "B3",
+    "color": "#53bfff",
+    "routeBus": "B3",
+    "file": "Sleekmeeter/route-b3-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mic-live",
+    "label": "MICROPHONE",
+    "glyph": "mic",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "color": "#43e08a",
+    "file": "Sleekmeeter/mic-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mic-muted",
+    "label": "MICROPHONE",
+    "glyph": "mic",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "color": "#ff5972",
+    "file": "Sleekmeeter/mic-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "discord-live",
+    "label": "DISCORD LIVE",
+    "glyph": "chat",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/discord-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "discord-muted",
+    "label": "DISCORD MUTED",
+    "glyph": "chat",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/discord-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "desktop-live",
+    "label": "DESKTOP LIVE",
+    "glyph": "desktop",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/desktop-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "desktop-muted",
+    "label": "DESKTOP MUTED",
+    "glyph": "desktop",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/desktop-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "music-live",
+    "label": "MUSIC LIVE",
+    "glyph": "music",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/music-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "music-muted",
+    "label": "MUSIC MUTED",
+    "glyph": "music",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/music-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "game-live",
+    "label": "GAME LIVE",
+    "glyph": "game",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/game-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "game-muted",
+    "label": "GAME MUTED",
+    "glyph": "game",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/game-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "aux-live",
+    "label": "AUX LIVE",
+    "glyph": "wave",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/aux-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "aux-muted",
+    "label": "AUX MUTED",
+    "glyph": "wave",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/aux-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "headphones-live",
+    "label": "HEADPHONES LIVE",
+    "glyph": "headphones",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/headphones-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "headphones-muted",
+    "label": "HEADPHONES MUTED",
+    "glyph": "headphones",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/headphones-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "speakers-live",
+    "label": "SPEAKERS LIVE",
+    "glyph": "speaker",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/speakers-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "speakers-muted",
+    "label": "SPEAKERS MUTED",
+    "glyph": "speaker",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/speakers-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "stream-live",
+    "label": "STREAM LIVE",
+    "glyph": "stream",
+    "state": "on",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": false,
+    "file": "Sleekmeeter/stream-live.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "stream-muted",
+    "label": "STREAM MUTED",
+    "glyph": "stream",
+    "state": "off",
+    "support": "Sleekmeeter Stream Deck plugin / Mute channel; select the matching channel",
+    "slash": true,
+    "file": "Sleekmeeter/stream-muted.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "solo",
+    "label": "SOLO",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/solo.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "clear-solos",
+    "label": "CLEAR SOLOS",
+    "glyph": "reset",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/clear-solos.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mono",
+    "label": "MONO",
+    "glyph": "speaker",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/mono.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "stereo",
+    "label": "STEREO",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/stereo.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "pan-left",
+    "label": "PAN LEFT",
+    "glyph": "back",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/pan-left.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "pan-centre",
+    "label": "PAN CENTRE",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/pan-centre.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "pan-right",
+    "label": "PAN RIGHT",
+    "glyph": "arrow",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/pan-right.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "compressor",
+    "label": "COMPRESSOR",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/compressor.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "gate",
+    "label": "GATE",
+    "glyph": "filter",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/gate.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "eq",
+    "label": "EQUALIZER",
+    "glyph": "eq",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/eq.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "bus-mode",
+    "label": "BUS MODE",
+    "glyph": "route",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/bus-mode.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "device",
+    "label": "AUDIO DEVICE",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/device.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "channel-settings",
+    "label": "CHANNEL SETUP",
+    "glyph": "settings",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/channel-settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rename",
+    "label": "RENAME",
+    "glyph": "text",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rename.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "hide-channel",
+    "label": "HIDE CHANNEL",
+    "glyph": "eye",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "slash": true,
+    "file": "Sleekmeeter/hide-channel.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "save-scene",
+    "label": "SAVE SCENE",
+    "glyph": "save",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/save-scene.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "delete-scene",
+    "label": "DELETE SCENE",
+    "glyph": "trash",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/delete-scene.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "auto-scene",
+    "label": "AUTO SCENE",
+    "glyph": "scene",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/auto-scene.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-rules",
+    "label": "SCENE RULES",
+    "glyph": "list",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/scene-rules.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "capture-output",
+    "label": "SAVE OUTPUT",
+    "glyph": "save",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/capture-output.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "auto-output",
+    "label": "AUTO OUTPUT",
+    "glyph": "route",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/auto-output.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "soundboard",
+    "label": "SOUNDBOARD",
+    "glyph": "grid",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/soundboard.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "import-sounds",
+    "label": "ADD SOUNDS",
+    "glyph": "plus",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/import-sounds.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-folder",
+    "label": "ADD FOLDER",
+    "glyph": "folder",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/sound-folder.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "random-pack",
+    "label": "RANDOM PACK",
+    "glyph": "shuffle",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/random-pack.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "edit-sounds",
+    "label": "EDIT SOUNDS",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/edit-sounds.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "recorder",
+    "label": "RECORDER",
+    "glyph": "record",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/recorder.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-play",
+    "label": "REC PLAY",
+    "glyph": "play",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-play.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-pause",
+    "label": "REC PAUSE",
+    "glyph": "pause",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-pause.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-stop",
+    "label": "REC STOP",
+    "glyph": "stop",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-stop.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-rewind",
+    "label": "REC REWIND",
+    "glyph": "rewind",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-rewind.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-fast-forward",
+    "label": "REC FORWARD",
+    "glyph": "forward",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-fast-forward.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-open-file",
+    "label": "OPEN AUDIO",
+    "glyph": "folder",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-open-file.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-arm-inputs",
+    "label": "ARM INPUTS",
+    "glyph": "mic",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-arm-inputs.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-arm-outputs",
+    "label": "ARM OUTPUTS",
+    "glyph": "speaker",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-arm-outputs.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-play-route",
+    "label": "PLAY ROUTING",
+    "glyph": "route",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-play-route.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-format",
+    "label": "REC FORMAT",
+    "glyph": "list",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-format.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "rec-seek",
+    "label": "REC SEEK",
+    "glyph": "clock",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/rec-seek.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "app-volumes",
+    "label": "APP VOLUMES",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/app-volumes.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "app-routing",
+    "label": "APP ROUTING",
+    "glyph": "route",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/app-routing.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "restart-engine",
+    "label": "RESTART AUDIO",
+    "glyph": "reset",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/restart-engine.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "show-voicemeeter",
+    "label": "VOICEMEETER",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/show-voicemeeter.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "vm-options",
+    "label": "VM OPTIONS",
+    "glyph": "settings",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/vm-options.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "setup-assistant",
+    "label": "SETUP ASSIST",
+    "glyph": "check",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/setup-assistant.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "hear-yourself",
+    "label": "HEAR YOURSELF",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/hear-yourself.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mic-chain",
+    "label": "MIC CHAIN",
+    "glyph": "mic",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/mic-chain.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "level-history",
+    "label": "LEVEL HISTORY",
+    "glyph": "chart",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/level-history.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "device-names",
+    "label": "DEVICE NAMES",
+    "glyph": "text",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/device-names.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "simple-mode",
+    "label": "SIMPLE MODE",
+    "glyph": "simple-layout",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/simple-mode.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "reset-order",
+    "label": "RESET ORDER",
+    "glyph": "reset",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/reset-order.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "mini-mode",
+    "label": "MINI MODE",
+    "glyph": "monitor",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/mini-mode.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "keep-on-top",
+    "label": "KEEP ON TOP",
+    "glyph": "pin",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/keep-on-top.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "settings",
+    "label": "SETTINGS",
+    "glyph": "settings",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "themes",
+    "label": "THEMES",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/themes.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "streamer-mode",
+    "label": "STREAMER MODE",
+    "glyph": "stream",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/streamer-mode.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "fade-settings",
+    "label": "SMOOTH FADES",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/fade-settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "duck-settings",
+    "label": "DUCK SETUP",
+    "glyph": "duck",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/duck-settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "brb-settings",
+    "label": "BRB SETUP",
+    "glyph": "coffee",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/brb-settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "obs-link",
+    "label": "OBS LINK",
+    "glyph": "connection",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/obs-link.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "twitch-link",
+    "label": "TWITCH LINK",
+    "glyph": "chat",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/twitch-link.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "phone-remote",
+    "label": "PHONE REMOTE",
+    "glyph": "phone",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/phone-remote.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "shortcuts",
+    "label": "SHORTCUTS",
+    "glyph": "keyboard",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/shortcuts.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "health-check",
+    "label": "HEALTH CHECK",
+    "glyph": "check",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/health-check.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "export-settings",
+    "label": "EXPORT SETUP",
+    "glyph": "upload",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/export-settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "import-settings",
+    "label": "IMPORT SETUP",
+    "glyph": "download",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/import-settings.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "updates",
+    "label": "CHECK UPDATE",
+    "glyph": "download",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/updates.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "logs",
+    "label": "OPEN LOGS",
+    "glyph": "list",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "file": "Sleekmeeter/logs.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-1",
+    "label": "SCENE 1",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "1",
+    "file": "Sleekmeeter/scene-1.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-2",
+    "label": "SCENE 2",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "2",
+    "file": "Sleekmeeter/scene-2.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-3",
+    "label": "SCENE 3",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "3",
+    "file": "Sleekmeeter/scene-3.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-4",
+    "label": "SCENE 4",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "4",
+    "file": "Sleekmeeter/scene-4.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-5",
+    "label": "SCENE 5",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "5",
+    "file": "Sleekmeeter/scene-5.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-6",
+    "label": "SCENE 6",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "6",
+    "file": "Sleekmeeter/scene-6.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-7",
+    "label": "SCENE 7",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "7",
+    "file": "Sleekmeeter/scene-7.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "scene-8",
+    "label": "SCENE 8",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Load scene; choose your saved scene",
+    "badge": "8",
+    "file": "Sleekmeeter/scene-8.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-1",
+    "label": "SOUND 1",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "1",
+    "file": "Sleekmeeter/sound-1.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-2",
+    "label": "SOUND 2",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "2",
+    "file": "Sleekmeeter/sound-2.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-3",
+    "label": "SOUND 3",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "3",
+    "file": "Sleekmeeter/sound-3.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-4",
+    "label": "SOUND 4",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "4",
+    "file": "Sleekmeeter/sound-4.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-5",
+    "label": "SOUND 5",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "5",
+    "file": "Sleekmeeter/sound-5.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-6",
+    "label": "SOUND 6",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "6",
+    "file": "Sleekmeeter/sound-6.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-7",
+    "label": "SOUND 7",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "7",
+    "file": "Sleekmeeter/sound-7.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-8",
+    "label": "SOUND 8",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "8",
+    "file": "Sleekmeeter/sound-8.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-9",
+    "label": "SOUND 9",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "9",
+    "file": "Sleekmeeter/sound-9.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-10",
+    "label": "SOUND 10",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "10",
+    "file": "Sleekmeeter/sound-10.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-11",
+    "label": "SOUND 11",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "11",
+    "file": "Sleekmeeter/sound-11.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "sound-12",
+    "label": "SOUND 12",
+    "glyph": "note",
+    "state": "action",
+    "support": "Sleekmeeter Stream Deck plugin / Play sound; choose your saved clip",
+    "badge": "12",
+    "file": "Sleekmeeter/sound-12.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-console",
+    "label": "CONSOLE",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#e4b770",
+    "file": "Sleekmeeter/theme-console.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-oled-black",
+    "label": "OLED BLACK",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#c7cdd4",
+    "file": "Sleekmeeter/theme-oled-black.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-glass",
+    "label": "GLASS",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#70e5ff",
+    "file": "Sleekmeeter/theme-glass.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-neon",
+    "label": "NEON",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#eb5aff",
+    "file": "Sleekmeeter/theme-neon.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-terminal",
+    "label": "TERMINAL",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#54ff74",
+    "file": "Sleekmeeter/theme-terminal.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-bubblegum",
+    "label": "BUBBLEGUM",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#ff8bd8",
+    "file": "Sleekmeeter/theme-bubblegum.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-blueprint",
+    "label": "BLUEPRINT",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#75acff",
+    "file": "Sleekmeeter/theme-blueprint.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-block",
+    "label": "BLOCK",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#ffc252",
+    "file": "Sleekmeeter/theme-block.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-arcade",
+    "label": "ARCADE",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#a6ff4b",
+    "file": "Sleekmeeter/theme-arcade.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-peaches-cream",
+    "label": "PEACHES CREAM",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#ffb9a3",
+    "file": "Sleekmeeter/theme-peaches-cream.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-sticker-bomb",
+    "label": "STICKER BOMB",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#ffed59",
+    "file": "Sleekmeeter/theme-sticker-bomb.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-afterburner",
+    "label": "AFTERBURNER",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#ff8b35",
+    "file": "Sleekmeeter/theme-afterburner.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-lunar",
+    "label": "LUNAR",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#b89bff",
+    "file": "Sleekmeeter/theme-lunar.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-onyx",
+    "label": "ONYX",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#428cff",
+    "file": "Sleekmeeter/theme-onyx.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "theme-opal",
+    "label": "OPAL",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI only; requires an added binding",
+    "color": "#d5beff",
+    "file": "Sleekmeeter/theme-opal.png"
+  },
+  {
+    "service": "Discord",
+    "id": "mute",
+    "label": "MUTE",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/mute.png"
+  },
+  {
+    "service": "Discord",
+    "id": "unmute",
+    "label": "UNMUTE",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/unmute.png"
+  },
+  {
+    "service": "Discord",
+    "id": "deafen",
+    "label": "DEAFEN",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/deafen.png"
+  },
+  {
+    "service": "Discord",
+    "id": "undeafen",
+    "label": "UNDEAFEN",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/undeafen.png"
+  },
+  {
+    "service": "Discord",
+    "id": "mute-toggle",
+    "label": "TOGGLE MUTE",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/mute-toggle.png"
+  },
+  {
+    "service": "Discord",
+    "id": "deafen-toggle",
+    "label": "TOGGLE DEAFEN",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/deafen-toggle.png"
+  },
+  {
+    "service": "Discord",
+    "id": "push-to-talk",
+    "label": "HOLD TO TALK",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/push-to-talk.png"
+  },
+  {
+    "service": "Discord",
+    "id": "push-to-mute",
+    "label": "HOLD TO MUTE",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/push-to-mute.png"
+  },
+  {
+    "service": "Discord",
+    "id": "video-on",
+    "label": "VIDEO ON",
+    "glyph": "camera",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/video-on.png"
+  },
+  {
+    "service": "Discord",
+    "id": "video-off",
+    "label": "VIDEO OFF",
+    "glyph": "camera",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/video-off.png"
+  },
+  {
+    "service": "Discord",
+    "id": "share-screen",
+    "label": "SHARE SCREEN",
+    "glyph": "screen",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/share-screen.png"
+  },
+  {
+    "service": "Discord",
+    "id": "stop-sharing",
+    "label": "STOP SHARING",
+    "glyph": "screen",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/stop-sharing.png"
+  },
+  {
+    "service": "Discord",
+    "id": "join-voice",
+    "label": "JOIN VOICE",
+    "glyph": "phone",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/join-voice.png"
+  },
+  {
+    "service": "Discord",
+    "id": "leave-voice",
+    "label": "LEAVE VOICE",
+    "glyph": "phone",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/leave-voice.png"
+  },
+  {
+    "service": "Discord",
+    "id": "voice-channel",
+    "label": "VOICE CHANNEL",
+    "glyph": "chat",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/voice-channel.png"
+  },
+  {
+    "service": "Discord",
+    "id": "text-channel",
+    "label": "TEXT CHANNEL",
+    "glyph": "text",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/text-channel.png"
+  },
+  {
+    "service": "Discord",
+    "id": "server",
+    "label": "SERVER",
+    "glyph": "users",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/server.png"
+  },
+  {
+    "service": "Discord",
+    "id": "input-volume",
+    "label": "MIC VOLUME",
+    "glyph": "mic",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/input-volume.png"
+  },
+  {
+    "service": "Discord",
+    "id": "output-volume",
+    "label": "VOICE VOLUME",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/output-volume.png"
+  },
+  {
+    "service": "Discord",
+    "id": "volume-up",
+    "label": "VOLUME UP",
+    "glyph": "up",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/volume-up.png"
+  },
+  {
+    "service": "Discord",
+    "id": "volume-down",
+    "label": "VOLUME DOWN",
+    "glyph": "down",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/volume-down.png"
+  },
+  {
+    "service": "Discord",
+    "id": "soundboard",
+    "label": "SOUNDBOARD",
+    "glyph": "grid",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/soundboard.png"
+  },
+  {
+    "service": "Discord",
+    "id": "play-sound",
+    "label": "PLAY SOUND",
+    "glyph": "play",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/play-sound.png"
+  },
+  {
+    "service": "Discord",
+    "id": "stop-sound",
+    "label": "STOP SOUND",
+    "glyph": "stop",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/stop-sound.png"
+  },
+  {
+    "service": "Discord",
+    "id": "notifications-on",
+    "label": "NOTIFY ON",
+    "glyph": "bell",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/notifications-on.png"
+  },
+  {
+    "service": "Discord",
+    "id": "notifications-off",
+    "label": "NOTIFY OFF",
+    "glyph": "bell",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Discord/notifications-off.png"
+  },
+  {
+    "service": "Discord",
+    "id": "settings",
+    "label": "SETTINGS",
+    "glyph": "settings",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/settings.png"
+  },
+  {
+    "service": "Discord",
+    "id": "dm",
+    "label": "DIRECT MESSAGE",
+    "glyph": "chat",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/dm.png"
+  },
+  {
+    "service": "Discord",
+    "id": "friends",
+    "label": "FRIENDS",
+    "glyph": "users",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/friends.png"
+  },
+  {
+    "service": "Discord",
+    "id": "search",
+    "label": "SEARCH",
+    "glyph": "search",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Discord/search.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "play",
+    "label": "PLAY",
+    "glyph": "play",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/play.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "pause",
+    "label": "PAUSE",
+    "glyph": "pause",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/pause.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "play-pause",
+    "label": "PLAY / PAUSE",
+    "glyph": "play",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/play-pause.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "next",
+    "label": "NEXT TRACK",
+    "glyph": "next",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/next.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "previous",
+    "label": "PREVIOUS",
+    "glyph": "previous",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/previous.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "seek-forward",
+    "label": "SEEK FORWARD",
+    "glyph": "forward",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/seek-forward.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "seek-back",
+    "label": "SEEK BACK",
+    "glyph": "rewind",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/seek-back.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "volume-up",
+    "label": "VOLUME UP",
+    "glyph": "up",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/volume-up.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "volume-down",
+    "label": "VOLUME DOWN",
+    "glyph": "down",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/volume-down.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "mute",
+    "label": "MUTE",
+    "glyph": "speaker",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Spotify/mute.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "unmute",
+    "label": "UNMUTE",
+    "glyph": "speaker",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/unmute.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "shuffle-on",
+    "label": "SHUFFLE ON",
+    "glyph": "shuffle",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/shuffle-on.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "shuffle-off",
+    "label": "SHUFFLE OFF",
+    "glyph": "shuffle",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/shuffle-off.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "repeat-off",
+    "label": "REPEAT OFF",
+    "glyph": "repeat",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/repeat-off.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "repeat-all",
+    "label": "REPEAT ALL",
+    "glyph": "repeat",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/repeat-all.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "repeat-one",
+    "label": "REPEAT ONE",
+    "glyph": "repeat",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "1",
+    "file": "Spotify/repeat-one.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "like",
+    "label": "SAVE TRACK",
+    "glyph": "heart",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/like.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "unlike",
+    "label": "REMOVE SAVED",
+    "glyph": "heart",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Spotify/unlike.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "queue",
+    "label": "OPEN QUEUE",
+    "glyph": "list",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/queue.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "add-queue",
+    "label": "ADD TO QUEUE",
+    "glyph": "plus",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/add-queue.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "playlist",
+    "label": "PLAY PLAYLIST",
+    "glyph": "playlist",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/playlist.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "add-playlist",
+    "label": "ADD PLAYLIST",
+    "glyph": "plus",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/add-playlist.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "album",
+    "label": "PLAY ALBUM",
+    "glyph": "record",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/album.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "artist",
+    "label": "PLAY ARTIST",
+    "glyph": "user",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/artist.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "liked-songs",
+    "label": "LIKED SONGS",
+    "glyph": "heart",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/liked-songs.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "device",
+    "label": "PLAYBACK DEVICE",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/device.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "transfer",
+    "label": "TRANSFER PLAY",
+    "glyph": "route",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/transfer.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "now-playing",
+    "label": "NOW PLAYING",
+    "glyph": "music",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/now-playing.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "copy-track",
+    "label": "COPY TRACK URL",
+    "glyph": "link",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/copy-track.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "search",
+    "label": "SEARCH",
+    "glyph": "search",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/search.png"
+  },
+  {
+    "service": "Spotify",
+    "id": "library",
+    "label": "LIBRARY",
+    "glyph": "book",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Spotify/library.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "chat",
+    "label": "OPEN CHAT",
+    "glyph": "chat",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/chat.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "send-message",
+    "label": "SEND MESSAGE",
+    "glyph": "text",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/send-message.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "announcement",
+    "label": "ANNOUNCEMENT",
+    "glyph": "bell",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/announcement.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "marker",
+    "label": "STREAM MARKER",
+    "glyph": "marker",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/marker.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "clip",
+    "label": "CREATE CLIP",
+    "glyph": "cut",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/clip.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "ad",
+    "label": "RUN AD",
+    "glyph": "ad",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/ad.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "ad-30",
+    "label": "30 SECOND AD",
+    "glyph": "ad",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "30s",
+    "file": "Twitch/ad-30.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "ad-60",
+    "label": "60 SECOND AD",
+    "glyph": "ad",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "60s",
+    "file": "Twitch/ad-60.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "ad-90",
+    "label": "90 SECOND AD",
+    "glyph": "ad",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "90s",
+    "file": "Twitch/ad-90.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "ad-180",
+    "label": "3 MINUTE AD",
+    "glyph": "ad",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "3m",
+    "file": "Twitch/ad-180.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "raid",
+    "label": "RAID CHANNEL",
+    "glyph": "users",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/raid.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "cancel-raid",
+    "label": "CANCEL RAID",
+    "glyph": "users",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "slash": true,
+    "file": "Twitch/cancel-raid.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "shoutout",
+    "label": "SHOUTOUT",
+    "glyph": "user",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/shoutout.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "clear-chat",
+    "label": "CLEAR CHAT",
+    "glyph": "trash",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/clear-chat.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "slow-on",
+    "label": "SLOW MODE ON",
+    "glyph": "timer",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/slow-on.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "slow-off",
+    "label": "SLOW MODE OFF",
+    "glyph": "timer",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/slow-off.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "followers-on",
+    "label": "FOLLOWERS ON",
+    "glyph": "users",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/followers-on.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "followers-off",
+    "label": "FOLLOWERS OFF",
+    "glyph": "users",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/followers-off.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "subs-on",
+    "label": "SUBS ONLY ON",
+    "glyph": "star",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/subs-on.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "subs-off",
+    "label": "SUBS ONLY OFF",
+    "glyph": "star",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/subs-off.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "emote-on",
+    "label": "EMOTES ONLY",
+    "glyph": "heart",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/emote-on.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "emote-off",
+    "label": "EMOTES OFF",
+    "glyph": "heart",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/emote-off.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "unique-on",
+    "label": "UNIQUE CHAT ON",
+    "glyph": "shield",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/unique-on.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "unique-off",
+    "label": "UNIQUE CHAT OFF",
+    "glyph": "shield",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/unique-off.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "shield-on",
+    "label": "SHIELD ON",
+    "glyph": "shield",
+    "state": "on",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/shield-on.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "shield-off",
+    "label": "SHIELD OFF",
+    "glyph": "shield",
+    "state": "off",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/shield-off.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "timeout",
+    "label": "TIMEOUT",
+    "glyph": "timer",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/timeout.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "ban",
+    "label": "BAN USER",
+    "glyph": "lock",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/ban.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "unban",
+    "label": "UNBAN USER",
+    "glyph": "user",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/unban.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "title",
+    "label": "STREAM TITLE",
+    "glyph": "text",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/title.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "category",
+    "label": "SET CATEGORY",
+    "glyph": "game",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/category.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "viewers",
+    "label": "VIEWERS",
+    "glyph": "eye",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/viewers.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "dashboard",
+    "label": "DASHBOARD",
+    "glyph": "grid",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/dashboard.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "channel",
+    "label": "OPEN CHANNEL",
+    "glyph": "browser",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/channel.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "whisper",
+    "label": "WHISPER",
+    "glyph": "chat",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/whisper.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "poll",
+    "label": "POLL",
+    "glyph": "chart",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/poll.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "prediction",
+    "label": "PREDICTION",
+    "glyph": "flag",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/prediction.png"
+  },
+  {
+    "service": "Twitch",
+    "id": "rewards",
+    "label": "CHANNEL POINTS",
+    "glyph": "star",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "Twitch/rewards.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "power-toggle",
+    "label": "POWER TOGGLE",
+    "glyph": "power",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/power-toggle.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "power-on",
+    "label": "LIGHTS ON",
+    "glyph": "bulb",
+    "state": "on",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/power-on.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "power-off",
+    "label": "LIGHTS OFF",
+    "glyph": "bulb",
+    "state": "off",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "slash": true,
+    "file": "Philips-Hue/power-off.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "all-on",
+    "label": "ALL LIGHTS ON",
+    "glyph": "bulbgroup",
+    "state": "on",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/all-on.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "all-off",
+    "label": "ALL LIGHTS OFF",
+    "glyph": "bulbgroup",
+    "state": "off",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "slash": true,
+    "file": "Philips-Hue/all-off.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness",
+    "label": "SET BRIGHTNESS",
+    "glyph": "sun",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/brightness.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-up",
+    "label": "BRIGHTER",
+    "glyph": "up",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/brightness-up.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-down",
+    "label": "DIMMER",
+    "glyph": "down",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/brightness-down.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "temperature",
+    "label": "TEMPERATURE",
+    "glyph": "thermometer",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/temperature.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "warmer",
+    "label": "WARMER",
+    "glyph": "thermometer",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "color": "#ffb768",
+    "file": "Philips-Hue/warmer.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "cooler",
+    "label": "COOLER",
+    "glyph": "thermometer",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "color": "#8ecfff",
+    "file": "Philips-Hue/cooler.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "color",
+    "label": "SET COLOUR",
+    "glyph": "palette",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/color.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "color-cycle",
+    "label": "COLOUR CYCLE",
+    "glyph": "repeat",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/color-cycle.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene",
+    "label": "ACTIVATE SCENE",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/scene.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "room",
+    "label": "ROOM",
+    "glyph": "home",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/room.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "group",
+    "label": "GROUP",
+    "glyph": "bulbgroup",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/group.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "device-list",
+    "label": "DEVICE LIST",
+    "glyph": "list",
+    "state": "action",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/device-list.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "sync-on",
+    "label": "SYNC ON",
+    "glyph": "wave",
+    "state": "on",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "file": "Philips-Hue/sync-on.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "sync-off",
+    "label": "SYNC OFF",
+    "glyph": "wave",
+    "state": "off",
+    "support": "Philips Hue plugin; Sync keys require Philips Hue Sync plugin",
+    "slash": true,
+    "file": "Philips-Hue/sync-off.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-10",
+    "label": "10% BRIGHTNESS",
+    "glyph": "sun",
+    "state": "action",
+    "support": "Philips Hue / Set Brightness",
+    "badge": "10%",
+    "file": "Philips-Hue/brightness-10.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-25",
+    "label": "25% BRIGHTNESS",
+    "glyph": "sun",
+    "state": "action",
+    "support": "Philips Hue / Set Brightness",
+    "badge": "25%",
+    "file": "Philips-Hue/brightness-25.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-50",
+    "label": "50% BRIGHTNESS",
+    "glyph": "sun",
+    "state": "action",
+    "support": "Philips Hue / Set Brightness",
+    "badge": "50%",
+    "file": "Philips-Hue/brightness-50.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-75",
+    "label": "75% BRIGHTNESS",
+    "glyph": "sun",
+    "state": "action",
+    "support": "Philips Hue / Set Brightness",
+    "badge": "75%",
+    "file": "Philips-Hue/brightness-75.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "brightness-100",
+    "label": "100% BRIGHTNESS",
+    "glyph": "sun",
+    "state": "action",
+    "support": "Philips Hue / Set Brightness",
+    "badge": "100%",
+    "file": "Philips-Hue/brightness-100.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-red",
+    "label": "RED",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#ff5267",
+    "file": "Philips-Hue/colour-red.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-orange",
+    "label": "ORANGE",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#ff983b",
+    "file": "Philips-Hue/colour-orange.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-yellow",
+    "label": "YELLOW",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#ffe260",
+    "file": "Philips-Hue/colour-yellow.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-green",
+    "label": "GREEN",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#51e996",
+    "file": "Philips-Hue/colour-green.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-cyan",
+    "label": "CYAN",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#3ee7f2",
+    "file": "Philips-Hue/colour-cyan.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-blue",
+    "label": "BLUE",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#4a93ff",
+    "file": "Philips-Hue/colour-blue.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-purple",
+    "label": "PURPLE",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#bd6bff",
+    "file": "Philips-Hue/colour-purple.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-pink",
+    "label": "PINK",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#ff80d0",
+    "file": "Philips-Hue/colour-pink.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-warm",
+    "label": "WARM",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#ffc578",
+    "file": "Philips-Hue/colour-warm.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-cool",
+    "label": "COOL",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#a6d9ff",
+    "file": "Philips-Hue/colour-cool.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "colour-white",
+    "label": "WHITE",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Philips Hue / Set Color or Set Temperature",
+    "color": "#f3f5ff",
+    "file": "Philips-Hue/colour-white.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-1",
+    "label": "SCENE 1",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "1",
+    "file": "Philips-Hue/scene-1.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-2",
+    "label": "SCENE 2",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "2",
+    "file": "Philips-Hue/scene-2.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-3",
+    "label": "SCENE 3",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "3",
+    "file": "Philips-Hue/scene-3.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-4",
+    "label": "SCENE 4",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "4",
+    "file": "Philips-Hue/scene-4.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-5",
+    "label": "SCENE 5",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "5",
+    "file": "Philips-Hue/scene-5.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-6",
+    "label": "SCENE 6",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "6",
+    "file": "Philips-Hue/scene-6.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-7",
+    "label": "SCENE 7",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "7",
+    "file": "Philips-Hue/scene-7.png"
+  },
+  {
+    "service": "Philips-Hue",
+    "id": "scene-8",
+    "label": "SCENE 8",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Philips Hue / Activate Scene; choose your saved scene",
+    "badge": "8",
+    "file": "Philips-Hue/scene-8.png"
+  },
+  {
+    "service": "OBS",
+    "id": "stream-start",
+    "label": "GO LIVE",
+    "glyph": "stream",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/stream-start.png"
+  },
+  {
+    "service": "OBS",
+    "id": "stream-stop",
+    "label": "STOP STREAM",
+    "glyph": "stream",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/stream-stop.png"
+  },
+  {
+    "service": "OBS",
+    "id": "record-start",
+    "label": "START RECORD",
+    "glyph": "record",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "color": "#ff516b",
+    "file": "OBS/record-start.png"
+  },
+  {
+    "service": "OBS",
+    "id": "record-stop",
+    "label": "STOP RECORD",
+    "glyph": "stop",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/record-stop.png"
+  },
+  {
+    "service": "OBS",
+    "id": "record-pause",
+    "label": "PAUSE RECORD",
+    "glyph": "pause",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/record-pause.png"
+  },
+  {
+    "service": "OBS",
+    "id": "record-resume",
+    "label": "RESUME RECORD",
+    "glyph": "play",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/record-resume.png"
+  },
+  {
+    "service": "OBS",
+    "id": "replay-start",
+    "label": "REPLAY ON",
+    "glyph": "rewindring",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/replay-start.png"
+  },
+  {
+    "service": "OBS",
+    "id": "replay-stop",
+    "label": "REPLAY OFF",
+    "glyph": "rewindring",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/replay-stop.png"
+  },
+  {
+    "service": "OBS",
+    "id": "save-replay",
+    "label": "SAVE REPLAY",
+    "glyph": "save",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/save-replay.png"
+  },
+  {
+    "service": "OBS",
+    "id": "virtual-camera-on",
+    "label": "VIRTUAL CAM ON",
+    "glyph": "camera",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/virtual-camera-on.png"
+  },
+  {
+    "service": "OBS",
+    "id": "virtual-camera-off",
+    "label": "VIRTUAL CAM OFF",
+    "glyph": "camera",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/virtual-camera-off.png"
+  },
+  {
+    "service": "OBS",
+    "id": "studio-on",
+    "label": "STUDIO MODE ON",
+    "glyph": "monitor",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/studio-on.png"
+  },
+  {
+    "service": "OBS",
+    "id": "studio-off",
+    "label": "STUDIO MODE OFF",
+    "glyph": "monitor",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/studio-off.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene",
+    "label": "SWITCH SCENE",
+    "glyph": "scene",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/scene.png"
+  },
+  {
+    "service": "OBS",
+    "id": "preview-scene",
+    "label": "PREVIEW SCENE",
+    "glyph": "eye",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/preview-scene.png"
+  },
+  {
+    "service": "OBS",
+    "id": "transition",
+    "label": "TRANSITION",
+    "glyph": "transition",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/transition.png"
+  },
+  {
+    "service": "OBS",
+    "id": "cut",
+    "label": "CUT",
+    "glyph": "cut",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/cut.png"
+  },
+  {
+    "service": "OBS",
+    "id": "fade",
+    "label": "FADE",
+    "glyph": "transition",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/fade.png"
+  },
+  {
+    "service": "OBS",
+    "id": "stinger",
+    "label": "STINGER",
+    "glyph": "star",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/stinger.png"
+  },
+  {
+    "service": "OBS",
+    "id": "source-show",
+    "label": "SHOW SOURCE",
+    "glyph": "eye",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/source-show.png"
+  },
+  {
+    "service": "OBS",
+    "id": "source-hide",
+    "label": "HIDE SOURCE",
+    "glyph": "eye",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/source-hide.png"
+  },
+  {
+    "service": "OBS",
+    "id": "mic-mute",
+    "label": "MUTE MIC",
+    "glyph": "mic",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/mic-mute.png"
+  },
+  {
+    "service": "OBS",
+    "id": "mic-unmute",
+    "label": "UNMUTE MIC",
+    "glyph": "mic",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/mic-unmute.png"
+  },
+  {
+    "service": "OBS",
+    "id": "desktop-mute",
+    "label": "MUTE DESKTOP",
+    "glyph": "desktop",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/desktop-mute.png"
+  },
+  {
+    "service": "OBS",
+    "id": "desktop-unmute",
+    "label": "DESKTOP LIVE",
+    "glyph": "desktop",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/desktop-unmute.png"
+  },
+  {
+    "service": "OBS",
+    "id": "source-mute",
+    "label": "MUTE SOURCE",
+    "glyph": "speaker",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "slash": true,
+    "file": "OBS/source-mute.png"
+  },
+  {
+    "service": "OBS",
+    "id": "source-unmute",
+    "label": "UNMUTE SOURCE",
+    "glyph": "speaker",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/source-unmute.png"
+  },
+  {
+    "service": "OBS",
+    "id": "volume-up",
+    "label": "VOLUME UP",
+    "glyph": "up",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/volume-up.png"
+  },
+  {
+    "service": "OBS",
+    "id": "volume-down",
+    "label": "VOLUME DOWN",
+    "glyph": "down",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/volume-down.png"
+  },
+  {
+    "service": "OBS",
+    "id": "volume-set",
+    "label": "SET VOLUME",
+    "glyph": "faders",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/volume-set.png"
+  },
+  {
+    "service": "OBS",
+    "id": "monitoring",
+    "label": "AUDIO MONITOR",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/monitoring.png"
+  },
+  {
+    "service": "OBS",
+    "id": "filter-on",
+    "label": "FILTER ON",
+    "glyph": "filter",
+    "state": "on",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/filter-on.png"
+  },
+  {
+    "service": "OBS",
+    "id": "filter-off",
+    "label": "FILTER OFF",
+    "glyph": "filter",
+    "state": "off",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/filter-off.png"
+  },
+  {
+    "service": "OBS",
+    "id": "media-play",
+    "label": "MEDIA PLAY",
+    "glyph": "play",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/media-play.png"
+  },
+  {
+    "service": "OBS",
+    "id": "media-pause",
+    "label": "MEDIA PAUSE",
+    "glyph": "pause",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/media-pause.png"
+  },
+  {
+    "service": "OBS",
+    "id": "media-stop",
+    "label": "MEDIA STOP",
+    "glyph": "stop",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/media-stop.png"
+  },
+  {
+    "service": "OBS",
+    "id": "media-restart",
+    "label": "MEDIA RESTART",
+    "glyph": "reset",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/media-restart.png"
+  },
+  {
+    "service": "OBS",
+    "id": "media-next",
+    "label": "MEDIA NEXT",
+    "glyph": "next",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/media-next.png"
+  },
+  {
+    "service": "OBS",
+    "id": "media-previous",
+    "label": "MEDIA PREVIOUS",
+    "glyph": "previous",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/media-previous.png"
+  },
+  {
+    "service": "OBS",
+    "id": "screenshot",
+    "label": "SCREENSHOT",
+    "glyph": "screenshot",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/screenshot.png"
+  },
+  {
+    "service": "OBS",
+    "id": "browser-refresh",
+    "label": "REFRESH BROWSER",
+    "glyph": "reset",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/browser-refresh.png"
+  },
+  {
+    "service": "OBS",
+    "id": "projector",
+    "label": "PROJECTOR",
+    "glyph": "monitor",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/projector.png"
+  },
+  {
+    "service": "OBS",
+    "id": "profile",
+    "label": "OBS PROFILE",
+    "glyph": "user",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/profile.png"
+  },
+  {
+    "service": "OBS",
+    "id": "collection",
+    "label": "SCENE COLLECTION",
+    "glyph": "folder",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/collection.png"
+  },
+  {
+    "service": "OBS",
+    "id": "transform",
+    "label": "TRANSFORM",
+    "glyph": "transform",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/transform.png"
+  },
+  {
+    "service": "OBS",
+    "id": "source-lock",
+    "label": "LOCK SOURCE",
+    "glyph": "lock",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/source-lock.png"
+  },
+  {
+    "service": "OBS",
+    "id": "settings",
+    "label": "SETTINGS",
+    "glyph": "settings",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/settings.png"
+  },
+  {
+    "service": "OBS",
+    "id": "stats",
+    "label": "STATS",
+    "glyph": "chart",
+    "state": "action",
+    "support": "OBS plugin, OBS hotkey, or compatible OBS WebSocket action; availability depends on installed plugin",
+    "file": "OBS/stats.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-starting",
+    "label": "STARTING SOON",
+    "glyph": "clock",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-starting.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-live",
+    "label": "LIVE SCENE",
+    "glyph": "stream",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-live.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-game",
+    "label": "GAME SCENE",
+    "glyph": "game",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-game.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-camera",
+    "label": "CAMERA SCENE",
+    "glyph": "camera",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-camera.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-desktop",
+    "label": "DESKTOP SCENE",
+    "glyph": "desktop",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-desktop.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-brb",
+    "label": "BRB SCENE",
+    "glyph": "coffee",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-brb.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-ending",
+    "label": "ENDING SCENE",
+    "glyph": "moon",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "file": "OBS/scene-ending.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-1",
+    "label": "SCENE 1",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "1",
+    "file": "OBS/scene-1.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-2",
+    "label": "SCENE 2",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "2",
+    "file": "OBS/scene-2.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-3",
+    "label": "SCENE 3",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "3",
+    "file": "OBS/scene-3.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-4",
+    "label": "SCENE 4",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "4",
+    "file": "OBS/scene-4.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-5",
+    "label": "SCENE 5",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "5",
+    "file": "OBS/scene-5.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-6",
+    "label": "SCENE 6",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "6",
+    "file": "OBS/scene-6.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-7",
+    "label": "SCENE 7",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "7",
+    "file": "OBS/scene-7.png"
+  },
+  {
+    "service": "OBS",
+    "id": "scene-8",
+    "label": "SCENE 8",
+    "glyph": "scene",
+    "state": "action",
+    "support": "Assign a compatible plugin action or hotkey",
+    "badge": "8",
+    "file": "OBS/scene-8.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "save-replay",
+    "label": "SAVE REPLAY",
+    "glyph": "save",
+    "state": "action",
+    "support": "Verified default hotkey Alt+1; use Stream Deck System / Hotkey",
+    "file": "Revidi/save-replay.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "screenshot",
+    "label": "SCREENSHOT",
+    "glyph": "screenshot",
+    "state": "action",
+    "support": "Verified default hotkey Alt+2; use Stream Deck System / Hotkey",
+    "file": "Revidi/screenshot.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "buffer-on",
+    "label": "BUFFER ON",
+    "glyph": "rewindring",
+    "state": "on",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/buffer-on.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "buffer-off",
+    "label": "BUFFER OFF",
+    "glyph": "rewindring",
+    "state": "off",
+    "support": "UI function; no verified direct key binding",
+    "slash": true,
+    "file": "Revidi/buffer-off.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "source-auto",
+    "label": "AUTO CAPTURE",
+    "glyph": "game",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/source-auto.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "source-window",
+    "label": "WINDOW CAPTURE",
+    "glyph": "browser",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/source-window.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "source-display",
+    "label": "DISPLAY CAPTURE",
+    "glyph": "monitor",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/source-display.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "game-detection",
+    "label": "GAME DETECTION",
+    "glyph": "game",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/game-detection.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "buffer-length",
+    "label": "BUFFER LENGTH",
+    "glyph": "timer",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/buffer-length.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "frame-rate",
+    "label": "FRAME RATE",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/frame-rate.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "resolution",
+    "label": "RESOLUTION",
+    "glyph": "monitor",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/resolution.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "quality",
+    "label": "VIDEO QUALITY",
+    "glyph": "star",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/quality.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "encoder",
+    "label": "ENCODER",
+    "glyph": "settings",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/encoder.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "codec",
+    "label": "CODEC",
+    "glyph": "list",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/codec.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "desktop-mute",
+    "label": "DESKTOP MUTE",
+    "glyph": "desktop",
+    "state": "off",
+    "support": "UI function; no verified direct key binding",
+    "slash": true,
+    "file": "Revidi/desktop-mute.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "desktop-unmute",
+    "label": "DESKTOP LIVE",
+    "glyph": "desktop",
+    "state": "on",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/desktop-unmute.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "mic-mute",
+    "label": "MIC MUTE",
+    "glyph": "mic",
+    "state": "off",
+    "support": "UI function; no verified direct key binding",
+    "slash": true,
+    "file": "Revidi/mic-mute.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "mic-unmute",
+    "label": "MIC",
+    "glyph": "mic",
+    "state": "on",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/mic-unmute.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "desktop-volume",
+    "label": "DESKTOP VOLUME",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/desktop-volume.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "mic-volume",
+    "label": "MIC VOLUME",
+    "glyph": "mic",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/mic-volume.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "app-volume",
+    "label": "APP VOLUME",
+    "glyph": "faders",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/app-volume.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "app-mute",
+    "label": "APP MUTE",
+    "glyph": "speaker",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "slash": true,
+    "file": "Revidi/app-mute.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "devices",
+    "label": "AUDIO DEVICES",
+    "glyph": "headphones",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/devices.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "separate-tracks",
+    "label": "SEPARATE TRACKS",
+    "glyph": "list",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/separate-tracks.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "clips",
+    "label": "CLIP LIBRARY",
+    "glyph": "folder",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/clips.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "screenshots",
+    "label": "SCREENSHOTS",
+    "glyph": "screenshot",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/screenshots.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "open-folder",
+    "label": "SAVE FOLDER",
+    "glyph": "folder",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/open-folder.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "play-clip",
+    "label": "PLAY CLIP",
+    "glyph": "play",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/play-clip.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "edit-clip",
+    "label": "EDIT CLIP",
+    "glyph": "cut",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/edit-clip.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "trim-in",
+    "label": "TRIM START",
+    "glyph": "previous",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/trim-in.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "trim-out",
+    "label": "TRIM END",
+    "glyph": "next",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/trim-out.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "overwrite",
+    "label": "SAVE EDIT",
+    "glyph": "save",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/overwrite.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "upload",
+    "label": "UPLOAD CLIP",
+    "glyph": "upload",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/upload.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "copy-link",
+    "label": "COPY LINK",
+    "glyph": "link",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/copy-link.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "share",
+    "label": "SHARE CLIP",
+    "glyph": "share",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/share.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "delete",
+    "label": "DELETE CLIP",
+    "glyph": "trash",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/delete.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "auto-upload-on",
+    "label": "AUTO UPLOAD ON",
+    "glyph": "upload",
+    "state": "on",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/auto-upload-on.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "auto-upload-off",
+    "label": "AUTO UPLOAD OFF",
+    "glyph": "upload",
+    "state": "off",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/auto-upload-off.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "themes",
+    "label": "THEMES",
+    "glyph": "palette",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/themes.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "hotkeys",
+    "label": "HOTKEYS",
+    "glyph": "keyboard",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/hotkeys.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "settings",
+    "label": "SETTINGS",
+    "glyph": "settings",
+    "state": "action",
+    "support": "UI function; no verified direct key binding",
+    "file": "Revidi/settings.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "home",
+    "label": "HOME",
+    "glyph": "home",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/home.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "back",
+    "label": "BACK",
+    "glyph": "back",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/back.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "next-page",
+    "label": "NEXT PAGE",
+    "glyph": "arrow",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/next-page.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "previous-page",
+    "label": "PREVIOUS PAGE",
+    "glyph": "back",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/previous-page.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "folder",
+    "label": "FOLDER",
+    "glyph": "folder",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/folder.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "settings",
+    "label": "SETTINGS",
+    "glyph": "settings",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/settings.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "confirm",
+    "label": "CONFIRM",
+    "glyph": "check",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/confirm.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "cancel",
+    "label": "CANCEL",
+    "glyph": "plus",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "rotate": 45,
+    "file": "Navigation/cancel.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "audio",
+    "label": "AUDIO",
+    "glyph": "speaker",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/audio.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "lighting",
+    "label": "LIGHTING",
+    "glyph": "bulb",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/lighting.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "streaming",
+    "label": "STREAMING",
+    "glyph": "stream",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/streaming.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "clips",
+    "label": "CLIPS",
+    "glyph": "cut",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/clips.png"
+  },
+  {
+    "service": "Navigation",
+    "id": "blank",
+    "label": "BLANK",
+    "glyph": "blank",
+    "state": "action",
+    "support": "Stream Deck built-in navigation or chosen action",
+    "file": "Navigation/blank.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "clip-1-min",
+    "label": "1 MIN CLIP",
+    "glyph": "rewindring",
+    "state": "action",
+    "duration": 1,
+    "support": "Duration artwork: assign a Revidi binding that explicitly saves 1 minute(s). The public save shortcut Alt+1 uses the configured replay buffer; separate per-duration hotkeys were not verified.",
+    "file": "Revidi/clip-1-min.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "clip-2-min",
+    "label": "2 MIN CLIP",
+    "glyph": "rewindring",
+    "state": "action",
+    "duration": 2,
+    "support": "Duration artwork: assign a Revidi binding that explicitly saves 2 minute(s). The public save shortcut Alt+1 uses the configured replay buffer; separate per-duration hotkeys were not verified.",
+    "file": "Revidi/clip-2-min.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "clip-5-min",
+    "label": "5 MIN CLIP",
+    "glyph": "rewindring",
+    "state": "action",
+    "duration": 5,
+    "support": "Duration artwork: assign a Revidi binding that explicitly saves 5 minute(s). The public save shortcut Alt+1 uses the configured replay buffer; separate per-duration hotkeys were not verified.",
+    "file": "Revidi/clip-5-min.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-speakers-on",
+    "label": "SPEAKERS",
+    "glyph": "speaker",
+    "state": "on",
+    "support": "Sleekmeeter Output profile action; select the corresponding output profile. The live plugin shows the active device.",
+    "selected": true,
+    "file": "Sleekmeeter/output-speakers-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-speakers-off",
+    "label": "SPEAKERS",
+    "glyph": "speaker",
+    "state": "off",
+    "support": "Sleekmeeter Output profile action; select the corresponding output profile. The live plugin shows the active device.",
+    "selected": false,
+    "file": "Sleekmeeter/output-speakers-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-headphones-on",
+    "label": "HEADPHONES",
+    "glyph": "headphones",
+    "state": "on",
+    "support": "Sleekmeeter Output profile action; select the corresponding output profile. The live plugin shows the active device.",
+    "selected": true,
+    "file": "Sleekmeeter/output-headphones-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-headphones-off",
+    "label": "HEADPHONES",
+    "glyph": "headphones",
+    "state": "off",
+    "support": "Sleekmeeter Output profile action; select the corresponding output profile. The live plugin shows the active device.",
+    "selected": false,
+    "file": "Sleekmeeter/output-headphones-off.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-wireless-on",
+    "label": "WIRELESS",
+    "glyph": "wireless-headphones",
+    "state": "on",
+    "support": "Sleekmeeter Output profile action; select the corresponding output profile. The live plugin shows the active device.",
+    "selected": true,
+    "file": "Sleekmeeter/output-wireless-on.png"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "output-wireless-off",
+    "label": "WIRELESS",
+    "glyph": "wireless-headphones",
+    "state": "off",
+    "support": "Sleekmeeter Output profile action; select the corresponding output profile. The live plugin shows the active device.",
+    "selected": false,
+    "file": "Sleekmeeter/output-wireless-off.png"
+  },
+  {
+    "service": "Revidi",
+    "id": "recover",
+    "label": "RECOVER",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "command",
+    "label": "COMMAND",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "mic-boost",
+    "label": "MIC BOOST",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "notifications-on",
+    "label": "NOTIFICATIONS ON",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "notifications-off",
+    "label": "NOTIFICATIONS OFF",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "mic-mono-on",
+    "label": "MIC MONO ON",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "mic-mono-off",
+    "label": "MIC MONO OFF",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "tracks-on",
+    "label": "TRACKS ON",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "tracks-off",
+    "label": "TRACKS OFF",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "status-ready",
+    "label": "STATUS READY",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "status-saving",
+    "label": "STATUS SAVING",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "status-paused",
+    "label": "STATUS PAUSED",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "status-error",
+    "label": "STATUS ERROR",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "status-initializing",
+    "label": "STATUS INITIALIZING",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "status-offline",
+    "label": "STATUS OFFLINE",
+    "state": "action"
+  },
+  {
+    "service": "Revidi",
+    "id": "clip-30-sec",
+    "label": "CLIP 30 SEC",
+    "state": "action"
+  },
+  {
+    "service": "Sleekmeeter",
+    "id": "now-playing",
+    "label": "NOW PLAYING",
+    "glyph": "music",
+    "state": "action"
+  },
+  {
+    "service": "Voicemod",
+    "id": "voice-on",
+    "label": "VOICE CHANGER ON",
+    "glyph": "mic",
+    "state": "on",
+    "slash": false
+  },
+  {
+    "service": "Voicemod",
+    "id": "voice-off",
+    "label": "VOICE CHANGER OFF",
+    "glyph": "mic",
+    "state": "off",
+    "slash": true
+  },
+  {
+    "service": "Voicemod",
+    "id": "hear-on",
+    "label": "HEAR MYSELF ON",
+    "glyph": "headphones",
+    "state": "on",
+    "slash": false
+  },
+  {
+    "service": "Voicemod",
+    "id": "hear-off",
+    "label": "HEAR MYSELF OFF",
+    "glyph": "headphones",
+    "state": "off",
+    "slash": true
+  },
+  {
+    "service": "Voicemod",
+    "id": "censor",
+    "label": "CENSOR BEEP",
+    "glyph": "warning",
+    "state": "action",
+    "slash": false
+  },
+  {
+    "service": "Voicemod",
+    "id": "voice",
+    "label": "SELECT VOICE",
+    "glyph": "users",
+    "state": "action",
+    "slash": false
+  },
+  {
+    "service": "Voicemod",
+    "id": "soundboard",
+    "label": "SOUNDBOARD",
+    "glyph": "grid",
+    "state": "action",
+    "slash": false
+  },
+  {
+    "service": "Voicemod",
+    "id": "stop-sounds",
+    "label": "STOP SOUNDS",
+    "glyph": "stop",
+    "state": "action",
+    "slash": false
+  },
+  {
+    "service": "Voicemod",
+    "id": "settings",
+    "label": "SETTINGS",
+    "glyph": "settings",
+    "state": "action",
+    "slash": false
+  },
+  {
+    "service": "System",
+    "id": "cpu",
+    "label": "CPU",
+    "glyph": "faders",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "gpu",
+    "label": "GPU",
+    "glyph": "monitor",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "ram",
+    "label": "RAM",
+    "glyph": "grid",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "vram",
+    "label": "VRAM",
+    "glyph": "grid",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "sensor",
+    "label": "SENSOR",
+    "glyph": "thermometer",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "sensor-dial",
+    "label": "SENSOR DIAL",
+    "glyph": "faders",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "weather",
+    "label": "WEATHER",
+    "glyph": "sun",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "clock",
+    "label": "CLOCK",
+    "glyph": "clock",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "timer",
+    "label": "TIMER",
+    "glyph": "timer",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "stopwatch",
+    "label": "STOPWATCH",
+    "glyph": "timer",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "focus",
+    "label": "FOCUS",
+    "glyph": "coffee",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "open-app",
+    "label": "OPEN APP",
+    "glyph": "monitor",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "website",
+    "label": "WEBSITE",
+    "glyph": "globe",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "hotkey",
+    "label": "HOTKEY",
+    "glyph": "keyboard",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "multi-action",
+    "label": "MULTI ACTION",
+    "glyph": "list",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "play-pause",
+    "label": "PLAY / PAUSE",
+    "glyph": "play",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "volume-up",
+    "label": "VOLUME UP",
+    "glyph": "up",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "volume-down",
+    "label": "VOLUME DOWN",
+    "glyph": "down",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "mute",
+    "label": "MUTE",
+    "glyph": "speaker",
+    "state": "action"
+  },
+  {
+    "service": "System",
+    "id": "screenshot",
+    "label": "SCREENSHOT",
+    "glyph": "screenshot",
+    "state": "action"
+  }
+]

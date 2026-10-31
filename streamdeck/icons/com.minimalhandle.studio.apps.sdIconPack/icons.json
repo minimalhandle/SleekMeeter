@@ -1,0 +1,5766 @@
+[
+  {
+    "path": "philips-hue-launch.png",
+    "name": "Philips-Hue — OPEN PHILIPS HUE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "philips",
+      "hue"
+    ]
+  },
+  {
+    "path": "obs-launch.png",
+    "name": "OBS — OPEN OBS",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "obs"
+    ]
+  },
+  {
+    "path": "sleekmeeter-launch.png",
+    "name": "Sleekmeeter — OPEN SLEEKMEETER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "sleekmeeter"
+    ]
+  },
+  {
+    "path": "revidi-launch.png",
+    "name": "Revidi — OPEN REVIDI",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "revidi"
+    ]
+  },
+  {
+    "path": "twitch-launch.png",
+    "name": "Twitch — OPEN TWITCH",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "twitch"
+    ]
+  },
+  {
+    "path": "spotify-launch.png",
+    "name": "Spotify — OPEN SPOTIFY",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "spotify"
+    ]
+  },
+  {
+    "path": "discord-launch.png",
+    "name": "Discord — OPEN DISCORD",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "launch",
+      "open",
+      "discord"
+    ]
+  },
+  {
+    "path": "sleekmeeter-channel-level.png",
+    "name": "Sleekmeeter — CHANNEL LEVEL",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "channel-level",
+      "channel",
+      "level"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mute-channel.png",
+    "name": "Sleekmeeter — MUTE CHANNEL",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mute-channel",
+      "mute",
+      "channel"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mute-mic.png",
+    "name": "Sleekmeeter — MUTE MIC",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mute-mic",
+      "mute",
+      "mic"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-to-bus.png",
+    "name": "Sleekmeeter — ROUTE TO BUS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-to-bus",
+      "route",
+      "to",
+      "bus"
+    ]
+  },
+  {
+    "path": "sleekmeeter-level-step.png",
+    "name": "Sleekmeeter — LEVEL STEP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "level-step",
+      "level",
+      "step"
+    ]
+  },
+  {
+    "path": "sleekmeeter-level-up.png",
+    "name": "Sleekmeeter — LEVEL UP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "level-up",
+      "level",
+      "up"
+    ]
+  },
+  {
+    "path": "sleekmeeter-level-down.png",
+    "name": "Sleekmeeter — LEVEL DOWN",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "level-down",
+      "level",
+      "down"
+    ]
+  },
+  {
+    "path": "sleekmeeter-set-level.png",
+    "name": "Sleekmeeter — SET LEVEL",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "set-level",
+      "set",
+      "level"
+    ]
+  },
+  {
+    "path": "sleekmeeter-load-scene.png",
+    "name": "Sleekmeeter — LOAD SCENE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "load-scene",
+      "load",
+      "scene"
+    ]
+  },
+  {
+    "path": "sleekmeeter-play-sound.png",
+    "name": "Sleekmeeter — PLAY SOUND",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "play-sound",
+      "play",
+      "sound"
+    ]
+  },
+  {
+    "path": "sleekmeeter-stop-sounds.png",
+    "name": "Sleekmeeter — STOP SOUNDS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "stop-sounds",
+      "stop",
+      "sounds"
+    ]
+  },
+  {
+    "path": "sleekmeeter-brb.png",
+    "name": "Sleekmeeter — BE RIGHT BACK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "brb",
+      "be",
+      "right",
+      "back"
+    ]
+  },
+  {
+    "path": "sleekmeeter-record.png",
+    "name": "Sleekmeeter — RECORD",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "record",
+      "record"
+    ]
+  },
+  {
+    "path": "sleekmeeter-ducking.png",
+    "name": "Sleekmeeter — TALK OVER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "ducking",
+      "talk",
+      "over"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-profile.png",
+    "name": "Sleekmeeter — OUTPUT PROFILE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-profile",
+      "output",
+      "profile"
+    ]
+  },
+  {
+    "path": "sleekmeeter-next-output.png",
+    "name": "Sleekmeeter — NEXT OUTPUT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "next-output",
+      "next",
+      "output"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mic-on.png",
+    "name": "Sleekmeeter — MICROPHONE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mic-on",
+      "microphone"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mic-off.png",
+    "name": "Sleekmeeter — MICROPHONE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mic-off",
+      "microphone"
+    ]
+  },
+  {
+    "path": "sleekmeeter-channel-on.png",
+    "name": "Sleekmeeter — CHANNEL ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "channel-on",
+      "channel",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-channel-off.png",
+    "name": "Sleekmeeter — CH MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "channel-off",
+      "ch",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-brb-state-on.png",
+    "name": "Sleekmeeter — BRB ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "brb-state-on",
+      "brb",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-brb-state-off.png",
+    "name": "Sleekmeeter — BACK LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "brb-state-off",
+      "back",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-record-state-on.png",
+    "name": "Sleekmeeter — RECORD ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "record-state-on",
+      "record",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-record-state-off.png",
+    "name": "Sleekmeeter — REC STOPPED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "record-state-off",
+      "rec",
+      "stopped"
+    ]
+  },
+  {
+    "path": "sleekmeeter-duck-state-on.png",
+    "name": "Sleekmeeter — DUCKING ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "duck-state-on",
+      "ducking",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-duck-state-off.png",
+    "name": "Sleekmeeter — DUCKING OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "duck-state-off",
+      "ducking",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-push-to-talk.png",
+    "name": "Sleekmeeter — HOLD TO TALK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "push-to-talk",
+      "hold",
+      "to",
+      "talk"
+    ]
+  },
+  {
+    "path": "sleekmeeter-push-to-mute.png",
+    "name": "Sleekmeeter — HOLD TO MUTE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "push-to-mute",
+      "hold",
+      "to",
+      "mute"
+    ]
+  },
+  {
+    "path": "sleekmeeter-show-hide.png",
+    "name": "Sleekmeeter — SHOW / HIDE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "show-hide",
+      "show",
+      "/",
+      "hide"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a1-on.png",
+    "name": "Sleekmeeter — ROUTE A1 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a1-on",
+      "route",
+      "a1",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a1-off.png",
+    "name": "Sleekmeeter — ROUTE A1 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a1-off",
+      "route",
+      "a1",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a2-on.png",
+    "name": "Sleekmeeter — ROUTE A2 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a2-on",
+      "route",
+      "a2",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a2-off.png",
+    "name": "Sleekmeeter — ROUTE A2 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a2-off",
+      "route",
+      "a2",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a3-on.png",
+    "name": "Sleekmeeter — ROUTE A3 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a3-on",
+      "route",
+      "a3",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a3-off.png",
+    "name": "Sleekmeeter — ROUTE A3 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a3-off",
+      "route",
+      "a3",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a4-on.png",
+    "name": "Sleekmeeter — ROUTE A4 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a4-on",
+      "route",
+      "a4",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a4-off.png",
+    "name": "Sleekmeeter — ROUTE A4 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a4-off",
+      "route",
+      "a4",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a5-on.png",
+    "name": "Sleekmeeter — ROUTE A5 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a5-on",
+      "route",
+      "a5",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-a5-off.png",
+    "name": "Sleekmeeter — ROUTE A5 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-a5-off",
+      "route",
+      "a5",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-b1-on.png",
+    "name": "Sleekmeeter — ROUTE B1 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-b1-on",
+      "route",
+      "b1",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-b1-off.png",
+    "name": "Sleekmeeter — ROUTE B1 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-b1-off",
+      "route",
+      "b1",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-b2-on.png",
+    "name": "Sleekmeeter — ROUTE B2 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-b2-on",
+      "route",
+      "b2",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-b2-off.png",
+    "name": "Sleekmeeter — ROUTE B2 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-b2-off",
+      "route",
+      "b2",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-b3-on.png",
+    "name": "Sleekmeeter — ROUTE B3 ON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-b3-on",
+      "route",
+      "b3",
+      "on"
+    ]
+  },
+  {
+    "path": "sleekmeeter-route-b3-off.png",
+    "name": "Sleekmeeter — ROUTE B3 OFF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "route-b3-off",
+      "route",
+      "b3",
+      "off"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mic-live.png",
+    "name": "Sleekmeeter — MICROPHONE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mic-live",
+      "microphone"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mic-muted.png",
+    "name": "Sleekmeeter — MICROPHONE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mic-muted",
+      "microphone"
+    ]
+  },
+  {
+    "path": "sleekmeeter-discord-live.png",
+    "name": "Sleekmeeter — DISCORD LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "discord-live",
+      "discord",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-discord-muted.png",
+    "name": "Sleekmeeter — DISCORD MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "discord-muted",
+      "discord",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-desktop-live.png",
+    "name": "Sleekmeeter — DESKTOP LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "desktop-live",
+      "desktop",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-desktop-muted.png",
+    "name": "Sleekmeeter — DESKTOP MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "desktop-muted",
+      "desktop",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-music-live.png",
+    "name": "Sleekmeeter — MUSIC LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "music-live",
+      "music",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-music-muted.png",
+    "name": "Sleekmeeter — MUSIC MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "music-muted",
+      "music",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-game-live.png",
+    "name": "Sleekmeeter — GAME LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "game-live",
+      "game",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-game-muted.png",
+    "name": "Sleekmeeter — GAME MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "game-muted",
+      "game",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-aux-live.png",
+    "name": "Sleekmeeter — AUX LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "aux-live",
+      "aux",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-aux-muted.png",
+    "name": "Sleekmeeter — AUX MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "aux-muted",
+      "aux",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-headphones-live.png",
+    "name": "Sleekmeeter — HEADPHONES LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "headphones-live",
+      "headphones",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-headphones-muted.png",
+    "name": "Sleekmeeter — HEADPHONES MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "headphones-muted",
+      "headphones",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-speakers-live.png",
+    "name": "Sleekmeeter — SPEAKERS LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "speakers-live",
+      "speakers",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-speakers-muted.png",
+    "name": "Sleekmeeter — SPEAKERS MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "speakers-muted",
+      "speakers",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-stream-live.png",
+    "name": "Sleekmeeter — STREAM LIVE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "stream-live",
+      "stream",
+      "live"
+    ]
+  },
+  {
+    "path": "sleekmeeter-stream-muted.png",
+    "name": "Sleekmeeter — STREAM MUTED",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "stream-muted",
+      "stream",
+      "muted"
+    ]
+  },
+  {
+    "path": "sleekmeeter-solo.png",
+    "name": "Sleekmeeter — SOLO",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "solo",
+      "solo"
+    ]
+  },
+  {
+    "path": "sleekmeeter-clear-solos.png",
+    "name": "Sleekmeeter — CLEAR SOLOS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "clear-solos",
+      "clear",
+      "solos"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mono.png",
+    "name": "Sleekmeeter — MONO",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mono",
+      "mono"
+    ]
+  },
+  {
+    "path": "sleekmeeter-stereo.png",
+    "name": "Sleekmeeter — STEREO",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "stereo",
+      "stereo"
+    ]
+  },
+  {
+    "path": "sleekmeeter-pan-left.png",
+    "name": "Sleekmeeter — PAN LEFT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "pan-left",
+      "pan",
+      "left"
+    ]
+  },
+  {
+    "path": "sleekmeeter-pan-centre.png",
+    "name": "Sleekmeeter — PAN CENTRE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "pan-centre",
+      "pan",
+      "centre"
+    ]
+  },
+  {
+    "path": "sleekmeeter-pan-right.png",
+    "name": "Sleekmeeter — PAN RIGHT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "pan-right",
+      "pan",
+      "right"
+    ]
+  },
+  {
+    "path": "sleekmeeter-compressor.png",
+    "name": "Sleekmeeter — COMPRESSOR",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "compressor",
+      "compressor"
+    ]
+  },
+  {
+    "path": "sleekmeeter-gate.png",
+    "name": "Sleekmeeter — GATE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "gate",
+      "gate"
+    ]
+  },
+  {
+    "path": "sleekmeeter-eq.png",
+    "name": "Sleekmeeter — EQUALIZER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "eq",
+      "equalizer"
+    ]
+  },
+  {
+    "path": "sleekmeeter-bus-mode.png",
+    "name": "Sleekmeeter — BUS MODE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "bus-mode",
+      "bus",
+      "mode"
+    ]
+  },
+  {
+    "path": "sleekmeeter-device.png",
+    "name": "Sleekmeeter — AUDIO DEVICE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "device",
+      "audio",
+      "device"
+    ]
+  },
+  {
+    "path": "sleekmeeter-channel-settings.png",
+    "name": "Sleekmeeter — CHANNEL SETUP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "channel-settings",
+      "channel",
+      "setup"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rename.png",
+    "name": "Sleekmeeter — RENAME",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rename",
+      "rename"
+    ]
+  },
+  {
+    "path": "sleekmeeter-hide-channel.png",
+    "name": "Sleekmeeter — HIDE CHANNEL",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "hide-channel",
+      "hide",
+      "channel"
+    ]
+  },
+  {
+    "path": "sleekmeeter-save-scene.png",
+    "name": "Sleekmeeter — SAVE SCENE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "save-scene",
+      "save",
+      "scene"
+    ]
+  },
+  {
+    "path": "sleekmeeter-delete-scene.png",
+    "name": "Sleekmeeter — DELETE SCENE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "delete-scene",
+      "delete",
+      "scene"
+    ]
+  },
+  {
+    "path": "sleekmeeter-auto-scene.png",
+    "name": "Sleekmeeter — AUTO SCENE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "auto-scene",
+      "auto",
+      "scene"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-rules.png",
+    "name": "Sleekmeeter — SCENE RULES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-rules",
+      "scene",
+      "rules"
+    ]
+  },
+  {
+    "path": "sleekmeeter-capture-output.png",
+    "name": "Sleekmeeter — SAVE OUTPUT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "capture-output",
+      "save",
+      "output"
+    ]
+  },
+  {
+    "path": "sleekmeeter-auto-output.png",
+    "name": "Sleekmeeter — AUTO OUTPUT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "auto-output",
+      "auto",
+      "output"
+    ]
+  },
+  {
+    "path": "sleekmeeter-soundboard.png",
+    "name": "Sleekmeeter — SOUNDBOARD",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "soundboard",
+      "soundboard"
+    ]
+  },
+  {
+    "path": "sleekmeeter-import-sounds.png",
+    "name": "Sleekmeeter — ADD SOUNDS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "import-sounds",
+      "add",
+      "sounds"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-folder.png",
+    "name": "Sleekmeeter — ADD FOLDER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-folder",
+      "add",
+      "folder"
+    ]
+  },
+  {
+    "path": "sleekmeeter-random-pack.png",
+    "name": "Sleekmeeter — RANDOM PACK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "random-pack",
+      "random",
+      "pack"
+    ]
+  },
+  {
+    "path": "sleekmeeter-edit-sounds.png",
+    "name": "Sleekmeeter — EDIT SOUNDS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "edit-sounds",
+      "edit",
+      "sounds"
+    ]
+  },
+  {
+    "path": "sleekmeeter-recorder.png",
+    "name": "Sleekmeeter — RECORDER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "recorder",
+      "recorder"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-play.png",
+    "name": "Sleekmeeter — REC PLAY",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-play",
+      "rec",
+      "play"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-pause.png",
+    "name": "Sleekmeeter — REC PAUSE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-pause",
+      "rec",
+      "pause"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-stop.png",
+    "name": "Sleekmeeter — REC STOP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-stop",
+      "rec",
+      "stop"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-rewind.png",
+    "name": "Sleekmeeter — REC REWIND",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-rewind",
+      "rec",
+      "rewind"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-fast-forward.png",
+    "name": "Sleekmeeter — REC FORWARD",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-fast-forward",
+      "rec",
+      "forward"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-open-file.png",
+    "name": "Sleekmeeter — OPEN AUDIO",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-open-file",
+      "open",
+      "audio"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-arm-inputs.png",
+    "name": "Sleekmeeter — ARM INPUTS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-arm-inputs",
+      "arm",
+      "inputs"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-arm-outputs.png",
+    "name": "Sleekmeeter — ARM OUTPUTS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-arm-outputs",
+      "arm",
+      "outputs"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-play-route.png",
+    "name": "Sleekmeeter — PLAY ROUTING",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-play-route",
+      "play",
+      "routing"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-format.png",
+    "name": "Sleekmeeter — REC FORMAT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-format",
+      "rec",
+      "format"
+    ]
+  },
+  {
+    "path": "sleekmeeter-rec-seek.png",
+    "name": "Sleekmeeter — REC SEEK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "rec-seek",
+      "rec",
+      "seek"
+    ]
+  },
+  {
+    "path": "sleekmeeter-app-volumes.png",
+    "name": "Sleekmeeter — APP VOLUMES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "app-volumes",
+      "app",
+      "volumes"
+    ]
+  },
+  {
+    "path": "sleekmeeter-app-routing.png",
+    "name": "Sleekmeeter — APP ROUTING",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "app-routing",
+      "app",
+      "routing"
+    ]
+  },
+  {
+    "path": "sleekmeeter-restart-engine.png",
+    "name": "Sleekmeeter — RESTART AUDIO",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "restart-engine",
+      "restart",
+      "audio"
+    ]
+  },
+  {
+    "path": "sleekmeeter-show-voicemeeter.png",
+    "name": "Sleekmeeter — VOICEMEETER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "show-voicemeeter",
+      "voicemeeter"
+    ]
+  },
+  {
+    "path": "sleekmeeter-vm-options.png",
+    "name": "Sleekmeeter — VM OPTIONS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "vm-options",
+      "vm",
+      "options"
+    ]
+  },
+  {
+    "path": "sleekmeeter-setup-assistant.png",
+    "name": "Sleekmeeter — SETUP ASSIST",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "setup-assistant",
+      "setup",
+      "assist"
+    ]
+  },
+  {
+    "path": "sleekmeeter-hear-yourself.png",
+    "name": "Sleekmeeter — HEAR YOURSELF",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "hear-yourself",
+      "hear",
+      "yourself"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mic-chain.png",
+    "name": "Sleekmeeter — MIC CHAIN",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mic-chain",
+      "mic",
+      "chain"
+    ]
+  },
+  {
+    "path": "sleekmeeter-level-history.png",
+    "name": "Sleekmeeter — LEVEL HISTORY",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "level-history",
+      "level",
+      "history"
+    ]
+  },
+  {
+    "path": "sleekmeeter-device-names.png",
+    "name": "Sleekmeeter — DEVICE NAMES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "device-names",
+      "device",
+      "names"
+    ]
+  },
+  {
+    "path": "sleekmeeter-simple-mode.png",
+    "name": "Sleekmeeter — SIMPLE MODE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "simple-mode",
+      "simple",
+      "mode"
+    ]
+  },
+  {
+    "path": "sleekmeeter-reset-order.png",
+    "name": "Sleekmeeter — RESET ORDER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "reset-order",
+      "reset",
+      "order"
+    ]
+  },
+  {
+    "path": "sleekmeeter-mini-mode.png",
+    "name": "Sleekmeeter — MINI MODE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "mini-mode",
+      "mini",
+      "mode"
+    ]
+  },
+  {
+    "path": "sleekmeeter-keep-on-top.png",
+    "name": "Sleekmeeter — KEEP ON TOP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "keep-on-top",
+      "keep",
+      "on",
+      "top"
+    ]
+  },
+  {
+    "path": "sleekmeeter-settings.png",
+    "name": "Sleekmeeter — SETTINGS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "settings",
+      "settings"
+    ]
+  },
+  {
+    "path": "sleekmeeter-themes.png",
+    "name": "Sleekmeeter — THEMES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "themes",
+      "themes"
+    ]
+  },
+  {
+    "path": "sleekmeeter-streamer-mode.png",
+    "name": "Sleekmeeter — STREAMER MODE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "streamer-mode",
+      "streamer",
+      "mode"
+    ]
+  },
+  {
+    "path": "sleekmeeter-fade-settings.png",
+    "name": "Sleekmeeter — SMOOTH FADES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "fade-settings",
+      "smooth",
+      "fades"
+    ]
+  },
+  {
+    "path": "sleekmeeter-duck-settings.png",
+    "name": "Sleekmeeter — DUCK SETUP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "duck-settings",
+      "duck",
+      "setup"
+    ]
+  },
+  {
+    "path": "sleekmeeter-brb-settings.png",
+    "name": "Sleekmeeter — BRB SETUP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "brb-settings",
+      "brb",
+      "setup"
+    ]
+  },
+  {
+    "path": "sleekmeeter-obs-link.png",
+    "name": "Sleekmeeter — OBS LINK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "obs-link",
+      "obs",
+      "link"
+    ]
+  },
+  {
+    "path": "sleekmeeter-twitch-link.png",
+    "name": "Sleekmeeter — TWITCH LINK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "twitch-link",
+      "twitch",
+      "link"
+    ]
+  },
+  {
+    "path": "sleekmeeter-phone-remote.png",
+    "name": "Sleekmeeter — PHONE REMOTE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "phone-remote",
+      "phone",
+      "remote"
+    ]
+  },
+  {
+    "path": "sleekmeeter-shortcuts.png",
+    "name": "Sleekmeeter — SHORTCUTS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "shortcuts",
+      "shortcuts"
+    ]
+  },
+  {
+    "path": "sleekmeeter-health-check.png",
+    "name": "Sleekmeeter — HEALTH CHECK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "health-check",
+      "health",
+      "check"
+    ]
+  },
+  {
+    "path": "sleekmeeter-export-settings.png",
+    "name": "Sleekmeeter — EXPORT SETUP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "export-settings",
+      "export",
+      "setup"
+    ]
+  },
+  {
+    "path": "sleekmeeter-import-settings.png",
+    "name": "Sleekmeeter — IMPORT SETUP",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "import-settings",
+      "import",
+      "setup"
+    ]
+  },
+  {
+    "path": "sleekmeeter-updates.png",
+    "name": "Sleekmeeter — CHECK UPDATE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "updates",
+      "check",
+      "update"
+    ]
+  },
+  {
+    "path": "sleekmeeter-logs.png",
+    "name": "Sleekmeeter — OPEN LOGS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "logs",
+      "open",
+      "logs"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-1.png",
+    "name": "Sleekmeeter — SCENE 1",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-1",
+      "scene",
+      "1"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-2.png",
+    "name": "Sleekmeeter — SCENE 2",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-2",
+      "scene",
+      "2"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-3.png",
+    "name": "Sleekmeeter — SCENE 3",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-3",
+      "scene",
+      "3"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-4.png",
+    "name": "Sleekmeeter — SCENE 4",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-4",
+      "scene",
+      "4"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-5.png",
+    "name": "Sleekmeeter — SCENE 5",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-5",
+      "scene",
+      "5"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-6.png",
+    "name": "Sleekmeeter — SCENE 6",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-6",
+      "scene",
+      "6"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-7.png",
+    "name": "Sleekmeeter — SCENE 7",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-7",
+      "scene",
+      "7"
+    ]
+  },
+  {
+    "path": "sleekmeeter-scene-8.png",
+    "name": "Sleekmeeter — SCENE 8",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "scene-8",
+      "scene",
+      "8"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-1.png",
+    "name": "Sleekmeeter — SOUND 1",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-1",
+      "sound",
+      "1"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-2.png",
+    "name": "Sleekmeeter — SOUND 2",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-2",
+      "sound",
+      "2"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-3.png",
+    "name": "Sleekmeeter — SOUND 3",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-3",
+      "sound",
+      "3"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-4.png",
+    "name": "Sleekmeeter — SOUND 4",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-4",
+      "sound",
+      "4"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-5.png",
+    "name": "Sleekmeeter — SOUND 5",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-5",
+      "sound",
+      "5"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-6.png",
+    "name": "Sleekmeeter — SOUND 6",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-6",
+      "sound",
+      "6"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-7.png",
+    "name": "Sleekmeeter — SOUND 7",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-7",
+      "sound",
+      "7"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-8.png",
+    "name": "Sleekmeeter — SOUND 8",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-8",
+      "sound",
+      "8"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-9.png",
+    "name": "Sleekmeeter — SOUND 9",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-9",
+      "sound",
+      "9"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-10.png",
+    "name": "Sleekmeeter — SOUND 10",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-10",
+      "sound",
+      "10"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-11.png",
+    "name": "Sleekmeeter — SOUND 11",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-11",
+      "sound",
+      "11"
+    ]
+  },
+  {
+    "path": "sleekmeeter-sound-12.png",
+    "name": "Sleekmeeter — SOUND 12",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "sound-12",
+      "sound",
+      "12"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-console.png",
+    "name": "Sleekmeeter — CONSOLE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-console",
+      "console"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-oled-black.png",
+    "name": "Sleekmeeter — OLED BLACK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-oled-black",
+      "oled",
+      "black"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-glass.png",
+    "name": "Sleekmeeter — GLASS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-glass",
+      "glass"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-neon.png",
+    "name": "Sleekmeeter — NEON",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-neon",
+      "neon"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-terminal.png",
+    "name": "Sleekmeeter — TERMINAL",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-terminal",
+      "terminal"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-bubblegum.png",
+    "name": "Sleekmeeter — BUBBLEGUM",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-bubblegum",
+      "bubblegum"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-blueprint.png",
+    "name": "Sleekmeeter — BLUEPRINT",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-blueprint",
+      "blueprint"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-block.png",
+    "name": "Sleekmeeter — BLOCK",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-block",
+      "block"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-arcade.png",
+    "name": "Sleekmeeter — ARCADE",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-arcade",
+      "arcade"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-peaches-cream.png",
+    "name": "Sleekmeeter — PEACHES CREAM",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-peaches-cream",
+      "peaches",
+      "cream"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-sticker-bomb.png",
+    "name": "Sleekmeeter — STICKER BOMB",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-sticker-bomb",
+      "sticker",
+      "bomb"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-afterburner.png",
+    "name": "Sleekmeeter — AFTERBURNER",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-afterburner",
+      "afterburner"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-lunar.png",
+    "name": "Sleekmeeter — LUNAR",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-lunar",
+      "lunar"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-onyx.png",
+    "name": "Sleekmeeter — ONYX",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-onyx",
+      "onyx"
+    ]
+  },
+  {
+    "path": "sleekmeeter-theme-opal.png",
+    "name": "Sleekmeeter — OPAL",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "theme-opal",
+      "opal"
+    ]
+  },
+  {
+    "path": "discord-mute.png",
+    "name": "Discord — MUTE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "mute",
+      "mute"
+    ]
+  },
+  {
+    "path": "discord-unmute.png",
+    "name": "Discord — UNMUTE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "unmute",
+      "unmute"
+    ]
+  },
+  {
+    "path": "discord-deafen.png",
+    "name": "Discord — DEAFEN",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "deafen",
+      "deafen"
+    ]
+  },
+  {
+    "path": "discord-undeafen.png",
+    "name": "Discord — UNDEAFEN",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "undeafen",
+      "undeafen"
+    ]
+  },
+  {
+    "path": "discord-mute-toggle.png",
+    "name": "Discord — TOGGLE MUTE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "mute-toggle",
+      "toggle",
+      "mute"
+    ]
+  },
+  {
+    "path": "discord-deafen-toggle.png",
+    "name": "Discord — TOGGLE DEAFEN",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "deafen-toggle",
+      "toggle",
+      "deafen"
+    ]
+  },
+  {
+    "path": "discord-push-to-talk.png",
+    "name": "Discord — HOLD TO TALK",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "push-to-talk",
+      "hold",
+      "to",
+      "talk"
+    ]
+  },
+  {
+    "path": "discord-push-to-mute.png",
+    "name": "Discord — HOLD TO MUTE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "push-to-mute",
+      "hold",
+      "to",
+      "mute"
+    ]
+  },
+  {
+    "path": "discord-video-on.png",
+    "name": "Discord — VIDEO ON",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "video-on",
+      "video",
+      "on"
+    ]
+  },
+  {
+    "path": "discord-video-off.png",
+    "name": "Discord — VIDEO OFF",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "video-off",
+      "video",
+      "off"
+    ]
+  },
+  {
+    "path": "discord-share-screen.png",
+    "name": "Discord — SHARE SCREEN",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "share-screen",
+      "share",
+      "screen"
+    ]
+  },
+  {
+    "path": "discord-stop-sharing.png",
+    "name": "Discord — STOP SHARING",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "stop-sharing",
+      "stop",
+      "sharing"
+    ]
+  },
+  {
+    "path": "discord-join-voice.png",
+    "name": "Discord — JOIN VOICE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "join-voice",
+      "join",
+      "voice"
+    ]
+  },
+  {
+    "path": "discord-leave-voice.png",
+    "name": "Discord — LEAVE VOICE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "leave-voice",
+      "leave",
+      "voice"
+    ]
+  },
+  {
+    "path": "discord-voice-channel.png",
+    "name": "Discord — VOICE CHANNEL",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "voice-channel",
+      "voice",
+      "channel"
+    ]
+  },
+  {
+    "path": "discord-text-channel.png",
+    "name": "Discord — TEXT CHANNEL",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "text-channel",
+      "text",
+      "channel"
+    ]
+  },
+  {
+    "path": "discord-server.png",
+    "name": "Discord — SERVER",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "server",
+      "server"
+    ]
+  },
+  {
+    "path": "discord-input-volume.png",
+    "name": "Discord — MIC VOLUME",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "input-volume",
+      "mic",
+      "volume"
+    ]
+  },
+  {
+    "path": "discord-output-volume.png",
+    "name": "Discord — VOICE VOLUME",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "output-volume",
+      "voice",
+      "volume"
+    ]
+  },
+  {
+    "path": "discord-volume-up.png",
+    "name": "Discord — VOLUME UP",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "volume-up",
+      "volume",
+      "up"
+    ]
+  },
+  {
+    "path": "discord-volume-down.png",
+    "name": "Discord — VOLUME DOWN",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "volume-down",
+      "volume",
+      "down"
+    ]
+  },
+  {
+    "path": "discord-soundboard.png",
+    "name": "Discord — SOUNDBOARD",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "soundboard",
+      "soundboard"
+    ]
+  },
+  {
+    "path": "discord-play-sound.png",
+    "name": "Discord — PLAY SOUND",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "play-sound",
+      "play",
+      "sound"
+    ]
+  },
+  {
+    "path": "discord-stop-sound.png",
+    "name": "Discord — STOP SOUND",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "stop-sound",
+      "stop",
+      "sound"
+    ]
+  },
+  {
+    "path": "discord-notifications-on.png",
+    "name": "Discord — NOTIFY ON",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "notifications-on",
+      "notify",
+      "on"
+    ]
+  },
+  {
+    "path": "discord-notifications-off.png",
+    "name": "Discord — NOTIFY OFF",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "notifications-off",
+      "notify",
+      "off"
+    ]
+  },
+  {
+    "path": "discord-settings.png",
+    "name": "Discord — SETTINGS",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "settings",
+      "settings"
+    ]
+  },
+  {
+    "path": "discord-dm.png",
+    "name": "Discord — DIRECT MESSAGE",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "dm",
+      "direct",
+      "message"
+    ]
+  },
+  {
+    "path": "discord-friends.png",
+    "name": "Discord — FRIENDS",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "friends",
+      "friends"
+    ]
+  },
+  {
+    "path": "discord-search.png",
+    "name": "Discord — SEARCH",
+    "tags": [
+      "discord",
+      "studio",
+      "premium",
+      "search",
+      "search"
+    ]
+  },
+  {
+    "path": "spotify-play.png",
+    "name": "Spotify — PLAY",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "play",
+      "play"
+    ]
+  },
+  {
+    "path": "spotify-pause.png",
+    "name": "Spotify — PAUSE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "pause",
+      "pause"
+    ]
+  },
+  {
+    "path": "spotify-play-pause.png",
+    "name": "Spotify — PLAY / PAUSE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "play-pause",
+      "play",
+      "/",
+      "pause"
+    ]
+  },
+  {
+    "path": "spotify-next.png",
+    "name": "Spotify — NEXT TRACK",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "next",
+      "next",
+      "track"
+    ]
+  },
+  {
+    "path": "spotify-previous.png",
+    "name": "Spotify — PREVIOUS",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "previous",
+      "previous"
+    ]
+  },
+  {
+    "path": "spotify-seek-forward.png",
+    "name": "Spotify — SEEK FORWARD",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "seek-forward",
+      "seek",
+      "forward"
+    ]
+  },
+  {
+    "path": "spotify-seek-back.png",
+    "name": "Spotify — SEEK BACK",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "seek-back",
+      "seek",
+      "back"
+    ]
+  },
+  {
+    "path": "spotify-volume-up.png",
+    "name": "Spotify — VOLUME UP",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "volume-up",
+      "volume",
+      "up"
+    ]
+  },
+  {
+    "path": "spotify-volume-down.png",
+    "name": "Spotify — VOLUME DOWN",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "volume-down",
+      "volume",
+      "down"
+    ]
+  },
+  {
+    "path": "spotify-mute.png",
+    "name": "Spotify — MUTE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "mute",
+      "mute"
+    ]
+  },
+  {
+    "path": "spotify-unmute.png",
+    "name": "Spotify — UNMUTE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "unmute",
+      "unmute"
+    ]
+  },
+  {
+    "path": "spotify-shuffle-on.png",
+    "name": "Spotify — SHUFFLE ON",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "shuffle-on",
+      "shuffle",
+      "on"
+    ]
+  },
+  {
+    "path": "spotify-shuffle-off.png",
+    "name": "Spotify — SHUFFLE OFF",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "shuffle-off",
+      "shuffle",
+      "off"
+    ]
+  },
+  {
+    "path": "spotify-repeat-off.png",
+    "name": "Spotify — REPEAT OFF",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "repeat-off",
+      "repeat",
+      "off"
+    ]
+  },
+  {
+    "path": "spotify-repeat-all.png",
+    "name": "Spotify — REPEAT ALL",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "repeat-all",
+      "repeat",
+      "all"
+    ]
+  },
+  {
+    "path": "spotify-repeat-one.png",
+    "name": "Spotify — REPEAT ONE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "repeat-one",
+      "repeat",
+      "one"
+    ]
+  },
+  {
+    "path": "spotify-like.png",
+    "name": "Spotify — SAVE TRACK",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "like",
+      "save",
+      "track"
+    ]
+  },
+  {
+    "path": "spotify-unlike.png",
+    "name": "Spotify — REMOVE SAVED",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "unlike",
+      "remove",
+      "saved"
+    ]
+  },
+  {
+    "path": "spotify-queue.png",
+    "name": "Spotify — OPEN QUEUE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "queue",
+      "open",
+      "queue"
+    ]
+  },
+  {
+    "path": "spotify-add-queue.png",
+    "name": "Spotify — ADD TO QUEUE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "add-queue",
+      "add",
+      "to",
+      "queue"
+    ]
+  },
+  {
+    "path": "spotify-playlist.png",
+    "name": "Spotify — PLAY PLAYLIST",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "playlist",
+      "play",
+      "playlist"
+    ]
+  },
+  {
+    "path": "spotify-add-playlist.png",
+    "name": "Spotify — ADD PLAYLIST",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "add-playlist",
+      "add",
+      "playlist"
+    ]
+  },
+  {
+    "path": "spotify-album.png",
+    "name": "Spotify — PLAY ALBUM",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "album",
+      "play",
+      "album"
+    ]
+  },
+  {
+    "path": "spotify-artist.png",
+    "name": "Spotify — PLAY ARTIST",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "artist",
+      "play",
+      "artist"
+    ]
+  },
+  {
+    "path": "spotify-liked-songs.png",
+    "name": "Spotify — LIKED SONGS",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "liked-songs",
+      "liked",
+      "songs"
+    ]
+  },
+  {
+    "path": "spotify-device.png",
+    "name": "Spotify — PLAYBACK DEVICE",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "device",
+      "playback",
+      "device"
+    ]
+  },
+  {
+    "path": "spotify-transfer.png",
+    "name": "Spotify — TRANSFER PLAY",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "transfer",
+      "transfer",
+      "play"
+    ]
+  },
+  {
+    "path": "spotify-now-playing.png",
+    "name": "Spotify — NOW PLAYING",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "now-playing",
+      "now",
+      "playing"
+    ]
+  },
+  {
+    "path": "spotify-copy-track.png",
+    "name": "Spotify — COPY TRACK URL",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "copy-track",
+      "copy",
+      "track",
+      "url"
+    ]
+  },
+  {
+    "path": "spotify-search.png",
+    "name": "Spotify — SEARCH",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "search",
+      "search"
+    ]
+  },
+  {
+    "path": "spotify-library.png",
+    "name": "Spotify — LIBRARY",
+    "tags": [
+      "spotify",
+      "studio",
+      "premium",
+      "library",
+      "library"
+    ]
+  },
+  {
+    "path": "twitch-chat.png",
+    "name": "Twitch — OPEN CHAT",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "chat",
+      "open",
+      "chat"
+    ]
+  },
+  {
+    "path": "twitch-send-message.png",
+    "name": "Twitch — SEND MESSAGE",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "send-message",
+      "send",
+      "message"
+    ]
+  },
+  {
+    "path": "twitch-announcement.png",
+    "name": "Twitch — ANNOUNCEMENT",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "announcement",
+      "announcement"
+    ]
+  },
+  {
+    "path": "twitch-marker.png",
+    "name": "Twitch — STREAM MARKER",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "marker",
+      "stream",
+      "marker"
+    ]
+  },
+  {
+    "path": "twitch-clip.png",
+    "name": "Twitch — CREATE CLIP",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "clip",
+      "create",
+      "clip"
+    ]
+  },
+  {
+    "path": "twitch-ad.png",
+    "name": "Twitch — RUN AD",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "ad",
+      "run",
+      "ad"
+    ]
+  },
+  {
+    "path": "twitch-ad-30.png",
+    "name": "Twitch — 30 SECOND AD",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "ad-30",
+      "30",
+      "second",
+      "ad"
+    ]
+  },
+  {
+    "path": "twitch-ad-60.png",
+    "name": "Twitch — 60 SECOND AD",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "ad-60",
+      "60",
+      "second",
+      "ad"
+    ]
+  },
+  {
+    "path": "twitch-ad-90.png",
+    "name": "Twitch — 90 SECOND AD",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "ad-90",
+      "90",
+      "second",
+      "ad"
+    ]
+  },
+  {
+    "path": "twitch-ad-180.png",
+    "name": "Twitch — 3 MINUTE AD",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "ad-180",
+      "3",
+      "minute",
+      "ad"
+    ]
+  },
+  {
+    "path": "twitch-raid.png",
+    "name": "Twitch — RAID CHANNEL",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "raid",
+      "raid",
+      "channel"
+    ]
+  },
+  {
+    "path": "twitch-cancel-raid.png",
+    "name": "Twitch — CANCEL RAID",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "cancel-raid",
+      "cancel",
+      "raid"
+    ]
+  },
+  {
+    "path": "twitch-shoutout.png",
+    "name": "Twitch — SHOUTOUT",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "shoutout",
+      "shoutout"
+    ]
+  },
+  {
+    "path": "twitch-clear-chat.png",
+    "name": "Twitch — CLEAR CHAT",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "clear-chat",
+      "clear",
+      "chat"
+    ]
+  },
+  {
+    "path": "twitch-slow-on.png",
+    "name": "Twitch — SLOW MODE ON",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "slow-on",
+      "slow",
+      "mode",
+      "on"
+    ]
+  },
+  {
+    "path": "twitch-slow-off.png",
+    "name": "Twitch — SLOW MODE OFF",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "slow-off",
+      "slow",
+      "mode",
+      "off"
+    ]
+  },
+  {
+    "path": "twitch-followers-on.png",
+    "name": "Twitch — FOLLOWERS ON",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "followers-on",
+      "followers",
+      "on"
+    ]
+  },
+  {
+    "path": "twitch-followers-off.png",
+    "name": "Twitch — FOLLOWERS OFF",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "followers-off",
+      "followers",
+      "off"
+    ]
+  },
+  {
+    "path": "twitch-subs-on.png",
+    "name": "Twitch — SUBS ONLY ON",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "subs-on",
+      "subs",
+      "only",
+      "on"
+    ]
+  },
+  {
+    "path": "twitch-subs-off.png",
+    "name": "Twitch — SUBS ONLY OFF",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "subs-off",
+      "subs",
+      "only",
+      "off"
+    ]
+  },
+  {
+    "path": "twitch-emote-on.png",
+    "name": "Twitch — EMOTES ONLY",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "emote-on",
+      "emotes",
+      "only"
+    ]
+  },
+  {
+    "path": "twitch-emote-off.png",
+    "name": "Twitch — EMOTES OFF",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "emote-off",
+      "emotes",
+      "off"
+    ]
+  },
+  {
+    "path": "twitch-unique-on.png",
+    "name": "Twitch — UNIQUE CHAT ON",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "unique-on",
+      "unique",
+      "chat",
+      "on"
+    ]
+  },
+  {
+    "path": "twitch-unique-off.png",
+    "name": "Twitch — UNIQUE CHAT OFF",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "unique-off",
+      "unique",
+      "chat",
+      "off"
+    ]
+  },
+  {
+    "path": "twitch-shield-on.png",
+    "name": "Twitch — SHIELD ON",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "shield-on",
+      "shield",
+      "on"
+    ]
+  },
+  {
+    "path": "twitch-shield-off.png",
+    "name": "Twitch — SHIELD OFF",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "shield-off",
+      "shield",
+      "off"
+    ]
+  },
+  {
+    "path": "twitch-timeout.png",
+    "name": "Twitch — TIMEOUT",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "timeout",
+      "timeout"
+    ]
+  },
+  {
+    "path": "twitch-ban.png",
+    "name": "Twitch — BAN USER",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "ban",
+      "ban",
+      "user"
+    ]
+  },
+  {
+    "path": "twitch-unban.png",
+    "name": "Twitch — UNBAN USER",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "unban",
+      "unban",
+      "user"
+    ]
+  },
+  {
+    "path": "twitch-title.png",
+    "name": "Twitch — STREAM TITLE",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "title",
+      "stream",
+      "title"
+    ]
+  },
+  {
+    "path": "twitch-category.png",
+    "name": "Twitch — SET CATEGORY",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "category",
+      "set",
+      "category"
+    ]
+  },
+  {
+    "path": "twitch-viewers.png",
+    "name": "Twitch — VIEWERS",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "viewers",
+      "viewers"
+    ]
+  },
+  {
+    "path": "twitch-dashboard.png",
+    "name": "Twitch — DASHBOARD",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "dashboard",
+      "dashboard"
+    ]
+  },
+  {
+    "path": "twitch-channel.png",
+    "name": "Twitch — OPEN CHANNEL",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "channel",
+      "open",
+      "channel"
+    ]
+  },
+  {
+    "path": "twitch-whisper.png",
+    "name": "Twitch — WHISPER",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "whisper",
+      "whisper"
+    ]
+  },
+  {
+    "path": "twitch-poll.png",
+    "name": "Twitch — POLL",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "poll",
+      "poll"
+    ]
+  },
+  {
+    "path": "twitch-prediction.png",
+    "name": "Twitch — PREDICTION",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "prediction",
+      "prediction"
+    ]
+  },
+  {
+    "path": "twitch-rewards.png",
+    "name": "Twitch — CHANNEL POINTS",
+    "tags": [
+      "twitch",
+      "studio",
+      "premium",
+      "rewards",
+      "channel",
+      "points"
+    ]
+  },
+  {
+    "path": "philips-hue-power-toggle.png",
+    "name": "Philips-Hue — POWER TOGGLE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "power-toggle",
+      "power",
+      "toggle"
+    ]
+  },
+  {
+    "path": "philips-hue-power-on.png",
+    "name": "Philips-Hue — LIGHTS ON",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "power-on",
+      "lights",
+      "on"
+    ]
+  },
+  {
+    "path": "philips-hue-power-off.png",
+    "name": "Philips-Hue — LIGHTS OFF",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "power-off",
+      "lights",
+      "off"
+    ]
+  },
+  {
+    "path": "philips-hue-all-on.png",
+    "name": "Philips-Hue — ALL LIGHTS ON",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "all-on",
+      "all",
+      "lights",
+      "on"
+    ]
+  },
+  {
+    "path": "philips-hue-all-off.png",
+    "name": "Philips-Hue — ALL LIGHTS OFF",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "all-off",
+      "all",
+      "lights",
+      "off"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness.png",
+    "name": "Philips-Hue — SET BRIGHTNESS",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness",
+      "set",
+      "brightness"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-up.png",
+    "name": "Philips-Hue — BRIGHTER",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-up",
+      "brighter"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-down.png",
+    "name": "Philips-Hue — DIMMER",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-down",
+      "dimmer"
+    ]
+  },
+  {
+    "path": "philips-hue-temperature.png",
+    "name": "Philips-Hue — TEMPERATURE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "temperature",
+      "temperature"
+    ]
+  },
+  {
+    "path": "philips-hue-warmer.png",
+    "name": "Philips-Hue — WARMER",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "warmer",
+      "warmer"
+    ]
+  },
+  {
+    "path": "philips-hue-cooler.png",
+    "name": "Philips-Hue — COOLER",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "cooler",
+      "cooler"
+    ]
+  },
+  {
+    "path": "philips-hue-color.png",
+    "name": "Philips-Hue — SET COLOUR",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "color",
+      "set",
+      "colour"
+    ]
+  },
+  {
+    "path": "philips-hue-color-cycle.png",
+    "name": "Philips-Hue — COLOUR CYCLE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "color-cycle",
+      "colour",
+      "cycle"
+    ]
+  },
+  {
+    "path": "philips-hue-scene.png",
+    "name": "Philips-Hue — ACTIVATE SCENE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene",
+      "activate",
+      "scene"
+    ]
+  },
+  {
+    "path": "philips-hue-room.png",
+    "name": "Philips-Hue — ROOM",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "room",
+      "room"
+    ]
+  },
+  {
+    "path": "philips-hue-group.png",
+    "name": "Philips-Hue — GROUP",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "group",
+      "group"
+    ]
+  },
+  {
+    "path": "philips-hue-device-list.png",
+    "name": "Philips-Hue — DEVICE LIST",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "device-list",
+      "device",
+      "list"
+    ]
+  },
+  {
+    "path": "philips-hue-sync-on.png",
+    "name": "Philips-Hue — SYNC ON",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "sync-on",
+      "sync",
+      "on"
+    ]
+  },
+  {
+    "path": "philips-hue-sync-off.png",
+    "name": "Philips-Hue — SYNC OFF",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "sync-off",
+      "sync",
+      "off"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-10.png",
+    "name": "Philips-Hue — 10% BRIGHTNESS",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-10",
+      "10%",
+      "brightness"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-25.png",
+    "name": "Philips-Hue — 25% BRIGHTNESS",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-25",
+      "25%",
+      "brightness"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-50.png",
+    "name": "Philips-Hue — 50% BRIGHTNESS",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-50",
+      "50%",
+      "brightness"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-75.png",
+    "name": "Philips-Hue — 75% BRIGHTNESS",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-75",
+      "75%",
+      "brightness"
+    ]
+  },
+  {
+    "path": "philips-hue-brightness-100.png",
+    "name": "Philips-Hue — 100% BRIGHTNESS",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "brightness-100",
+      "100%",
+      "brightness"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-red.png",
+    "name": "Philips-Hue — RED",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-red",
+      "red"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-orange.png",
+    "name": "Philips-Hue — ORANGE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-orange",
+      "orange"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-yellow.png",
+    "name": "Philips-Hue — YELLOW",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-yellow",
+      "yellow"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-green.png",
+    "name": "Philips-Hue — GREEN",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-green",
+      "green"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-cyan.png",
+    "name": "Philips-Hue — CYAN",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-cyan",
+      "cyan"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-blue.png",
+    "name": "Philips-Hue — BLUE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-blue",
+      "blue"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-purple.png",
+    "name": "Philips-Hue — PURPLE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-purple",
+      "purple"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-pink.png",
+    "name": "Philips-Hue — PINK",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-pink",
+      "pink"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-warm.png",
+    "name": "Philips-Hue — WARM",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-warm",
+      "warm"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-cool.png",
+    "name": "Philips-Hue — COOL",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-cool",
+      "cool"
+    ]
+  },
+  {
+    "path": "philips-hue-colour-white.png",
+    "name": "Philips-Hue — WHITE",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "colour-white",
+      "white"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-1.png",
+    "name": "Philips-Hue — SCENE 1",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-1",
+      "scene",
+      "1"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-2.png",
+    "name": "Philips-Hue — SCENE 2",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-2",
+      "scene",
+      "2"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-3.png",
+    "name": "Philips-Hue — SCENE 3",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-3",
+      "scene",
+      "3"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-4.png",
+    "name": "Philips-Hue — SCENE 4",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-4",
+      "scene",
+      "4"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-5.png",
+    "name": "Philips-Hue — SCENE 5",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-5",
+      "scene",
+      "5"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-6.png",
+    "name": "Philips-Hue — SCENE 6",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-6",
+      "scene",
+      "6"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-7.png",
+    "name": "Philips-Hue — SCENE 7",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-7",
+      "scene",
+      "7"
+    ]
+  },
+  {
+    "path": "philips-hue-scene-8.png",
+    "name": "Philips-Hue — SCENE 8",
+    "tags": [
+      "philips-hue",
+      "studio",
+      "premium",
+      "scene-8",
+      "scene",
+      "8"
+    ]
+  },
+  {
+    "path": "obs-stream-start.png",
+    "name": "OBS — GO LIVE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "stream-start",
+      "go",
+      "live"
+    ]
+  },
+  {
+    "path": "obs-stream-stop.png",
+    "name": "OBS — STOP STREAM",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "stream-stop",
+      "stop",
+      "stream"
+    ]
+  },
+  {
+    "path": "obs-record-start.png",
+    "name": "OBS — START RECORD",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "record-start",
+      "start",
+      "record"
+    ]
+  },
+  {
+    "path": "obs-record-stop.png",
+    "name": "OBS — STOP RECORD",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "record-stop",
+      "stop",
+      "record"
+    ]
+  },
+  {
+    "path": "obs-record-pause.png",
+    "name": "OBS — PAUSE RECORD",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "record-pause",
+      "pause",
+      "record"
+    ]
+  },
+  {
+    "path": "obs-record-resume.png",
+    "name": "OBS — RESUME RECORD",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "record-resume",
+      "resume",
+      "record"
+    ]
+  },
+  {
+    "path": "obs-replay-start.png",
+    "name": "OBS — REPLAY ON",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "replay-start",
+      "replay",
+      "on"
+    ]
+  },
+  {
+    "path": "obs-replay-stop.png",
+    "name": "OBS — REPLAY OFF",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "replay-stop",
+      "replay",
+      "off"
+    ]
+  },
+  {
+    "path": "obs-save-replay.png",
+    "name": "OBS — SAVE REPLAY",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "save-replay",
+      "save",
+      "replay"
+    ]
+  },
+  {
+    "path": "obs-virtual-camera-on.png",
+    "name": "OBS — VIRTUAL CAM ON",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "virtual-camera-on",
+      "virtual",
+      "cam",
+      "on"
+    ]
+  },
+  {
+    "path": "obs-virtual-camera-off.png",
+    "name": "OBS — VIRTUAL CAM OFF",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "virtual-camera-off",
+      "virtual",
+      "cam",
+      "off"
+    ]
+  },
+  {
+    "path": "obs-studio-on.png",
+    "name": "OBS — STUDIO MODE ON",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "studio-on",
+      "studio",
+      "mode",
+      "on"
+    ]
+  },
+  {
+    "path": "obs-studio-off.png",
+    "name": "OBS — STUDIO MODE OFF",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "studio-off",
+      "studio",
+      "mode",
+      "off"
+    ]
+  },
+  {
+    "path": "obs-scene.png",
+    "name": "OBS — SWITCH SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene",
+      "switch",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-preview-scene.png",
+    "name": "OBS — PREVIEW SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "preview-scene",
+      "preview",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-transition.png",
+    "name": "OBS — TRANSITION",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "transition",
+      "transition"
+    ]
+  },
+  {
+    "path": "obs-cut.png",
+    "name": "OBS — CUT",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "cut",
+      "cut"
+    ]
+  },
+  {
+    "path": "obs-fade.png",
+    "name": "OBS — FADE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "fade",
+      "fade"
+    ]
+  },
+  {
+    "path": "obs-stinger.png",
+    "name": "OBS — STINGER",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "stinger",
+      "stinger"
+    ]
+  },
+  {
+    "path": "obs-source-show.png",
+    "name": "OBS — SHOW SOURCE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "source-show",
+      "show",
+      "source"
+    ]
+  },
+  {
+    "path": "obs-source-hide.png",
+    "name": "OBS — HIDE SOURCE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "source-hide",
+      "hide",
+      "source"
+    ]
+  },
+  {
+    "path": "obs-mic-mute.png",
+    "name": "OBS — MUTE MIC",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "mic-mute",
+      "mute",
+      "mic"
+    ]
+  },
+  {
+    "path": "obs-mic-unmute.png",
+    "name": "OBS — UNMUTE MIC",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "mic-unmute",
+      "unmute",
+      "mic"
+    ]
+  },
+  {
+    "path": "obs-desktop-mute.png",
+    "name": "OBS — MUTE DESKTOP",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "desktop-mute",
+      "mute",
+      "desktop"
+    ]
+  },
+  {
+    "path": "obs-desktop-unmute.png",
+    "name": "OBS — DESKTOP LIVE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "desktop-unmute",
+      "desktop",
+      "live"
+    ]
+  },
+  {
+    "path": "obs-source-mute.png",
+    "name": "OBS — MUTE SOURCE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "source-mute",
+      "mute",
+      "source"
+    ]
+  },
+  {
+    "path": "obs-source-unmute.png",
+    "name": "OBS — UNMUTE SOURCE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "source-unmute",
+      "unmute",
+      "source"
+    ]
+  },
+  {
+    "path": "obs-volume-up.png",
+    "name": "OBS — VOLUME UP",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "volume-up",
+      "volume",
+      "up"
+    ]
+  },
+  {
+    "path": "obs-volume-down.png",
+    "name": "OBS — VOLUME DOWN",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "volume-down",
+      "volume",
+      "down"
+    ]
+  },
+  {
+    "path": "obs-volume-set.png",
+    "name": "OBS — SET VOLUME",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "volume-set",
+      "set",
+      "volume"
+    ]
+  },
+  {
+    "path": "obs-monitoring.png",
+    "name": "OBS — AUDIO MONITOR",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "monitoring",
+      "audio",
+      "monitor"
+    ]
+  },
+  {
+    "path": "obs-filter-on.png",
+    "name": "OBS — FILTER ON",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "filter-on",
+      "filter",
+      "on"
+    ]
+  },
+  {
+    "path": "obs-filter-off.png",
+    "name": "OBS — FILTER OFF",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "filter-off",
+      "filter",
+      "off"
+    ]
+  },
+  {
+    "path": "obs-media-play.png",
+    "name": "OBS — MEDIA PLAY",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "media-play",
+      "media",
+      "play"
+    ]
+  },
+  {
+    "path": "obs-media-pause.png",
+    "name": "OBS — MEDIA PAUSE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "media-pause",
+      "media",
+      "pause"
+    ]
+  },
+  {
+    "path": "obs-media-stop.png",
+    "name": "OBS — MEDIA STOP",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "media-stop",
+      "media",
+      "stop"
+    ]
+  },
+  {
+    "path": "obs-media-restart.png",
+    "name": "OBS — MEDIA RESTART",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "media-restart",
+      "media",
+      "restart"
+    ]
+  },
+  {
+    "path": "obs-media-next.png",
+    "name": "OBS — MEDIA NEXT",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "media-next",
+      "media",
+      "next"
+    ]
+  },
+  {
+    "path": "obs-media-previous.png",
+    "name": "OBS — MEDIA PREVIOUS",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "media-previous",
+      "media",
+      "previous"
+    ]
+  },
+  {
+    "path": "obs-screenshot.png",
+    "name": "OBS — SCREENSHOT",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "screenshot",
+      "screenshot"
+    ]
+  },
+  {
+    "path": "obs-browser-refresh.png",
+    "name": "OBS — REFRESH BROWSER",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "browser-refresh",
+      "refresh",
+      "browser"
+    ]
+  },
+  {
+    "path": "obs-projector.png",
+    "name": "OBS — PROJECTOR",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "projector",
+      "projector"
+    ]
+  },
+  {
+    "path": "obs-profile.png",
+    "name": "OBS — OBS PROFILE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "profile",
+      "obs",
+      "profile"
+    ]
+  },
+  {
+    "path": "obs-collection.png",
+    "name": "OBS — SCENE COLLECTION",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "collection",
+      "scene",
+      "collection"
+    ]
+  },
+  {
+    "path": "obs-transform.png",
+    "name": "OBS — TRANSFORM",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "transform",
+      "transform"
+    ]
+  },
+  {
+    "path": "obs-source-lock.png",
+    "name": "OBS — LOCK SOURCE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "source-lock",
+      "lock",
+      "source"
+    ]
+  },
+  {
+    "path": "obs-settings.png",
+    "name": "OBS — SETTINGS",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "settings",
+      "settings"
+    ]
+  },
+  {
+    "path": "obs-stats.png",
+    "name": "OBS — STATS",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "stats",
+      "stats"
+    ]
+  },
+  {
+    "path": "obs-scene-starting.png",
+    "name": "OBS — STARTING SOON",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-starting",
+      "starting",
+      "soon"
+    ]
+  },
+  {
+    "path": "obs-scene-live.png",
+    "name": "OBS — LIVE SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-live",
+      "live",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-scene-game.png",
+    "name": "OBS — GAME SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-game",
+      "game",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-scene-camera.png",
+    "name": "OBS — CAMERA SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-camera",
+      "camera",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-scene-desktop.png",
+    "name": "OBS — DESKTOP SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-desktop",
+      "desktop",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-scene-brb.png",
+    "name": "OBS — BRB SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-brb",
+      "brb",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-scene-ending.png",
+    "name": "OBS — ENDING SCENE",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-ending",
+      "ending",
+      "scene"
+    ]
+  },
+  {
+    "path": "obs-scene-1.png",
+    "name": "OBS — SCENE 1",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-1",
+      "scene",
+      "1"
+    ]
+  },
+  {
+    "path": "obs-scene-2.png",
+    "name": "OBS — SCENE 2",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-2",
+      "scene",
+      "2"
+    ]
+  },
+  {
+    "path": "obs-scene-3.png",
+    "name": "OBS — SCENE 3",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-3",
+      "scene",
+      "3"
+    ]
+  },
+  {
+    "path": "obs-scene-4.png",
+    "name": "OBS — SCENE 4",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-4",
+      "scene",
+      "4"
+    ]
+  },
+  {
+    "path": "obs-scene-5.png",
+    "name": "OBS — SCENE 5",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-5",
+      "scene",
+      "5"
+    ]
+  },
+  {
+    "path": "obs-scene-6.png",
+    "name": "OBS — SCENE 6",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-6",
+      "scene",
+      "6"
+    ]
+  },
+  {
+    "path": "obs-scene-7.png",
+    "name": "OBS — SCENE 7",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-7",
+      "scene",
+      "7"
+    ]
+  },
+  {
+    "path": "obs-scene-8.png",
+    "name": "OBS — SCENE 8",
+    "tags": [
+      "obs",
+      "studio",
+      "premium",
+      "scene-8",
+      "scene",
+      "8"
+    ]
+  },
+  {
+    "path": "revidi-save-replay.png",
+    "name": "Revidi — SAVE REPLAY",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "save-replay",
+      "save",
+      "replay"
+    ]
+  },
+  {
+    "path": "revidi-screenshot.png",
+    "name": "Revidi — SCREENSHOT",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "screenshot",
+      "screenshot"
+    ]
+  },
+  {
+    "path": "revidi-buffer-on.png",
+    "name": "Revidi — BUFFER ON",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "buffer-on",
+      "buffer",
+      "on"
+    ]
+  },
+  {
+    "path": "revidi-buffer-off.png",
+    "name": "Revidi — BUFFER OFF",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "buffer-off",
+      "buffer",
+      "off"
+    ]
+  },
+  {
+    "path": "revidi-source-auto.png",
+    "name": "Revidi — AUTO CAPTURE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "source-auto",
+      "auto",
+      "capture"
+    ]
+  },
+  {
+    "path": "revidi-source-window.png",
+    "name": "Revidi — WINDOW CAPTURE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "source-window",
+      "window",
+      "capture"
+    ]
+  },
+  {
+    "path": "revidi-source-display.png",
+    "name": "Revidi — DISPLAY CAPTURE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "source-display",
+      "display",
+      "capture"
+    ]
+  },
+  {
+    "path": "revidi-game-detection.png",
+    "name": "Revidi — GAME DETECTION",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "game-detection",
+      "game",
+      "detection"
+    ]
+  },
+  {
+    "path": "revidi-buffer-length.png",
+    "name": "Revidi — BUFFER LENGTH",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "buffer-length",
+      "buffer",
+      "length"
+    ]
+  },
+  {
+    "path": "revidi-frame-rate.png",
+    "name": "Revidi — FRAME RATE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "frame-rate",
+      "frame",
+      "rate"
+    ]
+  },
+  {
+    "path": "revidi-resolution.png",
+    "name": "Revidi — RESOLUTION",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "resolution",
+      "resolution"
+    ]
+  },
+  {
+    "path": "revidi-quality.png",
+    "name": "Revidi — VIDEO QUALITY",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "quality",
+      "video",
+      "quality"
+    ]
+  },
+  {
+    "path": "revidi-encoder.png",
+    "name": "Revidi — ENCODER",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "encoder",
+      "encoder"
+    ]
+  },
+  {
+    "path": "revidi-codec.png",
+    "name": "Revidi — CODEC",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "codec",
+      "codec"
+    ]
+  },
+  {
+    "path": "revidi-desktop-mute.png",
+    "name": "Revidi — DESKTOP MUTE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "desktop-mute",
+      "desktop",
+      "mute"
+    ]
+  },
+  {
+    "path": "revidi-desktop-unmute.png",
+    "name": "Revidi — DESKTOP LIVE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "desktop-unmute",
+      "desktop",
+      "live"
+    ]
+  },
+  {
+    "path": "revidi-mic-mute.png",
+    "name": "Revidi — MIC MUTE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "mic-mute",
+      "mic",
+      "mute"
+    ]
+  },
+  {
+    "path": "revidi-mic-unmute.png",
+    "name": "Revidi — MIC",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "mic-unmute",
+      "mic"
+    ]
+  },
+  {
+    "path": "revidi-desktop-volume.png",
+    "name": "Revidi — DESKTOP VOLUME",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "desktop-volume",
+      "desktop",
+      "volume"
+    ]
+  },
+  {
+    "path": "revidi-mic-volume.png",
+    "name": "Revidi — MIC VOLUME",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "mic-volume",
+      "mic",
+      "volume"
+    ]
+  },
+  {
+    "path": "revidi-app-volume.png",
+    "name": "Revidi — APP VOLUME",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "app-volume",
+      "app",
+      "volume"
+    ]
+  },
+  {
+    "path": "revidi-app-mute.png",
+    "name": "Revidi — APP MUTE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "app-mute",
+      "app",
+      "mute"
+    ]
+  },
+  {
+    "path": "revidi-devices.png",
+    "name": "Revidi — AUDIO DEVICES",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "devices",
+      "audio",
+      "devices"
+    ]
+  },
+  {
+    "path": "revidi-separate-tracks.png",
+    "name": "Revidi — SEPARATE TRACKS",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "separate-tracks",
+      "separate",
+      "tracks"
+    ]
+  },
+  {
+    "path": "revidi-clips.png",
+    "name": "Revidi — CLIP LIBRARY",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "clips",
+      "clip",
+      "library"
+    ]
+  },
+  {
+    "path": "revidi-screenshots.png",
+    "name": "Revidi — SCREENSHOTS",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "screenshots",
+      "screenshots"
+    ]
+  },
+  {
+    "path": "revidi-open-folder.png",
+    "name": "Revidi — SAVE FOLDER",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "open-folder",
+      "save",
+      "folder"
+    ]
+  },
+  {
+    "path": "revidi-play-clip.png",
+    "name": "Revidi — PLAY CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "play-clip",
+      "play",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-edit-clip.png",
+    "name": "Revidi — EDIT CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "edit-clip",
+      "edit",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-trim-in.png",
+    "name": "Revidi — TRIM START",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "trim-in",
+      "trim",
+      "start"
+    ]
+  },
+  {
+    "path": "revidi-trim-out.png",
+    "name": "Revidi — TRIM END",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "trim-out",
+      "trim",
+      "end"
+    ]
+  },
+  {
+    "path": "revidi-overwrite.png",
+    "name": "Revidi — SAVE EDIT",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "overwrite",
+      "save",
+      "edit"
+    ]
+  },
+  {
+    "path": "revidi-upload.png",
+    "name": "Revidi — UPLOAD CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "upload",
+      "upload",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-copy-link.png",
+    "name": "Revidi — COPY LINK",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "copy-link",
+      "copy",
+      "link"
+    ]
+  },
+  {
+    "path": "revidi-share.png",
+    "name": "Revidi — SHARE CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "share",
+      "share",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-delete.png",
+    "name": "Revidi — DELETE CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "delete",
+      "delete",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-auto-upload-on.png",
+    "name": "Revidi — AUTO UPLOAD ON",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "auto-upload-on",
+      "auto",
+      "upload",
+      "on"
+    ]
+  },
+  {
+    "path": "revidi-auto-upload-off.png",
+    "name": "Revidi — AUTO UPLOAD OFF",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "auto-upload-off",
+      "auto",
+      "upload",
+      "off"
+    ]
+  },
+  {
+    "path": "revidi-themes.png",
+    "name": "Revidi — THEMES",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "themes",
+      "themes"
+    ]
+  },
+  {
+    "path": "revidi-hotkeys.png",
+    "name": "Revidi — HOTKEYS",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "hotkeys",
+      "hotkeys"
+    ]
+  },
+  {
+    "path": "revidi-settings.png",
+    "name": "Revidi — SETTINGS",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "settings",
+      "settings"
+    ]
+  },
+  {
+    "path": "navigation-home.png",
+    "name": "Navigation — HOME",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "home",
+      "home"
+    ]
+  },
+  {
+    "path": "navigation-back.png",
+    "name": "Navigation — BACK",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "back",
+      "back"
+    ]
+  },
+  {
+    "path": "navigation-next-page.png",
+    "name": "Navigation — NEXT PAGE",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "next-page",
+      "next",
+      "page"
+    ]
+  },
+  {
+    "path": "navigation-previous-page.png",
+    "name": "Navigation — PREVIOUS PAGE",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "previous-page",
+      "previous",
+      "page"
+    ]
+  },
+  {
+    "path": "navigation-folder.png",
+    "name": "Navigation — FOLDER",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "folder",
+      "folder"
+    ]
+  },
+  {
+    "path": "navigation-settings.png",
+    "name": "Navigation — SETTINGS",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "settings",
+      "settings"
+    ]
+  },
+  {
+    "path": "navigation-confirm.png",
+    "name": "Navigation — CONFIRM",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "confirm",
+      "confirm"
+    ]
+  },
+  {
+    "path": "navigation-cancel.png",
+    "name": "Navigation — CANCEL",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "cancel",
+      "cancel"
+    ]
+  },
+  {
+    "path": "navigation-audio.png",
+    "name": "Navigation — AUDIO",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "audio",
+      "audio"
+    ]
+  },
+  {
+    "path": "navigation-lighting.png",
+    "name": "Navigation — LIGHTING",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "lighting",
+      "lighting"
+    ]
+  },
+  {
+    "path": "navigation-streaming.png",
+    "name": "Navigation — STREAMING",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "streaming",
+      "streaming"
+    ]
+  },
+  {
+    "path": "navigation-clips.png",
+    "name": "Navigation — CLIPS",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "clips",
+      "clips"
+    ]
+  },
+  {
+    "path": "navigation-blank.png",
+    "name": "Navigation — BLANK",
+    "tags": [
+      "navigation",
+      "studio",
+      "premium",
+      "blank",
+      "blank"
+    ]
+  },
+  {
+    "path": "revidi-clip-1-min.png",
+    "name": "Revidi — 1 MIN CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "clip-1-min",
+      "1",
+      "min",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-clip-2-min.png",
+    "name": "Revidi — 2 MIN CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "clip-2-min",
+      "2",
+      "min",
+      "clip"
+    ]
+  },
+  {
+    "path": "revidi-clip-5-min.png",
+    "name": "Revidi — 5 MIN CLIP",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "clip-5-min",
+      "5",
+      "min",
+      "clip"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-speakers-on.png",
+    "name": "Sleekmeeter — SPEAKERS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-speakers-on",
+      "speakers"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-speakers-off.png",
+    "name": "Sleekmeeter — SPEAKERS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-speakers-off",
+      "speakers"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-headphones-on.png",
+    "name": "Sleekmeeter — HEADPHONES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-headphones-on",
+      "headphones"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-headphones-off.png",
+    "name": "Sleekmeeter — HEADPHONES",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-headphones-off",
+      "headphones"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-wireless-on.png",
+    "name": "Sleekmeeter — WIRELESS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-wireless-on",
+      "wireless"
+    ]
+  },
+  {
+    "path": "sleekmeeter-output-wireless-off.png",
+    "name": "Sleekmeeter — WIRELESS",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "output-wireless-off",
+      "wireless"
+    ]
+  },
+  {
+    "path": "revidi-recover.png",
+    "name": "Revidi — RECOVER",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "recover",
+      "recover"
+    ]
+  },
+  {
+    "path": "revidi-command.png",
+    "name": "Revidi — COMMAND",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "command",
+      "command"
+    ]
+  },
+  {
+    "path": "revidi-mic-boost.png",
+    "name": "Revidi — MIC BOOST",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "mic-boost",
+      "mic",
+      "boost"
+    ]
+  },
+  {
+    "path": "revidi-notifications-on.png",
+    "name": "Revidi — NOTIFICATIONS ON",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "notifications-on",
+      "notifications",
+      "on"
+    ]
+  },
+  {
+    "path": "revidi-notifications-off.png",
+    "name": "Revidi — NOTIFICATIONS OFF",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "notifications-off",
+      "notifications",
+      "off"
+    ]
+  },
+  {
+    "path": "revidi-mic-mono-on.png",
+    "name": "Revidi — MIC MONO ON",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "mic-mono-on",
+      "mic",
+      "mono",
+      "on"
+    ]
+  },
+  {
+    "path": "revidi-mic-mono-off.png",
+    "name": "Revidi — MIC MONO OFF",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "mic-mono-off",
+      "mic",
+      "mono",
+      "off"
+    ]
+  },
+  {
+    "path": "revidi-tracks-on.png",
+    "name": "Revidi — TRACKS ON",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "tracks-on",
+      "tracks",
+      "on"
+    ]
+  },
+  {
+    "path": "revidi-tracks-off.png",
+    "name": "Revidi — TRACKS OFF",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "tracks-off",
+      "tracks",
+      "off"
+    ]
+  },
+  {
+    "path": "revidi-status-ready.png",
+    "name": "Revidi — STATUS READY",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "status-ready",
+      "status",
+      "ready"
+    ]
+  },
+  {
+    "path": "revidi-status-saving.png",
+    "name": "Revidi — STATUS SAVING",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "status-saving",
+      "status",
+      "saving"
+    ]
+  },
+  {
+    "path": "revidi-status-paused.png",
+    "name": "Revidi — STATUS PAUSED",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "status-paused",
+      "status",
+      "paused"
+    ]
+  },
+  {
+    "path": "revidi-status-error.png",
+    "name": "Revidi — STATUS ERROR",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "status-error",
+      "status",
+      "error"
+    ]
+  },
+  {
+    "path": "revidi-status-initializing.png",
+    "name": "Revidi — STATUS INITIALIZING",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "status-initializing",
+      "status",
+      "initializing"
+    ]
+  },
+  {
+    "path": "revidi-status-offline.png",
+    "name": "Revidi — STATUS OFFLINE",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "status-offline",
+      "status",
+      "offline"
+    ]
+  },
+  {
+    "path": "revidi-clip-30-sec.png",
+    "name": "Revidi — CLIP 30 SEC",
+    "tags": [
+      "revidi",
+      "studio",
+      "premium",
+      "clip-30-sec",
+      "clip",
+      "30",
+      "sec"
+    ]
+  },
+  {
+    "path": "sleekmeeter-now-playing.png",
+    "name": "Sleekmeeter — NOW PLAYING",
+    "tags": [
+      "sleekmeeter",
+      "studio",
+      "premium",
+      "now-playing",
+      "now",
+      "playing"
+    ]
+  },
+  {
+    "path": "voicemod-voice-on.png",
+    "name": "Voicemod — VOICE CHANGER ON",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "voice-on",
+      "voice",
+      "changer",
+      "on"
+    ]
+  },
+  {
+    "path": "voicemod-voice-off.png",
+    "name": "Voicemod — VOICE CHANGER OFF",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "voice-off",
+      "voice",
+      "changer",
+      "off"
+    ]
+  },
+  {
+    "path": "voicemod-hear-on.png",
+    "name": "Voicemod — HEAR MYSELF ON",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "hear-on",
+      "hear",
+      "myself",
+      "on"
+    ]
+  },
+  {
+    "path": "voicemod-hear-off.png",
+    "name": "Voicemod — HEAR MYSELF OFF",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "hear-off",
+      "hear",
+      "myself",
+      "off"
+    ]
+  },
+  {
+    "path": "voicemod-censor.png",
+    "name": "Voicemod — CENSOR BEEP",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "censor",
+      "censor",
+      "beep"
+    ]
+  },
+  {
+    "path": "voicemod-voice.png",
+    "name": "Voicemod — SELECT VOICE",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "voice",
+      "select",
+      "voice"
+    ]
+  },
+  {
+    "path": "voicemod-soundboard.png",
+    "name": "Voicemod — SOUNDBOARD",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "soundboard",
+      "soundboard"
+    ]
+  },
+  {
+    "path": "voicemod-stop-sounds.png",
+    "name": "Voicemod — STOP SOUNDS",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "stop-sounds",
+      "stop",
+      "sounds"
+    ]
+  },
+  {
+    "path": "voicemod-settings.png",
+    "name": "Voicemod — SETTINGS",
+    "tags": [
+      "voicemod",
+      "studio",
+      "premium",
+      "settings",
+      "settings"
+    ]
+  },
+  {
+    "path": "system-cpu.png",
+    "name": "System — CPU",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "cpu",
+      "cpu"
+    ]
+  },
+  {
+    "path": "system-gpu.png",
+    "name": "System — GPU",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "gpu",
+      "gpu"
+    ]
+  },
+  {
+    "path": "system-ram.png",
+    "name": "System — RAM",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "ram",
+      "ram"
+    ]
+  },
+  {
+    "path": "system-vram.png",
+    "name": "System — VRAM",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "vram",
+      "vram"
+    ]
+  },
+  {
+    "path": "system-sensor.png",
+    "name": "System — SENSOR",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "sensor",
+      "sensor"
+    ]
+  },
+  {
+    "path": "system-sensor-dial.png",
+    "name": "System — SENSOR DIAL",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "sensor-dial",
+      "sensor",
+      "dial"
+    ]
+  },
+  {
+    "path": "system-weather.png",
+    "name": "System — WEATHER",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "weather",
+      "weather"
+    ]
+  },
+  {
+    "path": "system-clock.png",
+    "name": "System — CLOCK",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "clock",
+      "clock"
+    ]
+  },
+  {
+    "path": "system-timer.png",
+    "name": "System — TIMER",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "timer",
+      "timer"
+    ]
+  },
+  {
+    "path": "system-stopwatch.png",
+    "name": "System — STOPWATCH",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "stopwatch",
+      "stopwatch"
+    ]
+  },
+  {
+    "path": "system-focus.png",
+    "name": "System — FOCUS",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "focus",
+      "focus"
+    ]
+  },
+  {
+    "path": "system-open-app.png",
+    "name": "System — OPEN APP",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "open-app",
+      "open",
+      "app"
+    ]
+  },
+  {
+    "path": "system-website.png",
+    "name": "System — WEBSITE",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "website",
+      "website"
+    ]
+  },
+  {
+    "path": "system-hotkey.png",
+    "name": "System — HOTKEY",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "hotkey",
+      "hotkey"
+    ]
+  },
+  {
+    "path": "system-multi-action.png",
+    "name": "System — MULTI ACTION",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "multi-action",
+      "multi",
+      "action"
+    ]
+  },
+  {
+    "path": "system-play-pause.png",
+    "name": "System — PLAY / PAUSE",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "play-pause",
+      "play",
+      "/",
+      "pause"
+    ]
+  },
+  {
+    "path": "system-volume-up.png",
+    "name": "System — VOLUME UP",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "volume-up",
+      "volume",
+      "up"
+    ]
+  },
+  {
+    "path": "system-volume-down.png",
+    "name": "System — VOLUME DOWN",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "volume-down",
+      "volume",
+      "down"
+    ]
+  },
+  {
+    "path": "system-mute.png",
+    "name": "System — MUTE",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "mute",
+      "mute"
+    ]
+  },
+  {
+    "path": "system-screenshot.png",
+    "name": "System — SCREENSHOT",
+    "tags": [
+      "system",
+      "studio",
+      "premium",
+      "screenshot",
+      "screenshot"
+    ]
+  }
+]
