@@ -19,6 +19,10 @@ Get-ChildItem $out -Force | ForEach-Object {
 Remove-Item 'src-tauri\target\release\bundle\msi\*.msi' -Force -ErrorAction SilentlyContinue
 Remove-Item 'src-tauri\target\release\bundle\nsis\*.exe' -Force -ErrorAction SilentlyContinue
 
+# Sleekmeeter carries the plugin installer inside the exe, so make it from the current plugin first.
+powershell -NoProfile -ExecutionPolicy Bypass -File streamdeck\package.ps1
+if ($LASTEXITCODE -ne 0) { throw 'Packaging the Stream Deck plugin failed' }
+
 Write-Host "Building Sleekmeeter $ver (exe, installer and MSI)..."
 npx tauri build
 if ($LASTEXITCODE -ne 0) { throw 'tauri build failed' }

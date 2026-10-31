@@ -62,6 +62,8 @@ pub fn defaults() -> Value {
         "checkUpdates": true,
         "oled": false,
         "skippedVersion": "",
+        // The Stream Deck plugin offer already answered, like "install:0.16.0.0".
+        "streamDeckOffered": "",
         // Mutes fade out and in; typed levels, shortcuts and scenes glide.
         "fades": { "on": true, "muteMs": 250, "sceneMs": 1200 },
         // Talk-over ducking: while `trigger` is above `threshold` dB, lower `targets` by `amount` dB.

@@ -9,7 +9,8 @@ Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Stan
 - `src/index.html`, `app.js`, `styles.css`: the UI. `themes.css` holds every theme, keyed by `[data-theme="id"]`. `engine.js` talks to Rust through Tauri, or runs a simulated Voicemeeter when opened in a plain browser. `osd.html` / `osd.js` is the volume overlay.
 - `src-tauri/src/`: `vm.rs` (Voicemeeter Remote API), `gain.rs` / `fades.rs` (smooth mute fades and level glides), `routing.rs` / `appvol.rs` / `apps.rs` (per-app audio routing and volumes), `remote.rs` (phone remote and the HTTP API the Stream Deck plugin uses), `settings.rs`, `update.rs` (in-app updates), `sounds.rs` / `recorder.rs`, `obs.rs`, `twitch.rs`, and others.
 - `src-tauri/installer-hooks.nsh`: NSIS hooks (the Voicemeeter check in the installer).
-- `streamdeck/`: Stream Deck plugin (no dependencies; own WebSocket client in `bin/ws.js`).
+- `src-tauri/src/streamdeck.rs`: finds the Stream Deck app or hardware and installs the plugin compiled into the exe.
+- `streamdeck/`: Stream Deck plugin (no dependencies; own WebSocket client in `bin/ws.js`), the `icons/` pack, `tests/`, and `package.ps1`, which builds both installers.
 - `scripts/package.ps1`: builds the release files into `dist\release`.
 - `docs/screenshots`: images used by the README gallery.
 
@@ -31,7 +32,7 @@ Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Stan
 ## Docs and releases
 - Update `CHANGELOG.md` (top section = current version) and the README for any user-visible change. The README is shown on GitHub, so check that tables, images and links render correctly there.
 - Version lives in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`; keep them equal. The packaging script refuses mismatches.
-- Releases are built and published by hand by the maintainer from their own PC (`npm run package`, then upload the files to a GitHub release). Release files: `Sleekmeeter-<ver>-setup.exe` (in-app updates look for the `-setup.exe` name), `Sleekmeeter-<ver>.msi`, `Sleekmeeter-<ver>-portable.zip`.
+- Releases are built and published by hand by the maintainer from their own PC (`npm run package`, then upload the files to a GitHub release). Release files: `Sleekmeeter-<ver>-setup.exe` (in-app updates look for the `-setup.exe` name), `Sleekmeeter-<ver>.msi`, `Sleekmeeter-<ver>-portable.zip`, plus `Sleekmeeter-Studio.streamDeckPlugin` and `Sleekmeeter-Studio-Icons.streamDeckIconPack` from `streamdeck/`.
 - Never store or reuse tokens or credentials. Don't push tags or create releases unless asked.
 
 ## Held features

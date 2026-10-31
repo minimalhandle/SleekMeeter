@@ -82,11 +82,33 @@ function buildFields() {
   const active = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
   let h = "";
   const row = (label, control) => `<div class="row"><label>${label}</label>${control}</div>`;
-  if (action === "channel") {
+  if (action === "channel" || action === "nowplaying") {
     h += row("Channel", channelSelect());
     h += row("Dial step", `<select data-k="step">${opts([{ v: "0.5", t: "0.5 dB per click" }, { v: "1", t: "1 dB per click" }, { v: "2", t: "2 dB per click" }, { v: "3", t: "3 dB per click" }], settings.step || "1")}</select>`);
-    h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "zero", t: "Set to 0 dB" }, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
+    const playback = action === "nowplaying" ? [{v:"playpause",t:"Play / pause"},{v:"next",t:"Next track"},{v:"previous",t:"Previous track"}] : [];
+    h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "zero", t: "Set to 0 dB" }, ...playback, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
+    h += row("Touch", `<select data-k="tap">${opts([{ v: "mute", t: "Tap to mute or unmute" }, ...playback, { v: "none", t: "Do nothing" }], settings.tap || (action === "nowplaying" ? "playpause" : "mute"))}</select>`);
+    h += row("Live meter", `<input type="checkbox" data-k="showMeter" aria-label="Live meter" ${settings.showMeter !== false ? "checked" : ""}>`);
+    if (action === "nowplaying") {
+      h += row("Player", `<select data-k="mediaSource">${opts([{v:"spotify",t:"Spotify desktop"},{v:"auto",t:"Current Windows media app"}],settings.mediaSource || "spotify")}</select>`);
+      h += `<p class="hint">Turn to control this channel. The touch strip shows cover art, title, artist and elapsed/total time from Windows media sessions. Spotify desktop must be running and exposing its media session. Browser playback can use Current Windows media app. No account sign-in or API key is needed.</p>`;
+    }
+  } else if (action === "trackdial" || action === "nowplayingkey") {
+    const playback = [{v:"playpause",t:"Play / pause"},{v:"next",t:"Next track"},{v:"previous",t:"Previous track"},{v:"none",t:"Do nothing"}];
+    h += row("Player", `<select data-k="mediaSource">${opts([{v:"spotify",t:"Spotify desktop"},{v:"auto",t:"Current Windows media app"}],settings.mediaSource || "spotify")}</select>`);
+    h += row(action === "trackdial" ? "Dial press" : "When pressed", `<select data-k="press">${opts(playback, settings.press || "playpause")}</select>`);
+    if (action === "trackdial") {
+      h += row("Touch", `<select data-k="tap">${opts(playback, settings.tap || "playpause")}</select>`);
+      h += `<p class="hint">Turn right for the next track and left for the previous one.</p>`;
+    }
+  } else if (action === "appvolume") {
+    const running = (lists && lists.apps ? lists.apps : []).map((a) => ({ v: a.exe, t: a.name }));
+    if (settings.exe && !running.some((a) => a.v === settings.exe)) running.push({ v: settings.exe, t: (settings.appName || settings.exe) + " (not playing)" });
+    h += row("App", `<select data-k="exe">${opts(running, settings.exe || "", "Pick an app…")}</select>`);
+    h += row("Dial step", `<select data-k="step">${opts([{ v: "1", t: "1% per click" }, { v: "2", t: "2% per click" }, { v: "5", t: "5% per click" }], settings.step || "2")}</select>`);
+    h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
     h += row("Touch", `<select data-k="tap">${opts([{ v: "mute", t: "Tap to mute or unmute" }, { v: "none", t: "Do nothing" }], settings.tap || "mute")}</select>`);
+    h += lists && lists.appsStatus === "old" ? `<p class="status bad">App volume needs a newer version of Sleekmeeter.</p>` : `<p class="hint">The list shows apps with an open audio session. If yours is missing, start playing something in it.</p>`;
   } else if (action === "route") {
     h += row("Input", channelSelect("Strip[0]"));
     h += row("Bus", `<select data-k="bus">${opts(["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x })), settings.bus || "B1")}</select>`);
@@ -94,7 +116,7 @@ function buildFields() {
   } else if (action === "mic") {
     h += row("Channel", channelSelect("Strip[0]"));
     h += row("When pressed", `<select data-k="mode">${opts([{ v: "toggle", t: "Mute or unmute" }, { v: "ptt", t: "Hold to talk" }], settings.mode || "toggle")}</select>`);
-    h += `<p class="hint">The key shows LIVE in green, or MUTED in red with the mic crossed out. It starts on your first input; pick a different channel if your mic is elsewhere. "Hold to talk" opens the mic only while you hold the key.</p>`;
+    h += `<p class="hint">Green mic means active; red with a slash means muted. It starts on your first input; pick a different channel if your mic is elsewhere. "Hold to talk" opens the mic only while you hold the key.</p>`;
   } else if (action === "mute") {
     h += row("Channel", channelSelect());
   } else if (action === "level") {
@@ -107,18 +129,29 @@ function buildFields() {
     h += row("Sound", simple("sound", lists ? lists.sounds : [], "Pick a sound…"));
   } else if (action === "output") {
     h += row("Profile", simple("output", lists ? lists.outputs : [], "Next profile"));
-    h += `<p class="hint">Leave on "Next profile" to cycle through your output profiles.</p>`;
+    h += `<p class="hint">Next profile shows the current output and cycles when pressed. A chosen profile glows with a check when active. Choose icons below if your profile names do not describe the device.</p>`;
+    for (const name of (lists ? lists.outputs : [])) {
+      const choices = [{v:"auto",t:"Automatic"},{v:"speakers",t:"Speakers"},{v:"headphones",t:"Headphones"},{v:"wireless",t:"Wireless headphones"}];
+      h += row(esc(name), `<select data-output-name="${esc(name)}">${opts(choices, (settings.outputIcons || {})[name] || "auto")}</select>`);
+    }
   }
+  h += row("Show text", `<input type="checkbox" data-k="showText" aria-label="Show text" ${settings.showText !== false ? "checked" : ""}>`);
+  h += `<p class="hint">Show channel names and status captions. Bus IDs, level values, media information and connection errors remain visible.</p>`;
   if (f.dataset.built === h) return;
   f.dataset.built = h;
   f.innerHTML = h;
   for (const el of f.querySelectorAll("[data-k]")) {
     el.addEventListener("change", () => {
       let v = el.value;
+      if (el.type === "checkbox") v = el.checked;
       if (el.type === "number") v = v === "" ? undefined : Number(v);
+      if (el.dataset.k === "exe") settings.appName = el.value ? el.options[el.selectedIndex].text.replace(/ \(not playing\)$/, "") : "";
       save(el.dataset.k, v);
       if (el.dataset.k === "mode") buildFields();
     });
+  }
+  for (const el of f.querySelectorAll("[data-output-name]")) {
+    el.addEventListener("change", () => save("outputIcons", { ...(settings.outputIcons || {}), [el.dataset.outputName]: el.value }));
   }
   if (active) { const el = f.querySelector(`[data-k="${active}"]`); if (el) el.focus(); }
 }

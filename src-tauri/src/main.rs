@@ -23,6 +23,7 @@ mod routing;
 mod selftest;
 mod settings;
 mod sounds;
+mod streamdeck;
 mod twitch;
 mod update;
 mod vm;
@@ -760,7 +761,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 }
                 if window_visible(&app, "main")
                     || window_visible(&app, FLYOUT)
-                    || remote::overlay_active()
+                    || remote::meters_wanted()
                 {
                     let levels = api.levels(&layout);
                     remote::set_levels(&levels);
@@ -1288,6 +1289,24 @@ fn open_release(url: String) -> Result<(), String> {
     update::open(&url)
 }
 
+/* ---------------- Stream Deck plugin ---------------- */
+
+/// Whether this PC has the Stream Deck app or hardware, and what to offer for the plugin.
+#[tauri::command]
+fn streamdeck_status() -> Value {
+    streamdeck::status()
+}
+
+#[tauri::command]
+fn streamdeck_install() -> Result<(), String> {
+    streamdeck::install()
+}
+
+#[tauri::command]
+fn streamdeck_get_app() -> Result<(), String> {
+    streamdeck::open_app_page()
+}
+
 /* ---------------- stream mode, OBS, backups, setup check ---------------- */
 
 /// Be right back on or off (the BRB button). Returns whether it is on now.
@@ -1730,6 +1749,9 @@ fn main() {
             vm_glide,
             app_info,
             open_logs,
+            streamdeck_status,
+            streamdeck_install,
+            streamdeck_get_app,
             ui_log,
             recorder_cmd,
             recorder_open,

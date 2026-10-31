@@ -1140,6 +1140,7 @@
     syncRemote();
     $("#historyOn").checked = HI().on !== false;
     renderHotkeys();
+    refreshStreamDeck();
     settingsDlg.showModal();
   });
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
@@ -1432,6 +1433,60 @@
     $("#updateWrap").hidden = true;
     toast(`You won't be reminded about ${update.latest}`);
   });
+  /* ---------- Stream Deck plugin offer ---------- */
+  const streamDeckDlg = $("#streamDeckDlg");
+  let streamDeck = null;
+  const streamDeckCopy = {
+    install: { go: "Install plugin", title: "Add Sleekmeeter to your Stream Deck",
+      text: () => "The Stream Deck app is on this PC. The Sleekmeeter plugin controls your mixer from its keys and dials. The Stream Deck app will open to finish installing." },
+    update: { go: "Update plugin", title: "Update the Stream Deck plugin",
+      text: (s) => `This Sleekmeeter includes plugin ${s.bundledVersion}. You have ${s.installedVersion}. The Stream Deck app will open to finish updating, and your keys and dials stay as they are.` },
+    getApp: { go: "Open Elgato's download page", title: "Your Stream Deck needs its app",
+      text: () => "A Stream Deck has been connected to this PC, but Elgato's Stream Deck app isn't installed. Install the app first, then Sleekmeeter can add its plugin." },
+  };
+  async function runStreamDeckOffer() {
+    if (!streamDeck || !streamDeck.offer) return;
+    try {
+      if (streamDeck.offer === "getApp") {
+        await engine.streamDeckGetApp();
+        toast("Opening Elgato's download page");
+      } else {
+        await engine.streamDeckInstall();
+        toast("Finish in the Stream Deck app, then turn on Settings → Phone remote");
+      }
+    } catch (err) { fail(err); }
+  }
+  function paintStreamDeck() {
+    const s = streamDeck, section = $("#streamDeckSection"), action = $("#streamDeckAction");
+    section.hidden = !s || !(s.app || s.device);
+    if (section.hidden) return;
+    const copy = streamDeckCopy[s.offer];
+    $("#streamDeckNote").textContent = copy ? copy.text(s) : `Plugin ${s.installedVersion} is installed. Connect it with the address from Phone remote.`;
+    action.hidden = !copy;
+    if (copy) action.textContent = copy.go;
+  }
+  async function refreshStreamDeck() {
+    try { streamDeck = await engine.streamDeckStatus(); } catch { streamDeck = null; }
+    paintStreamDeck();
+  }
+  // Asks once per plugin version. Settings keeps the same action for anyone who said not now.
+  async function offerStreamDeck() {
+    if (PANEL) return;
+    await refreshStreamDeck();
+    const copy = streamDeck && streamDeckCopy[streamDeck.offer];
+    if (!copy || document.querySelector("dialog[open]")) return;
+    const key = `${streamDeck.offer}:${streamDeck.bundledVersion}`;
+    if (settings.streamDeckOffered === key) return;
+    settings.streamDeckOffered = key;
+    saveSettings();
+    $("#streamDeckTitle").textContent = copy.title;
+    $("#streamDeckText").textContent = copy.text(streamDeck);
+    $("#streamDeckGo").textContent = copy.go;
+    streamDeckDlg.showModal();
+  }
+  $("#streamDeckGo").addEventListener("click", () => { streamDeckDlg.close(); runStreamDeckOffer(); });
+  $("#streamDeckLater").addEventListener("click", () => streamDeckDlg.close());
+  $("#streamDeckAction").addEventListener("click", runStreamDeckOffer);
   $("#sceneSave").addEventListener("submit", async (e) => {
     e.preventDefault();
     const n = $("#sceneName").value.trim().replace(/[\\/:*?"<>|]/g, "");
@@ -3488,6 +3543,7 @@
       engine.onFileDrop(onFilesDropped).catch(() => {});
     }
     checkForUpdate();
+    offerStreamDeck();
     // Show the window once the first frame with the real layout is drawn.
     requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {})));
     // Names are measured with the real font once it has loaded.

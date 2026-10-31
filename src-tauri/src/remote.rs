@@ -31,8 +31,8 @@ const ALLOWED: &[&str] = &[
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
 static LEVELS: Mutex<Value> = Mutex::new(Value::Null);
-/// When the OBS overlay last asked for data (milliseconds since start), 0 if never.
-static OVERLAY_SEEN: AtomicU64 = AtomicU64::new(0);
+/// When the OBS overlay or Stream Deck last asked for meters (milliseconds since start), 0 if never.
+static METERS_SEEN: AtomicU64 = AtomicU64::new(0);
 
 fn now_ms() -> u64 {
     std::time::SystemTime::now()
@@ -41,9 +41,10 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// True while an OBS overlay is open, so the meters keep being read with the window hidden.
-pub fn overlay_active() -> bool {
-    let seen = OVERLAY_SEEN.load(Ordering::Relaxed);
+/// True while an OBS overlay or Stream Deck meter is showing, so the meters keep being read with
+/// the window hidden.
+pub fn meters_wanted() -> bool {
+    let seen = METERS_SEEN.load(Ordering::Relaxed);
     seen != 0 && now_ms().saturating_sub(seen) < 5000
 }
 
@@ -53,7 +54,7 @@ pub fn set_levels(levels: &Value) {
 }
 
 fn overlay_json(app: &AppHandle) -> Value {
-    OVERLAY_SEEN.store(now_ms(), Ordering::Relaxed);
+    METERS_SEEN.store(now_ms(), Ordering::Relaxed);
     let vm = app.state::<Vm>();
     let snap = vm.last.lock().unwrap().clone();
     let strips: Vec<Value> = snap["strips"]
@@ -263,6 +264,43 @@ fn is_channel(k: &str) -> bool {
     k.starts_with("Strip[") || k.starts_with("Bus[")
 }
 
+/// The meters on their own, cheap enough for a Stream Deck dial to ask several times a second.
+fn levels_json() -> Value {
+    METERS_SEEN.store(now_ms(), Ordering::Relaxed);
+    json!({ "levels": LEVELS.lock().unwrap().clone() })
+}
+
+/// Apps with an audio session, without the process ids the app's own window uses for routing.
+fn apps_json() -> Result<Value, String> {
+    let apps: Vec<Value> = crate::appvol::list()?
+        .into_iter()
+        .map(|a| {
+            json!({
+                "exe": a["exe"],
+                "name": a["name"],
+                "volume": a["volume"],
+                "mute": a["mute"],
+                "active": a["active"],
+            })
+        })
+        .collect();
+    Ok(json!({ "apps": apps }))
+}
+
+/// What a request wants to change on an app: its name, then volume (0–100) and/or mute.
+fn app_change(body: &Value) -> Result<(String, Option<f32>, Option<bool>), String> {
+    let exe = body["exe"].as_str().unwrap_or("").trim();
+    let volume = body["volume"].as_f64().map(|v| v.clamp(0.0, 100.0) as f32);
+    let mute = body["mute"].as_bool();
+    if exe.is_empty() {
+        return Err("No app given".to_string());
+    }
+    if volume.is_none() && mute.is_none() {
+        return Err("Nothing to change".to_string());
+    }
+    Ok((exe.to_string(), volume, mute))
+}
+
 fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
@@ -291,6 +329,11 @@ fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
     let result: Result<Value, String> = match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/api/state") => Ok(state_json(app)),
         ("GET", "/api/overlay") => Ok(overlay_json(app)),
+        ("GET", "/api/levels") => Ok(levels_json()),
+        ("GET", "/api/apps") => apps_json(),
+        ("POST", "/api/appvolume") => app_change(&body).and_then(|(exe, volume, mute)| {
+            crate::appvol::set(&exe, volume, mute).map(|_| json!({}))
+        }),
         ("POST", "/api/gain") => {
             let key = body["key"].as_str().unwrap_or("");
             let db = body["db"].as_f64().unwrap_or(0.0).clamp(-60.0, 12.0) as f32;
@@ -407,6 +450,23 @@ mod tests {
         assert!(same("abcd1234", "abcd1234"));
         assert!(!same("abcd1234", "abcd1235"));
         assert!(!same("abcd", "abcd1234"));
+    }
+
+    #[test]
+    fn app_changes_need_an_app_and_something_to_change() {
+        let (exe, volume, mute) =
+            app_change(&json!({ "exe": "discord.exe", "volume": 140.0 })).unwrap();
+        assert_eq!(exe, "discord.exe");
+        assert_eq!(volume, Some(100.0));
+        assert_eq!(mute, None);
+        assert_eq!(
+            app_change(&json!({ "exe": "discord.exe", "mute": true }))
+                .unwrap()
+                .2,
+            Some(true)
+        );
+        assert!(app_change(&json!({ "exe": "discord.exe" })).is_err());
+        assert!(app_change(&json!({ "volume": 50.0 })).is_err());
     }
 
     #[test]

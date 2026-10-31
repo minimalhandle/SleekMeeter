@@ -425,6 +425,20 @@
     </section>
   </dialog>
 
+  <dialog class="dlg streamdeck-dlg" id="streamDeckDlg" aria-labelledby="streamDeckTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="streamDeckTitle">Stream Deck</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint" id="streamDeckText"></p>
+    <div class="btn-row">
+      <button class="btn primary" id="streamDeckGo" type="button"></button>
+      <button class="btn" id="streamDeckLater" type="button">Not now</button>
+    </div>
+  </dialog>
+
   <dialog class="dlg settings" id="settingsDlg" aria-labelledby="settingsTitle">
     <form method="dialog" class="dlg-head">
       <h2 id="settingsTitle">Settings</h2>
@@ -617,6 +631,11 @@
       <section>
         <h3>Volume overlay</h3>
         <label class="check"><input type="checkbox" id="setOverlay"><span>Show the level on screen when it changes while you're in another app, for example from a shortcut, a MIDI controller or a Stream Deck</span></label>
+      </section>
+      <section id="streamDeckSection" hidden>
+        <h3>Stream Deck</h3>
+        <p class="hint" id="streamDeckNote" role="status"></p>
+        <div class="btn-row"><button class="btn" id="streamDeckAction" type="button" hidden></button></div>
       </section>
       <section>
         <h3>Updates</h3>

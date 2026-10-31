@@ -10,6 +10,7 @@
  *   windowMini(mini, rows, width, height)  resize the window for mini mode (height fits the channels)
  *   openMixer() / closePanel() / onPanelShown(cb)   the tray volume panel
  *   checkUpdate() -> {current, latest, newer, url, canInstall} / openRelease(url)
+ *   streamDeckStatus() -> {app, device, installedVersion, bundledVersion, offer} / streamDeckInstall() / streamDeckGetApp()
  *   updateInstall() downloads and installs the newest version, then restarts (the app exits)
  *   onUpdateProgress(cb)   cb({percent}) while it downloads
  *   runningApps() / onSceneAuto(cb)   automatic scene switching
@@ -71,7 +72,7 @@
     ],
     startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
     overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true, lockArrangement: false,
-    sceneRules: [], checkUpdates: true, skippedVersion: "", oled: false,
+    sceneRules: [], checkUpdates: true, skippedVersion: "", streamDeckOffered: "", oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
     autoRestart: true,
@@ -122,6 +123,9 @@
     fitWindow(width) { return this.invoke("window_fit", { width }); }
     checkUpdate() { return this.invoke("check_update"); }
     openRelease(url) { return this.invoke("open_release", { url }); }
+    streamDeckStatus() { return this.invoke("streamdeck_status"); }
+    streamDeckInstall() { return this.invoke("streamdeck_install"); }
+    streamDeckGetApp() { return this.invoke("streamdeck_get_app"); }
     updateInstall() { return this.invoke("update_install"); }
     onUpdateProgress(cb) { return this.listen("update-progress", (e) => cb(e.payload)); }
     runningApps() { return this.invoke("running_apps"); }
@@ -379,6 +383,14 @@
         url: "https://github.com/minimalhandle/SleekMeeter/releases/tag/v0.4.1", canInstall: true });
     }
     openRelease() { return Promise.resolve(); }
+    // Preview the offer with ?streamdeck=install, update or getApp in the address.
+    streamDeckStatus() {
+      const offer = (location.search.match(/[?&]streamdeck=(\w+)/) || [])[1] || "";
+      return Promise.resolve({ app: offer !== "getApp" && offer !== "", device: offer !== "",
+        installedVersion: offer === "update" ? "0.15.0.0" : null, bundledVersion: "0.16.0.0", offer });
+    }
+    streamDeckInstall() { return Promise.resolve(); }
+    streamDeckGetApp() { return Promise.resolve(); }
     updateInstall() {
       return new Promise((resolve) => {
         let p = 0;

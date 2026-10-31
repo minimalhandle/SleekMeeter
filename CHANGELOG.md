@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.15.0
+- **Stream Deck plugin offer:** Sleekmeeter finds the Stream Deck app or a Stream Deck that has been connected, and offers to install or update its plugin, which comes inside Sleekmeeter. It asks once per plugin version, and **Settings → Stream Deck** keeps the button. With a Stream Deck but no app, it offers Elgato's download page
+- **New Stream Deck look (plugin 0.16.0.2):** Studio has dark surfaces, one clear symbol or value on each key, and short colour rails. Action IDs are unchanged, so your keys and dials carry over
+- **Now Playing + channel dial:** album art, title, artist and track time from Spotify or the current Windows media app. Turn for a channel's level, tap to play or pause
+- **Now Playing + tracks dial and Now Playing key:** turn the dial to change track, or put album art and progress on any key
+- **App volume dial:** turn to change one app's volume, press or tap to mute it
+- **Live meters:** Channel and Now Playing dials show a thin level meter that turns amber and red as a channel gets loud. Each dial has a Live meter setting
+- **Faster media controls:** play, pause and track changes reach the player right after the press, and play or pause shows on the key or dial at once
+- **Clearer route keys:** coloured bus, checkmark and ON when a route is on, dim bus, cross and OFF when it's off. A missing bus says which ones exist ("Only B1–B2"), and an outdated app says "Update Sleekmeeter"
+- **Show text option:** each Stream Deck action can hide its names and captions for a cleaner symbol. Live states stay visible
+- **Studio icon pack:** 486 matching icons for Sleekmeeter, Discord, Spotify, Twitch, OBS, Philips Hue, Revidi, Voicemod, system controls and navigation, as `Sleekmeeter-Studio-Icons.streamDeckIconPack`
+- **Remote API:** new `/api/levels`, `/api/apps` and `/api/appvolume`, protected by the same key as the rest
+- Fixed: Now Playing updates no longer wait for a dial press
+- Fixed: opening a Stream Deck folder or page no longer flashes "Open Spotify / Waiting for media" while the current track loads
+
 ## 0.14.0
 - **App lists that stay open:** click a channel's app-count badge to pin its list open; click outside, click the badge again or press Escape to close it
 - **Safer app removal:** each app has an explicit × button to return it to the Windows default; clicking its name no longer disconnects it

@@ -13,6 +13,21 @@ A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on t
 </tr>
 </table>
 
+## New in 0.15.0: a new look for Stream Deck
+
+![The Sleekmeeter plugin on a Stream Deck +, with live keys, album art and four dials](docs/screenshots/streamdeck-deck.png)
+
+*Drawn by the plugin with sample data.*
+
+- **Installs itself:** Sleekmeeter spots the Stream Deck app and offers to install or update the plugin.
+- **Now Playing:** album art, title and track time on a dial or a key, from Spotify or whatever Windows is playing. Play, pause and skip respond right away.
+- **App volume dial:** turn one app up or down, such as Discord or a game, and press to mute it.
+- **Live meters:** a thin level meter on each dial turns amber and red as a channel gets loud.
+- **Studio look:** dark keys with one clear symbol or value, and colours that show the live state.
+- **486 matching icons:** a separate icon pack for Discord, Spotify, Twitch, OBS, Philips Hue and more.
+
+See the [Stream Deck section](#stream-deck) for more, and the [changelog](CHANGELOG.md) for everything in this version.
+
 ## Requirements
 
 - Windows 10 or 11 (WebView2 comes with both)
@@ -206,7 +221,13 @@ Turn on **Settings → Phone remote** and open the address it shows on a phone o
 
 ### Stream Deck
 
-There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels, load scenes, play sounds, and turn Be right back, recording and ducking on or off, with the keys lighting up to match. Double-click `Sleekmeeter.streamDeckPlugin` to install it, then paste the phone-remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
+![Four Stream Deck + dials: Now Playing with a channel level, Now Playing with track controls, a channel level and an app's volume](docs/screenshots/streamdeck-dials.png)
+
+There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels, load scenes, play sounds, and turn Be right back, recording and ducking on or off, with the keys lighting up to match. If Sleekmeeter finds the Stream Deck app it offers to install the plugin (also in Settings → Stream Deck), or double-click `Sleekmeeter-Studio.streamDeckPlugin` yourself. Then paste the phone-remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
+
+The dials also show what's playing, with album art, and can control one app's volume. For your other keys, the [icon pack](streamdeck/Sleekmeeter-Studio-Icons.streamDeckIconPack) adds 486 icons in the same style to the Stream Deck icon library.
+
+<img src="docs/screenshots/streamdeck-icons.png" alt="A sample of the Studio icon pack: Discord, Spotify, Twitch, OBS and Philips Hue keys" width="480">
 
 ### Level history
 
