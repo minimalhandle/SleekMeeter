@@ -9,7 +9,7 @@ routes = [{ pattern = "sleekmeeter.app/api/*", zone_name = "sleekmeeter.app" }]
 binding = "DB"
 database_name = "sleekmeeter-usage"
 # Paste the id that `npx wrangler d1 create sleekmeeter-usage` prints.
-database_id = "REPLACE_WITH_DATABASE_ID"
+database_id = "08575a75-b9b0-4447-8c1e-a75186a5125d"
 
 # Deletes rows older than 400 days, once a day.
 [triggers]

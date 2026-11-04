@@ -22,7 +22,7 @@ npx wrangler login
 npx wrangler d1 create sleekmeeter-usage
 ```
 
-Copy the `database_id` it prints into `wrangler.toml`, then:
+Copy only the `database_id` it prints into `wrangler.toml`. Keep `binding = "DB"` as it is: the Worker looks for that name, and Cloudflare shows error 1101 without it. Then:
 
 ```bash
 npx wrangler d1 execute sleekmeeter-usage --remote --file schema.sql
