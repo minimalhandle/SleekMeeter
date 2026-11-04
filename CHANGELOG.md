@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.2
+- **Anonymous user count, only if you say yes:** Sleekmeeter asks once whether it may send sleekmeeter.app a random ID, its version and your Voicemeeter edition once a day, so we know how many people use it. Nothing else is sent. Change it in **Settings → Privacy**; turning it off deletes the ID
+- **Fix my audio:** if plugging devices in makes Windows play sound to them instead of Voicemeeter, the mixer goes quiet. Sleekmeeter now spots this, shows a **Fix my audio** button (also in **Check my setup**) that switches Windows back to Voicemeeter's input and restarts the audio engine, and can do it automatically with **Settings → Keep Windows sound on Voicemeeter**. Windows' device for calls is switched too
+
 ## 0.15.0
 - **Stream Deck plugin offer:** Sleekmeeter finds the Stream Deck app or a Stream Deck that has been connected, and offers to install or update its plugin, which comes inside Sleekmeeter. It asks once per plugin version, and **Settings → Stream Deck** keeps the button. With a Stream Deck but no app, it offers Elgato's download page
 - **New Stream Deck look (plugin 0.16.0.2):** Studio has dark surfaces, one clear symbol or value on each key, and short colour rails. Action IDs are unchanged, so your keys and dials carry over

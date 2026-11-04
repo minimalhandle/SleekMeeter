@@ -137,6 +137,14 @@ On Banana and Potato, the record button (red dot) in the header opens Voicemeete
 
 Unplug USB headphones or let Bluetooth disconnect, and Voicemeeter often stays silent on that device after it comes back until you restart its audio engine. Sleekmeeter watches the devices Voicemeeter uses. When one of them comes back, it waits a couple of seconds for Windows to set it up, restarts the engine for you and shows a short message. Turn this off in **Settings → Audio devices**.
 
+### Fix my audio
+
+Plug devices in, especially in a different order, and Windows may start playing sound straight to one of them instead of to Voicemeeter. Apps then skip the mixer and its channels go quiet. Sleekmeeter notices when Windows' sound output isn't one of Voicemeeter's inputs and shows a red **Fix my audio** button in the header and in **Check my setup**. One click switches Windows back to the Voicemeeter input it was using and restarts the audio engine. Turn on **Settings → Keep Windows sound on Voicemeeter** to have this happen by itself. Windows' device for calls is checked and switched too, so apps like Discord also go through the mixer.
+
+### Privacy and the user count
+
+Sleekmeeter asks once whether you'd like to be counted as a user. If you say yes, it sends sleekmeeter.app one small message a day: a random ID made on your PC, the Sleekmeeter version and your Voicemeeter edition (Standard, Banana or Potato). That's all: no names, devices, settings, audio or anything about your PC. The server keeps one line per ID per day, doesn't store IP addresses, and deletes lines after 400 days. Turn it on or off any time in **Settings → Privacy**; turning it off deletes the ID. The totals are public at [sleekmeeter.app/api/stats](https://sleekmeeter.app/api/stats), and the server code is in [`server/usage`](server/usage).
+
 ### Output profiles
 
 Switching between headphones and speakers usually means picking the device on each output by hand. In **Outputs** (header), name the devices your outputs are using now, like *Headphones* or *Speakers*, and click a setup to switch to it. Only the output devices change; levels, routing and the rest stay as they are. Turn on **Auto** for a setup and Sleekmeeter switches to it when one of its devices connects, then restarts the audio engine so the device is picked up. Shortcuts can switch to a chosen setup or step to the next one.

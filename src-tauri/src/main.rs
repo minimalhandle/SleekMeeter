@@ -26,8 +26,10 @@ mod sounds;
 mod streamdeck;
 mod twitch;
 mod update;
+mod usage;
 mod vm;
 mod win;
+mod winout;
 
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -1321,6 +1323,22 @@ fn obs_status() -> Value {
     obs::status()
 }
 
+/// Whether Windows' default sound output is one of Voicemeeter's inputs.
+#[tauri::command]
+async fn windows_output(app: AppHandle) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || winout::status(&app))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// "Fix my audio": Windows' sound output back on Voicemeeter, then restart the audio engine.
+#[tauri::command]
+async fn fix_audio(app: AppHandle) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || winout::fix_all(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 /// The "Check my setup" list.
 #[tauri::command]
 async fn health_check(app: AppHandle) -> Result<Vec<Value>, String> {
@@ -1799,6 +1817,8 @@ fn main() {
             brb_toggle,
             obs_status,
             health_check,
+            windows_output,
+            fix_audio,
             settings_export,
             settings_import,
             reset_layout
@@ -1911,6 +1931,8 @@ fn main() {
                 obs::spawn(handle.clone());
                 twitch::spawn(handle.clone());
                 remote::spawn(handle.clone());
+                winout::spawn(handle.clone());
+                usage::spawn(handle.clone());
                 devwatch::spawn(handle);
             }
             Ok(())

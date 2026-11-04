@@ -1,6 +1,6 @@
 //! "Check my setup": a list of things that commonly go wrong, each with a plain explanation.
 
-use crate::{devwatch, obs, Hotkeys, Settings, Vm};
+use crate::{devwatch, obs, winout, Hotkeys, Settings, Vm};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Manager};
 
@@ -80,6 +80,36 @@ pub fn run(app: &AppHandle) -> Vec<Value> {
                 ));
             }
         }
+    }
+
+    // Windows' sound output: apps play to it, so it has to be one of Voicemeeter's inputs.
+    let output = winout::status(app);
+    match output["state"].as_str() {
+        Some("ok") => out.push(item(
+            "ok",
+            "Windows sound output",
+            &format!(
+                "Windows sends sound to {}.",
+                output["output"].as_str().unwrap_or("Voicemeeter")
+            ),
+        )),
+        Some("wrong") => {
+            let main = output["output"].as_str().unwrap_or("another device");
+            let calls = output["calls"].as_str().unwrap_or("another device");
+            let is_voicemeeter = |n: &str| n.to_lowercase().contains("voicemeeter");
+            let mut it = item(
+                "bad",
+                "Windows sound output",
+                &if is_voicemeeter(main) {
+                    format!("Windows sends calls to {calls}, not Voicemeeter, so apps like Discord skip the mixer.")
+                } else {
+                    format!("Windows sends sound to {main}, not Voicemeeter, so apps skip the mixer and its channels stay quiet. This often happens after plugging devices in.")
+                },
+            );
+            it["action"] = json!("fixAudio");
+            out.push(it);
+        }
+        _ => {}
     }
 
     // Shortcuts that couldn't be registered

@@ -1,0 +1,16 @@
+name = "sleekmeeter-usage"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# Only /api/* goes to the Worker; the rest of sleekmeeter.app stays as it is.
+routes = [{ pattern = "sleekmeeter.app/api/*", zone_name = "sleekmeeter.app" }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sleekmeeter-usage"
+# Paste the id that `npx wrangler d1 create sleekmeeter-usage` prints.
+database_id = "REPLACE_WITH_DATABASE_ID"
+
+# Deletes rows older than 400 days, once a day.
+[triggers]
+crons = ["17 3 * * *"]

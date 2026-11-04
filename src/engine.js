@@ -31,7 +31,8 @@
  *   brbToggle() -> bool   Be right back on or off (state.brb tells which)
  *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
- *   healthCheck() -> [{state: ok|warn|bad, label, detail}]   "Check my setup"
+ *   healthCheck() -> [{state: ok|warn|bad, label, detail, action?}]   "Check my setup"
+ *   windowsOutput() -> {state: ok|wrong|unknown, output, calls, target} / fixAudio() -> {moved, restarted} / onWindowsOutput(cb)
  *   settingsExport() / settingsImport() -> file name or null   backup and restore
  *   resetLayout()   default window size and position, panel docked
  *
@@ -72,10 +73,10 @@
     ],
     startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
     overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true, lockArrangement: false,
-    sceneRules: [], checkUpdates: true, skippedVersion: "", streamDeckOffered: "", oled: false,
+    sceneRules: [], checkUpdates: true, skippedVersion: "", streamDeckOffered: "", usagePing: null, oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
-    autoRestart: true,
+    autoRestart: true, keepWindowsOutput: false,
     outputProfiles: [],
     panelDocked: true, panelPos: null,
     hold: { releaseMs: 250 },
@@ -163,6 +164,9 @@
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
     onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
     healthCheck() { return this.invoke("health_check"); }
+    windowsOutput() { return this.invoke("windows_output"); }
+    fixAudio() { return this.invoke("fix_audio"); }
+    onWindowsOutput(cb) { return this.listen("windows-output", (e) => cb(e.payload)); }
     settingsExport() { return this.invoke("settings_export"); }
     settingsImport() { return this.invoke("settings_import"); }
     resetLayout() { return this.invoke("reset_layout"); }
@@ -530,13 +534,30 @@
     }
     onObsStatus() { return Promise.resolve(); }
     onThemeAuto() { return Promise.resolve(); }
+    // Preview the wrong-output warning with ?audio=wrong in the address.
+    windowsOutput() {
+      const wrong = /[?&]audio=wrong\b/.test(location.search) && !this._audioFixed;
+      return Promise.resolve(wrong ? { state: "wrong", output: "Headphones (Arctis Nova Pro Wireless)", calls: "Headset Earphone (BTD 700)", target: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" }
+        : { state: "ok", output: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", calls: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", target: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" });
+    }
+    fixAudio() {
+      const moved = /[?&]audio=wrong\b/.test(location.search) && !this._audioFixed ? "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" : null;
+      this._audioFixed = true;
+      return Promise.resolve({ moved, restarted: true });
+    }
+    onWindowsOutput() { return Promise.resolve(); }
     healthCheck() {
-      return new Promise((r) => setTimeout(() => r([
+      return new Promise(async (r) => {
+        const out = await this.windowsOutput();
+        setTimeout(() => r([
+        out.state === "wrong" ? { state: "bad", label: "Windows sound output", detail: `Windows sends sound to ${out.output}, not Voicemeeter, so apps skip the mixer and its channels stay quiet. This often happens after plugging devices in.`, action: "fixAudio" }
+          : { state: "ok", label: "Windows sound output", detail: `Windows sends sound to ${out.output}.` },
         { state: "ok", label: "Voicemeeter", detail: "Running and connected." },
         { state: "warn", label: "Audio devices", detail: "Windows doesn't list: Headphones (Arctis Nova Pro Wireless). Plug it in or switch it on; Sleekmeeter restarts the audio engine when it returns." },
         { state: "ok", label: "Shortcuts", detail: "4 shortcuts working." },
         { state: "ok", label: "Saving settings", detail: "Settings, scenes and logs can be saved." },
-      ]), 500));
+      ]), 500);
+      });
     }
     settingsExport() { return Promise.resolve("Sleekmeeter settings.json"); }
     settingsImport() { return Promise.resolve(null); }

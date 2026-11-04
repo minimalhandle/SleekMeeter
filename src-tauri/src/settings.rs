@@ -64,6 +64,8 @@ pub fn defaults() -> Value {
         "skippedVersion": "",
         // The Stream Deck plugin offer already answered, like "install:0.16.0.0".
         "streamDeckOffered": "",
+        // Anonymous usage count: null until the user is asked, then true or false (usage.rs).
+        "usagePing": null,
         // Mutes fade out and in; typed levels, shortcuts and scenes glide.
         "fades": { "on": true, "muteMs": 250, "sceneMs": 1200 },
         // Talk-over ducking: while `trigger` is above `threshold` dB, lower `targets` by `amount` dB.
@@ -73,6 +75,8 @@ pub fn defaults() -> Value {
         },
         // Restart Voicemeeter's audio engine when a device it uses comes back.
         "autoRestart": true,
+        // Put Windows' sound output back on Voicemeeter when plugging in a device moves it.
+        "keepWindowsOutput": false,
         // Saved sets of output devices: [{ "name": "Headphones", "auto": false,
         //   "buses": [{ "bus": 0, "type": "wdm", "name": "Headphones (Arctis)" }] }]
         "outputProfiles": [],

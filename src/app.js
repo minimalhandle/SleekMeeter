@@ -1060,7 +1060,7 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setPanelDocked: "panelDocked", setExtraBuses: "showExtraBuses",
+    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setExtraBuses: "showExtraBuses",
     setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode", setLockArrangement: "lockArrangement",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
@@ -1484,6 +1484,15 @@
     $("#streamDeckGo").textContent = copy.go;
     streamDeckDlg.showModal();
   }
+  // Asked once, after any other first-run question; until then nothing is sent.
+  const usageDlg = $("#usageDlg");
+  function offerUsage() {
+    if (PANEL || typeof settings.usagePing === "boolean" || document.querySelector("dialog[open]")) return;
+    usageDlg.showModal();
+  }
+  const answerUsage = (yes) => { settings.usagePing = yes; saveSettings(); usageDlg.close(); if (yes) toast("Thanks! You can turn this off in Settings → Privacy"); };
+  $("#usageYes").addEventListener("click", () => answerUsage(true));
+  $("#usageNo").addEventListener("click", () => answerUsage(false));
   $("#streamDeckGo").addEventListener("click", () => { streamDeckDlg.close(); runStreamDeckOffer(); });
   $("#streamDeckLater").addEventListener("click", () => streamDeckDlg.close());
   $("#streamDeckAction").addEventListener("click", runStreamDeckOffer);
@@ -3340,6 +3349,25 @@
   }
 
   /* ---------- check my setup ---------- */
+  /* ---------- Windows sound output ---------- */
+  const fixAudioBtn = $("#fixAudioBtn");
+  function paintWindowsOutput(s) {
+    const wrong = !!s && s.state === "wrong";
+    fixAudioBtn.hidden = !wrong;
+    if (wrong) fixAudioBtn.title = `Windows is sending sound to ${s.output}, not Voicemeeter, so the mixer can't hear your apps`;
+    if (s && s.fixed) toast(`Windows switched sound to ${s.from}, so Sleekmeeter put it back on ${s.target}`);
+  }
+  async function fixAudio() {
+    fixAudioBtn.disabled = true;
+    try {
+      const r = await engine.fixAudio();
+      const parts = [r.moved ? `Windows sound is back on ${r.moved}` : "Windows sound was already on Voicemeeter", r.restarted ? "the audio engine restarted" : ""];
+      toast(parts.filter(Boolean).join(", and "));
+      paintWindowsOutput(await engine.windowsOutput());
+    } catch (err) { fail(err); }
+    fixAudioBtn.disabled = false;
+  }
+  fixAudioBtn.addEventListener("click", fixAudio);
   const healthDlg = $("#healthDlg");
   async function runHealth() {
     const list = $("#healthList");
@@ -3354,6 +3382,11 @@
       const mark = Object.assign(document.createElement("span"), { className: "mark", textContent: it.state === "ok" ? "✓" : it.state === "warn" ? "!" : "×" });
       const body = document.createElement("div");
       body.append(Object.assign(document.createElement("b"), { textContent: it.label }), Object.assign(document.createElement("span"), { className: "detail", textContent: it.detail }));
+      if (it.action === "fixAudio") {
+        const fix = Object.assign(document.createElement("button"), { className: "btn primary", type: "button", textContent: "Fix my audio" });
+        fix.addEventListener("click", async () => { fix.disabled = true; await fixAudio(); runHealth(); });
+        body.appendChild(fix);
+      }
       li.append(mark, body);
       list.appendChild(li);
     }
@@ -3533,6 +3566,8 @@
       if (!PANEL) toast(`Loaded “${e.scene}” for ${e.app}`);
     }).catch(() => {});
     if (!PANEL) {
+      engine.windowsOutput().then(paintWindowsOutput).catch(() => {});
+      engine.onWindowsOutput(paintWindowsOutput).catch(() => {});
       engine.onEngineRestart((e) => toast(`${e.device} is back, so Sleekmeeter restarted the audio engine`)).catch(() => {});
       // A shortcut turned ducking on or off.
       engine.onSettingsChanged((s) => {
@@ -3543,7 +3578,7 @@
       engine.onFileDrop(onFilesDropped).catch(() => {});
     }
     checkForUpdate();
-    offerStreamDeck();
+    offerStreamDeck().then(offerUsage);
     // Show the window once the first frame with the real layout is drawn.
     requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {})));
     // Names are measured with the real font once it has loaded.

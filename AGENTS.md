@@ -9,8 +9,10 @@ Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Stan
 - `src/index.html`, `app.js`, `styles.css`: the UI. `themes.css` holds every theme, keyed by `[data-theme="id"]`. `engine.js` talks to Rust through Tauri, or runs a simulated Voicemeeter when opened in a plain browser. `osd.html` / `osd.js` is the volume overlay.
 - `src-tauri/src/`: `vm.rs` (Voicemeeter Remote API), `gain.rs` / `fades.rs` (smooth mute fades and level glides), `routing.rs` / `appvol.rs` / `apps.rs` (per-app audio routing and volumes), `remote.rs` (phone remote and the HTTP API the Stream Deck plugin uses), `settings.rs`, `update.rs` (in-app updates), `sounds.rs` / `recorder.rs`, `obs.rs`, `twitch.rs`, and others.
 - `src-tauri/installer-hooks.nsh`: NSIS hooks (the Voicemeeter check in the installer).
+- `src-tauri/src/winout.rs`: checks that Windows' default sound output is a Voicemeeter input and puts it back (Fix my audio).
 - `src-tauri/src/streamdeck.rs`: finds the Stream Deck app or hardware and installs the plugin compiled into the exe.
 - `streamdeck/`: Stream Deck plugin (no dependencies; own WebSocket client in `bin/ws.js`), the `icons/` pack, `tests/`, and `package.ps1`, which builds both installers.
+- `src-tauri/src/usage.rs` and `server/usage/`: the opt-in anonymous user count (the app side, and the Cloudflare Worker at sleekmeeter.app/api/*).
 - `scripts/package.ps1`: builds the release files into `dist\release`.
 - `docs/screenshots`: images used by the README gallery.
 
@@ -28,6 +30,7 @@ Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Stan
 - Sleekmeeter must not need administrator rights. Installs are per-user (NSIS); settings live in `%APPDATA%\Sleekmeeter` for installed copies.
 - Keep the Stream Deck plugin working with the remote API (`/api/state`, `/api/gain`, `/api/action`); don't rename actions without updating `streamdeck/`.
 - No new heavy dependencies; keep performance and startup fast.
+- The user count stays opt-in and sends only `{ id, version, edition }`. Don't add fields, IP logging or other tracking without the maintainer asking, and update the README's privacy section if it changes.
 
 ## Docs and releases
 - Update `CHANGELOG.md` (top section = current version) and the README for any user-visible change. The README is shown on GitHub, so check that tables, images and links render correctly there.
