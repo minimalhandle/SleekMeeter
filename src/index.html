@@ -19,6 +19,7 @@
     <span class="live-tag full-only" id="liveTag" hidden title="OBS says you're streaming">LIVE</span>
     <span class="spacer"></span>
     <span class="scene-now" id="sceneNow" hidden></span>
+    <button class="btn fix-audio-btn full-only" id="fixAudioBtn" type="button" hidden>Fix my audio</button>
     <div class="menu-wrap full-only" id="updateWrap" hidden>
       <button class="btn update-btn" id="updateBtn" type="button" aria-haspopup="true" aria-expanded="false"></button>
       <div class="menu update-menu" id="updateMenu" hidden>
@@ -439,6 +440,20 @@
     </div>
   </dialog>
 
+  <dialog class="dlg streamdeck-dlg" id="usageDlg" aria-labelledby="usageTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="usageTitle">Help count Sleekmeeter users?</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint">Once a day, Sleekmeeter would send sleekmeeter.app a random ID, its version number and your Voicemeeter edition. Nothing else: no names, devices, settings or audio. It only tells us how many people use Sleekmeeter, so we know where to spend time. You can change this any time in Settings → Privacy.</p>
+    <div class="btn-row">
+      <button class="btn primary" id="usageYes" type="button">Yes, count me</button>
+      <button class="btn" id="usageNo" type="button">No thanks</button>
+    </div>
+  </dialog>
+
   <dialog class="dlg settings" id="settingsDlg" aria-labelledby="settingsTitle">
     <form method="dialog" class="dlg-head">
       <h2 id="settingsTitle">Settings</h2>
@@ -599,6 +614,7 @@
       </section>
       <section>
         <h3>Audio devices</h3>
+        <label class="check"><input type="checkbox" id="setKeepWindowsOutput"><span>Keep Windows sound on Voicemeeter: if plugging in a device makes Windows play to it, switch Windows back to Voicemeeter's input</span></label>
         <label class="check"><input type="checkbox" id="setAutoRestart"><span>Restart the audio engine when a device Voicemeeter uses comes back, like headphones you unplugged or Bluetooth that reconnected</span></label>
       </section>
       <section>
@@ -636,6 +652,10 @@
         <h3>Stream Deck</h3>
         <p class="hint" id="streamDeckNote" role="status"></p>
         <div class="btn-row"><button class="btn" id="streamDeckAction" type="button" hidden></button></div>
+      </section>
+      <section>
+        <h3>Privacy</h3>
+        <label class="check"><input type="checkbox" id="setUsagePing"><span>Count me as a Sleekmeeter user. Once a day, Sleekmeeter would send sleekmeeter.app a random ID, its version number and your Voicemeeter edition. Nothing else: no names, devices, settings or audio. Turning this off deletes the ID.</span></label>
       </section>
       <section>
         <h3>Updates</h3>

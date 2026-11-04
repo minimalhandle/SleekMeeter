@@ -692,6 +692,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .rule-head, .rule { display: grid; grid-template-columns: 1.25fr 1fr 1fr 32px; gap: 6px; width: 100%; align-items: center; }
 .rule-head { font-size: var(--s-1); color: var(--muted); }
 .rule-list { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.fix-audio-btn { height: 32px; padding: 0 14px; border: 0; border-radius: 6px; background: var(--red); color: #fff; }
+.fix-audio-btn:hover { background: color-mix(in srgb, var(--red) 88%, #fff); color: #fff; }
+.health-list .btn { margin-top: 8px; }
 .update-btn { height: 32px; padding: 0 14px; border: 0; border-radius: 6px; }
 .update-menu { width: 270px; padding: 12px 6px 6px; }
 .update-menu p { margin: 0 8px 8px; color: var(--ink-2); }

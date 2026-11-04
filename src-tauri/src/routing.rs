@@ -58,7 +58,7 @@ pub fn devices() -> Vec<Value> {
 }
 
 /// `{0.0.0.00000000}.{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}` and nothing else.
-fn valid_device(id: &str) -> bool {
+pub fn valid_device(id: &str) -> bool {
     let Some(rest) = id.strip_prefix("{0.0.0.00000000}.{") else {
         return false;
     };
