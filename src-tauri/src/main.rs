@@ -453,9 +453,13 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     }
     // The tray panel's position is recorded in Rust too.
     value["panelPos"] = current["panelPos"].clone();
+    let usage_changed = current["usagePing"] != value["usagePing"];
     *current = value.clone();
     drop(current);
     settings::save(&value)?;
+    if usage_changed {
+        usage::nudge();
+    }
     Ok(json!({ "problems": problems }))
 }
 

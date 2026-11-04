@@ -8,6 +8,8 @@
 use crate::{settings, Settings};
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use std::sync::mpsc::{channel, Sender};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
@@ -16,6 +18,16 @@ const URL: &str = "https://sleekmeeter.app/api/ping";
 const FIRST: Duration = Duration::from_secs(60);
 /// Look again this often (it sends at most once a day).
 const EVERY: Duration = Duration::from_secs(600);
+
+/// Wakes the thread when the answer changes, so a yes is counted (and a no forgets the ID) at once.
+static WAKE: OnceLock<Mutex<Sender<()>>> = OnceLock::new();
+
+/// Call when the user changes their answer.
+pub fn nudge() {
+    if let Some(tx) = WAKE.get() {
+        let _ = tx.lock().unwrap().send(());
+    }
+}
 
 fn file() -> PathBuf {
     settings::app_dir().join("usage.json")
@@ -132,11 +144,14 @@ pub fn spawn(app: AppHandle) {
     if cfg!(debug_assertions) {
         return;
     }
+    let (tx, rx) = channel();
+    let _ = WAKE.set(Mutex::new(tx));
     std::thread::spawn(move || {
-        std::thread::sleep(FIRST);
+        // Wait for startup to finish, or for an answer.
+        let _ = rx.recv_timeout(FIRST);
         loop {
             tick(&app);
-            std::thread::sleep(EVERY);
+            let _ = rx.recv_timeout(EVERY);
         }
     });
 }

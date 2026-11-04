@@ -36,7 +36,7 @@ Check it with `https://sleekmeeter.app/api/stats`. The free plans cover this eas
 
 ## Reading the numbers
 
-`https://sleekmeeter.app/api/stats` shows totals only: people today, in the last 7 and 30 days, each day for the last 30 days, and the last 30 days by version and by Voicemeeter edition.
+`https://sleekmeeter.app/api/stats` shows totals only (they can be up to a minute old): people today, in the last 7 and 30 days, each day for the last 30 days, and the last 30 days by version and by Voicemeeter edition.
 
 ## Test
 

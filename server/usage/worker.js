@@ -41,7 +41,7 @@ async function stats(env) {
     versions: await all("SELECT version, COUNT(DISTINCT id) AS users FROM pings WHERE day > date('now', '-30 days') GROUP BY version ORDER BY users DESC"),
     editions: await all("SELECT edition, COUNT(DISTINCT id) AS users FROM pings WHERE day > date('now', '-30 days') GROUP BY edition ORDER BY users DESC"),
   };
-  return json(body, 200, { 'cache-control': 'public, max-age=300' });
+  return json(body, 200, { 'cache-control': 'public, max-age=60' });
 }
 
 export default {
