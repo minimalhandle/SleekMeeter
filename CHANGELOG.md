@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- The user count is sent as soon as you say yes, instead of up to 10 minutes later. Saying no deletes the ID straight away
+
 ## 0.15.2
 - **Anonymous user count, only if you say yes:** Sleekmeeter asks once whether it may send sleekmeeter.app a random ID, its version and your Voicemeeter edition once a day, so we know how many people use it. Nothing else is sent. Change it in **Settings → Privacy**; turning it off deletes the ID
 - **Fix my audio:** if plugging devices in makes Windows play sound to them instead of Voicemeeter, the mixer goes quiet. Sleekmeeter now spots this, shows a **Fix my audio** button (also in **Check my setup**) that switches Windows back to Voicemeeter's input and restarts the audio engine, and can do it automatically with **Settings → Keep Windows sound on Voicemeeter**. Windows' device for calls is switched too
