@@ -97,6 +97,7 @@ test('swap route key shows which of its two routes is live', () => {
   const text = (svg) => decodeURIComponent(svg.slice(svg.indexOf(',') + 1));
   const key = (extra) => text(studio.renderKey({ action: 'swap', settings: { channel: 'Strip[0]', bus: 'B2', channel2: 'Strip[3]', bus2: 'B2', ...extra } }, e));
   assert.match(key({}), /HEADSET/); assert.match(key({}), /1 OF 2/);
+  assert.match(key({ channel: undefined }), /HEADSET/, 'an unsaved first input is input 1, as the settings show');
   assert.match(key({ label: 'Headset mic' }), /HEADSET MIC/);
   strips['Strip[0]'].b = [0, 0, 0]; strips['Strip[3]'].b = [0, 1, 0];
   assert.match(key({}), /MAIN MIC/); assert.match(key({}), /2 OF 2/);
@@ -104,4 +105,16 @@ test('swap route key shows which of its two routes is live', () => {
   assert.match(key({}), /PRESS TO SET/, 'both on: neither is live');
   assert.match(key({ bus2: 'B5' }), /Only B1/, 'a bus this edition lacks says so');
   assert.match(text(studio.renderKey({ action: 'swap', settings: {} }, e)), /Choose 2 routes/);
+});
+
+test('the media worker starts on PCs with Windows\' default script policy', () => {
+  let args = null;
+  const fake = (_exe, a) => { args = a; const e = new EventEmitter(); e.stdout = new EventEmitter(); e.stdout.setEncoding = () => {}; e.stderr = new EventEmitter(); e.stdin = new EventEmitter(); return e; };
+  new MediaSession(() => {}, fake).start();
+  const i = args.indexOf('-ExecutionPolicy');
+  assert.ok(i >= 0 && args[i + 1] === 'Bypass' && i < args.indexOf('-File'));
+  const studio = require('../com.minimalhandle.sleekmeeter.sdPlugin/bin/studio');
+  const text = (svg) => decodeURIComponent(svg.slice(svg.indexOf(',') + 1));
+  assert.match(text(studio.renderNowPlayingKey({ settings: { mediaSource: 'auto' } }, { available: false, reason: 'Waiting for media' })), /Media unavailable/);
+  assert.match(text(studio.renderNowPlayingKey({ settings: { mediaSource: 'auto' } }, { available: false, reason: 'No media session' })), /Nothing playing/);
 });

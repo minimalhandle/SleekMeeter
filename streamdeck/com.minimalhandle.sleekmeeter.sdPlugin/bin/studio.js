@@ -69,7 +69,7 @@ function renderKey(c,e) {
     case 'level':{const mode=s.mode||'up',amount=Number.isFinite(Number(s.amount))?Number(s.amount):2,bus=s.bus&&s.bus!=='main'?s.bus:'';if(bus&&!(ch.layers||[]).length)return tile({name:bus,icon:'faders',caption:'Potato only',color:C.muted});return draw({name:bus?`${ch.name} on ${bus}`:ch.name,icon:mode==='set'?'faders':mode==='down'?'down':'up',value:(mode==='set'?db(amount):(mode==='down'?'−':'+')+Math.abs(amount))+' dB'});}
     case 'swap':{
       // Which of the two routes is live. Both on or both off: neither, until the next press.
-      const side=[[s.channel,s.bus||'B1',s.label],[s.channel2,s.bus2||'B1',s.label2]].map(([k,b,l])=>{const x=e.chan(k);return{ch:x,bus:b,label:(l||'').trim()||(x?x.name:''),on:x?e.routeOf(x,b):null};});
+      const side=[[s.channel||'Strip[0]',s.bus||'B1',s.label],[s.channel2,s.bus2||'B1',s.label2]].map(([k,b,l])=>{const x=e.chan(k);return{ch:x,bus:b,label:(l||'').trim()||(x?x.name:''),on:x?e.routeOf(x,b):null};});
       if(!side[0].ch||!side[1].ch)return tile({name:'SWAP ROUTE',icon:'settings',caption:'Choose 2 routes',color:C.amber});
       const bad=side.find(x=>x.on===null);if(bad)return tile({name:bad.bus,icon:'route',caption:routeProblem(bad.ch,bad.bus),color:C.muted});
       const live=side[0].on&&!side[1].on?0:side[1].on&&!side[0].on?1:-1;
@@ -82,7 +82,7 @@ function renderKey(c,e) {
     case 'brb':return draw({name:'STREAM MODE',icon:'coffee',caption:st.brb?'BACK LIVE':st.brbSet?'GO BRB':'Not set up',color:st.brb?C.amber:C.cyan,active:!!st.brb});
     case 'record':return draw({name:'RECORDER',icon:'record',caption:st.recording?'RECORDING':'START RECORD',color:st.recording?C.red:C.cyan,active:!!st.recording});
     case 'duck':return draw({name:'TALK OVER',icon:'duck',caption:st.duck?'DUCKING ON':'DUCKING OFF',color:st.duck?C.green:C.muted,active:!!st.duck});
-    case 'mixfor':{const want=s.bus||'all',idx=busIndex(st,want),sel=(st.buses||[]).findIndex(b=>b.sel);if(!(st.buses||[]).some(b=>'sel' in b&&b.sel!==null)||!(st.strips||[]).some(x=>(x.layers||[]).length))return tile({name:'FADERS SET',icon:'faders',caption:'Potato only',color:C.muted});const on=want==='all'?sel<0:sel===idx;return draw({name:'FADERS SET',bus:want==='all'?'ALL':want,color:on?(want==='all'?C.cyan:want[0]==='A'?C.amber:C.blue):C.muted,active:on,pulse:on?1:.25});}
+    case 'mixfor':{const want=s.bus||'B3',idx=busIndex(st,want),sel=(st.buses||[]).findIndex(b=>b.sel);if(!(st.buses||[]).some(b=>'sel' in b&&b.sel!==null)||!(st.strips||[]).some(x=>(x.layers||[]).length))return tile({name:'FADERS SET',icon:'faders',caption:'Potato only',color:C.muted});const on=want==='all'?sel<0:sel===idx;return draw({name:'FADERS SET',bus:want==='all'?'ALL':want,color:on?(want==='all'?C.cyan:want[0]==='A'?C.amber:C.blue):C.muted,active:on,pulse:on?1:.25});}
     case 'output':{const name=s.output||st.outputNow||'',active=!!name&&name===st.outputNow;return draw({name:'OUTPUT',icon:outputIcon(name,s),caption:name||'Next output',active,color:active?C.cyan:C.muted});}
     default:return null;
   }
@@ -107,7 +107,8 @@ function renderDial(c,e) {
 }
 function time(seconds){const n=Math.max(0,Math.floor(Number(seconds)||0));return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`;}
 const safeArt=media=>media.available&&media.art&&/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(media.art)&&media.art.length<=100000?media.art:'';
-const idleTitle=(s,media)=>media.loading?'':s.mediaSource==='auto'?'Nothing playing':'Open Spotify';
+// The worker not answering at all is a different problem from no player, so say so.
+const idleTitle=(s,media)=>media.loading?'':/Waiting for media|unavailable/.test(media.reason||'')&&!/Media information/.test(media.reason||'')?'Media unavailable':s.mediaSource==='auto'?'Nothing playing':'Open Spotify';
 const idleArtist=media=>media.loading?'':'Waiting for media';
 function renderNowPlaying(c,e,media={}) {
   const s=c.settings||{},ch=e.chan(s.channel),online=e.status==='ok'&&e.st&&ch;

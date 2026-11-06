@@ -24,7 +24,9 @@ class MediaSession {
     if (this.child || Date.now() < this.retryAfter) return;
     this.retryAfter = Date.now() + 10000;
     const executable = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32/WindowsPowerShell/v1.0/powershell.exe');
-    const child = this.launch(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-File', path.join(__dirname, 'media-session.ps1')], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+    // Windows' default script policy on home PCs ("Restricted") would refuse to run the worker;
+    // Bypass applies to this one process only and changes no Windows setting.
+    const child = this.launch(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', path.join(__dirname, 'media-session.ps1')], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
     this.child = child;
     let buffer = '';
     child.stdout.setEncoding('utf8');

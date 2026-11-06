@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.7 (test version)
+- Fixed (Stream Deck plugin 0.16.3.1): Now Playing showed "Open Spotify" or "Nothing playing" on most PCs, because Windows' default PowerShell setting stopped the plugin's media reader from starting. It now starts everywhere, without changing that setting
+- Now Playing set to **Current Windows media app** also finds players that Windows doesn't mark as current, such as Apple Music, and says **Media unavailable** if it can't read Windows' media controls at all
+- Fixed (Stream Deck plugin 0.16.3.1): a **Swap route** key whose first input was left on the input its settings showed (input 1) said "Choose 2 routes" and did nothing
+- Fixed (Stream Deck plugin 0.16.3.1): a **Faders set** key left on the output its settings showed (B3) set every output instead
+
 ## 0.15.6 (test version)
 - **Stream Deck: Swap route (plugin 0.16.3.0):** a key that switches between two routes with one press, for example which mic goes to B2, or whether your game plays on A1 or A2. One route turns off as the other turns on, and the key shows which one is live. Works on Banana and Potato
 - **Output mix in its own window (Potato):** the new button next to the close button in **Mix** pops the output mix out into a window of its own, for example to keep it open on a second screen. Its sliders grow with the window, it remembers its size and place, and it opens again at the next start if you left it open. **Reset the layout** (Settings → Backup and layout) puts it back to its normal size
