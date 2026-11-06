@@ -1800,6 +1800,14 @@ fn main() {
         }
     );
     let settings = settings::load();
+    // Installing a new version by hand runs the old uninstaller, which removes the startup
+    // entry. Put it back when the saved setting still says to start with Windows.
+    if settings::flag(&settings, "startWithWindows") && !win::autostart_enabled() {
+        match win::set_autostart(true) {
+            Ok(()) => log_info!("Added Sleekmeeter back to startup apps"),
+            Err(e) => log_warn!("{e}"),
+        }
+    }
     let api = Api::load().map(Arc::new);
     match &api {
         None => log_warn!(

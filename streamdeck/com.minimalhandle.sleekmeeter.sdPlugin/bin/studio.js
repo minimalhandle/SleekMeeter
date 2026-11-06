@@ -65,7 +65,7 @@ function renderKey(c,e) {
     case 'mic':{const m=e.muteOf(ch);return draw({name:ch.name,icon:'mic',color:m?C.red:C.green,slash:m,active:!m});}
     case 'mute':{const m=e.muteOf(ch);return draw({name:ch.name,icon:'speaker',caption:m?'MUTED':'',value:m?'':db(e.gainOf(ch))+' dB',color:m?C.red:C.cyan,slash:m});}
     case 'route':{const bus=s.bus||'B1',on=e.routeOf(ch,bus);if(on===null)return tile({name:bus,icon:'route',caption:routeProblem(ch,bus),color:C.muted});return draw({name:ch.name,bus,color:on?(bus[0]==='A'?C.amber:C.blue):C.muted,active:!!on,pulse:on?.45+.55*e.breath():.25});}
-    case 'level':{const mode=s.mode||'up',amount=Number.isFinite(Number(s.amount))?Number(s.amount):2;return draw({name:ch.name,icon:mode==='set'?'faders':mode==='down'?'down':'up',value:(mode==='set'?db(amount):(mode==='down'?'−':'+')+Math.abs(amount))+' dB'});}
+    case 'level':{const mode=s.mode||'up',amount=Number.isFinite(Number(s.amount))?Number(s.amount):2,bus=s.bus&&s.bus!=='main'?s.bus:'';if(bus&&!(ch.layers||[]).length)return tile({name:bus,icon:'faders',caption:'Potato only',color:C.muted});return draw({name:bus?`${ch.name} on ${bus}`:ch.name,icon:mode==='set'?'faders':mode==='down'?'down':'up',value:(mode==='set'?db(amount):(mode==='down'?'−':'+')+Math.abs(amount))+' dB'});}
     case 'scene':return draw({name:'SCENE',icon:'scene',caption:s.scene||'Choose scene'});
     case 'sound':return draw({name:'SOUNDBOARD',icon:'play',caption:s.sound||'Choose sound'});
     case 'soundstop':return draw({icon:'stop',caption:'STOP SOUNDS'});
