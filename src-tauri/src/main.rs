@@ -89,6 +89,9 @@ struct TrayClicks {
 }
 
 const FLYOUT: &str = "flyout";
+/// The Output mix popped out into its own window.
+const MIXWIN: &str = "mixwin";
+const MIXWIN_MIN: (f64, f64) = (480.0, 300.0);
 
 fn offline_state(installed: bool) -> Value {
     json!({ "installed": installed, "connected": false })
@@ -455,13 +458,16 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     if !current["window"].is_null() {
         value["window"] = current["window"].clone();
     }
-    // The tray panel's position is recorded in Rust too.
-    value["panelPos"] = current["panelPos"].clone();
+    // The tray panel's position and the output mix window are recorded in Rust too.
+    for k in ["panelPos", "mixWin", "mixWinOpen"] {
+        value[k] = current[k].clone();
+    }
     let usage_changed = current["usagePing"] != value["usagePing"];
     *current = value.clone();
     drop(current);
     settings::save(&value)?;
     let _ = app.emit_to(FLYOUT, "settings-changed", &value);
+    let _ = app.emit_to(MIXWIN, "settings-changed", &value);
     if let Some(w) = app.get_webview_window(FLYOUT) {
         flyout_shadow(&app, &w);
     }
@@ -1111,6 +1117,60 @@ fn panel_dock(app: AppHandle, docked: bool) {
     }
 }
 
+/// The Output mix (Potato gain layers) in a window of its own, for example on a second screen.
+fn open_mix_window(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window(MIXWIN) {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
+    let saved = app.state::<Settings>().0.lock().unwrap()["mixWin"].clone();
+    let built = WebviewWindowBuilder::new(app, MIXWIN, WebviewUrl::App("index.html".into()))
+        .title("Sleekmeeter output mix")
+        .initialization_script("window.SLEEK_MIXWIN = true;")
+        .inner_size(1180.0, 520.0)
+        .min_inner_size(MIXWIN_MIN.0, MIXWIN_MIN.1)
+        .decorations(false)
+        .background_color(tauri::window::Color(17, 17, 20, 255))
+        .visible(false)
+        .build();
+    match built {
+        Ok(w) => {
+            restore_geometry(&w, &saved, MIXWIN_MIN);
+            let _ = w.show();
+            let _ = w.set_focus();
+            set_mix_window_open(app, true);
+            log_info!("Opened the output mix window");
+        }
+        Err(e) => log_warn!("Couldn't open the output mix window: {e}"),
+    }
+}
+
+/// Remembered so the window comes back at the next start, wherever it was left.
+fn set_mix_window_open(app: &AppHandle, open: bool) {
+    let st = app.state::<Settings>();
+    let mut s = st.0.lock().unwrap();
+    if s["mixWinOpen"].as_bool() != Some(open) {
+        s["mixWinOpen"] = json!(open);
+        let _ = settings::save(&s);
+        // The mixer's Mix button brings the window forward while it's open.
+        let _ = app.emit_to("main", "settings-changed", &*s);
+    }
+}
+
+/// Open the Output mix window, or close it. Async: Windows deadlocks when a window is made
+/// from a command that runs on the main thread.
+#[tauri::command]
+async fn mix_window(app: AppHandle, open: bool) {
+    if open {
+        open_mix_window(&app);
+    } else if let Some(w) = app.get_webview_window(MIXWIN) {
+        set_mix_window_open(&app, false);
+        let _ = w.destroy();
+    }
+}
+
 #[tauri::command]
 fn open_mixer(app: AppHandle) {
     if let Some(w) = app.get_webview_window(FLYOUT) {
@@ -1462,7 +1522,7 @@ async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
     let Some(path) = picked else { return Ok(None) };
     let mut value = app.state::<Settings>().0.lock().unwrap().clone();
     if let Value::Object(m) = &mut value {
-        for k in ["window", "panelPos", "edition"] {
+        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "edition"] {
             m.remove(k);
         }
     }
@@ -1507,7 +1567,7 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
     {
         let state = app.state::<Settings>();
         let cur = state.0.lock().unwrap();
-        for k in ["window", "panelPos", "edition"] {
+        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "edition"] {
             value[k] = cur[k].clone();
         }
         // Backups don't carry the OBS password: keep the one this PC has.
@@ -1535,6 +1595,7 @@ fn reset_layout(app: AppHandle) -> Result<(), String> {
         let mut s = st.0.lock().unwrap();
         s["window"] = Value::Null;
         s["panelPos"] = Value::Null;
+        s["mixWin"] = Value::Null;
         s["panelDocked"] = json!(true);
         s["mini"] = json!(false);
         settings::save(&s)?;
@@ -1545,6 +1606,11 @@ fn reset_layout(app: AppHandle) -> Result<(), String> {
             let _ = w.unmaximize();
         }
         let _ = w.set_size(LogicalSize::new(1400.0, 800.0));
+        let _ = w.center();
+    }
+    if let Some(w) = app.get_webview_window(MIXWIN) {
+        let _ = w.unmaximize();
+        let _ = w.set_size(LogicalSize::new(1180.0, 520.0));
         let _ = w.center();
     }
     *app.state::<NormalSize>().0.lock().unwrap() = None;
@@ -1698,14 +1764,19 @@ fn spawn_scene_rules(app: AppHandle) {
 
 /// Record the main window's size and position (not in mini mode, not while minimized).
 fn remember_window(window: &tauri::Window) {
+    remember_geometry(window, "window");
+}
+
+/// Record a window's size, place and maximized state under `key` in the settings.
+fn remember_geometry(window: &tauri::Window, key: &str) {
     let app = window.app_handle();
     let state = app.state::<Settings>();
     let mut s = state.0.lock().unwrap();
-    if settings::flag(&s, "mini") || window.is_minimized().unwrap_or(false) {
+    if (key == "window" && settings::flag(&s, "mini")) || window.is_minimized().unwrap_or(false) {
         return;
     }
     let maximized = window.is_maximized().unwrap_or(false);
-    let mut geo = s["window"].clone();
+    let mut geo = s[key].clone();
     if !geo.is_object() {
         geo = json!({});
     }
@@ -1723,19 +1794,23 @@ fn remember_window(window: &tauri::Window) {
             }
         }
     }
-    if s["window"] != geo {
-        s["window"] = geo;
+    if s[key] != geo {
+        s[key] = geo;
         app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
     }
 }
 
 /// Put the main window back where it was last time. Returns false when nothing was saved.
 fn restore_window(w: &WebviewWindow, s: &Value) -> bool {
-    let geo = &s["window"];
+    restore_geometry(w, &s["window"], (760.0, 520.0))
+}
+
+/// Put a window back to a size and place saved by `remember_geometry`.
+fn restore_geometry(w: &WebviewWindow, geo: &Value, min: (f64, f64)) -> bool {
     let (Some(width), Some(height)) = (geo["width"].as_f64(), geo["height"].as_f64()) else {
         return false;
     };
-    let _ = w.set_size(LogicalSize::new(width.max(760.0), height.max(520.0)));
+    let _ = w.set_size(LogicalSize::new(width.max(min.0), height.max(min.1)));
     if let (Some(x), Some(y)) = (geo["x"].as_i64(), geo["y"].as_i64()) {
         // Only if that spot is still on a connected monitor.
         let (cx, cy) = (x + 80, y + 20);
@@ -1904,6 +1979,7 @@ fn main() {
             settings_set,
             window_mini,
             open_mixer,
+            mix_window,
             panel_dock,
             flyout_close,
             panel_fit,
@@ -2041,6 +2117,11 @@ fn main() {
                 }
             });
 
+            // Left open last time (for example on a second screen): open it again.
+            if settings::flag(&settings, "mixWinOpen") {
+                open_mix_window(&handle);
+            }
+
             if let Some(api) = api_for_setup.clone() {
                 spawn_poller(handle.clone(), api);
                 spawn_scene_rules(handle.clone());
@@ -2057,6 +2138,13 @@ fn main() {
         })
         .on_window_event(|window, event| match event {
             // Closing the window keeps Sleekmeeter in the tray; quit from the tray menu.
+            // The output mix window really closes (Alt+F4 too), and stays closed next time.
+            WindowEvent::CloseRequested { .. } if window.label() == MIXWIN => {
+                set_mix_window_open(window.app_handle(), false);
+            }
+            WindowEvent::Resized(_) | WindowEvent::Moved(_) if window.label() == MIXWIN => {
+                remember_geometry(window, "mixWin");
+            }
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 if window.label() == "main" {

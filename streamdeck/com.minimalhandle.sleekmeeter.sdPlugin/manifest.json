@@ -1,6 +1,6 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.16.2.0",
+  "Version": "0.16.3.0",
   "Author": "minimalhandle",
   "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
@@ -88,6 +88,23 @@
       "UUID": "com.minimalhandle.sleekmeeter.route",
       "Icon": "imgs/actions/route",
       "Tooltip": "Turn one of an input's A or B buses on or off, for example your mic to B3. The key lights up and pulses slowly while the route is on.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/route",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Swap route",
+      "UUID": "com.minimalhandle.sleekmeeter.swap",
+      "Icon": "imgs/actions/route",
+      "Tooltip": "Switch between two routes with one press, for example which mic goes to B2, or whether your game plays on A1 or A2. One turns on as the other turns off.",
       "Controllers": [
         "Keypad"
       ],

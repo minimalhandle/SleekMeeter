@@ -688,6 +688,21 @@ body.mixing-output #inputs .strip { box-shadow: inset 0 0 0 1px color-mix(in srg
 /* ---------- output profiles ---------- */
 /* Output mix: every input's gain layers (Potato), one column per input. */
 .dlg.mixview-dlg { width: min(1520px, calc(100vw - 32px)); }
+.dlg-tools { display: flex; gap: 6px; }
+/* Popped out into its own window: the Output mix is the whole page, and the sliders grow with it. */
+body.is-mixwin > :not(#mixViewDlg) { display: none !important; }
+body.is-mixwin { overflow: hidden; }
+body.is-mixwin #mixViewDlg {
+  position: fixed; inset: 0; width: auto; max-width: none; height: auto; max-height: none; margin: 0;
+  display: flex; flex-direction: column; border-radius: 0; box-shadow: inset 0 0 0 1px var(--line); animation: none;
+  padding: 10px 14px 12px;
+}
+body.is-mixwin #mixViewDlg .dlg-head { cursor: default; user-select: none; }
+body.is-mixwin #mixViewHint { display: none; }
+body.is-mixwin .mixview { flex: 1; min-height: 0; }
+body.is-mixwin .mx-col, body.is-mixwin .mx-row, body.is-mixwin .mx-sl { min-height: 0; }
+body.is-mixwin .mx-row, body.is-mixwin .mx-sl { flex: 1; }
+body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .mixview { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; }
 .mx-col { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 8px 8px; border-radius: 12px; background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); box-shadow: inset 0 1px 0 var(--mod-edge), var(--mod-shadow); }
 .mx-head { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 600; }

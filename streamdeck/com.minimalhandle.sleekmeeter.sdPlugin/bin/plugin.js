@@ -254,6 +254,23 @@ function toggleMute(context, key) {
   act(context, 'mute', key);
 }
 
+// Swap route: one press turns the first route on and the second off, the next press the other
+// way round. Sleekmeeter reads Voicemeeter and does both in one step.
+function swapPair(s) {
+  return [[s.channel, s.bus || 'B1'], [s.channel2, s.bus2 || 'B1']];
+}
+function swapRoute(context, s) {
+  const [[k1, b1], [k2, b2]] = swapPair(s);
+  const c1 = chan(k1), c2 = chan(k2);
+  if (!c1 || !c2 || (k1 === k2 && b1 === b2) || routeOf(c1, b1) === null || routeOf(c2, b2) === null) { showAlert(context); return; }
+  const toSecond = routeOf(c1, b1) && !routeOf(c2, b2);
+  const until = Date.now() + 900;
+  local[`${k1}#${b1}`] = { v: !toSecond, until };
+  local[`${k2}#${b2}`] = { v: toSecond, until };
+  renderAll();
+  act(context, 'routeswap', `${k1}.${b1}|${k2}.${b2}`);
+}
+
 function toggleRoute(context, key, bus) {
   const ch = chan(key);
   if (!ch || routeOf(ch, bus) === null) { showAlert(context); return; }
@@ -406,6 +423,7 @@ function onKeyDown(context, c) {
     case 'mute': return toggleMute(context, s.channel);
     case 'route': return toggleRoute(context, s.channel || MIC_DEFAULT, s.bus || 'B1');
     case 'mixfor': return pickMixFor(context, c);
+    case 'swap': return swapRoute(context, s);
     case 'mic': {
       const key = s.channel || MIC_DEFAULT;
       const ch = chan(key);

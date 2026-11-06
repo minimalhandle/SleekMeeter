@@ -18,7 +18,7 @@ function fixture(extra = {}) {
 test('every manifest action produces a live key or dial', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(plugin, 'manifest.json')));
   assert.equal(manifest.UUID, uuid);
-  assert.equal(manifest.Actions.length, 18);
+  assert.equal(manifest.Actions.length, 19);
   for (const action of manifest.Actions) {
     const c = { action: action.UUID.slice(uuid.length + 1), settings: { channel: 'Strip[0]', scene: 'Gaming', sound: 'Air horn', output: 'Headphones' } };
     const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : ['channel', 'mixdial'].includes(c.action) ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));
@@ -154,6 +154,13 @@ test('existing handlers still send the expected API actions and gain payloads', 
   assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/mixfor');assert.deepEqual(calls.at(-1).body,{bus:7});
   await p.onKeyDown('mix-key',{action:'mixfor',settings:{bus:'B3'}});
   assert.deepEqual(calls.at(-1).body,{bus:-1},'pressing again goes back to all outputs');
+  // Swap route: one call, which Sleekmeeter carries out in one step; the key flips at once.
+  p.setState({ connected: true, strips: [{ key: 'Strip[0]', name: 'Headset', gain: 0, mute: false, a: [1,0,0], b: [0,1,0] }, { key: 'Strip[3]', name: 'Main mic', gain: 0, mute: false, a: [1,0,0], b: [0,0,0] }], buses: [] });
+  await p.onKeyDown('swap-key', { action: 'swap', settings: { channel: 'Strip[0]', bus: 'B2', channel2: 'Strip[3]', bus2: 'B2' } });
+  assert.deepEqual(calls.at(-1).body, { action: 'routeswap', target: 'Strip[0].B2|Strip[3].B2' });
+  await p.onKeyDown('swap-key', { action: 'swap', settings: { channel: 'Strip[0]', bus: 'B2', channel2: 'Strip[0]', bus2: 'B2' } });
+  assert.ok(events.some(e => e.event === 'showAlert' && e.context === 'swap-key'), 'the same route twice is refused');
+  p.setState({ connected: true, strips: [{ key: 'Strip[0]', name: 'Game', gain: -10, mute: false, a: [1,0,0,0,0], b: [0,0,1], layers: [-10,-10,-10,-10,-10,-10,-10,-16] }], buses: Array.from({length:8},(_,j)=>({key:'Bus['+j+']',name:'Out',gain:0,mute:false,sel:false})) });
   // Level step on one output: steps that gain layer only, and holding the key keeps stepping until it's let go.
   for(const t of timers.filter(t=>t.ms===70))t.fn();timers.length=0;
   p.onMessage(JSON.stringify({event:'willAppear',action:uuid+'.level',context:'step-key',payload:{settings:{channel:'Strip[0]',bus:'A1',mode:'up',amount:5}}}));

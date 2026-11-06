@@ -18,15 +18,16 @@ function glyph(name, x, y, scale, color, slash = false) {
 function bar(value, x, y, width, color, opacity = 1) {
   return `<rect x="${x}" y="${y}" width="${width}" height="4" rx="2" fill="#28303c"/><rect x="${x}" y="${y}" width="${(width*clamp(value,0,1)).toFixed(2)}" height="4" rx="2" fill="${color}" opacity="${opacity}"/>`;
 }
-function tile({name='',caption='',icon='faders',color=C.cyan,slash=false,value='',bus='',active=false,pulse=1,showText=true}) {
+function tile({name='',caption='',icon='faders',color=C.cyan,slash=false,value='',bus='',state='',active=false,pulse=1,showText=true}) {
   // Optical hierarchy at physical key size: quiet heading, one hero, one status rail.
   const heading=showText&&name;
   let body=heading?text(fit(name.toUpperCase(),18),72,30,9,'#b4b7bd','middle',650):'';
   if(bus) {
     body+=text(bus,72,79,43,active?color:'#656a73','middle',400);
     // State remains explicit when channel labels are hidden; colour is supplemental.
-    body+=text(active?'ON':'OFF',78,101,10,active?color:'#8a8e96','middle',650);
-    body+=active?`<path d="M51 97l3 3 6-7" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`:`<path d="M51 94l7 7m0-7l-7 7" stroke="#8a8e96" stroke-width="1.5" stroke-linecap="round"/>`;
+    if(state)body+=text(state,72,101,10,active?color:'#8a8e96','middle',650);
+    else{body+=text(active?'ON':'OFF',78,101,10,active?color:'#8a8e96','middle',650);
+    body+=active?`<path d="M51 97l3 3 6-7" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`:`<path d="M51 94l7 7m0-7l-7 7" stroke="#8a8e96" stroke-width="1.5" stroke-linecap="round"/>`;}
   } else if(value) {
     const number=value.replace(/ dB$/,'');
     body+=text(number,72,87,number.length>6?30:38,C.ink,'middle',350);
@@ -66,6 +67,15 @@ function renderKey(c,e) {
     case 'mute':{const m=e.muteOf(ch);return draw({name:ch.name,icon:'speaker',caption:m?'MUTED':'',value:m?'':db(e.gainOf(ch))+' dB',color:m?C.red:C.cyan,slash:m});}
     case 'route':{const bus=s.bus||'B1',on=e.routeOf(ch,bus);if(on===null)return tile({name:bus,icon:'route',caption:routeProblem(ch,bus),color:C.muted});return draw({name:ch.name,bus,color:on?(bus[0]==='A'?C.amber:C.blue):C.muted,active:!!on,pulse:on?.45+.55*e.breath():.25});}
     case 'level':{const mode=s.mode||'up',amount=Number.isFinite(Number(s.amount))?Number(s.amount):2,bus=s.bus&&s.bus!=='main'?s.bus:'';if(bus&&!(ch.layers||[]).length)return tile({name:bus,icon:'faders',caption:'Potato only',color:C.muted});return draw({name:bus?`${ch.name} on ${bus}`:ch.name,icon:mode==='set'?'faders':mode==='down'?'down':'up',value:(mode==='set'?db(amount):(mode==='down'?'−':'+')+Math.abs(amount))+' dB'});}
+    case 'swap':{
+      // Which of the two routes is live. Both on or both off: neither, until the next press.
+      const side=[[s.channel,s.bus||'B1',s.label],[s.channel2,s.bus2||'B1',s.label2]].map(([k,b,l])=>{const x=e.chan(k);return{ch:x,bus:b,label:(l||'').trim()||(x?x.name:''),on:x?e.routeOf(x,b):null};});
+      if(!side[0].ch||!side[1].ch)return tile({name:'SWAP ROUTE',icon:'settings',caption:'Choose 2 routes',color:C.amber});
+      const bad=side.find(x=>x.on===null);if(bad)return tile({name:bad.bus,icon:'route',caption:routeProblem(bad.ch,bad.bus),color:C.muted});
+      const live=side[0].on&&!side[1].on?0:side[1].on&&!side[0].on?1:-1;
+      if(live<0)return draw({name:'SWAP ROUTE',bus:side[0].bus===side[1].bus?side[0].bus:'?',state:'PRESS TO SET',color:C.muted,active:false,pulse:.25});
+      const x=side[live];return draw({name:x.label,bus:x.bus,state:live?'2 OF 2':'1 OF 2',color:x.bus[0]==='A'?C.amber:C.blue,active:true});
+    }
     case 'scene':return draw({name:'SCENE',icon:'scene',caption:s.scene||'Choose scene'});
     case 'sound':return draw({name:'SOUNDBOARD',icon:'play',caption:s.sound||'Choose sound'});
     case 'soundstop':return draw({icon:'stop',caption:'STOP SOUNDS'});
