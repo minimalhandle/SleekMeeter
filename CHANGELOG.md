@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Output mix view (Potato):** **Mix** in the header shows every input's level on every output at once, like Voicemeeter's Streamer View, with the A/B buttons under each slider. Drag, scroll or double-click (to match the input's main fader)
+
 ## 0.15.3
 - **Voicemeeter backups:** Sleekmeeter saves a copy of Voicemeeter's whole setup once a day, and before loading a scene, running the setup assistant or restoring a backup. **Settings → Backup and layout** lists them with a **Restore** button (your current setup is saved first)
 - **Test versions:** **Settings → Updates → Also offer test versions** gets pre-releases as updates. Without it, Sleekmeeter now only offers full releases

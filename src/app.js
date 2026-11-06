@@ -1002,11 +1002,104 @@
     });
   }
 
+  /* ---------- Output mix: every input's level on every output (Potato gain layers) ---------- */
+  const mixViewDlg = $("#mixViewDlg"), mixViewBtn = $("#mixViewBtn"), mixViewEl = $("#mixView");
+  let mixSliders = [];
+  function mixSlider(ch, bus) {
+    const el = document.createElement("div");
+    el.className = "mx-sl"; el.tabIndex = 0; el.setAttribute("role", "slider");
+    el.setAttribute("aria-valuemin", String(MIN_DB)); el.setAttribute("aria-valuemax", String(MAX_DB));
+    el.innerHTML = '<span class="mx-val"></span><div class="mx-track"><div class="mx-unity"></div><div class="mx-fill"></div><div class="mx-thumb"></div></div><button type="button" class="tog"></button>';
+    const id = bus.info.id, param = `GainLayer[${bus.i}]`;
+    const track = $(".mx-track", el), route = $(".tog", el);
+    route.textContent = id;
+    route.title = `Send ${displayName(ch)} to ${id} ${displayName(bus)}`;
+    $(".mx-unity", el).style.bottom = `${dbToPos(0) * 100}%`;
+    const s = { ch, bus, el, v: 0, lockUntil: 0 };
+    const paint = () => {
+      const p = dbToPos(s.v);
+      $(".mx-fill", el).style.height = `${p * 100}%`;
+      $(".mx-thumb", el).style.bottom = `${p * 100}%`;
+      $(".mx-val", el).textContent = fmtDb(s.v);
+      el.setAttribute("aria-valuenow", s.v.toFixed(1));
+      el.setAttribute("aria-label", `${displayName(ch)} on ${id} ${displayName(bus)}`);
+    };
+    const set = (v) => {
+      s.v = Math.round(Math.min(MAX_DB, Math.max(MIN_DB, v)) * 10) / 10;
+      s.lockUntil = performance.now() + 800;
+      paint();
+      sendFloat(`${ch.prefix}.${param}`, s.v);
+    };
+    const at = (e) => { const r = track.getBoundingClientRect(); return posToDb(Math.min(1, Math.max(0, (r.bottom - e.clientY) / r.height))); };
+    track.addEventListener("pointerdown", (e) => { if (e.button !== 0) return; track.setPointerCapture(e.pointerId); s.drag = true; set(at(e)); el.focus({ preventScroll: true }); });
+    track.addEventListener("pointermove", (e) => { if (s.drag) set(at(e)); });
+    const end = () => { s.drag = false; };
+    track.addEventListener("pointerup", end); track.addEventListener("pointercancel", end);
+    el.addEventListener("dblclick", (e) => { if (!e.target.closest(".tog")) set((ch.data && ch.data.gain) || 0); });
+    el.addEventListener("wheel", (e) => { e.preventDefault(); set(s.v + (e.deltaY < 0 ? 1 : -1) * (e.altKey ? 0.1 : 0.5)); }, { passive: false });
+    el.addEventListener("keydown", (e) => {
+      const step = e.shiftKey ? 0.1 : 0.5;
+      const v = { ArrowUp: s.v + step, ArrowRight: s.v + step, ArrowDown: s.v - step, ArrowLeft: s.v - step, PageUp: s.v + 3, PageDown: s.v - 3, Home: MIN_DB, End: MAX_DB }[e.key];
+      if (v !== undefined) { e.preventDefault(); set(v); }
+    });
+    route.addEventListener("click", () => {
+      const on = route.getAttribute("aria-pressed") !== "true";
+      route.setAttribute("aria-pressed", String(on));
+      el.classList.toggle("off", !on);
+      sendFloat(`${ch.prefix}.${id}`, on ? 1 : 0);
+    });
+    s.paint = paint; s.route = route;
+    mixSliders.push(s);
+    return el;
+  }
+  function buildMixView() {
+    mixViewEl.textContent = "";
+    mixSliders = [];
+    const buses = chans.filter((c) => c.kind === "bus");
+    for (const ch of chans.filter((c) => c.kind === "strip" && !look(c).hidden)) {
+      const col = document.createElement("div");
+      col.className = "mx-col";
+      col.dataset.color = look(ch).color;
+      const head = document.createElement("div");
+      head.className = "mx-head";
+      const chip = Object.assign(document.createElement("span"), { className: "chip small" });
+      chip.innerHTML = svg(look(ch).icon, 14);
+      head.append(chip, Object.assign(document.createElement("span"), { textContent: displayName(ch), title: displayName(ch) }));
+      const row = document.createElement("div");
+      row.className = "mx-row";
+      for (const b of buses) row.appendChild(mixSlider(ch, b));
+      col.append(head, row);
+      mixViewEl.appendChild(col);
+    }
+    paintMixView();
+  }
+  function paintMixView() {
+    if (!mixViewDlg.open) return;
+    const st = lastState;
+    const picked = st ? (st.buses || []).findIndex((b) => b.sel) : -1;
+    for (const s of mixSliders) {
+      const d = s.ch.data || {};
+      const v = (d.layers || [])[s.bus.i];
+      if (v !== undefined && !s.drag && performance.now() > s.lockUntil) s.v = v;
+      const id = s.bus.info.id, n = +id.slice(1) - 1;
+      const on = !!(id[0] === "A" ? (d.a || [])[n] : (d.b || [])[n]);
+      if (document.activeElement !== s.route) s.route.setAttribute("aria-pressed", String(on));
+      s.el.classList.toggle("off", !on);
+      s.el.classList.toggle("picked", picked === s.bus.i);
+      s.paint();
+    }
+  }
+  mixViewBtn.addEventListener("click", () => { mixViewDlg.showModal(); buildMixView(); });
+  mixViewDlg.addEventListener("click", (e) => { if (e.target === mixViewDlg) mixViewDlg.close(); });
+
   /* ---------- Potato output select: the faders set one output's mix ---------- */
   const mixFor = $("#mixFor");
   function applyMixFor(st) {
     const on = st.edition === 3 && (st.buses || []).length > 0;
     $("#mixForWrap").hidden = !on || PANEL;
+    mixViewBtn.hidden = !on || PANEL;
+    if (!on && mixViewDlg.open) mixViewDlg.close();
+    paintMixView();
     if (!on) { document.body.classList.remove("mixing-output"); return; }
     const buses = chans.filter((c) => c.kind === "bus");
     const want = ["", ...buses.map((b) => String(b.i))].join("|") + "#" + buses.map(displayName).join("|");
