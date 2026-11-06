@@ -9,6 +9,7 @@ Sleekmeeter is a Tauri 2 desktop app (Windows only) that gives Voicemeeter (Stan
 - `src/index.html`, `app.js`, `styles.css`: the UI. `themes.css` holds every theme, keyed by `[data-theme="id"]`. `engine.js` talks to Rust through Tauri, or runs a simulated Voicemeeter when opened in a plain browser. `osd.html` / `osd.js` is the volume overlay.
 - `src-tauri/src/`: `vm.rs` (Voicemeeter Remote API), `gain.rs` / `fades.rs` (smooth mute fades and level glides), `routing.rs` / `appvol.rs` / `apps.rs` (per-app audio routing and volumes), `remote.rs` (phone remote and the HTTP API the Stream Deck plugin uses), `settings.rs`, `update.rs` (in-app updates), `sounds.rs` / `recorder.rs`, `obs.rs`, `twitch.rs`, and others.
 - `src-tauri/installer-hooks.nsh`: NSIS hooks (the Voicemeeter check in the installer).
+- `src-tauri/src/layers.rs`: Potato gain layers. Main-level writes on Potato go through `vm.rs`, which moves every layer instead while an input's layers differ, so per-output mixes survive fades and ducking.
 - `src-tauri/src/winout.rs`: checks that Windows' default sound output is a Voicemeeter input and puts it back (Fix my audio).
 - `src-tauri/src/streamdeck.rs`: finds the Stream Deck app or hardware and installs the plugin compiled into the exe.
 - `streamdeck/`: Stream Deck plugin (no dependencies; own WebSocket client in `bin/ws.js`), the `icons/` pack, `tests/`, and `package.ps1`, which builds both installers.

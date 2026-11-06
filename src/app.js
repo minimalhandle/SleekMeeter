@@ -518,6 +518,7 @@
       markMuted(ch, !!d.mute);
       for (const r of ch.rows) r.classList.toggle("ducked", !!d.ducked);
     }
+    applyMixFor(st);
     applyRecorder(st.recorder);
     applyOutputs(st);
     applyBrb(st);
@@ -895,6 +896,24 @@
       const dyn = section("Dynamics");
       rangeField(dyn, { id: "fComp", label: "Compressor", param: "Comp", min: 0, max: 10, step: 0.1, reset: 0, format: (v) => v.toFixed(1) });
       rangeField(dyn, { id: "fGate", label: "Gate", param: "Gate", min: 0, max: 10, step: 0.1, reset: 0, format: (v) => v.toFixed(1) });
+      // Voicemeeter's input limiter (Banana and Potato): at +12 dB it's off.
+      if (ch.data && ch.data.limit != null) {
+        rangeField(dyn, { id: "fLimit", label: "Limiter", param: "Limit", min: -40, max: 12, step: 0.5, reset: 12,
+          format: (v) => (v >= 12 ? "Off" : fmtDb(v) + " dB") });
+      }
+      // Potato's gain layers: this input's own level on each output.
+      if (ch.data && (ch.data.layers || []).length) {
+        const lay = section("Level on each output");
+        const note = document.createElement("p");
+        note.className = "hint";
+        note.textContent = "Give one output its own level, like less game on your stream than in your headphones. The main fader moves them all together and keeps the differences.";
+        lay.appendChild(note);
+        chans.filter((b) => b.kind === "bus").forEach((b) => {
+          const tag = (b.info && b.info.id) || "";
+          rangeField(lay, { id: `fLayer${b.i}`, label: tag ? `${tag} ${displayName(b)}` : displayName(b), param: `GainLayer[${b.i}]`,
+            min: -60, max: 12, step: 0.5, center: 0, reset: ch.gain || 0, format: (v) => fmtDb(v) });
+        });
+      }
       if (!isHw(ch)) {
         const eq = section("EQ");
         const f = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(1);
@@ -967,7 +986,8 @@
     const ch = drawerCh, d = ch && ch.data;
     if (!d) return;
     renderDrawerHead();
-    const map = { Pan_x: d.pan, Comp: d.comp, Gate: d.gate, EQGain1: (d.eq || [])[0], EQGain2: (d.eq || [])[1], EQGain3: (d.eq || [])[2] };
+    const map = { Pan_x: d.pan, Comp: d.comp, Gate: d.gate, EQGain1: (d.eq || [])[0], EQGain2: (d.eq || [])[1], EQGain3: (d.eq || [])[2], Limit: d.limit };
+    (d.layers || []).forEach((v, j) => { map[`GainLayer[${j}]`] = v; });
     drawerBody.querySelectorAll("input[type=range]").forEach((inp) => {
       const v = map[inp.dataset.param];
       if (v === undefined || document.activeElement === inp) return;
@@ -981,6 +1001,31 @@
       if (t) b.setAttribute("aria-pressed", t.btn.getAttribute("aria-pressed"));
     });
   }
+
+  /* ---------- Potato output select: the faders set one output's mix ---------- */
+  const mixFor = $("#mixFor");
+  function applyMixFor(st) {
+    const on = st.edition === 3 && (st.buses || []).length > 0;
+    $("#mixForWrap").hidden = !on || PANEL;
+    if (!on) { document.body.classList.remove("mixing-output"); return; }
+    const buses = chans.filter((c) => c.kind === "bus");
+    const want = ["", ...buses.map((b) => String(b.i))].join("|") + "#" + buses.map(displayName).join("|");
+    if (mixFor.dataset.built !== want) {
+      mixFor.dataset.built = want;
+      mixFor.textContent = "";
+      mixFor.appendChild(new Option("All outputs", ""));
+      for (const b of buses) mixFor.appendChild(new Option(`${(b.info && b.info.id) || ""} ${displayName(b)}`.trim(), String(b.i)));
+    }
+    const sel = st.buses.findIndex((b) => b.sel);
+    if (document.activeElement !== mixFor) mixFor.value = sel < 0 ? "" : String(sel);
+    document.body.classList.toggle("mixing-output", sel >= 0);
+  }
+  mixFor.addEventListener("change", () => {
+    const pick = mixFor.value === "" ? -1 : +mixFor.value;
+    // Voicemeeter lets several be selected through its API; Sleekmeeter keeps it to one.
+    chans.filter((c) => c.kind === "bus").forEach((b) => sendFloat(`Bus[${b.i}].Sel`, b.i === pick ? 1 : 0));
+    toast(pick < 0 ? "Faders set every output again" : `Input faders now set ${mixFor.selectedOptions[0].textContent}'s mix`);
+  });
 
   /* ---------- offline overlay ---------- */
   const launchBtn = $("#launchBtn");

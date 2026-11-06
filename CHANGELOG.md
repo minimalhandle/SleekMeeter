@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- **A different mix on each output (Potato):** Potato's gain layers give each input its own level on each output, for example less game on your stream than in your headphones, like Voicemeeter's Streamer View. Set them in an input's settings under **Level on each output**, or pick an output in **Faders set** above the inputs and the input faders set that output's mix
+- **Your output mixes stay put (Potato):** with no output picked, Voicemeeter's main level resets every layer. Sleekmeeter's faders, mute fades, ducking, scenes and Be right back now move all of an input's layers together instead, so the differences are kept
+- **Input limiter (Banana and Potato):** in an input's settings under Dynamics. At +12 dB it's off
 - **Tray panel options:** Settings → Tray volume panel has a **Columns** layout with vertical sliders, a size from 60% to 100%, an opacity, and switches for channel icons, level meters and mute buttons. Each channel's settings can leave it out of the panel
 - **Volume overlay options:** choose which screen the overlay appears on, and leave channels out of it from their settings
 - Fixed: the volume overlay flickered while a level kept changing. It now fades in once and updates in place
