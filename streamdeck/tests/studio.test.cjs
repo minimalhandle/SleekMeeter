@@ -89,3 +89,19 @@ test('app dial covers volume, mute and every problem state',()=>{
  assert.match(decode(studio.renderAppDial(c,{status:'key'})),/WRONG KEY/);
  assert.match(decode(studio.renderAppDial(c,{status:'offline'})),/OFFLINE/);
 });
+
+test('swap route key shows which of its two routes is live', () => {
+  const strips = { 'Strip[0]': { key: 'Strip[0]', name: 'Headset', b: [0, 1, 0], a: [] }, 'Strip[3]': { key: 'Strip[3]', name: 'Main mic', b: [0, 0, 0], a: [] } };
+  const on = (ch, bus) => { const l = bus[0] === 'A' ? ch.a : ch.b; const n = +bus[1] - 1; return n < l.length ? !!l[n] : null; };
+  const e = { status: 'ok', st: {}, chan: (k) => strips[k], gainOf: () => 0, muteOf: () => false, routeOf: on, breath: () => 1 };
+  const text = (svg) => decodeURIComponent(svg.slice(svg.indexOf(',') + 1));
+  const key = (extra) => text(studio.renderKey({ action: 'swap', settings: { channel: 'Strip[0]', bus: 'B2', channel2: 'Strip[3]', bus2: 'B2', ...extra } }, e));
+  assert.match(key({}), /HEADSET/); assert.match(key({}), /1 OF 2/);
+  assert.match(key({ label: 'Headset mic' }), /HEADSET MIC/);
+  strips['Strip[0]'].b = [0, 0, 0]; strips['Strip[3]'].b = [0, 1, 0];
+  assert.match(key({}), /MAIN MIC/); assert.match(key({}), /2 OF 2/);
+  strips['Strip[0]'].b = [0, 1, 0];
+  assert.match(key({}), /PRESS TO SET/, 'both on: neither is live');
+  assert.match(key({ bus2: 'B5' }), /Only B1/, 'a bus this edition lacks says so');
+  assert.match(text(studio.renderKey({ action: 'swap', settings: {} }, e)), /Choose 2 routes/);
+});

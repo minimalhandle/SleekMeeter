@@ -20,6 +20,7 @@
  *   onEngineRestart(cb) / onSettingsChanged(cb) / onFileDrop(cb)
  *   appInfo() -> {version, logDir} / openLogs() / log(level, message)   Settings → About, the log file
  *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
+ *   mixWindow(open)   open (or bring forward) the Output mix in its own window, or close it
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
  *   selftestInputs() -> {devices} / selftestRun(input, output, secs)   hear-yourself test
@@ -142,6 +143,7 @@
     recorderOpen() { return this.invoke("recorder_open"); }
     recorderLoad(path) { return this.invoke("recorder_load", { path }); }
     panelDock(docked) { return this.invoke("panel_dock", { docked }); }
+    mixWindow(open) { return this.invoke("mix_window", { open }); }
     outputsCapture() { return this.invoke("outputs_capture"); }
     outputsApply(name) { return this.invoke("outputs_apply", { name }); }
     appVolumes() { return this.invoke("app_volumes"); }
@@ -457,6 +459,13 @@
     }
     recorderOpen() { return Promise.resolve("Interview take 3.wav"); }
     panelDock() { return Promise.resolve(); }
+    // The preview opens the popped-out Output mix as a browser window.
+    mixWindow(open) {
+      if (!open) { window.close(); return Promise.resolve(); }
+      const q = new URLSearchParams(location.search); q.delete("panel"); q.set("mixwin", "");
+      window.open(`index.html?${q.toString()}`, "sleekmeeter-mix", "width=1180,height=520");
+      return Promise.resolve();
+    }
     // Output profiles: capture reads the hardware outputs, apply puts a saved profile's devices back.
     outputsCapture() {
       const hb = this.layout.buses.filter((x) => x.kind === "hw").length;

@@ -15,6 +15,7 @@
   .status { margin: 6px 0 0; padding: 6px 8px; border-radius: 3px; background: #383838; color: #bbb; line-height: 1.35; }
   .status.ok { color: #7fe0a3; } .status.bad { color: #ff9a9a; }
   .hint { margin: 2px 0 0; color: #8c8c8c; line-height: 1.35; }
+  .sub { margin: 12px 0 2px; color: #d0d0d0; font-weight: 600; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -65,10 +66,11 @@ function opts(list, current, empty) {
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function channelSelect(def) {
+function channelSelect(def, key = "channel") {
   const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
   const buses = (lists ? lists.buses : []).map((c) => ({ v: c.key, t: c.name }));
-  const cur = settings.channel || def || "";
+  const cur = settings[key] || def || "";
+  if (key !== "channel") return `<select data-k="${key}"><option value="">Pick an input…</option>${opts(strips, cur)}</select>`;
   return `<select data-k="channel"><option value="">Pick a channel…</option>` +
     (strips.length ? `<optgroup label="Inputs">${opts(strips, cur)}</optgroup>` : "") +
     (buses.length ? `<optgroup label="Outputs">${opts(buses, cur)}</optgroup>` : "") + `</select>`;
@@ -124,6 +126,18 @@ function buildFields() {
     h += row("Input", channelSelect("Strip[0]"));
     h += row("Bus", `<select data-k="bus">${opts(["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x })), settings.bus || "B1")}</select>`);
     h += `<p class="hint">Turns this input's route to that bus on or off. The key lights up and pulses slowly while it's on (amber for A buses, blue for B buses). Use one key per route, for example your mic to B3 to put it into a game.</p>`;
+  } else if (action === "swap") {
+    const busPick = (k) => `<select data-k="${k}">${opts(["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x })), settings[k] || "B1")}</select>`;
+    const name = (k, ph) => `<input type="text" data-k="${k}" maxlength="18" placeholder="${ph}" value="${esc(settings[k] || "")}">`;
+    h += '<p class="sub">First press</p>';
+    h += row("Input", channelSelect("Strip[0]", "channel"));
+    h += row("Bus", busPick("bus"));
+    h += row("Name", name("label", "The input's name"));
+    h += '<p class="sub">Second press</p>';
+    h += row("Input", channelSelect("", "channel2"));
+    h += row("Bus", busPick("bus2"));
+    h += row("Name", name("label2", "The input's name"));
+    h += `<p class="hint">Each press turns one route on and the other off, for example your headset mic or your main mic on B2, or your game on A1 or A2. The key shows which one is live.</p>`;
   } else if (action === "mic") {
     h += row("Channel", channelSelect("Strip[0]"));
     h += row("When pressed", `<select data-k="mode">${opts([{ v: "toggle", t: "Mute or unmute" }, { v: "ptt", t: "Hold to talk" }], settings.mode || "toggle")}</select>`);

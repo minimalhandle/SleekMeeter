@@ -8,6 +8,10 @@
 
   // The tray volume panel loads this same page with SLEEK_FLYOUT set (or ?panel in a browser).
   const PANEL = !!window.SLEEK_FLYOUT || /[?&]panel\b/.test(location.search);
+  // The Output mix popped out into its own window (?mixwin in the browser preview).
+  const MIXWIN = !!window.SLEEK_MIXWIN || /[?&]mixwin\b/.test(location.search);
+  // Extra windows show a part of the mixer; the main window alone does updates, prompts and the like.
+  const SIDE = PANEL || MIXWIN;
   let settings = clone(DEFAULT_SETTINGS);
   let connected = null;
   const reveal = { strip: false, bus: false };
@@ -530,7 +534,7 @@
   // First launch only (Rust ignores it once a size is saved): make the window as wide as the mixer.
   let fitted = false;
   function fitWindowToMixer() {
-    if (PANEL || settings.mini) return;
+    if (SIDE || settings.mini) return;
     const desk = $("#desk"), cs = getComputedStyle(desk);
     const groups = [...desk.querySelectorAll(".group")].filter((g) => g.offsetWidth > 0);
     const width = groups.reduce((w, g) => w + g.offsetWidth, 0)
@@ -1089,16 +1093,48 @@
       s.paint();
     }
   }
-  mixViewBtn.addEventListener("click", () => { mixViewDlg.showModal(); buildMixView(); });
+  mixViewBtn.addEventListener("click", () => {
+    // Already popped out: bring that window forward instead of opening a second copy.
+    if (settings.mixWinOpen) { engine.mixWindow(true).catch(() => {}); return; }
+    mixViewDlg.showModal(); buildMixView();
+  });
   mixViewDlg.addEventListener("click", (e) => { if (e.target === mixViewDlg) mixViewDlg.close(); });
+  $("#mixPopBtn").addEventListener("click", () => {
+    mixViewDlg.close();
+    settings.mixWinOpen = true;
+    engine.mixWindow(true).catch((e) => { settings.mixWinOpen = false; toast(`Couldn't open the window: ${e}`); });
+  });
+  // In its own window the dialog is the whole page: close and minimise act on the window.
+  function setupMixWindow() {
+    document.body.classList.add("is-mixwin");
+    $("#mixPopBtn").hidden = true;
+    $("#mixMinBtn").hidden = false;
+    const api = window.__TAURI__ && window.__TAURI__.window ? window.__TAURI__.window.getCurrentWindow() : null;
+    $("#mixMinBtn").addEventListener("click", () => { if (api) api.minimize().catch(() => {}); });
+    $("#mixCloseBtn").addEventListener("click", (e) => { e.preventDefault(); engine.mixWindow(false).catch(() => window.close()); });
+    mixViewDlg.addEventListener("cancel", (e) => e.preventDefault());
+    // Drag the window by its heading; double-click to maximise or restore.
+    $(".dlg-head", mixViewDlg).addEventListener("mousedown", (e) => {
+      if (!api || e.button !== 0 || e.target.closest("button")) return;
+      if (e.detail === 2) api.toggleMaximize().catch(() => {}); else api.startDragging().catch(() => {});
+    });
+    mixViewDlg.show();
+    buildMixView();
+  }
 
   /* ---------- Potato output select: the faders set one output's mix ---------- */
   const mixFor = $("#mixFor");
   function applyMixFor(st) {
     const on = st.edition === 3 && (st.buses || []).length > 0;
     $("#mixForWrap").hidden = !on || PANEL;
-    mixViewBtn.hidden = !on || PANEL;
-    if (!on && mixViewDlg.open) mixViewDlg.close();
+    mixViewBtn.hidden = !on || SIDE;
+    if (MIXWIN) {
+      $("#mixViewNote").hidden = on;
+      $("#mixView").hidden = !on;
+      // Channels and outputs can change while the window stays open: rebuild when they do.
+      const sig = on ? chans.map((c) => `${c.kind}${c.i}:${displayName(c)}:${look(c).hidden ? 1 : 0}:${look(c).color}:${look(c).icon}`).join("|") : "";
+      if (sig !== mixViewDlg.dataset.built) { mixViewDlg.dataset.built = sig; if (on) buildMixView(); }
+    } else if (!on && mixViewDlg.open) mixViewDlg.close();
     paintMixView();
     if (!on) { document.body.classList.remove("mixing-output"); return; }
     const buses = chans.filter((c) => c.kind === "bus");
@@ -1568,7 +1604,7 @@
   // `asked`: from the Check for updates button. Then it runs even with automatic checks off,
   // offers a version that was skipped, and returns what it found.
   async function checkForUpdate(asked = false) {
-    if (PANEL || (!asked && !settings.checkUpdates)) return null;
+    if (SIDE || (!asked && !settings.checkUpdates)) return null;
     try {
       const u = await engine.checkUpdate();
       if (!u || !u.newer || (!asked && u.latest === settings.skippedVersion)) return u;
@@ -1585,7 +1621,7 @@
     }
   }
   // Sleekmeeter often runs for days, so look again every 6 hours, not only at start.
-  if (!PANEL) setInterval(() => checkForUpdate(), 6 * 60 * 60 * 1000);
+  if (!SIDE) setInterval(() => checkForUpdate(), 6 * 60 * 60 * 1000);
   $("#checkUpdateNow").addEventListener("click", async (e) => {
     const btn = e.currentTarget, status = $("#updateStatus");
     btn.disabled = true;
@@ -1674,7 +1710,7 @@
   }
   // Asks once per plugin version. Settings keeps the same action for anyone who said not now.
   async function offerStreamDeck() {
-    if (PANEL) return;
+    if (SIDE) return;
     await refreshStreamDeck();
     const copy = streamDeck && streamDeckCopy[streamDeck.offer];
     if (!copy || document.querySelector("dialog[open]")) return;
@@ -1690,7 +1726,7 @@
   // Asked once, after any other first-run question; until then nothing is sent.
   const usageDlg = $("#usageDlg");
   function offerUsage() {
-    if (PANEL || typeof settings.usagePing === "boolean" || document.querySelector("dialog[open]")) return;
+    if (SIDE || typeof settings.usagePing === "boolean" || document.querySelector("dialog[open]")) return;
     usageDlg.showModal();
   }
   const answerUsage = (yes) => { settings.usagePing = yes; saveSettings(); usageDlg.close(); if (yes) toast("Thanks! You can turn this off in Settings → Privacy"); };
@@ -2125,7 +2161,7 @@
   // side (routing.rs), so it works with the window hidden too.
 
   async function pollTray() {
-    if (trayBusy || PANEL || settings.mini || document.hidden) return;
+    if (trayBusy || SIDE || settings.mini || document.hidden) return;
     trayBusy = true;
     try {
       if (!routeDevices.length || trayPolls++ % 20 === 0) routeDevices = (await engine.appRouteDevices().catch(() => routeDevices)) || routeDevices;
@@ -2135,12 +2171,12 @@
     } catch (_) { /* Windows audio unavailable; the tray just stays as it was */ } finally { trayBusy = false; }
   }
   function startTray() {
-    if (PANEL || trayTimer) return;
+    if (SIDE || trayTimer) return;
     pollTray();
     trayTimer = setInterval(() => { if (settings.appTray || Object.keys(settings.appRoutes || {}).length) pollTray(); }, settings.appTray ? 1500 : 3000);
   }
   function applyTray() {
-    const on = !PANEL && !!settings.appTray;
+    const on = !SIDE && !!settings.appTray;
     trayEl.hidden = !on;
     appsBtn.setAttribute("aria-pressed", String(on));
     clearInterval(trayTimer); trayTimer = null;
@@ -2537,7 +2573,7 @@
   $("#recOpen").addEventListener("click", () => engine.recorderOpen().then(loadedFile).catch(fail));
   const AUDIO_FILE = /\.(wav|mp3|aiff?|wma|m4a|flac|ogg|bwf)$/i;
   function onFilesDropped(paths) {
-    if (!rec || PANEL) return;
+    if (!rec || SIDE) return;
     const file = paths.find((p) => AUDIO_FILE.test(p));
     if (!file) { if (paths.length) toast("Drop an audio file (WAV, MP3, AIFF…) to play it"); return; }
     engine.recorderLoad(file).then((name) => {
@@ -2602,7 +2638,7 @@
   // Mini mode in the main window: size it to the channels, so it never needs a scroll bar and
   // switching to and from the full mixer is seamless. Redone whenever the channels change.
   function syncMiniWindow(on) {
-    if (PANEL) return;
+    if (SIDE) return;
     const send = () => engine.windowMini(on, miniRows(), miniWidth(), on ? miniHeight().h : undefined).catch(() => {});
     if (on) requestAnimationFrame(send); else send();
   }
@@ -3225,7 +3261,7 @@
   let clipRun = 0, clipAt = 0;
   function checkClip(lv) {
     const c = settings.clipWarn;
-    if (PANEL || !c || !c.on) return;
+    if (SIDE || !c || !c.on) return;
     clipRun = levelOf(lv, c.target) >= -0.3 ? clipRun + 1 : 0;
     const now = performance.now();
     if (clipRun < 2 || now - clipAt < 15000) return;
@@ -3794,12 +3830,24 @@
         applyPanelOptions();
         applyVisibility();
       }).catch(() => {});
+    } else if (MIXWIN) {
+      setupMixWindow();
+      // Looks, names and theme are changed in the main window: follow at once.
+      engine.onSettingsChanged((s) => {
+        if (!s) return;
+        settings = Object.assign(clone(DEFAULT_SETTINGS), s);
+        delete settings.autoTheme;
+        applyTheme();
+        if (lastState) applyMixFor(lastState);
+      }).catch(() => {});
     } else {
       setMini(!!settings.mini, false);
+      // Know when the popped-out window opens or closes, so Mix brings it forward.
+      engine.onSettingsChanged((s) => { if (s && "mixWinOpen" in s) settings.mixWinOpen = s.mixWinOpen; }).catch(() => {});
     }
     wakeMeters();
     engine.onThemeAuto((e) => { autoTheme = (e && e.theme) || ""; applyTheme(); }).catch(() => {});
-    if (!PANEL) {
+    if (!SIDE) {
       engine.obsStatus().then(applyObs).catch(() => {});
       engine.onObsStatus(applyObs).catch(() => {});
       engine.twitchStatus().then(applyTwitch).catch(() => {});
@@ -3807,9 +3855,9 @@
     }
     engine.onSceneAuto((e) => {
       setScene(e.scene);
-      if (!PANEL) toast(`Loaded “${e.scene}” for ${e.app}`);
+      if (!SIDE) toast(`Loaded “${e.scene}” for ${e.app}`);
     }).catch(() => {});
-    if (!PANEL) {
+    if (!SIDE) {
       engine.windowsOutput().then(paintWindowsOutput).catch(() => {});
       engine.onWindowsOutput(paintWindowsOutput).catch(() => {});
       engine.onEngineRestart((e) => toast(`${e.device} is back, so Sleekmeeter restarted the audio engine`)).catch(() => {});

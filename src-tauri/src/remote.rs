@@ -27,6 +27,7 @@ const ALLOWED: &[&str] = &[
     "record",
     "mute",
     "route",
+    "routeswap",
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);

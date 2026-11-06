@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.6 (test version)
+- **Stream Deck: Swap route (plugin 0.16.3.0):** a key that switches between two routes with one press, for example which mic goes to B2, or whether your game plays on A1 or A2. One route turns off as the other turns on, and the key shows which one is live. Works on Banana and Potato
+- **Output mix in its own window (Potato):** the new button next to the close button in **Mix** pops the output mix out into a window of its own, for example to keep it open on a second screen. Its sliders grow with the window, it remembers its size and place, and it opens again at the next start if you left it open. **Reset the layout** (Settings → Backup and layout) puts it back to its normal size
+
 ## 0.15.5 (test version)
 - **Stream Deck: Level step on one output (plugin 0.16.2.0):** on Voicemeeter Potato, a Level step key can change an input's level on one output only, for example game +5 dB in your headphones (A1) without changing your stream. It does the same job as a Voicemeeter macro like `Strip(2).GainLayer(0) += 5.0`, without a second plugin
 - **Stream Deck: hold to repeat:** holding a Level step key keeps stepping until you let go. Turn it off in the key's settings

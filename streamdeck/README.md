@@ -6,7 +6,7 @@ A Stream Deck plugin for Sleekmeeter. Built for the **Stream Deck +** (four dial
 
 ## Studio
 
-Plugin 0.16.2.0 uses one look: **Studio**, with dark surfaces, centred headings, one prominent symbol or value and short gradient colour rails. Dials and Now Playing use thin level and progress bars.
+Plugin 0.16.3.0 uses one look: **Studio**, with dark surfaces, centred headings, one prominent symbol or value and short gradient colour rails. Dials and Now Playing use thin level and progress bars.
 
 Route keys make bus routing explicit: coloured bus + checkmark + ON + full pulsing rail when enabled, dim bus + cross + OFF + empty rail when disabled. ON/OFF stays visible with Show text unchecked because it communicates routing state.
 
@@ -56,6 +56,7 @@ Audio controls operate through **Sleekmeeter**; the new Now Playing action separ
 | **Now Playing key** | Key | Album art, title and a progress rail on any Stream Deck. Press to play or pause, or set it to next or previous track. |
 | **Mute mic** | Key | Green mic when active, red/slashed when muted. Uses your first input unless you pick another channel; existing Hold to talk mode is retained. |
 | **Route to bus** | Key | Switch one input's A1 to A5 or B1 to B3 route on or off, for example your mic to B3 to put it into a game. The key is dark when the route is off, and lit with a slow pulse (amber for A buses, blue for B buses) when it's on. One key per route. |
+| **Swap route** | Key | Switch between two routes with one press: the first turns on as the second turns off, and the next press swaps back. For example your headset mic or your main mic on B2, or your game on A1 (speakers) or A2 (a headset you only use for shooters). Name each side; the key shows which one is live. |
 | **Mute channel** | Key | Mute or unmute; turns red when muted and shows the level. |
 | **Level step** | Key | Turn a channel up or down by a set amount, or jump it to a fixed level. Hold the key to keep stepping. On Voicemeeter Potato, pick an output to change the channel's level on that output only, for example game +5 dB in your headphones (A1) without touching your stream. |
 | **Load scene** | Key | Load a Sleekmeeter scene. |
