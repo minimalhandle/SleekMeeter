@@ -626,6 +626,13 @@
       </section>
       <section>
         <h3>Tray volume panel</h3>
+        <div class="field wide"><label for="setPanelLayout">Layout</label><select id="setPanelLayout"><option value="rows">Rows (sliders across)</option><option value="columns">Columns (sliders up and down)</option></select></div>
+        <div class="field wide"><label for="setPanelScale">Size</label><select id="setPanelScale"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></div>
+        <div class="field wide"><label for="setPanelOpacity">Opacity</label><select id="setPanelOpacity"><option value="100">Solid</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option><option value="50">50%</option></select></div>
+        <label class="check"><input type="checkbox" id="setPanelIcons"><span>Show channel icons in the panel</span></label>
+        <label class="check"><input type="checkbox" id="setPanelMeters"><span>Show level meters in the panel</span></label>
+        <label class="check"><input type="checkbox" id="setPanelMute"><span>Show mute buttons in the panel</span></label>
+        <p class="hint">Choose which channels the panel shows in each channel's settings (click its icon).</p>
         <label class="check"><input type="checkbox" id="setPanelDocked"><span>Snap the panel to the corner next to the clock, flush with the taskbar. Turn this off to drag it wherever you like; it remembers where you leave it</span></label>
       </section>
       <section>
@@ -646,6 +653,7 @@
       </section>
       <section>
         <h3>Volume overlay</h3>
+        <div class="field wide"><label for="setOverlayScreen">Show it on</label><select id="setOverlayScreen"></select></div>
         <label class="check"><input type="checkbox" id="setOverlay"><span>Show the level on screen when it changes while you're in another app, for example from a shortcut, a MIDI controller or a Stream Deck</span></label>
       </section>
       <section id="streamDeckSection" hidden>

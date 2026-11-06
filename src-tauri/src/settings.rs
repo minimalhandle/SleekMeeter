@@ -77,6 +77,15 @@ pub fn defaults() -> Value {
         "autoRestart": true,
         // Put Windows' sound output back on Voicemeeter when plugging in a device moves it.
         "keepWindowsOutput": false,
+        // Volume overlay screen: "" = the mixer's screen, "primary", or a screen's name.
+        "overlayScreen": "",
+        // Tray panel: "rows" or "columns" (vertical faders), size and opacity in %, and what it shows.
+        "panelLayout": "rows",
+        "panelScale": 100,
+        "panelOpacity": 100,
+        "panelIcons": true,
+        "panelMute": true,
+        "panelMeters": true,
         // Saved sets of output devices: [{ "name": "Headphones", "auto": false,
         //   "buses": [{ "bus": 0, "type": "wdm", "name": "Headphones (Arctis)" }] }]
         "outputProfiles": [],

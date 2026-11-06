@@ -22,6 +22,10 @@ pub struct RecState {
     /// Voicemeeter has reported recording / playing at least once, so its "off" can be trusted.
     reports_rec: bool,
     reports_play: bool,
+    /// Playback started outside Sleekmeeter (Voicemeeter's window, or a macro button's
+    /// Recorder.load). Voicemeeter keeps reporting it as playing after the file ends, until
+    /// Stop is pressed, so no clock is shown for it.
+    external: bool,
 }
 
 impl Default for RecState {
@@ -33,6 +37,7 @@ impl Default for RecState {
             since: None,
             reports_rec: false,
             reports_play: false,
+            external: false,
         }
     }
 }
@@ -47,6 +52,7 @@ fn now_ms() -> u64 {
 impl RecState {
     fn start(&mut self, mode: &'static str) {
         self.mode = mode;
+        self.external = false;
         self.elapsed = 0;
         self.since = Some(now_ms());
     }
@@ -100,6 +106,7 @@ impl RecState {
             self.start("recording");
         } else if playing == Some(true) && self.mode == "stopped" {
             self.start("playing");
+            self.external = true;
         } else if self.mode == "recording" && self.reports_rec && recording == Some(false) {
             self.stop();
         } else if self.mode == "playing" && self.reports_play && playing == Some(false) {
@@ -108,7 +115,7 @@ impl RecState {
     }
 
     fn view(&self) -> Value {
-        json!({ "state": self.mode, "elapsed": self.elapsed, "since": self.since })
+        json!({ "state": self.mode, "elapsed": self.elapsed, "since": self.since, "external": self.external })
     }
 }
 
@@ -225,6 +232,17 @@ mod tests {
         r.apply("stop");
         assert_eq!(r.mode, "stopped");
         assert_eq!(r.elapsed, 0);
+    }
+
+    #[test]
+    fn playback_started_elsewhere_is_marked() {
+        let mut r = RecState::default();
+        r.follow(Some(false), Some(true)); // a macro button's Recorder.load
+        assert_eq!(r.mode, "playing");
+        assert!(r.external);
+        r.apply("stop");
+        r.apply("play"); // pressed in Sleekmeeter
+        assert!(!r.external);
     }
 
     #[test]

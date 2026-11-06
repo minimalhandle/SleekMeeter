@@ -25,7 +25,8 @@
     const pos = words ? (p.on ? 1 : 0) : dbToPos(+p.gain || 0);
     document.getElementById("fill").style.transform = `scaleX(${pos.toFixed(3)})`;
     document.body.dataset.theme = p.theme || (p.oled ? "oled" : "console");
-    card.style.animation = "none"; void card.offsetWidth; card.style.animation = "";
+    // Fade in only when the overlay appears; while it stays up, just update it (no flicker).
+    if (p.fresh !== false) { card.style.animation = "none"; void card.offsetWidth; card.style.animation = ""; }
   }
   window.showOsd = show;
   if (window.__TAURI__) window.__TAURI__.event.listen("osd", (e) => show(e.payload));
