@@ -56,6 +56,10 @@ pub struct Api {
     in_dev_desc: FnDevDescW,
     out_dev_count: FnVoid,
     out_dev_desc: FnDevDescW,
+    /// Potato inputs whose gain layers differ (see layers.rs).
+    layer_state: std::sync::Mutex<
+        std::collections::HashMap<usize, (crate::layers::Strip, std::time::Instant)>,
+    >,
 }
 
 /// Strip/bus counts for each Voicemeeter edition (from VoicemeeterRemote.h).
@@ -193,6 +197,7 @@ impl Api {
                 set_float,
                 set_string_w,
                 set_script,
+                layer_state: Default::default(),
             })
         }
     }
@@ -245,9 +250,70 @@ impl Api {
     }
 
     pub fn get_float(&self, name: &str) -> Option<f32> {
+        let v = self.get_float_raw(name)?;
+        // A Potato input whose layers Sleekmeeter moves: its main level is the one Sleekmeeter
+        // keeps, because Voicemeeter's own Gain isn't written then.
+        if let Some(i) = strip_gain(name) {
+            if let Some((s, _)) = self.layer_state.lock().unwrap().get(&i) {
+                return Some(s.shown(v).unwrap_or(v));
+            }
+        }
+        Some(v)
+    }
+
+    fn get_float_raw(&self, name: &str) -> Option<f32> {
         let n = cstr(name).ok()?;
         let mut v = 0f32;
         (unsafe { (self.get_float)(n.as_ptr(), &mut v) } == 0).then_some(v)
+    }
+
+    /// On Potato, with no output selected, a main-level write sets all 8 gain layers. While an
+    /// input's layers differ, move each layer instead so the per-output mix survives.
+    fn with_layers(&self, lines: &[String]) -> Vec<String> {
+        use crate::layers::{lines as layer_lines, parse, plan, LAYERS};
+        if !lines.iter().any(|l| parse(l).is_some())
+            || self.edition() != Some(3)
+            || (0..LAYERS)
+                .any(|j| self.get_float_raw(&format!("Bus[{j}].Sel")).unwrap_or(0.0) != 0.0)
+        {
+            return lines.to_vec();
+        }
+        let mut state = self.layer_state.lock().unwrap();
+        let mut touched = std::collections::HashSet::new();
+        let mut out = Vec::with_capacity(lines.len());
+        for line in lines {
+            let Some((i, target, fade)) = parse(line) else {
+                out.push(line.clone());
+                continue;
+            };
+            let gain = self
+                .get_float_raw(&format!("Strip[{i}].Gain"))
+                .unwrap_or(0.0);
+            let mut live = [0f32; LAYERS];
+            for (j, v) in live.iter_mut().enumerate() {
+                *v = self
+                    .get_float_raw(&format!("Strip[{i}].GainLayer[{j}]"))
+                    .unwrap_or(gain);
+            }
+            // Voicemeeter answers reads from a cache, so just after Sleekmeeter changed this input
+            // the layers still read as before: trust what Sleekmeeter last set for a moment.
+            let recent = state
+                .get(&i)
+                .is_some_and(|(_, at)| at.elapsed() < std::time::Duration::from_millis(500));
+            let trusted = touched.contains(&i) || recent;
+            match plan(state.get(&i).map(|(s, _)| s), gain, &live, target, trusted) {
+                Some((s, to)) => {
+                    out.extend(layer_lines(i, &to, fade));
+                    state.insert(i, (s, std::time::Instant::now()));
+                    touched.insert(i);
+                }
+                None => {
+                    state.remove(&i);
+                    out.push(line.clone());
+                }
+            }
+        }
+        out
     }
 
     pub fn get_bool(&self, name: &str) -> bool {
@@ -265,6 +331,9 @@ impl Api {
     }
 
     pub fn set_float(&self, name: &str, value: f32) -> Result<(), String> {
+        if strip_gain(name).is_some() {
+            return self.script(&[format!("{name} = {value:.2};")]);
+        }
         let n = cstr(name)?;
         match unsafe { (self.set_float)(n.as_ptr(), value) } {
             0 => Ok(()),
@@ -287,6 +356,7 @@ impl Api {
         if lines.is_empty() {
             return Ok(());
         }
+        let lines = self.with_layers(lines);
         let text = cstr(&lines.join("\n"))?;
         match unsafe { (self.set_script)(text.as_ptr()) } {
             0 => Ok(()),
@@ -446,6 +516,12 @@ impl Api {
                     "comp": round(self.get_float(&p("Comp"))),
                     "gate": round(self.get_float(&p("Gate"))),
                     "eq": eq,
+                    "limit": self.get_float(&p("Limit")).map(|v| (v * 10.0).round() / 10.0),
+                    "layers": if edition == 3 {
+                        (0..l.buses()).map(|j| round(self.get_float_raw(&p(&format!("GainLayer[{j}]"))))).collect::<Vec<_>>()
+                    } else {
+                        Vec::new()
+                    },
                 })
             })
             .collect();
@@ -462,6 +538,7 @@ impl Api {
                     "mono": self.get_bool(&p("Mono")),
                     "eq": self.get_bool(&p("EQ.on")),
                     "mode": BUS_MODES.iter().find(|m| self.get_bool(&p(&format!("mode.{m}")))).copied().unwrap_or("normal"),
+                    "sel": edition == 3 && self.get_bool(&p("Sel")),
                 })
             })
             .collect();
@@ -475,4 +552,12 @@ impl Api {
             "buses": buses,
         })
     }
+}
+
+/// "Strip[3].Gain" → 3.
+fn strip_gain(name: &str) -> Option<usize> {
+    name.strip_prefix("Strip[")?
+        .strip_suffix("].Gain")?
+        .parse()
+        .ok()
 }

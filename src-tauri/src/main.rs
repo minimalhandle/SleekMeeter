@@ -17,6 +17,7 @@ mod gain;
 mod health;
 mod history;
 mod hold;
+mod layers;
 mod obs;
 mod outputs;
 mod recorder;

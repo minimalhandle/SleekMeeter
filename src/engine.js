@@ -206,7 +206,7 @@
         label: "", device: "", gain: 0, mute: false, solo: false, mono: false, mc: false,
         a: Array.from({ length: hb }, (_, k) => (k === 0 && !base.mute ? 1 : 0)),
         b: Array.from({ length: vb }, (_, k) => ((i === 0 && k === 0) || (i === hs && k === vb - 1) ? 1 : 0)),
-        pan: 0, comp: 0, gate: 0, eq: [],
+        pan: 0, comp: 0, gate: 0, eq: [], limit: L.edition === 1 ? null : 12,
       }, base);
       const sampleBuses = [
         { label: "Headphones", device: "Realtek Audio", gain: -3 },
@@ -214,13 +214,14 @@
         { label: "", device: "" }, { label: "", device: "" }, { label: "", device: "" },
       ];
       const sampleVBuses = [{ label: "Stream mic" }, { label: "Stream mix", gain: -1.5 }, { label: "Recording" }];
-      const bus = (base) => Object.assign({ label: "", device: "", gain: 0, mute: false, mono: false, eq: false, mode: "normal" }, base);
+      const bus = (base) => Object.assign({ label: "", device: "", gain: 0, mute: false, mono: false, eq: false, mode: "normal", sel: false }, base);
       this.state = {
         installed: true,
         connected: !offline,
         edition: L.edition,
         version: { 1: "1.1.1.9", 2: "2.1.1.9", 3: "3.1.1.9" }[L.edition],
-        strips: L.strips.map((x, i) => strip(x.kind === "hw" ? sampleStrips[i] : sampleVirt[i - hs], i)),
+        strips: L.strips.map((x, i) => strip(x.kind === "hw" ? sampleStrips[i] : sampleVirt[i - hs], i))
+          .map((st) => Object.assign(st, { layers: L.edition === 3 ? L.buses.map(() => st.gain) : [] })),
         buses: L.buses.map((x, j) => bus(x.kind === "hw" ? sampleBuses[j] : sampleVBuses[j - hb])),
       };
       if (L.edition >= 2) {
@@ -320,7 +321,14 @@
         const key = m[3];
         const rm = /^([AB])(\d)$/.exec(key);
         const routes = rm ? { [key]: [rm[1].toLowerCase(), +rm[2] - 1] } : {};
-        const simple = { Gain: "gain", Mute: "mute", Solo: "solo", Mono: "mono", MC: "mc", Pan_x: "pan", Comp: "comp", Gate: "gate", "EQ.on": "eq" };
+        const simple = { Gain: "gain", Mute: "mute", Solo: "solo", Mono: "mono", MC: "mc", Pan_x: "pan", Comp: "comp", Gate: "gate", "EQ.on": "eq", Limit: "limit", Sel: "sel" };
+        // Potato: a main level sets every gain layer, or only the selected output's.
+        const layer = /^GainLayer\[(\d)\]$/.exec(key);
+        if (layer && obj.layers) obj.layers[+layer[1]] = value;
+        if (key === "Gain" && obj.layers && obj.layers.length) {
+          const sel = this.state.buses.findIndex((b) => b.sel);
+          if (sel >= 0) obj.layers[sel] = value; else obj.layers.fill(value);
+        }
         if (routes[key]) obj[routes[key][0]][routes[key][1]] = value ? 1 : 0;
         else if (/^EQGain[123]$/.test(key)) obj.eq[+key.slice(-1) - 1] = value;
         else if (key.startsWith("mode.")) obj.mode = key.slice(5);

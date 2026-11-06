@@ -117,6 +117,10 @@ Drag the top of any channel (its icon and name area) left or right to move it, s
 
 Click a channel's name to hide or show the device line under it (for example "CABLE-A Output"). Double-click the name to rename it.
 
+### A different mix on each output (Potato)
+
+Voicemeeter Potato can give every input its own level on each output (its "gain layers"), so your stream can hear less game than your headphones do, the way VB-Audio's Streamer View works. Open an input's settings (click its icon) and use **Level on each output**, or choose an output in **Faders set** above the inputs: the input faders then set that output's mix, and **All outputs** goes back to normal. Moving an input's main fader, muting it, ducking, scenes and Be right back all keep the differences between outputs. Inputs on Banana and Potato also have Voicemeeter's **limiter** under Dynamics in their settings.
+
 ### Smooth fades
 
 Mute fades out before it mutes, and unmute fades back in, so nothing clicks or jumps. Typed levels, double-click to 0 dB, volume shortcuts and scene changes glide too. Set the mute and scene fade times in **Settings → Smooth fades**, or turn fades off there. Dragging a fader is always direct.
