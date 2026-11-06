@@ -6,6 +6,7 @@
 // First, so its log_info!/log_warn!/log_error! macros work in every module below.
 #[macro_use]
 mod logs;
+mod notes;
 mod actions;
 mod apps;
 mod appvol;
@@ -78,6 +79,19 @@ struct NormalSize(Mutex<Option<LogicalSize<f64>>>);
 struct PanelSize(Mutex<Option<(f64, f64)>>);
 /// Show the main window once the page has drawn (avoids a blank or see-through flash).
 struct ShowOnReady(std::sync::atomic::AtomicBool);
+/// Release notes waiting to be shown once, after an update.
+struct WhatsNew(Mutex<Vec<Value>>);
+
+/// "What's new": the notes waiting since an update (handed out once), or with `all`, the
+/// latest versions' notes for the button in Settings.
+#[tauri::command]
+fn whats_new(state: State<'_, WhatsNew>, all: bool) -> Value {
+    if all {
+        return json!({ "version": update::CURRENT, "sections": notes::recent() });
+    }
+    let sections = std::mem::take(&mut *state.0.lock().unwrap());
+    json!({ "version": update::CURRENT, "sections": sections })
+}
 /// Window size/position changed and settings.json needs saving (written at most once a second).
 struct SettingsDirty(std::sync::atomic::AtomicBool);
 /// No window size was saved when Sleekmeeter started: fit the window to the mixer once.
@@ -459,7 +473,7 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         value["window"] = current["window"].clone();
     }
     // The tray panel's position and the output mix window are recorded in Rust too.
-    for k in ["panelPos", "mixWin", "mixWinOpen"] {
+    for k in ["panelPos", "mixWin", "mixWinOpen", "seenVersion"] {
         value[k] = current[k].clone();
     }
     let usage_changed = current["usagePing"] != value["usagePing"];
@@ -1522,7 +1536,7 @@ async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
     let Some(path) = picked else { return Ok(None) };
     let mut value = app.state::<Settings>().0.lock().unwrap().clone();
     if let Value::Object(m) = &mut value {
-        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "edition"] {
+        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "seenVersion", "edition"] {
             m.remove(k);
         }
     }
@@ -1567,7 +1581,7 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
     {
         let state = app.state::<Settings>();
         let cur = state.0.lock().unwrap();
-        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "edition"] {
+        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "seenVersion", "edition"] {
             value[k] = cur[k].clone();
         }
         // Backups don't carry the OBS password: keep the one this PC has.
@@ -1874,7 +1888,9 @@ fn main() {
             ""
         }
     );
-    let settings = settings::load();
+    let had_settings = settings::exists();
+    let mut settings = settings::load();
+    let pending_notes = notes::on_start(&mut settings, had_settings);
     // Installing a new version by hand runs the old uninstaller, which removes the startup
     // entry. Put it back when the saved setting still says to start with Windows.
     if settings::flag(&settings, "startWithWindows") && !win::autostart_enabled() {
@@ -1935,6 +1951,7 @@ fn main() {
             brb: Mutex::new(brb::Brb::default()),
         })
         .manage(Settings(Mutex::new(settings.clone())))
+        .manage(WhatsNew(Mutex::new(pending_notes)))
         .manage(Hotkeys(Mutex::new(Vec::new())))
         .manage(NormalSize(Mutex::new(None)))
         .manage(PanelSize(Mutex::new(None)))
@@ -1980,6 +1997,7 @@ fn main() {
             window_mini,
             open_mixer,
             mix_window,
+            whats_new,
             panel_dock,
             flyout_close,
             panel_fit,

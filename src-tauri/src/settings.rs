@@ -40,6 +40,11 @@ fn path() -> PathBuf {
     app_dir().join("settings.json")
 }
 
+/// False on a fresh install, before anything was saved.
+pub fn exists() -> bool {
+    path().exists()
+}
+
 pub fn defaults() -> Value {
     json!({
         // Per strip/bus look: { "strip-0": { "color": "amber", "icon": "mic", "hidden": false }, "bus-3": {...} }

@@ -13,20 +13,19 @@ A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on t
 </tr>
 </table>
 
-## New in 0.15.0: a new look for Stream Deck
+## New in 0.17.0
+
+- **Output mix (Voicemeeter Potato):** every input's level on every output at once, like Voicemeeter's Streamer View, and it can pop out into its own window for a second screen.
+- **Swap route on Stream Deck:** one key switches between two routes, such as which mic goes to your Discord bus, or which headset your game plays on.
+- **Per-output level keys:** a Stream Deck key can turn your game up in your headphones without touching your stream, and holding it keeps stepping.
+- **Now Playing works everywhere:** including Apple Music and browser players, on PCs where it showed nothing before.
+- **What's new and Check for updates:** see what changed after each update, and check for a new version without restarting.
+
+See the [changelog](CHANGELOG.md) for everything in this version.
 
 ![The Sleekmeeter plugin on a Stream Deck +, with live keys, album art and four dials](docs/screenshots/streamdeck-deck.png)
 
-*Drawn by the plugin with sample data.*
-
-- **Installs itself:** Sleekmeeter spots the Stream Deck app and offers to install or update the plugin.
-- **Now Playing:** album art, title and track time on a dial or a key, from Spotify or whatever Windows is playing. Play, pause and skip respond right away.
-- **App volume dial:** turn one app up or down, such as Discord or a game, and press to mute it.
-- **Live meters:** a thin level meter on each dial turns amber and red as a channel gets loud.
-- **Studio look:** dark keys with one clear symbol or value, and colours that show the live state.
-- **486 matching icons:** a separate icon pack for Discord, Spotify, Twitch, OBS, Philips Hue and more.
-
-See the [Stream Deck section](#stream-deck) for more, and the [changelog](CHANGELOG.md) for everything in this version.
+*The Stream Deck plugin, drawn with sample data. More in the [Stream Deck section](#stream-deck).*
 
 ## Requirements
 
@@ -268,6 +267,8 @@ In **Scenes → Switch automatically**, add a rule such as: when `obs64.exe` sta
 ### Updates
 
 When Sleekmeeter starts it checks this repository's latest release. If there's a newer version, an **Update to …** button appears in the header. Choose **Update now and restart** and Sleekmeeter downloads the new version, checks it against GitHub's checksum, installs it and opens again by itself, with progress shown on the button.
+
+After an update, Sleekmeeter shows **What's new** once: the changes since the version you had, from this changelog (built in, so nothing is downloaded). **Settings → Updates → What's new** shows them again.
 
 Ticking **Settings → Updates → Also offer test versions** also offers test versions from the [beta page](https://github.com/minimalhandle/SleekMeeter-beta/releases); nobody else is offered them. **Check for updates** in the same place looks straight away.
 

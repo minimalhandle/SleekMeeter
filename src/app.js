@@ -1723,6 +1723,56 @@
     $("#streamDeckGo").textContent = copy.go;
     streamDeckDlg.showModal();
   }
+  /* ---------- What's new: the release notes, once after an update ---------- */
+  const whatsNewDlg = $("#whatsNewDlg");
+  // The changelog's own markup, kept to what it uses: **bold** and `code`. Escaped first.
+  function noteHtml(text) {
+    return String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`(.+?)`/g, "<code>$1</code>");
+  }
+  function fillWhatsNew(info) {
+    const body = $("#whatsNewBody");
+    body.textContent = "";
+    for (const sec of info.sections) {
+      const h = document.createElement("h3");
+      h.textContent = sec.title;
+      body.appendChild(h);
+      let ul = null;
+      for (const b of sec.blocks || []) {
+        if (b.kind === "li") {
+          if (!ul) { ul = document.createElement("ul"); body.appendChild(ul); }
+          const li = document.createElement("li"); li.innerHTML = noteHtml(b.text); ul.appendChild(li);
+        } else {
+          ul = null;
+          const el = document.createElement(b.kind === "h" ? "h4" : "p");
+          el.innerHTML = noteHtml(b.text);
+          body.appendChild(el);
+        }
+      }
+    }
+    $("#whatsNewTitle").textContent = `What's new in Sleekmeeter ${info.version}`;
+  }
+  // Resolves once it's been read (or straight away when there's nothing new), so the other
+  // first-start questions, such as updating the Stream Deck plugin, still get their turn.
+  async function offerWhatsNew() {
+    if (SIDE) return;
+    let info = null;
+    try { info = await engine.whatsNew(false); } catch (_) { return; }
+    if (!info || !info.sections || !info.sections.length || document.querySelector("dialog[open]")) return;
+    fillWhatsNew(info);
+    whatsNewDlg.showModal();
+    await new Promise((done) => whatsNewDlg.addEventListener("close", done, { once: true }));
+  }
+  $("#whatsNewOk").addEventListener("click", () => whatsNewDlg.close());
+  $("#whatsNewAll").addEventListener("click", () => engine.openRelease("https://github.com/minimalhandle/SleekMeeter/blob/main/CHANGELOG.md").catch(() => {}));
+  $("#whatsNewBtn").addEventListener("click", async () => {
+    try {
+      const info = await engine.whatsNew(true);
+      if (!info || !info.sections.length) { toast("No release notes in this version"); return; }
+      fillWhatsNew(info);
+      whatsNewDlg.showModal();
+    } catch (e) { toast(`Couldn't show the release notes: ${e}`); }
+  });
   // Asked once, after any other first-run question; until then nothing is sent.
   const usageDlg = $("#usageDlg");
   function offerUsage() {
@@ -3870,7 +3920,7 @@
       engine.onFileDrop(onFilesDropped).catch(() => {});
     }
     checkForUpdate();
-    offerStreamDeck().then(offerUsage);
+    offerWhatsNew().then(offerStreamDeck).then(offerUsage);
     // Show the window once the first frame with the real layout is drawn.
     requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {})));
     // Names are measured with the real font once it has loaded.

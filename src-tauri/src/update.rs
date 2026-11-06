@@ -14,7 +14,7 @@ pub const REPO: &str = "minimalhandle/SleekMeeter";
 pub const BETA_REPO: &str = "minimalhandle/SleekMeeter-beta";
 pub const CURRENT: &str = env!("CARGO_PKG_VERSION");
 
-fn parts(v: &str) -> Vec<u64> {
+pub(crate) fn parts(v: &str) -> Vec<u64> {
     v.trim()
         .trim_start_matches(['v', 'V'])
         .split(|c: char| c == '.' || c == '-')

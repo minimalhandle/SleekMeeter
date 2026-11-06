@@ -462,6 +462,20 @@
     </div>
   </dialog>
 
+  <dialog class="dlg whatsnew-dlg" id="whatsNewDlg" aria-labelledby="whatsNewTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="whatsNewTitle">What's new</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <div class="whatsnew" id="whatsNewBody"></div>
+    <div class="btn-row">
+      <button class="btn primary" id="whatsNewOk" type="button">Got it</button>
+      <button class="btn" id="whatsNewAll" type="button">Full changelog</button>
+    </div>
+  </dialog>
+
   <dialog class="dlg streamdeck-dlg" id="usageDlg" aria-labelledby="usageTitle">
     <form method="dialog" class="dlg-head">
       <h2 id="usageTitle">Help count Sleekmeeter users?</h2>
@@ -690,7 +704,7 @@
       <section>
         <h3>Updates</h3>
         <label class="check"><input type="checkbox" id="setCheckUpdates"><span>Check for a new version when Sleekmeeter starts</span></label>
-        <div class="btn-row"><button class="btn" id="checkUpdateNow" type="button">Check for updates</button><span class="hint" id="updateStatus" role="status"></span></div>
+        <div class="btn-row"><button class="btn" id="checkUpdateNow" type="button">Check for updates</button><button class="btn" id="whatsNewBtn" type="button">What's new</button><span class="hint" id="updateStatus" role="status"></span></div>
         <label class="check"><input type="checkbox" id="setBetaUpdates"><span>Also offer test versions, to try new features before everyone else. They come from Sleekmeeter's beta page on GitHub and may have more bugs</span></label>
       </section>
       <section>
