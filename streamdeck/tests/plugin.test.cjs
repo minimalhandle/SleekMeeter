@@ -153,5 +153,21 @@ test('existing handlers still send the expected API actions and gain payloads', 
   await p.onKeyDown('mix-key',{action:'mixfor',settings:{bus:'B3'}});
   assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/mixfor');assert.deepEqual(calls.at(-1).body,{bus:7});
   await p.onKeyDown('mix-key',{action:'mixfor',settings:{bus:'B3'}});
-  assert.deepEqual(calls.at(-1).body,{bus:-1},'pressing again goes back to all outputs');assert.equal(p.levelOf({key:'Bus[0]'}),-5);assert.equal(p.levelOf({key:'Strip[9]'}),null);
+  assert.deepEqual(calls.at(-1).body,{bus:-1},'pressing again goes back to all outputs');
+  // Level step on one output: steps that gain layer only, and holding the key keeps stepping until it's let go.
+  for(const t of timers.filter(t=>t.ms===70))t.fn();timers.length=0;
+  p.onMessage(JSON.stringify({event:'willAppear',action:uuid+'.level',context:'step-key',payload:{settings:{channel:'Strip[0]',bus:'A1',mode:'up',amount:5}}}));
+  p.onMessage(JSON.stringify({event:'keyDown',action:uuid+'.level',context:'step-key',payload:{}}));
+  assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/layer');assert.deepEqual(calls.at(-1).body,{key:'Strip[0]',bus:0,db:-5});
+  const hold=timers.find(t=>t.ms===400);assert.ok(hold,'holding starts repeating after a pause');
+  for(const t of timers.filter(t=>t.ms===70))t.fn();
+  hold.fn();
+  assert.deepEqual(calls.at(-1).body,{key:'Strip[0]',bus:0,db:0});
+  assert.ok(timers.some(t=>t.ms===150),'and keeps going while held');
+  p.onMessage(JSON.stringify({event:'keyUp',action:uuid+'.level',context:'step-key',payload:{}}));
+  // Main level stays the default.
+  await p.onKeyDown('main-key',{action:'level',settings:{channel:'Strip[0]',mode:'down',amount:3,repeat:false}});
+  for(const t of timers.filter(t=>t.ms===70))t.fn();
+  assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/gain');assert.equal(calls.at(-1).body.key,'Strip[0]');
+  assert.equal(p.levelOf({key:'Bus[0]'}),-5);assert.equal(p.levelOf({key:'Strip[9]'}),null);
 });

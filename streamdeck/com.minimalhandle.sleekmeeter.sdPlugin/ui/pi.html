@@ -133,7 +133,10 @@ function buildFields() {
   } else if (action === "level") {
     h += row("Channel", channelSelect());
     h += row("What it does", `<select data-k="mode">${opts([{ v: "up", t: "Turn up" }, { v: "down", t: "Turn down" }, { v: "set", t: "Jump to a level" }], settings.mode || "up")}</select>`);
+    h += row("Output", `<select data-k="bus">${opts([{ v: "main", t: "Main level (every output)" }, ...["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: `Only on ${x}` }))], settings.bus || "main")}</select>`);
     h += row((settings.mode || "up") === "set" ? "Level (dB)" : "Amount (dB)", `<input type="number" data-k="amount" step="0.5" min="-60" max="12" value="${esc(settings.amount !== undefined ? settings.amount : 2)}">`);
+    if ((settings.mode || "up") !== "set") h += row("Hold to repeat", `<input type="checkbox" data-k="repeat" aria-label="Hold to repeat" ${settings.repeat !== false ? "checked" : ""}>`);
+    h += '<p class="hint">Pick an output to change this input\'s level on that output only (Voicemeeter Potato), for example game +2 dB in your headphones (A1) without changing your stream. Hold the key to keep stepping.</p>';
   } else if (action === "scene") {
     h += row("Scene", simple("scene", lists ? lists.scenes : [], "Pick a scene…"));
   } else if (action === "sound") {

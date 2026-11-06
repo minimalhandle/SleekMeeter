@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.5 (test version)
+- **Stream Deck: Level step on one output (plugin 0.16.2.0):** on Voicemeeter Potato, a Level step key can change an input's level on one output only, for example game +5 dB in your headphones (A1) without changing your stream. It does the same job as a Voicemeeter macro like `Strip(2).GainLayer(0) += 5.0`, without a second plugin
+- **Stream Deck: hold to repeat:** holding a Level step key keeps stepping until you let go. Turn it off in the key's settings
+- Fixed: installing an update turned off **Start Sleekmeeter with Windows**. Updates now keep it, and if a manual install removes it, Sleekmeeter adds it back the next time it starts. If it's already off for you, tick it again once in **Settings → Startup**
+
 ## 0.15.4 (test version)
 - **Test versions come from a separate beta page:** with **Also offer test versions** on, Sleekmeeter also checks minimalhandle/SleekMeeter-beta, so test versions only reach people who opted in
 - **Check for updates:** a button in **Settings → Updates** checks straight away, and Sleekmeeter also looks again every 6 hours while it runs, so a new version shows up without restarting

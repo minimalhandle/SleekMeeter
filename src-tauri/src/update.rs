@@ -324,11 +324,12 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
     let pid = std::process::id();
     let script = if user {
         // The per-user setup runs silently without any Windows prompt, replaces the files in
-        // place and keeps the settings (they live in %APPDATA%).
+        // place and keeps the settings (they live in %APPDATA%). /UPDATE stops the old
+        // uninstaller from removing the start-with-Windows entry and the shortcuts.
         format!(
             "$setup = {setup}\n$exe = {exe}\n\
              try {{ Wait-Process -Id {pid} -Timeout 30 }} catch {{ }}\n\
-             try {{ Start-Process $setup -ArgumentList '/S' -Wait }} catch {{ }}\n\
+             try {{ Start-Process $setup -ArgumentList '/S /UPDATE' -Wait }} catch {{ }}\n\
              Start-Process $exe\n",
             setup = ps(&file),
             exe = ps(&exe),

@@ -370,6 +370,36 @@ async function toggleAppMute(context, c) {
   try { await api('POST', '/api/appvolume', { exe, mute: !app.mute }); } catch (_) { showAlert(context); }
 }
 
+/* Level step: the main level, or with an output picked, the input's level on that output only
+   (Potato's gain layers). Returns false when it can't. */
+const REPEAT_AFTER_MS = 400;
+const REPEAT_EVERY_MS = 150;
+const repeats = new Map();
+function stopRepeat(context) {
+  clearTimeout(repeats.get(context));
+  repeats.delete(context);
+}
+function stepLevel(context, c) {
+  const s = c.settings || {}, ch = chan(s.channel);
+  if (!ch) { showAlert(context); return false; }
+  const amt = Number(s.amount), mode = s.mode || 'up';
+  const d = (Number.isFinite(amt) && amt > 0 ? amt : 2) * (mode === 'down' ? -1 : 1);
+  const bus = s.bus || 'main';
+  if (bus !== 'main') {
+    const idx = studio.busIndex(st, bus);
+    if (idx < 0 || !(ch.layers || []).length) { showAlert(context); return false; }
+    const now = layerOf(ch, idx);
+    const db = mode === 'set' ? (Number.isFinite(amt) ? amt : 0) : (now === undefined ? gainOf(ch) : now) + d;
+    local[`${ch.key}#L${idx}`] = { db: Math.round(clamp(db, -60, 12) * 10) / 10, until: Date.now() + 1200 };
+    pushLayer(ch.key, idx);
+    renderAll();
+    return true;
+  }
+  if (mode === 'set') setLevel(ch.key, Number.isFinite(amt) ? amt : 0);
+  else setLevel(ch.key, gainOf(ch) + d);
+  return true;
+}
+
 function onKeyDown(context, c) {
   const s = c.settings || {};
   switch (c.action) {
@@ -385,12 +415,17 @@ function onKeyDown(context, c) {
       return toggleMute(context, key);
     }
     case 'level': {
-      const ch = chan(s.channel);
-      if (!ch) return showAlert(context);
-      const amt = Number(s.amount);
-      if ((s.mode || 'up') === 'set') return setLevel(ch.key, Number.isFinite(amt) ? amt : 0);
-      const d = (Number.isFinite(amt) && amt > 0 ? amt : 2) * (s.mode === 'down' ? -1 : 1);
-      return setLevel(ch.key, gainOf(ch) + d);
+      if (!stepLevel(context, c)) return undefined;
+      // Hold to repeat: after a short pause, keep stepping until the key is let go.
+      const mode = s.mode || 'up';
+      if (mode !== 'set' && s.repeat !== false) {
+        stopRepeat(context);
+        repeats.set(context, setTimeout(function again() {
+          if (!contexts.has(context) || !stepLevel(context, contexts.get(context))) { repeats.delete(context); return; }
+          repeats.set(context, setTimeout(again, REPEAT_EVERY_MS));
+        }, REPEAT_AFTER_MS));
+      }
+      return undefined;
     }
     case 'scene': return s.scene ? act(context, 'scene', s.scene) : showAlert(context);
     case 'sound': return s.sound ? act(context, 'sound', s.sound) : showAlert(context);
@@ -456,6 +491,7 @@ function onMessage(raw) {
       break;
     }
     case 'willDisappear':
+      stopRepeat(ctx);
       contexts.delete(ctx);
       lastDrawn.delete(ctx);
       stopPollingIfIdle();
@@ -466,6 +502,7 @@ function onMessage(raw) {
       break;
     }
     case 'keyUp': {
+      stopRepeat(ctx);
       const c = contexts.get(ctx);
       if (c && c.action === 'mic' && (c.settings || {}).mode === 'ptt') {
         const key = (c.settings || {}).channel || MIC_DEFAULT;
