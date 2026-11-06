@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.15.4 (test version)
+- **Test versions come from a separate beta page:** with **Also offer test versions** on, Sleekmeeter also checks minimalhandle/SleekMeeter-beta, so test versions only reach people who opted in
+- **Check for updates:** a button in **Settings → Updates** checks straight away, and Sleekmeeter also looks again every 6 hours while it runs, so a new version shows up without restarting
 - **Output mix view (Potato):** **Mix** in the header shows every input's level on every output at once, like Voicemeeter's Streamer View, with the A/B buttons under each slider. Drag, scroll or double-click (to match the input's main fader)
 
 ## 0.15.3

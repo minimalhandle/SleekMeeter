@@ -269,6 +269,8 @@ In **Scenes → Switch automatically**, add a rule such as: when `obs64.exe` sta
 
 When Sleekmeeter starts it checks this repository's latest release. If there's a newer version, an **Update to …** button appears in the header. Choose **Update now and restart** and Sleekmeeter downloads the new version, checks it against GitHub's checksum, installs it and opens again by itself, with progress shown on the button.
 
+Ticking **Settings → Updates → Also offer test versions** also offers test versions from the [beta page](https://github.com/minimalhandle/SleekMeeter-beta/releases); nobody else is offered them. **Check for updates** in the same place looks straight away.
+
 - **Installed with the installer:** installs silently in the background with no Windows prompt.
 - **Installed with the MSI:** Windows asks once for permission (the usual yes/no prompt) while it installs.
 - **Portable:** it replaces its own `Sleekmeeter.exe` in place, with no prompt. If the folder is read-only, use **Open the download page** instead.
