@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.15.3
 - **Voicemeeter backups:** Sleekmeeter saves a copy of Voicemeeter's whole setup once a day, and before loading a scene, running the setup assistant or restoring a backup. **Settings → Backup and layout** lists them with a **Restore** button (your current setup is saved first)
 - **Test versions:** **Settings → Updates → Also offer test versions** gets pre-releases as updates. Without it, Sleekmeeter now only offers full releases
 - **Scenes keep each output's mix (Potato):** saving a scene also saves every input's gain layers, which Voicemeeter's scene file leaves out, and loading it puts them back
