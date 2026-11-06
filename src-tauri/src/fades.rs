@@ -320,13 +320,58 @@ pub fn save_levels(app: &AppHandle, xml: &Path) {
         for (i, ch) in snap[list].as_array().into_iter().flatten().enumerate() {
             map.insert(
                 format!("{prefix}[{i}]"),
-                json!({ "gain": ch["gain"], "mute": ch["mute"] }),
+                // Potato's gain layers: Voicemeeter's scene file only keeps one level per input.
+                json!({ "gain": ch["gain"], "mute": ch["mute"], "layers": ch["layers"] }),
             );
         }
     }
     if !map.is_empty() {
         let _ = std::fs::write(levels_path(xml), Value::Object(map).to_string());
     }
+}
+
+/// Put back each input's gain layers (Potato), which Voicemeeter's scene file doesn't keep.
+/// Returns the inputs whose layers were set.
+fn restore_layers(api: &Api, levels: &Map<String, Value>) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut set = Vec::new();
+    for (key, lv) in levels {
+        let Some(layers) = lv["layers"]
+            .as_array()
+            .filter(|l| l.len() == crate::layers::LAYERS)
+        else {
+            continue;
+        };
+        let vals: Vec<f32> = layers
+            .iter()
+            .map(|v| v.as_f64().unwrap_or(0.0) as f32)
+            .collect();
+        let (lo, hi) = vals
+            .iter()
+            .fold((f32::MAX, f32::MIN), |(a, b), &v| (a.min(v), b.max(v)));
+        if hi - lo < 0.05 {
+            continue; // all the same: the scene's own level already did it
+        }
+        let Some(i) = key
+            .strip_prefix("Strip[")
+            .and_then(|k| k.strip_suffix(']'))
+            .and_then(|k| k.parse::<usize>().ok())
+        else {
+            continue;
+        };
+        let main = lv["gain"].as_f64().unwrap_or(0.0) as f32;
+        for (j, v) in vals.iter().enumerate() {
+            lines.push(format!("Strip[{i}].GainLayer[{j}] = {v:.2};"));
+        }
+        let mut arr = [0f32; crate::layers::LAYERS];
+        arr.copy_from_slice(&vals);
+        api.adopt_layers(i, main, &arr);
+        set.push(key.clone());
+    }
+    if let Err(e) = api.script(&lines) {
+        log_warn!("Scene gain layers not restored: {e}");
+    }
+    set
 }
 
 pub fn delete_levels(xml: &Path) {
@@ -353,6 +398,7 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
             .lock()
             .unwrap()
             .forget(Instant::now(), Duration::from_millis(1500));
+        crate::backups::before(&app, "loading a scene");
         api.set_string("Command.Load", &xml.to_string_lossy())?;
         if let Some(e) = done {
             let _ = app.emit("scene-auto", e);
@@ -369,6 +415,7 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
         return Ok(());
     };
     std::thread::spawn(move || {
+        crate::backups::before(&app, "loading a scene");
         let ms = f.scene_ms;
         app.state::<Vm>()
             .smooth
@@ -402,8 +449,12 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
         }
         // A scene saved while ducking holds the ducked level: bring those back up.
         std::thread::sleep(Duration::from_millis(500));
+        let layered = restore_layers(&api, &levels);
         let mut fix = Vec::new();
         for (key, lv) in levels.iter() {
+            if layered.contains(key) {
+                continue; // its layers already hold the scene's levels
+            }
             let want = lv["gain"].as_f64().unwrap_or(0.0) as f32;
             if let Some(now) = api.get_float(&format!("{key}.Gain")) {
                 if (now - want).abs() > 0.2 {

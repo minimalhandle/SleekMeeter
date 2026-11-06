@@ -6,7 +6,7 @@ A Stream Deck plugin for Sleekmeeter. Built for the **Stream Deck +** (four dial
 
 ## Studio
 
-Plugin 0.16.0.2 uses one look: **Studio**, with dark surfaces, centred headings, one prominent symbol or value and short gradient colour rails. Dials and Now Playing use thin level and progress bars.
+Plugin 0.16.1.0 uses one look: **Studio**, with dark surfaces, centred headings, one prominent symbol or value and short gradient colour rails. Dials and Now Playing use thin level and progress bars.
 
 Route keys make bus routing explicit: coloured bus + checkmark + ON + full pulsing rail when enabled, dim bus + cross + OFF + empty rail when disabled. ON/OFF stays visible with Show text unchecked because it communicates routing state.
 
@@ -51,6 +51,7 @@ Audio controls operate through **Sleekmeeter**; the new Now Playing action separ
 | **Channel level** | Dial | Turn to change the level, press to mute or unmute, tap the screen to mute. The screen shows the name, level and a bar. |
 | **Now Playing + channel** | Dial | Album art, title, artist and elapsed/total time. Turn for channel level, press to mute and tap to play/pause (configurable). |
 | **Now Playing + tracks** | Dial | Album art, title and track time. Turn to change track, press or tap to play or pause. |
+| **Output mix** | Dial | Voicemeeter Potato: one input's level on one output (its gain layer), for example less game on your stream (B3) than in your headphones. Press or tap to match the input's main level. |
 | **App volume** | Dial | Pick an app such as Discord or a game. Turn to change its volume, press or tap to mute it. Needs the latest Sleekmeeter. |
 | **Now Playing key** | Key | Album art, title and a progress rail on any Stream Deck. Press to play or pause, or set it to next or previous track. |
 | **Mute mic** | Key | Green mic when active, red/slashed when muted. Uses your first input unless you pick another channel; existing Hold to talk mode is retained. |
@@ -63,6 +64,7 @@ Audio controls operate through **Sleekmeeter**; the new Now Playing action separ
 | **Be right back** | Key | Turn Be right back on or off, and shows its state. |
 | **Record** | Key | Start or stop the recorder, and shows its state. |
 | **Talk-over ducking** | Key | Turn ducking on or off, and shows its state. |
+| **Faders set** | Key | Voicemeeter Potato: press to make the input faders set one output's mix; press again for all outputs. Lit while that output is picked. |
 | **Output profile** | Key | Switch to an output profile, or the next one. |
 
 Four dials, four channels: add **Channel level** to each dial and pick Mic, Discord, Desktop and so on.

@@ -267,6 +267,20 @@ impl Api {
         (unsafe { (self.get_float)(n.as_ptr(), &mut v) } == 0).then_some(v)
     }
 
+    /// A scene just set this input's layers: remember its main level and their differences.
+    pub fn adopt_layers(&self, i: usize, main: f32, layers: &[f32; crate::layers::LAYERS]) {
+        let gain = self
+            .get_float_raw(&format!("Strip[{i}].Gain"))
+            .unwrap_or(main);
+        self.layer_state.lock().unwrap().insert(
+            i,
+            (
+                crate::layers::Strip::adopt(main, layers, gain),
+                std::time::Instant::now(),
+            ),
+        );
+    }
+
     /// On Potato, with no output selected, a main-level write sets all 8 gain layers. While an
     /// input's layers differ, move each layer instead so the per-output mix survives.
     fn with_layers(&self, lines: &[String]) -> Vec<String> {

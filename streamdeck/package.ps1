@@ -20,7 +20,7 @@ function New-Package($source, $destination) {
 
 $pluginDirectory = Join-Path $PSScriptRoot 'com.minimalhandle.sleekmeeter.sdPlugin'
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $pluginDirectory 'manifest.json') | ConvertFrom-Json
-if ($manifest.UUID -ne 'com.minimalhandle.sleekmeeter' -or $manifest.Actions.Count -ne 16) {
+if ($manifest.UUID -ne 'com.minimalhandle.sleekmeeter' -or $manifest.Actions.Count -ne 18) {
     throw 'Unexpected plugin identity or action count; refusing to package.'
 }
 foreach ($requiredFile in @('bin\plugin.js', 'bin\ws.js', 'bin\studio.js', 'bin\media-session.js', 'bin\media-session.ps1', 'bin\symbols.json', 'ui\pi.html', 'layouts\channel.json')) {

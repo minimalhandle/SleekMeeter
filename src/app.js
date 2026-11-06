@@ -1144,7 +1144,7 @@
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setPanelIcons: "panelIcons", setPanelMeters: "panelMeters", setPanelMute: "panelMute", setExtraBuses: "showExtraBuses",
+    setCheckUpdates: "checkUpdates", setBetaUpdates: "betaUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setPanelIcons: "panelIcons", setPanelMeters: "panelMeters", setPanelMute: "panelMute", setExtraBuses: "showExtraBuses",
     setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode", setLockArrangement: "lockArrangement",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
@@ -1157,6 +1157,7 @@
       if (key === "streamerMode") applyStreamer();
       if (key === "lockArrangement") applyArrangementLock();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
+      if (key === "betaUpdates") { $("#updateWrap").hidden = true; checkForUpdate(); }
     });
   }
   function syncChecks() {
@@ -1226,6 +1227,7 @@
     renderHotkeys();
     refreshStreamDeck();
     syncDisplayOptions();
+    renderBackups();
     settingsDlg.showModal();
   });
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
@@ -1808,8 +1810,6 @@
   const trayEl = $("#appTray"), trayAppsEl = $("#trayApps"), trayEmpty = $("#trayEmpty");
   let trayRunning = []; // from the last poll: [{exe, name, pids, active}]
   let trayTimer = null, trayBusy = false, trayPolls = 0;
-  const trayApplied = new Map(); // exe → process ids already pointed at their device this session
-  let routeQueue = Promise.resolve();
 
   const virtualStrips = () => chans.filter((c) => c.kind === "strip" && !isHw(c));
   // Which Windows playback device feeds a channel?
@@ -1860,7 +1860,6 @@
     } catch (e) { fail(e); return; }
     settings.appRoutes = settings.appRoutes || {};
     if (dev) settings.appRoutes[a.exe] = dev.id; else delete settings.appRoutes[a.exe];
-    trayApplied.set(a.exe, new Set(pids));
     saveSettings();
     paintTray();
     paintStripApps();
@@ -2006,20 +2005,8 @@
     window.addEventListener("keydown", esc);
   }
 
-  // Put remembered routes back on programs that have started since (Windows keeps its own copy,
-  // so this mostly confirms it).
-  function applyRemembered() {
-    const routes = settings.appRoutes || {};
-    for (const a of trayRunning) {
-      const id = routes[a.exe];
-      if (!id || !a.pids || !a.pids.length || !routeDevices.some((d) => d.id === id)) continue;
-      const done = trayApplied.get(a.exe) || new Set();
-      const fresh = a.pids.filter((p) => !done.has(p));
-      if (!fresh.length) continue;
-      trayApplied.set(a.exe, new Set([...done, ...fresh]));
-      routeQueue = routeQueue.then(() => engine.appRouteSet(fresh, id)).catch(() => {});
-    }
-  }
+  // Remembered routes are put back on programs that start later by Sleekmeeter's background
+  // side (routing.rs), so it works with the window hidden too.
 
   async function pollTray() {
     if (trayBusy || PANEL || settings.mini || document.hidden) return;
@@ -2027,7 +2014,6 @@
     try {
       if (!routeDevices.length || trayPolls++ % 20 === 0) routeDevices = (await engine.appRouteDevices().catch(() => routeDevices)) || routeDevices;
       trayRunning = (await engine.appVolumes()) || [];
-      applyRemembered();
       paintStripApps();
       paintTray();
     } catch (_) { /* Windows audio unavailable; the tray just stays as it was */ } finally { trayBusy = false; }
@@ -3300,7 +3286,8 @@
   }
   setupDlg.addEventListener("change", paintSetupPlan);
   setupDlg.addEventListener("click", (e) => { if (e.target === setupDlg) setupDlg.close(); });
-  $("#setupApply").addEventListener("click", () => {
+  $("#setupApply").addEventListener("click", async () => {
+    await engine.backupBefore("the setup assistant").catch(() => {});
     for (const p of setupRoutes(setupKind(), +$("#setupMic").value, +$("#setupDiscord").value)) {
       for (const [param, v] of Object.entries(p.on)) sendFloat(`${p.ch.prefix}.${param}`, v ? 1 : 0);
     }
@@ -3510,6 +3497,25 @@
   healthDlg.addEventListener("click", (e) => { if (e.target === healthDlg) healthDlg.close(); });
 
   /* ---------- backup and layout ---------- */
+  async function renderBackups() {
+    const list = $("#backupList");
+    const items = await engine.backupsList().catch(() => []);
+    list.textContent = "";
+    if (!items.length) {
+      list.appendChild(Object.assign(document.createElement("li"), { className: "empty", textContent: "No backups yet. The first one is saved a minute or two after Sleekmeeter connects to Voicemeeter." }));
+      return;
+    }
+    for (const b of items) {
+      const li = document.createElement("li");
+      const restore = Object.assign(document.createElement("button"), { className: "btn", type: "button", textContent: "Restore" });
+      restore.addEventListener("click", async () => {
+        if (!confirm(`Put back Voicemeeter's setup from ${b.label}? Your current setup is saved first, so you can undo this.`)) return;
+        try { await engine.backupRestore(b.file); toast(`Restored Voicemeeter's setup from ${b.label}`); renderBackups(); } catch (err) { fail(err); }
+      });
+      li.append(Object.assign(document.createElement("span"), { textContent: b.label }), restore);
+      list.appendChild(li);
+    }
+  }
   $("#exportSettings").addEventListener("click", async () => {
     try { const p = await engine.settingsExport(); if (p) toast("Saved your settings"); } catch (e) { fail(e); }
   });

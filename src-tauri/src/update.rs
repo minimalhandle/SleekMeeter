@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 pub const REPO: &str = "minimalhandle/SleekMeeter";
 pub const CURRENT: &str = env!("CARGO_PKG_VERSION");
@@ -34,9 +34,9 @@ fn get_json(url: &str) -> Result<Value, String> {
     serde_json::from_str(&body).map_err(|e| format!("Couldn't read the update info: {e}"))
 }
 
-/// The newest published release, counting pre-releases too: GitHub's
-/// /releases/latest skips anything marked "Pre-release", so we read the list.
-fn newest_release() -> Result<Value, String> {
+/// The newest published release. Pre-releases count only with `beta` (Settings → Updates →
+/// test versions). GitHub's /releases/latest can't do that choice, so we read the list.
+fn newest_release(beta: bool) -> Result<Value, String> {
     let list = get_json(&format!(
         "https://api.github.com/repos/{REPO}/releases?per_page=20"
     ))?;
@@ -44,14 +44,15 @@ fn newest_release() -> Result<Value, String> {
         .into_iter()
         .flatten()
         .filter(|r| !r["draft"].as_bool().unwrap_or(false))
+        .filter(|r| beta || !r["prerelease"].as_bool().unwrap_or(false))
         .max_by_key(|r| parts(r["tag_name"].as_str().unwrap_or("")))
         .cloned()
         .ok_or_else(|| "No releases published yet".to_string())
 }
 
 /// { current, latest, newer, url } for the newest published release.
-pub fn latest() -> Result<Value, String> {
-    let release = newest_release()?;
+pub fn latest(beta: bool) -> Result<Value, String> {
+    let release = newest_release(beta)?;
     let tag = release["tag_name"].as_str().unwrap_or("");
     let latest = tag.trim_start_matches(['v', 'V']).to_string();
     Ok(json!({
@@ -266,7 +267,11 @@ pub fn install(app: &AppHandle) -> Result<(), String> {
 }
 
 fn install_inner(app: &AppHandle) -> Result<(), String> {
-    let release = newest_release()?;
+    let beta = crate::settings::flag(
+        &app.state::<crate::Settings>().0.lock().unwrap(),
+        "betaUpdates",
+    );
+    let release = newest_release(beta)?;
     let tag = release["tag_name"].as_str().unwrap_or("");
     if parts(tag) <= parts(CURRENT) {
         return Err("You already have the newest version".into());

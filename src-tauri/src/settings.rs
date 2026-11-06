@@ -60,6 +60,8 @@ pub fn defaults() -> Value {
         // Load a scene when an app starts: [{ "app": "obs64.exe", "scene": "Streaming", "restore": "Default" }]
         "sceneRules": [],
         "checkUpdates": true,
+        // Also offer test versions (GitHub pre-releases) as updates.
+        "betaUpdates": false,
         "oled": false,
         "skippedVersion": "",
         // The Stream Deck plugin offer already answered, like "install:0.16.0.0".

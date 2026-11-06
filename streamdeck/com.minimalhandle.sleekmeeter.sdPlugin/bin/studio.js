@@ -72,6 +72,7 @@ function renderKey(c,e) {
     case 'brb':return draw({name:'STREAM MODE',icon:'coffee',caption:st.brb?'BACK LIVE':st.brbSet?'GO BRB':'Not set up',color:st.brb?C.amber:C.cyan,active:!!st.brb});
     case 'record':return draw({name:'RECORDER',icon:'record',caption:st.recording?'RECORDING':'START RECORD',color:st.recording?C.red:C.cyan,active:!!st.recording});
     case 'duck':return draw({name:'TALK OVER',icon:'duck',caption:st.duck?'DUCKING ON':'DUCKING OFF',color:st.duck?C.green:C.muted,active:!!st.duck});
+    case 'mixfor':{const want=s.bus||'all',idx=busIndex(st,want),sel=(st.buses||[]).findIndex(b=>b.sel);if(!(st.buses||[]).some(b=>'sel' in b&&b.sel!==null)||!(st.strips||[]).some(x=>(x.layers||[]).length))return tile({name:'FADERS SET',icon:'faders',caption:'Potato only',color:C.muted});const on=want==='all'?sel<0:sel===idx;return draw({name:'FADERS SET',bus:want==='all'?'ALL':want,color:on?(want==='all'?C.cyan:want[0]==='A'?C.amber:C.blue):C.muted,active:on,pulse:on?1:.25});}
     case 'output':{const name=s.output||st.outputNow||'',active=!!name&&name===st.outputNow;return draw({name:'OUTPUT',icon:outputIcon(name,s),caption:name||'Next output',active,color:active?C.cyan:C.muted});}
     default:return null;
   }
@@ -144,4 +145,7 @@ function renderAppDial(c,a) {
   const value=text(String(Math.round(a.app.volume)),12,66,35,muted?C.subtle:C.ink,'start',500)+text('%',178,65,12,C.subtle);
   return base(200,100,heading+value+glyph(muted?'speaker':'faders',159,29,1.1,color,muted)+bar(a.app.volume/100,12,83,176,color),color);
 }
-module.exports={renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time};
+function renderNote(line1,line2){return base(200,100,text(line1,12,43,12,C.amber)+text(line2,12,64,11,C.subtle),C.amber);}
+/* Potato: an output's place in an input's gain layers. A1… come first, then B1…. */
+function busIndex(st,bus){if(!bus||bus==='all')return -1;const a=((st&&st.strips||[])[0]||{}).a||[],n=Number(bus.slice(1));if(!(n>=1))return -1;return bus[0]==='A'?n-1:a.length+n-1;}
+module.exports={busIndex,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time};

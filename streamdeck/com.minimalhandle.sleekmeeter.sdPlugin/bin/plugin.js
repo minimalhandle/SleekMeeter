@@ -121,6 +121,7 @@ const renderDial = (c) => {
   if (c.action === 'nowplaying') return studio.renderNowPlaying(c, drawingState(), mediaFor(c));
   if (c.action === 'trackdial') return studio.renderTrackDial(c, mediaFor(c));
   if (c.action === 'appvolume') return studio.renderAppDial(c, { status: appsStatus, app: appOf((c.settings || {}).exe) });
+  if (c.action === 'mixdial') return renderMixDial(c);
   return studio.renderDial(c, drawingState());
 };
 
@@ -270,6 +271,55 @@ function rotate(c, ticks) {
   setLevel(ch.key, gainOf(ch) + t * step);
 }
 
+/* ------------------------------------------------------------------ Potato output mix */
+// An input's level on one output (Potato's gain layers), and the output the faders set.
+function layerOf(ch, idx) {
+  const l = local[`${ch.key}#L${idx}`];
+  if (l && Date.now() < l.until) return l.db;
+  return ((ch.layers || [])[idx]);
+}
+function renderMixDial(c) {
+  const s = c.settings || {}, e = drawingState(), ch = chan(s.channel), bus = s.bus || 'B1', idx = studio.busIndex(st, bus);
+  if (ch && st && !(ch.layers || []).length) return studio.renderNote('POTATO ONLY', 'Needs Voicemeeter Potato');
+  const v = ch ? layerOf(ch, idx) : undefined;
+  return studio.renderDial(c, { ...e, chan: () => ch && { ...ch, name: `${ch.name} on ${bus}` }, gainOf: (x) => (v === undefined ? gainOf(x) : v) });
+}
+const layerTimers = {};
+function pushLayer(key, idx) {
+  const id = `${key}#L${idx}`;
+  if (layerTimers[id]) { layerTimers[id] = 'again'; return; }
+  layerTimers[id] = setTimeout(() => { const again = layerTimers[id] === 'again'; delete layerTimers[id]; if (again) pushLayer(key, idx); }, 70);
+  const l = local[id];
+  if (l) api('POST', '/api/layer', { key, bus: idx, db: l.db }).catch(() => {});
+}
+function setLayer(context, c, db) {
+  const s = c.settings || {}, ch = chan(s.channel), idx = studio.busIndex(st, s.bus || 'B1');
+  if (!ch || idx < 0 || !(ch.layers || []).length) { showAlert(context); return; }
+  local[`${ch.key}#L${idx}`] = { db: Math.round(clamp(db, -60, 12) * 10) / 10, until: Date.now() + 1200 };
+  pushLayer(ch.key, idx);
+  render(context);
+}
+function rotateLayer(context, c, ticks) {
+  const s = c.settings || {}, ch = chan(s.channel), idx = studio.busIndex(st, s.bus || 'B1');
+  if (!ch) { showAlert(context); return; }
+  const now = layerOf(ch, idx);
+  const t = Math.abs(ticks) > 1 ? ticks * (1 + (Math.abs(ticks) - 1) * 0.5) : ticks;
+  setLayer(context, c, (now === undefined ? gainOf(ch) : now) + t * (Number(s.step) || 1));
+}
+// The main level: the gain layers then match it again on this output.
+function matchMain(context, c) {
+  const ch = chan((c.settings || {}).channel);
+  if (ch) setLayer(context, c, gainOf(ch)); else showAlert(context);
+}
+async function pickMixFor(context, c) {
+  const want = (c.settings || {}).bus || 'all', idx = studio.busIndex(st, want);
+  const sel = st ? (st.buses || []).findIndex((b) => b.sel) : -1;
+  const pick = want === 'all' || sel === idx ? -1 : idx;
+  if (st) (st.buses || []).forEach((b, j) => { b.sel = j === pick; });
+  renderAll();
+  try { await api('POST', '/api/mixfor', { bus: pick }); } catch (_) { showAlert(context); }
+}
+
 /* ------------------------------------------------------------------ media and app dials */
 function mediaCommand(context, what, source) {
   if (!media.command(what, source)) showAlert(context);
@@ -325,6 +375,7 @@ function onKeyDown(context, c) {
   switch (c.action) {
     case 'mute': return toggleMute(context, s.channel);
     case 'route': return toggleRoute(context, s.channel || MIC_DEFAULT, s.bus || 'B1');
+    case 'mixfor': return pickMixFor(context, c);
     case 'mic': {
       const key = s.channel || MIC_DEFAULT;
       const ch = chan(key);
@@ -433,11 +484,13 @@ function onMessage(raw) {
       if (c && ['channel', 'nowplaying'].includes(c.action)) rotate(c, (m.payload && m.payload.ticks) || 0);
       else if (c && c.action === 'trackdial') skipTrack(ctx, c, (m.payload && m.payload.ticks) || 0);
       else if (c && c.action === 'appvolume') rotateApp(ctx, c, (m.payload && m.payload.ticks) || 0);
+      else if (c && c.action === 'mixdial') rotateLayer(ctx, c, (m.payload && m.payload.ticks) || 0);
       break;
     }
     case 'dialDown': {
       const c = contexts.get(ctx);
       if (c && c.action === 'appvolume') { if (((c.settings || {}).press || 'mute') === 'mute') toggleAppMute(ctx, c); break; }
+      if (c && c.action === 'mixdial') { if (((c.settings || {}).press || 'match') === 'match') matchMain(ctx, c); break; }
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.press || (c.action === 'trackdial' ? 'playpause' : 'mute');
@@ -449,6 +502,7 @@ function onMessage(raw) {
     case 'touchTap': {
       const c = contexts.get(ctx);
       if (c && c.action === 'appvolume') { if (((c.settings || {}).tap || 'mute') === 'mute') toggleAppMute(ctx, c); break; }
+      if (c && c.action === 'mixdial') { if (((c.settings || {}).tap || 'match') === 'match') matchMain(ctx, c); break; }
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.tap || (c.action === 'channel' ? 'mute' : 'playpause');

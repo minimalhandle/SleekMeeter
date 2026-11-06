@@ -168,6 +168,69 @@ pub fn set(_pids: &[u32], _device: &str) -> Result<(), String> {
     Err("Only available on Windows".into())
 }
 
+/// Put remembered routes ("appRoutes" in the settings: program → device) back on programs
+/// that start later, whether or not the mixer window is open. Windows usually remembers them
+/// itself; this covers the times it doesn't.
+pub fn spawn(app: tauri::AppHandle) {
+    use std::collections::{HashMap, HashSet};
+    use tauri::Manager;
+    std::thread::spawn(move || {
+        // program → (device it was sent to, processes already sent there)
+        let mut done: HashMap<String, (String, HashSet<u32>)> = HashMap::new();
+        let mut devices: Vec<String> = Vec::new();
+        let mut checked = std::time::Instant::now() - std::time::Duration::from_secs(600);
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(3));
+            let routes = app.state::<crate::Settings>().0.lock().unwrap()["appRoutes"].clone();
+            let Some(routes) = routes.as_object().filter(|r| !r.is_empty()) else {
+                continue;
+            };
+            if checked.elapsed() > std::time::Duration::from_secs(60) {
+                devices = devices_ids();
+                checked = std::time::Instant::now();
+            }
+            let Ok(running) = crate::appvol::list() else {
+                continue;
+            };
+            done.retain(|exe, _| routes.contains_key(exe));
+            for a in running {
+                let exe = a["exe"].as_str().unwrap_or("").to_string();
+                let Some(device) = routes.get(&exe).and_then(|d| d.as_str()) else {
+                    continue;
+                };
+                if !devices.iter().any(|d| d == device) {
+                    continue; // that device isn't here right now
+                }
+                let pids: Vec<u32> = a["pids"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|p| p.as_u64().map(|p| p as u32))
+                    .collect();
+                let entry = done.entry(exe.clone()).or_default();
+                if entry.0 != device {
+                    *entry = (device.to_string(), HashSet::new());
+                }
+                let fresh: Vec<u32> = pids.into_iter().filter(|p| !entry.1.contains(p)).collect();
+                if fresh.is_empty() {
+                    continue;
+                }
+                entry.1.extend(fresh.iter().copied());
+                if let Err(e) = set(&fresh, device) {
+                    log_warn!("Couldn't put {exe} back on its output: {e}");
+                }
+            }
+        }
+    });
+}
+
+fn devices_ids() -> Vec<String> {
+    devices()
+        .into_iter()
+        .filter_map(|d| d["id"].as_str().map(str::to_string))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

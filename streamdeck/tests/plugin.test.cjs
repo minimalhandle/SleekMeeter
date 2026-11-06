@@ -18,10 +18,10 @@ function fixture(extra = {}) {
 test('every manifest action produces a live key or dial', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(plugin, 'manifest.json')));
   assert.equal(manifest.UUID, uuid);
-  assert.equal(manifest.Actions.length, 16);
+  assert.equal(manifest.Actions.length, 18);
   for (const action of manifest.Actions) {
     const c = { action: action.UUID.slice(uuid.length + 1), settings: { channel: 'Strip[0]', scene: 'Gaming', sound: 'Air horn', output: 'Headphones' } };
-    const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : c.action === 'channel' ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));
+    const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : ['channel', 'mixdial'].includes(c.action) ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));
     assert.match(svg, /<svg /, action.Name);
     assert.match(svg, action.Controllers.includes('Encoder') ? /width="200" height="100"/ : /width="144" height="144"/);
     assert.doesNotMatch(svg, /NaN|undefined/);
@@ -143,5 +143,15 @@ test('existing handlers still send the expected API actions and gain payloads', 
   p.setState({ connected: true, strips: [{ key: 'Strip[0]', name: 'Mic', gain: -10, mute: false, a: [1], b: [0] }], buses: [] });
   await p.levelTick();
   assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/levels');
-  assert.equal(p.levelOf({key:'Strip[0]'}),-20);assert.equal(p.levelOf({key:'Bus[0]'}),-5);assert.equal(p.levelOf({key:'Strip[9]'}),null);
+  assert.equal(p.levelOf({key:'Strip[0]'}),-20);
+  // Potato output mix: a dial turn sets one gain layer, and a key picks the output the faders set.
+  sandbox.fetch=async (url,options)=>{calls.push({url,body:options&&options.body&&JSON.parse(options.body)});return{ok:true,json:async()=>({})};};
+  p.setState({ connected: true, strips: [{ key: 'Strip[0]', name: 'Game', gain: -10, mute: false, a: [1,0,0,0,0], b: [0,0,1], layers: [-10,-10,-10,-10,-10,-10,-10,-16] }], buses: Array.from({length:8},(_,j)=>({key:'Bus['+j+']',name:'Out',gain:0,mute:false,sel:false})) });
+  p.onMessage(JSON.stringify({event:'willAppear',action:uuid+'.mixdial',context:'mix-dial',payload:{controller:'Encoder',settings:{channel:'Strip[0]',bus:'B3',step:'2'}}}));
+  p.onMessage(JSON.stringify({event:'dialRotate',context:'mix-dial',payload:{ticks:-1}}));
+  assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/layer');assert.deepEqual(calls.at(-1).body,{key:'Strip[0]',bus:7,db:-18});
+  await p.onKeyDown('mix-key',{action:'mixfor',settings:{bus:'B3'}});
+  assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/mixfor');assert.deepEqual(calls.at(-1).body,{bus:7});
+  await p.onKeyDown('mix-key',{action:'mixfor',settings:{bus:'B3'}});
+  assert.deepEqual(calls.at(-1).body,{bus:-1},'pressing again goes back to all outputs');assert.equal(p.levelOf({key:'Bus[0]'}),-5);assert.equal(p.levelOf({key:'Strip[9]'}),null);
 });
