@@ -9,6 +9,9 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
 pub const REPO: &str = "minimalhandle/SleekMeeter";
+/// Test versions for people who opted in (Settings → Updates → Also offer test versions).
+/// Only copies with that setting look here, so nobody else is ever offered these.
+pub const BETA_REPO: &str = "minimalhandle/SleekMeeter-beta";
 pub const CURRENT: &str = env!("CARGO_PKG_VERSION");
 
 fn parts(v: &str) -> Vec<u64> {
@@ -34,20 +37,44 @@ fn get_json(url: &str) -> Result<Value, String> {
     serde_json::from_str(&body).map_err(|e| format!("Couldn't read the update info: {e}"))
 }
 
-/// The newest published release. Pre-releases count only with `beta` (Settings → Updates →
-/// test versions). GitHub's /releases/latest can't do that choice, so we read the list.
-fn newest_release(beta: bool) -> Result<Value, String> {
+fn releases(repo: &str) -> Result<Vec<Value>, String> {
     let list = get_json(&format!(
-        "https://api.github.com/repos/{REPO}/releases?per_page=20"
+        "https://api.github.com/repos/{repo}/releases?per_page=20"
     ))?;
-    list.as_array()
-        .into_iter()
-        .flatten()
+    Ok(list.as_array().cloned().unwrap_or_default())
+}
+
+/// The newest published release. With `beta` (Settings → Updates → test versions), the main
+/// repo's pre-releases and the beta repo's releases count too. GitHub's /releases/latest
+/// can't make that choice, so we read the lists.
+fn newest_release(beta: bool) -> Result<Value, String> {
+    let main = releases(REPO)?;
+    // The beta repo may be empty or unreachable: then only the main releases count.
+    let test = if beta {
+        releases(BETA_REPO).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    pick(main, test, beta).ok_or_else(|| "No releases published yet".to_string())
+}
+
+/// The newest of the releases this copy may take. On a tie the main repo's release wins.
+fn pick(main: Vec<Value>, test: Vec<Value>, beta: bool) -> Option<Value> {
+    test.into_iter()
+        .chain(
+            main.into_iter()
+                .filter(|r| beta || !r["prerelease"].as_bool().unwrap_or(false)),
+        )
         .filter(|r| !r["draft"].as_bool().unwrap_or(false))
-        .filter(|r| beta || !r["prerelease"].as_bool().unwrap_or(false))
         .max_by_key(|r| parts(r["tag_name"].as_str().unwrap_or("")))
-        .cloned()
-        .ok_or_else(|| "No releases published yet".to_string())
+}
+
+/// Release pages and downloads come only from Sleekmeeter's own repos.
+fn ours(url: &str, tail: &str) -> bool {
+    let url = url.to_lowercase();
+    [REPO, BETA_REPO]
+        .iter()
+        .any(|r| url.starts_with(&format!("https://github.com/{r}/{tail}").to_lowercase()))
 }
 
 /// { current, latest, newer, url } for the newest published release.
@@ -66,8 +93,7 @@ pub fn latest(beta: bool) -> Result<Value, String> {
 
 /// Open a release page in the default browser. Only links into this repo are allowed.
 pub fn open(url: &str) -> Result<(), String> {
-    let allowed = format!("https://github.com/{REPO}/").to_lowercase();
-    if !url.to_lowercase().starts_with(&allowed) {
+    if !ours(url, "") {
         return Err("That link isn't a Sleekmeeter release".into());
     }
     #[cfg(windows)]
@@ -93,11 +119,10 @@ struct Asset {
 }
 
 fn asset(release: &Value, ends_with: &str) -> Option<Asset> {
-    let allowed = format!("https://github.com/{REPO}/releases/download/").to_lowercase();
     release["assets"].as_array()?.iter().find_map(|a| {
         let name = a["name"].as_str()?;
         let url = a["browser_download_url"].as_str()?;
-        if !name.to_lowercase().ends_with(ends_with) || !url.to_lowercase().starts_with(&allowed) {
+        if !name.to_lowercase().ends_with(ends_with) || !ours(url, "releases/download/") {
             return None;
         }
         Some(Asset {
@@ -342,4 +367,37 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
         )
     };
     run_after_exit(&script)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_opted_in_copies_see_test_versions() {
+        let rel =
+            |tag: &str, pre: bool| json!({ "tag_name": tag, "prerelease": pre, "draft": false });
+        let main = || vec![rel("v0.15.3", false), rel("v0.15.5", true)];
+        let test = vec![rel("v0.15.4", false)];
+        assert_eq!(
+            pick(main(), Vec::new(), false).unwrap()["tag_name"],
+            "v0.15.3"
+        );
+        assert_eq!(
+            pick(main(), test.clone(), true).unwrap()["tag_name"],
+            "v0.15.5"
+        );
+        assert_eq!(
+            pick(vec![rel("v0.15.3", false)], test, true).unwrap()["tag_name"],
+            "v0.15.4"
+        );
+        assert!(ours(
+            "https://github.com/minimalhandle/SleekMeeter-beta/releases/download/v0.15.4/x.exe",
+            "releases/download/"
+        ));
+        assert!(!ours(
+            "https://github.com/someone/else/releases/download/v1/x.exe",
+            "releases/download/"
+        ));
+    }
 }

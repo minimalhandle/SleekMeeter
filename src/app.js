@@ -1565,18 +1565,41 @@
   /* ---------- update notifications ---------- */
   let update = null;
   const updateBtn = $("#updateBtn"), updateMenu = $("#updateMenu");
-  async function checkForUpdate() {
-    if (PANEL || !settings.checkUpdates) return;
+  // `asked`: from the Check for updates button. Then it runs even with automatic checks off,
+  // offers a version that was skipped, and returns what it found.
+  async function checkForUpdate(asked = false) {
+    if (PANEL || (!asked && !settings.checkUpdates)) return null;
     try {
       const u = await engine.checkUpdate();
-      if (!u || !u.newer || u.latest === settings.skippedVersion) return;
+      if (!u || !u.newer || (!asked && u.latest === settings.skippedVersion)) return u;
       update = u;
       updateBtn.textContent = `Update to ${u.latest}`;
       $("#updateText").textContent = `Sleekmeeter ${u.latest} is out. You have ${u.current}.`;
       updateNow.hidden = u.canInstall === false;
       $("#updateWrap").hidden = false;
-    } catch (e) { /* offline or GitHub unreachable: try again next start */ }
+      return u;
+    } catch (e) {
+      // Offline or GitHub unreachable: the next check tries again.
+      if (asked) throw e;
+      return null;
+    }
   }
+  // Sleekmeeter often runs for days, so look again every 6 hours, not only at start.
+  if (!PANEL) setInterval(() => checkForUpdate(), 6 * 60 * 60 * 1000);
+  $("#checkUpdateNow").addEventListener("click", async (e) => {
+    const btn = e.currentTarget, status = $("#updateStatus");
+    btn.disabled = true;
+    status.textContent = "Checking…";
+    try {
+      const u = await checkForUpdate(true);
+      status.textContent = u && u.newer
+        ? `Sleekmeeter ${u.latest} is out. Use the Update button at the top of the window.`
+        : `You have the newest version${u && u.current ? ` (${u.current})` : ""}.`;
+    } catch (_) {
+      status.textContent = "Couldn't reach GitHub. Check your internet connection and try again.";
+    }
+    btn.disabled = false;
+  });
   const setUpdateMenu = (open) => { updateMenu.hidden = !open; updateBtn.setAttribute("aria-expanded", String(open)); };
   updateBtn.addEventListener("click", () => setUpdateMenu(updateMenu.hidden));
   document.addEventListener("click", (e) => { if (!e.target.closest("#updateWrap")) setUpdateMenu(false); });
