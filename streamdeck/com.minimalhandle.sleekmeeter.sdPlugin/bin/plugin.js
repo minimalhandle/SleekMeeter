@@ -257,7 +257,8 @@ function toggleMute(context, key) {
 // Swap route: one press turns the first route on and the second off, the next press the other
 // way round. Sleekmeeter reads Voicemeeter and does both in one step.
 function swapPair(s) {
-  return [[s.channel, s.bus || 'B1'], [s.channel2, s.bus2 || 'B1']];
+  // The first input starts on input 1, as the settings show it before it's ever changed.
+  return [[s.channel || 'Strip[0]', s.bus || 'B1'], [s.channel2, s.bus2 || 'B1']];
 }
 function swapRoute(context, s) {
   const [[k1, b1], [k2, b2]] = swapPair(s);
@@ -329,7 +330,7 @@ function matchMain(context, c) {
   if (ch) setLayer(context, c, gainOf(ch)); else showAlert(context);
 }
 async function pickMixFor(context, c) {
-  const want = (c.settings || {}).bus || 'all', idx = studio.busIndex(st, want);
+  const want = (c.settings || {}).bus || 'B3', idx = studio.busIndex(st, want);
   const sel = st ? (st.buses || []).findIndex((b) => b.sel) : -1;
   const pick = want === 'all' || sel === idx ? -1 : idx;
   if (st) (st.buses || []).forEach((b, j) => { b.sel = j === pick; });

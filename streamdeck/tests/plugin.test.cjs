@@ -156,7 +156,7 @@ test('existing handlers still send the expected API actions and gain payloads', 
   assert.deepEqual(calls.at(-1).body,{bus:-1},'pressing again goes back to all outputs');
   // Swap route: one call, which Sleekmeeter carries out in one step; the key flips at once.
   p.setState({ connected: true, strips: [{ key: 'Strip[0]', name: 'Headset', gain: 0, mute: false, a: [1,0,0], b: [0,1,0] }, { key: 'Strip[3]', name: 'Main mic', gain: 0, mute: false, a: [1,0,0], b: [0,0,0] }], buses: [] });
-  await p.onKeyDown('swap-key', { action: 'swap', settings: { channel: 'Strip[0]', bus: 'B2', channel2: 'Strip[3]', bus2: 'B2' } });
+  await p.onKeyDown('swap-key', { action: 'swap', settings: { bus: 'B2', channel2: 'Strip[3]', bus2: 'B2' } }); // first input left on its shown default
   assert.deepEqual(calls.at(-1).body, { action: 'routeswap', target: 'Strip[0].B2|Strip[3].B2' });
   await p.onKeyDown('swap-key', { action: 'swap', settings: { channel: 'Strip[0]', bus: 'B2', channel2: 'Strip[0]', bus2: 'B2' } });
   assert.ok(events.some(e => e.event === 'showAlert' && e.context === 'swap-key'), 'the same route twice is refused');

@@ -104,6 +104,13 @@ public static class SleekMediaInbox {
     while ($true) {
         $spotify = @($manager.GetSessions() | Where-Object { $_.SourceAppUserModelId -match 'spotify' }) | Select-Object -First 1
         $current = $manager.GetCurrentSession()
+        # Windows doesn't always name a current session (some apps, such as Apple Music, can be
+        # missing from it). Then take the player that is playing, or else the first one there.
+        if (-not $current) {
+            $all = @($manager.GetSessions())
+            $current = @($all | Where-Object { try { $_.GetPlaybackInfo().PlaybackStatus.ToString() -eq 'Playing' } catch { $false } }) | Select-Object -First 1
+            if (-not $current) { $current = $all | Select-Object -First 1 }
+        }
         if (-not $Once -and [SleekMediaInbox]::Closed) { break }
         $line = if (-not $Once) { [SleekMediaInbox]::Next() } else { $null }
         if ($null -ne $line) {
