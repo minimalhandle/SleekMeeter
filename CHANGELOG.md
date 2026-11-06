@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- **Voicemeeter backups:** Sleekmeeter saves a copy of Voicemeeter's whole setup once a day, and before loading a scene, running the setup assistant or restoring a backup. **Settings → Backup and layout** lists them with a **Restore** button (your current setup is saved first)
+- **Test versions:** **Settings → Updates → Also offer test versions** gets pre-releases as updates. Without it, Sleekmeeter now only offers full releases
+- **Scenes keep each output's mix (Potato):** saving a scene also saves every input's gain layers, which Voicemeeter's scene file leaves out, and loading it puts them back
+- **Stream Deck: Output mix dial and Faders set key (plugin 0.16.1.0):** turn a dial to set one input's level on one output, like Game on B3, or press a key to make the input faders set one output's mix. Potato only
+- **App routing works with the window hidden:** apps you've sent to a channel are put back on it when they start again, even while Sleekmeeter sits in the tray or in mini mode
 - **A different mix on each output (Potato):** Potato's gain layers give each input its own level on each output, for example less game on your stream than in your headphones, like Voicemeeter's Streamer View. Set them in an input's settings under **Level on each output**, or pick an output in **Faders set** above the inputs and the input faders set that output's mix
 - **Your output mixes stay put (Potato):** with no output picked, Voicemeeter's main level resets every layer. Sleekmeeter's faders, mute fades, ducking, scenes and Be right back now move all of an input's layers together instead, so the differences are kept
 - **Input limiter (Banana and Potato):** in an input's settings under Dynamics. At +12 dB it's off

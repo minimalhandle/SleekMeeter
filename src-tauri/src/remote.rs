@@ -190,6 +190,17 @@ fn respond(stream: &mut TcpStream, code: &str, kind: &str, body: &str) {
     let _ = stream.write_all(text.as_bytes());
 }
 
+/// { key: "Strip[2]", bus: 7, db: -6 } → ("Strip[2].GainLayer[7]", -6.0).
+fn layer_change(body: &Value) -> Result<(String, f32), String> {
+    let key = body["key"].as_str().unwrap_or("");
+    let bus = body["bus"].as_u64().unwrap_or(99) as usize;
+    if !key.starts_with("Strip[") || !is_channel(key) || bus >= crate::layers::LAYERS {
+        return Err("Pick an input and an output".into());
+    }
+    let db = body["db"].as_f64().unwrap_or(0.0).clamp(-60.0, 12.0) as f32;
+    Ok((format!("{key}.GainLayer[{bus}]"), db))
+}
+
 fn state_json(app: &AppHandle) -> Value {
     let vm = app.state::<Vm>();
     let snap = vm.last.lock().unwrap().clone();
@@ -209,6 +220,9 @@ fn state_json(app: &AppHandle) -> Value {
                     // Which A/B buses an input feeds (1 = on); null for outputs.
                     "a": c["a"].clone(),
                     "b": c["b"].clone(),
+                    // Potato: an input's level on each output, and the output the faders set.
+                    "layers": c["layers"].clone(),
+                    "sel": c["sel"].clone(),
                 })
             })
             .collect()
@@ -345,6 +359,23 @@ fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
                 (_, None) => Err("Voicemeeter isn't running".to_string()),
             }
         }
+        ("POST", "/api/layer") => match (layer_change(&body), app.state::<Vm>().api.clone()) {
+            (Ok((name, db)), Some(api)) => api.set_float(&name, db).map(|_| json!({})),
+            (Err(e), _) => Err(e),
+            (_, None) => Err("Voicemeeter isn't available".to_string()),
+        },
+        ("POST", "/api/mixfor") => match app.state::<Vm>().api.clone() {
+            // -1 = every output again; otherwise only that output (Voicemeeter allows several).
+            Some(api) => {
+                let pick = body["bus"].as_i64().unwrap_or(-1);
+                (0..crate::layers::LAYERS as i64)
+                    .try_for_each(|j| {
+                        api.set_float(&format!("Bus[{j}].Sel"), if j == pick { 1.0 } else { 0.0 })
+                    })
+                    .map(|_| json!({}))
+            }
+            None => Err("Voicemeeter isn't available".to_string()),
+        },
         ("POST", "/api/action") => {
             let action = body["action"].as_str().unwrap_or("");
             let target = body["target"].as_str().unwrap_or("");
@@ -444,6 +475,16 @@ pub fn spawn(app: AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn layer_changes_need_an_input_and_an_output() {
+        assert_eq!(
+            layer_change(&json!({ "key": "Strip[2]", "bus": 7, "db": -80 })),
+            Ok(("Strip[2].GainLayer[7]".to_string(), -60.0))
+        );
+        assert!(layer_change(&json!({ "key": "Bus[2]", "bus": 1 })).is_err());
+        assert!(layer_change(&json!({ "key": "Strip[2]", "bus": 8 })).is_err());
+    }
 
     #[test]
     fn keys_are_compared_whole() {

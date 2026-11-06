@@ -669,6 +669,7 @@
       <section>
         <h3>Updates</h3>
         <label class="check"><input type="checkbox" id="setCheckUpdates"><span>Check for a new version when Sleekmeeter starts</span></label>
+        <label class="check"><input type="checkbox" id="setBetaUpdates"><span>Also offer test versions, to try new features before everyone else. They may have more bugs</span></label>
       </section>
       <section>
         <h3>Shortcuts</h3>
@@ -692,6 +693,9 @@
               <button class="btn" id="exportSettings" type="button">Save a backup…</button>
               <button class="btn" id="importSettings" type="button">Restore from a backup…</button>
             </div>
+            <h4 class="sub-h">Voicemeeter backups</h4>
+            <p class="hint">Sleekmeeter saves a copy of Voicemeeter's whole setup once a day, and before loading a scene, running the setup assistant or restoring a backup. Restoring puts that setup back; your current one is saved first.</p>
+            <ul class="backup-list" id="backupList"></ul>
             <p class="hint">If the window ends up somewhere odd, or channels are hidden and you can't find them:</p>
             <button class="btn" id="resetLayout" type="button">Reset the layout</button>
           </div>

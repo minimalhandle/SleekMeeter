@@ -9,6 +9,7 @@ mod logs;
 mod actions;
 mod apps;
 mod appvol;
+mod backups;
 mod brb;
 mod devwatch;
 mod fades;
@@ -1206,8 +1207,9 @@ fn remember_edition(app: &AppHandle, edition: i32) {
 /* ---------------- updates ---------------- */
 
 #[tauri::command]
-async fn check_update() -> Result<Value, String> {
-    let result = tauri::async_runtime::spawn_blocking(update::latest)
+async fn check_update(app: AppHandle) -> Result<Value, String> {
+    let beta = settings::flag(&app.state::<Settings>().0.lock().unwrap(), "betaUpdates");
+    let result = tauri::async_runtime::spawn_blocking(move || update::latest(beta))
         .await
         .map_err(|e| e.to_string())?;
     match &result {
@@ -1420,6 +1422,25 @@ fn screens(app: AppHandle) -> Vec<Value> {
             Some(json!({ "name": name, "label": label }))
         })
         .collect()
+}
+
+/// Voicemeeter backups (Settings → Backup and layout), newest first.
+#[tauri::command]
+fn backups_list() -> Vec<Value> {
+    backups::list()
+}
+
+#[tauri::command]
+async fn backup_restore(app: AppHandle, file: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || backups::restore(&app, &file))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Save a copy of Voicemeeter's setup before a big change (the setup assistant).
+#[tauri::command]
+async fn backup_before(app: AppHandle, why: String) {
+    let _ = tauri::async_runtime::spawn_blocking(move || backups::before(&app, &why)).await;
 }
 
 /// The "Check my setup" list.
@@ -1900,6 +1921,9 @@ fn main() {
             brb_toggle,
             obs_status,
             health_check,
+            backups_list,
+            backup_restore,
+            backup_before,
             screens,
             windows_output,
             fix_audio,
@@ -2017,6 +2041,8 @@ fn main() {
                 remote::spawn(handle.clone());
                 winout::spawn(handle.clone());
                 usage::spawn(handle.clone());
+                routing::spawn(handle.clone());
+                backups::spawn(handle.clone());
                 devwatch::spawn(handle);
             }
             Ok(())

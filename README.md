@@ -119,7 +119,7 @@ Click a channel's name to hide or show the device line under it (for example "CA
 
 ### A different mix on each output (Potato)
 
-Voicemeeter Potato can give every input its own level on each output (its "gain layers"), so your stream can hear less game than your headphones do, the way VB-Audio's Streamer View works. Open an input's settings (click its icon) and use **Level on each output**, or choose an output in **Faders set** above the inputs: the input faders then set that output's mix, and **All outputs** goes back to normal. Moving an input's main fader, muting it, ducking, scenes and Be right back all keep the differences between outputs. Inputs on Banana and Potato also have Voicemeeter's **limiter** under Dynamics in their settings.
+Voicemeeter Potato can give every input its own level on each output (its "gain layers"), so your stream can hear less game than your headphones do, the way VB-Audio's Streamer View works. Open an input's settings (click its icon) and use **Level on each output**, or choose an output in **Faders set** above the inputs: the input faders then set that output's mix, and **All outputs** goes back to normal. Moving an input's main fader, muting it, ducking, scenes and Be right back all keep the differences between outputs. Scenes save and restore these per-output levels too (Voicemeeter's own scene file doesn't keep them), and on a Stream Deck the **Output mix** dial and **Faders set** key do the same from hardware. Inputs on Banana and Potato also have Voicemeeter's **limiter** under Dynamics in their settings.
 
 ### Smooth fades
 
@@ -190,6 +190,8 @@ In **Settings → OBS Studio**, connect Sleekmeeter to OBS (in OBS turn on **Too
 **Scenes → Switch automatically** rules can do more than load a scene. Under each rule, pick an **output profile** and a **theme** to use while the app runs: for example, when `valorant.exe` starts, load *Gaming*, switch to *Headphones* and use the Neon theme. When the last app with a rule closes, your scene, outputs and theme go back.
 
 ### Backup, layout and the setup check
+
+**Voicemeeter backups:** once a day, and before loading a scene, running the setup assistant or restoring a backup, Sleekmeeter saves a copy of Voicemeeter's whole setup (the last 14 daily copies and 10 others are kept). **Settings → Backup and layout** lists them; **Restore** puts one back after saving your current setup, so you can undo it.
 
 **Settings → Backup and layout** saves your settings to a file and restores them (your scenes are the .xml files in the `scenes` folder next to Sleekmeeter, so copy that too), and **Reset the layout** brings the window back to its default size and unhides every channel. **Settings → About → Check my setup** (also on the "Voicemeeter isn't running" screen) checks the things that usually go wrong: Voicemeeter and its remote library, audio devices Windows doesn't list, shortcuts that couldn't be registered, the OBS link, and whether settings can be saved.
 

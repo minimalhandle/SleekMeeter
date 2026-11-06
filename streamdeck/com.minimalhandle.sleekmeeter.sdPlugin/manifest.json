@@ -1,6 +1,6 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.16.0.2",
+  "Version": "0.16.1.0",
   "Author": "minimalhandle",
   "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
@@ -327,6 +327,49 @@
       "States": [
         {
           "Image": "imgs/keys/appvolume",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Output mix",
+      "UUID": "com.minimalhandle.sleekmeeter.mixdial",
+      "Icon": "imgs/actions/channel",
+      "Tooltip": "Voicemeeter Potato: turn to set one input's level on one output, for example less game on your stream. Press or tap to match the input's main level.",
+      "Controllers": [
+        "Encoder"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "Encoder": {
+        "layout": "layouts/channel.json",
+        "Icon": "imgs/keys/channel",
+        "TriggerDescription": {
+          "Rotate": "Change this output's level",
+          "Push": "Match the main level",
+          "Touch": "Match the main level"
+        }
+      },
+      "States": [
+        {
+          "Image": "imgs/keys/channel",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Faders set",
+      "UUID": "com.minimalhandle.sleekmeeter.mixfor",
+      "Icon": "imgs/actions/route",
+      "Tooltip": "Voicemeeter Potato: press to make the input faders set one output's mix (Voicemeeter's output select). Press again for every output.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/route",
           "ShowTitle": false
         }
       ]

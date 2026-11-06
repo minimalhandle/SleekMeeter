@@ -109,6 +109,17 @@ function buildFields() {
     h += row("Dial press", `<select data-k="press">${opts([{ v: "mute", t: "Mute or unmute" }, { v: "none", t: "Do nothing" }], settings.press || "mute")}</select>`);
     h += row("Touch", `<select data-k="tap">${opts([{ v: "mute", t: "Tap to mute or unmute" }, { v: "none", t: "Do nothing" }], settings.tap || "mute")}</select>`);
     h += lists && lists.appsStatus === "old" ? `<p class="status bad">App volume needs a newer version of Sleekmeeter.</p>` : `<p class="hint">The list shows apps with an open audio session. If yours is missing, start playing something in it.</p>`;
+  } else if (action === "mixdial") {
+    h += row("Input", channelSelect());
+    h += row("Output", `<select data-k="bus">${opts(["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x })), settings.bus || "B1")}</select>`);
+    h += row("Dial step", `<select data-k="step">${opts([{ v: "0.5", t: "0.5 dB per click" }, { v: "1", t: "1 dB per click" }, { v: "2", t: "2 dB per click" }], settings.step || "1")}</select>`);
+    h += row("Dial press", `<select data-k="press">${opts([{ v: "match", t: "Match the main level" }, { v: "none", t: "Do nothing" }], settings.press || "match")}</select>`);
+    h += row("Touch", `<select data-k="tap">${opts([{ v: "match", t: "Tap to match the main level" }, { v: "none", t: "Do nothing" }], settings.tap || "match")}</select>`);
+    h += row("Live meter", `<input type="checkbox" data-k="showMeter" aria-label="Live meter" ${settings.showMeter !== false ? "checked" : ""}>`);
+    h += '<p class="hint">Voicemeeter Potato only. Sets this input\'s own level on one output (its gain layer), for example less game on your stream than in your headphones.</p>';
+  } else if (action === "mixfor") {
+    h += row("Output", `<select data-k="bus">${opts([{ v: "all", t: "All outputs" }, ...["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x }))], settings.bus || "B3")}</select>`);
+    h += '<p class="hint">Voicemeeter Potato only. Press to make the input faders set this output\'s mix, and press again to go back to all outputs.</p>';
   } else if (action === "route") {
     h += row("Input", channelSelect("Strip[0]"));
     h += row("Bus", `<select data-k="bus">${opts(["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3"].map((x) => ({ v: x, t: x })), settings.bus || "B1")}</select>`);

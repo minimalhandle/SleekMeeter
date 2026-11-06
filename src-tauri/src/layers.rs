@@ -24,6 +24,16 @@ pub struct Strip {
 }
 
 impl Strip {
+    /// The state for layers just set to `layers` with `main` as the main level, while
+    /// Voicemeeter's own Gain reads `gain`.
+    pub fn adopt(main: f32, layers: &[f32; LAYERS], gain: f32) -> Strip {
+        Strip {
+            main,
+            offsets: layers.map(|v| v - main),
+            gain_seen: gain,
+        }
+    }
+
     /// The main level to show, while Voicemeeter's Gain is still the one this started from.
     pub fn shown(&self, gain: f32) -> Option<f32> {
         ((gain - self.gain_seen).abs() < SAME).then_some(self.main)
