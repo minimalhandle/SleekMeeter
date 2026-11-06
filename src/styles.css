@@ -683,6 +683,17 @@ body.mixing-output #inputs .strip { box-shadow: inset 0 0 0 1px color-mix(in srg
 .backup-list li.empty { color: var(--ink-2); background: none; padding-left: 0; }
 .backup-list .btn { height: 26px; padding: 0 10px; }
 .dlg.streamdeck-dlg { width: min(440px, calc(100vw - 32px)); }
+.dlg.whatsnew-dlg { width: min(620px, calc(100vw - 32px)); }
+.whatsnew-dlg[open] { display: flex; flex-direction: column; }
+.whatsnew { overflow-y: auto; min-height: 0; margin: 0 -24px 14px; padding: 0 24px; }
+.whatsnew h3 { margin: 12px 0 6px; font-size: var(--s1); color: var(--acc); }
+.whatsnew h3:first-child { margin-top: 2px; }
+.whatsnew h4 { margin: 12px 0 6px; font-size: var(--s0); font-weight: 700; color: var(--ink); }
+.whatsnew p { margin: 0 0 6px; color: var(--ink-2); }
+.whatsnew ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.whatsnew li { line-height: 1.45; color: var(--ink-2); }
+.whatsnew li strong { color: var(--ink); font-weight: 600; }
+.whatsnew code { font-size: .92em; padding: 0 4px; border-radius: 4px; background: var(--key); }
 .dlg.scenes { width: min(620px, calc(100vw - 32px)); }
 
 /* ---------- output profiles ---------- */

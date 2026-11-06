@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.17.0
+Everything since 0.15.3. The Stream Deck plugin is now numbered with the app: plugin 0.17.0.0 goes with Sleekmeeter 0.17.
+
+**Output mix (Voicemeeter Potato)**
+- **Mix view:** **Mix** in the header shows every input's level on every output at once, like Voicemeeter's Streamer View, with each output's on/off button under its slider. Drag or scroll a slider, or double-click it to match the input's main fader
+- **In its own window:** the button next to Mix's close button pops the output mix out into a window of its own, for example on a second screen. It remembers its size and place, and opens again at the next start if you left it open
+
+**Stream Deck (plugin 0.17.0.0)**
+- **Swap route:** one key switches between two routes, for example which mic goes to B2, or whether your game plays on A1 or A2. One turns off as the other turns on, and the key shows which one is live. Banana and Potato
+- **Level step on one output (Potato):** a Level step key can change an input's level on one output only, for example game +5 dB in your headphones without changing your stream, like a Voicemeeter macro with `Strip(2).GainLayer(0) += 5.0`
+- **Hold to repeat:** holding a Level step key keeps stepping until you let go
+- Fixed: **Now Playing** showed "Open Spotify" or "Nothing playing" on most PCs, because Windows' default PowerShell setting stopped it from reading what's playing. It now works everywhere, and **Current Windows media app** also finds players such as Apple Music
+- Fixed: **Swap route** and **Faders set** keys left on the input or output their settings showed didn't use it
+
+**Updates**
+- **What's new:** after an update, Sleekmeeter shows what changed, once. **Settings → Updates → What's new** shows it again any time
+- **Check for updates:** a button in **Settings → Updates** checks straight away, and Sleekmeeter looks again every 6 hours while it runs
+- **Test versions:** with **Also offer test versions** on, they now come from a separate beta page, so only people who opted in get them
+- Fixed: installing an update turned off **Start Sleekmeeter with Windows**. Updates now keep it, and Sleekmeeter puts it back if a manual install removed it. If it's off for you, tick it again once in **Settings → Startup**
+
 ## 0.15.7 (test version)
 - Fixed (Stream Deck plugin 0.16.3.1): Now Playing showed "Open Spotify" or "Nothing playing" on most PCs, because Windows' default PowerShell setting stopped the plugin's media reader from starting. It now starts everywhere, without changing that setting
 - Now Playing set to **Current Windows media app** also finds players that Windows doesn't mark as current, such as Apple Music, and says **Media unavailable** if it can't read Windows' media controls at all

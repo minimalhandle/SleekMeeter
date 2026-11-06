@@ -6,7 +6,7 @@ A Stream Deck plugin for Sleekmeeter. Built for the **Stream Deck +** (four dial
 
 ## Studio
 
-Plugin 0.16.3.1 uses one look: **Studio**, with dark surfaces, centred headings, one prominent symbol or value and short gradient colour rails. Dials and Now Playing use thin level and progress bars.
+Plugin 0.17.0.0 uses one look: **Studio**, with dark surfaces, centred headings, one prominent symbol or value and short gradient colour rails. Dials and Now Playing use thin level and progress bars.
 
 Route keys make bus routing explicit: coloured bus + checkmark + ON + full pulsing rail when enabled, dim bus + cross + OFF + empty rail when disabled. ON/OFF stays visible with Show text unchecked because it communicates routing state.
 

@@ -19,6 +19,7 @@
  *   recorderOpen() -> file name | null / recorderLoad(path)   a file for the recorder to play
  *   onEngineRestart(cb) / onSettingsChanged(cb) / onFileDrop(cb)
  *   appInfo() -> {version, logDir} / openLogs() / log(level, message)   Settings → About, the log file
+ *   whatsNew(all) -> {version, sections:[{title, blocks:[{kind: "h"|"p"|"li", text}]}]}   release notes once after an update (all: the latest ones)
  *   panelDock(docked)   snap the tray panel to the screen corner, or let it be moved
  *   mixWindow(open)   open (or bring forward) the Output mix in its own window, or close it
  *   outputsCapture() -> [{bus, type, name}] / outputsApply(name)   output profiles (settings.outputProfiles)
@@ -137,6 +138,7 @@
     onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
     glide(key, value) { return this.invoke("vm_glide", { key, value }); }
     appInfo() { return this.invoke("app_info"); }
+    whatsNew(all) { return this.invoke("whats_new", { all: !!all }); }
     openLogs() { return this.invoke("open_logs"); }
     log(level, message) { return this.invoke("ui_log", { level, message: String(message) }); }
     recorder(action) { return this.invoke("recorder_cmd", { action }); }
@@ -591,6 +593,20 @@
     settingsImport() { return Promise.resolve(null); }
     resetLayout() { return Promise.resolve(); }
     appInfo() { return Promise.resolve({ version: "preview", logDir: null }); }
+    // ?whatsnew shows sample notes at start, as after an update; the Settings button always does.
+    whatsNew(all) {
+      if (!all && !/[?&]whatsnew\b/.test(location.search)) return Promise.resolve({ version: "preview", sections: [] });
+      return Promise.resolve({ version: "preview", sections: [
+        { title: "0.17.0", blocks: [
+          { kind: "p", text: "Everything since 0.15.3." },
+          { kind: "h", text: "Output mix (Voicemeeter Potato)" },
+          { kind: "li", text: "**In its own window:** pop it out onto a second screen" },
+          { kind: "h", text: "Stream Deck (plugin 0.17.0.0)" },
+          { kind: "li", text: "**Swap route:** like a Voicemeeter macro with `Strip(0).B2 = 1`" },
+          { kind: "li", text: "Fixed: **Now Playing** works with Windows' default PowerShell setting" },
+        ] },
+      ] });
+    }
     openLogs() { return Promise.reject(new Error("The log is only kept by the Windows app")); }
     log(level, message) { (level === "error" ? console.error : console.log)("[log]", message); return Promise.resolve(); }
     recorderLoad(path) { return Promise.resolve(path.split(/[\\/]/).pop()); }
