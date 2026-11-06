@@ -686,6 +686,25 @@ body.mixing-output #inputs .strip { box-shadow: inset 0 0 0 1px color-mix(in srg
 .dlg.scenes { width: min(620px, calc(100vw - 32px)); }
 
 /* ---------- output profiles ---------- */
+/* Output mix: every input's gain layers (Potato), one column per input. */
+.dlg.mixview-dlg { width: min(1520px, calc(100vw - 32px)); }
+.mixview { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; }
+.mx-col { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 8px 8px; border-radius: 12px; background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); box-shadow: inset 0 1px 0 var(--mod-edge), var(--mod-shadow); }
+.mx-head { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 600; }
+.mx-head .chip { flex: none; }
+.mx-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mx-row { display: flex; gap: 3px; }
+.mx-sl { width: 26px; display: flex; flex-direction: column; align-items: center; gap: 4px; outline: none; border-radius: 6px; }
+.mx-sl:focus-visible { box-shadow: 0 0 0 2px var(--focus); }
+.mx-val { font-size: 10px; line-height: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mx-track { position: relative; width: 8px; height: 150px; border-radius: 4px; background: var(--well); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8); cursor: ns-resize; touch-action: none; }
+.mx-fill { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 4px; background: var(--acc); opacity: .85; }
+.mx-thumb { position: absolute; left: 50%; width: 22px; height: 12px; margin: 0 0 -6px -11px; border-radius: 4px; background: var(--cap-metal); box-shadow: var(--cap-shadow); pointer-events: none; }
+.mx-unity { position: absolute; left: -4px; right: -4px; height: 1px; background: var(--muted); opacity: .6; }
+.mx-sl .tog { width: 26px; height: 22px; padding: 0; font-size: 10px; }
+.mx-sl.off .mx-track { opacity: .35; }
+.mx-sl.off .mx-val { opacity: .5; }
+.mx-sl.picked .mx-val { color: var(--amber); font-weight: 700; }
 .dlg.outputs-dlg { width: min(640px, calc(100vw - 32px)); }
 .profile-list li { gap: 6px; }
 .profile-list .load { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; height: 54px; min-width: 0; padding-right: 74px; }

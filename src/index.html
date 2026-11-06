@@ -37,6 +37,7 @@
       <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
     <button class="btn full-only" id="appsBtn" type="button" aria-pressed="false" title="Apps: drag an app onto a channel to play it through that channel">Apps</button>
+    <button class="btn full-only" id="mixViewBtn" type="button" hidden title="Every input's level on every output at once, like Voicemeeter's Streamer View">Mix</button>
     <button class="btn full-only" id="outputsBtn" type="button" title="Switch between saved output devices">Outputs</button>
     <button class="btn full-only" id="scenesBtn" type="button">Scenes</button>
     <button class="btn icon brb-btn full-only streamer" id="brbBtn" type="button" aria-pressed="false" aria-label="Be right back" title="Be right back: mutes your mic, turns the game down, plays music. Click again to go back live">
@@ -169,6 +170,17 @@
       <button class="btn" id="addRule" type="button">Add rule</button>
       <p class="hint" id="rulesEmpty" hidden>Save a scene or an output profile first, then you can switch to it automatically.</p>
     </section>
+  </dialog>
+
+  <dialog class="dlg mixview-dlg" id="mixViewDlg" aria-labelledby="mixViewTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="mixViewTitle">Output mix</h2>
+      <button class="btn icon" value="close" aria-label="Close">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </form>
+    <p class="hint">Each input's own level on every output, like Voicemeeter's Streamer View: for example less game on your stream (B3) than in your headphones (A1). Drag or scroll a slider; double-click it to match the input's main fader. The button under it turns that output on or off for the input.</p>
+    <div class="mixview" id="mixView"></div>
   </dialog>
 
   <dialog class="dlg outputs-dlg" id="outputsDlg" aria-labelledby="outputsTitle">
