@@ -247,9 +247,11 @@ The dials also show what's playing, with album art, and can control one app's vo
 
 Double-click the tray icon to open a small volume panel: one fader and mute button per visible channel. By default it is **docked**: it snaps to the corner of the screen where the taskbar and clock are, flush against both, and opens in exactly the same place every time (it works with the taskbar on any edge). Click the pin button in its header, or untick **Snap the panel to the corner** in Settings, to undock it; an undocked panel can be dragged by its header and remembers where you left it. Double-click the tray icon again or click **×** to close it, or **Open mixer** for the full window. A single click on the tray icon still shows or hides the mixer, and the tray menu has **Open volume panel** too.
 
+**Settings → Tray volume panel** changes how it looks: **Rows** (sliders across) or **Columns** (sliders up and down, like the mixer), a size from 60% to 100% (handy on a small second screen), an opacity, and whether it shows channel icons, level meters and mute buttons. To leave a channel out of the panel but keep it in the mixer, untick **Show in the tray volume panel** in that channel's settings (click its icon). The panel follows a new theme straight away, even while it's open.
+
 ### Shortcuts and the volume overlay
 
-Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings, including hold-to-talk, switching output profiles, talk-over ducking and recording. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level.
+Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings, including hold-to-talk, switching output profiles, talk-over ducking and recording. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level. Choose which screen it appears on in **Settings → Volume overlay**, and untick **Show in the volume overlay** in a channel's settings to leave that channel out.
 
 ### Switching scenes automatically
 

@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- **Tray panel options:** Settings → Tray volume panel has a **Columns** layout with vertical sliders, a size from 60% to 100%, an opacity, and switches for channel icons, level meters and mute buttons. Each channel's settings can leave it out of the panel
+- **Volume overlay options:** choose which screen the overlay appears on, and leave channels out of it from their settings
+- Fixed: the volume overlay flickered while a level kept changing. It now fades in once and updates in place
+- Fixed: the tray panel kept its old theme until it was reopened
+- Fixed: the recorder clock kept running after a sound loaded by a Voicemeeter macro button (`Recorder.load`) had finished. Voicemeeter keeps reporting that playback as playing until Stop is pressed, so Sleekmeeter no longer shows a clock for playback it didn't start
 - The user count is sent as soon as you say yes, instead of up to 10 minutes later. Saying no deletes the ID straight away
 
 ## 0.15.2

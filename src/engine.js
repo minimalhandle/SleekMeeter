@@ -32,6 +32,7 @@
  *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
  *   healthCheck() -> [{state: ok|warn|bad, label, detail, action?}]   "Check my setup"
+ *   screens() -> [{name, label}]   for Settings → Volume overlay
  *   windowsOutput() -> {state: ok|wrong|unknown, output, calls, target} / fixAudio() -> {moved, restarted} / onWindowsOutput(cb)
  *   settingsExport() / settingsImport() -> file name or null   backup and restore
  *   resetLayout()   default window size and position, panel docked
@@ -76,7 +77,8 @@
     sceneRules: [], checkUpdates: true, skippedVersion: "", streamDeckOffered: "", usagePing: null, oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
-    autoRestart: true, keepWindowsOutput: false,
+    autoRestart: true, keepWindowsOutput: false, overlayScreen: "",
+    panelLayout: "rows", panelScale: 100, panelOpacity: 100, panelIcons: true, panelMute: true, panelMeters: true,
     outputProfiles: [],
     panelDocked: true, panelPos: null,
     hold: { releaseMs: 250 },
@@ -164,6 +166,7 @@
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
     onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
     healthCheck() { return this.invoke("health_check"); }
+    screens() { return this.invoke("screens"); }
     windowsOutput() { return this.invoke("windows_output"); }
     fixAudio() { return this.invoke("fix_audio"); }
     onWindowsOutput(cb) { return this.listen("windows-output", (e) => cb(e.payload)); }
@@ -546,6 +549,7 @@
       return Promise.resolve({ moved, restarted: true });
     }
     onWindowsOutput() { return Promise.resolve(); }
+    screens() { return Promise.resolve([{ name: "\\\\.\\DISPLAY1", label: "Screen 1 (2560×1440, main)" }, { name: "\\\\.\\DISPLAY2", label: "Screen 2 (1920×1080)" }]); }
     healthCheck() {
       return new Promise(async (r) => {
         const out = await this.windowsOutput();

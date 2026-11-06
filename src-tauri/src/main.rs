@@ -1,5 +1,7 @@
 // Hide the console window in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// The default settings are one large json! literal.
+#![recursion_limit = "256"]
 
 // First, so its log_info!/log_warn!/log_error! macros work in every module below.
 #[macro_use]
@@ -457,6 +459,10 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     *current = value.clone();
     drop(current);
     settings::save(&value)?;
+    let _ = app.emit_to(FLYOUT, "settings-changed", &value);
+    if let Some(w) = app.get_webview_window(FLYOUT) {
+        flyout_shadow(&app, &w);
+    }
     if usage_changed {
         usage::nudge();
     }
@@ -577,12 +583,29 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
 
 /* ---------------- volume overlay ---------------- */
 
-/// Move the overlay to the bottom centre of the screen the mixer is on.
+/// Move the overlay to the bottom centre of the chosen screen: the mixer's (the default), the
+/// main one, or a named one (Settings → Volume overlay).
 fn place_osd(app: &AppHandle, osd: &WebviewWindow) {
-    let monitor = app
-        .get_webview_window("main")
-        .and_then(|w| w.current_monitor().ok().flatten())
-        .or_else(|| osd.primary_monitor().ok().flatten());
+    let wanted = app.state::<Settings>().0.lock().unwrap()["overlayScreen"]
+        .as_str()
+        .unwrap_or("")
+        .to_string();
+    let named = || {
+        osd.available_monitors()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|m| m.name().map(|n| n == &wanted).unwrap_or(false))
+    };
+    let mixer = || {
+        app.get_webview_window("main")
+            .and_then(|w| w.current_monitor().ok().flatten())
+    };
+    let primary = || osd.primary_monitor().ok().flatten();
+    let monitor = match wanted.as_str() {
+        "" => mixer().or_else(primary),
+        "primary" => primary(),
+        _ => named().or_else(mixer).or_else(primary),
+    };
     if let Some(m) = monitor {
         let s = m.scale_factor();
         let (w, h) = (340.0 * s, 76.0 * s);
@@ -599,10 +622,11 @@ fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) 
     };
     place_osd(app, &osd);
     let theme = settings::theme(&app.state::<Settings>().0.lock().unwrap());
+    let fresh = app.state::<Vm>().osd_until.lock().unwrap().is_none();
     let _ = app.emit_to(
         "osd",
         "osd",
-        json!({ "theme": theme, "name": name, "text": text, "on": on, "icon": icon,
+        json!({ "theme": theme, "name": name, "text": text, "on": on, "icon": icon, "fresh": fresh,
                 "color": if icon == "record" { "rose" } else { "amber" } }),
     );
     let _ = osd.show();
@@ -668,11 +692,14 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
 
     place_osd(app, &osd);
     let theme = settings::theme(&app.state::<Settings>().0.lock().unwrap());
+    // Only a newly shown overlay fades in; updates while it's up don't replay the fade.
+    let fresh = app.state::<Vm>().osd_until.lock().unwrap().is_none();
     let _ = app.emit_to(
         "osd",
         "osd",
         json!({
             "theme": theme,
+            "fresh": fresh,
             "name": name,
             "gain": ch["gain"],
             "mute": ch["mute"],
@@ -805,8 +832,18 @@ fn maybe_osd(app: &AppHandle, prev: &Value, next: &Value, settling: bool) {
         return;
     }
     let changes = changed_channels(prev, next);
-    if (1..=2).contains(&changes.len()) {
-        let (kind, i) = changes[0];
+    if !(1..=2).contains(&changes.len()) {
+        return;
+    }
+    // Channels switched off for the overlay in their settings are skipped.
+    let shown = {
+        let st = app.state::<Settings>();
+        let s = st.0.lock().unwrap();
+        changes
+            .into_iter()
+            .find(|(kind, i)| s["appearance"][format!("{kind}-{i}")]["osd"] != json!(false))
+    };
+    if let Some((kind, i)) = shown {
         show_osd(app, next, kind, i);
     }
 }
@@ -932,8 +969,17 @@ fn dock_spot(x: i32, y: i32, pw: i32, ph: i32) -> Option<(i32, i32)> {
     Some((px, py))
 }
 
+/// Windows' window shadow keeps the panel opaque, so it only has one while it's solid.
+fn flyout_shadow(app: &AppHandle, w: &WebviewWindow) {
+    let opacity = app.state::<Settings>().0.lock().unwrap()["panelOpacity"]
+        .as_f64()
+        .unwrap_or(100.0);
+    let _ = w.set_shadow(opacity >= 100.0);
+}
+
 /// Size the panel and put it next to the tray icon (or bottom-right when opened another way).
 fn place_flyout(app: &AppHandle, w: &WebviewWindow, anchor: Option<PhysicalPosition<f64>>) {
+    flyout_shadow(app, w);
     let (lw, lh) = flyout_size(app);
     let _ = w.set_size(LogicalSize::new(lw, lh));
     let monitors = w.available_monitors().unwrap_or_default();
@@ -1025,6 +1071,8 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         .maximizable(false)
         .minimizable(false)
         .decorations(false)
+        // See-through, so Settings → Tray volume panel → Opacity works.
+        .transparent(true)
         .always_on_top(true)
         .skip_taskbar(true)
         .visible(false)
@@ -1093,7 +1141,7 @@ fn panel_fit(
     let pos = window.outer_position().map_err(|e| e.to_string())?;
     let width = width
         .unwrap_or(inner.width as f64 / scale)
-        .clamp(300.0, 800.0);
+        .clamp(200.0, 1800.0);
     *app.state::<PanelSize>().0.lock().unwrap() = Some((width, height));
     let dh = (height * scale).round() as i32 - inner.height as i32;
     let dw = (width * scale).round() as i32 - inner.width as i32;
@@ -1341,6 +1389,36 @@ async fn fix_audio(app: AppHandle) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || winout::fix_all(&app))
         .await
         .map_err(|e| e.to_string())?
+}
+
+/// Screens for the overlay picker: { name, label }. The name is what settings store.
+#[tauri::command]
+fn screens(app: AppHandle) -> Vec<Value> {
+    let Some(w) = app.get_webview_window("main") else {
+        return Vec::new();
+    };
+    let primary = w
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .and_then(|m| m.name().cloned());
+    w.available_monitors()
+        .unwrap_or_default()
+        .iter()
+        .enumerate()
+        .filter_map(|(i, m)| {
+            let name = m.name()?.clone();
+            let main = primary.as_deref() == Some(name.as_str());
+            let label = format!(
+                "Screen {} ({}×{}{})",
+                i + 1,
+                m.size().width,
+                m.size().height,
+                if main { ", main" } else { "" }
+            );
+            Some(json!({ "name": name, "label": label }))
+        })
+        .collect()
 }
 
 /// The "Check my setup" list.
@@ -1821,6 +1899,7 @@ fn main() {
             brb_toggle,
             obs_status,
             health_check,
+            screens,
             windows_output,
             fix_audio,
             settings_export,

@@ -165,7 +165,7 @@
 
   function look(ch) {
     const saved = (settings.appearance || {})[ch.key] || {};
-    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden, hideSub: !!saved.hideSub };
+    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden, hideSub: !!saved.hideSub, osd: saved.osd !== false, panel: saved.panel !== false };
   }
   function setLook(ch, patch) {
     settings.appearance = settings.appearance || {};
@@ -457,6 +457,15 @@
     const chip = $(".chip", el);
     ch.chips.push(chip);
     ch.miniNames.push($(".mini-name", el));
+    // Columns: the mixer's own vertical fader (every theme already styles it), level underneath.
+    if (PANEL && settings.panelLayout === "columns") {
+      const vertical = $("#inputTpl").content.querySelector(".fader").cloneNode(true);
+      $(".fader", el).replaceWith(vertical);
+      buildScale($(".scale", vertical));
+      const level = Object.assign(document.createElement("span"), { className: "mini-db" });
+      vertical.after(level);
+      ch.readouts.push(level);
+    }
     makeFader($(".fader", el), ch);
     makeToggle($(".mute", el), ch, "Mute");
     $(ch.kind === "strip" ? "#miniInputs" : "#miniOutputs").appendChild(el);
@@ -617,7 +626,7 @@
       if (h) hiddenCount[ch.kind]++;
       ch.mixerEl.hidden = h && !reveal[ch.kind];
       ch.mixerEl.classList.toggle("is-hidden", h);
-      ch.miniEl.hidden = h;
+      ch.miniEl.hidden = h || (PANEL && !look(ch).panel);
     }
     document.querySelectorAll("[data-reveal]").forEach((b) => {
       const k = b.dataset.reveal, n = hiddenCount[k];
@@ -789,6 +798,9 @@
     drawerBody.querySelectorAll(".icon-pick").forEach((s) => s.setAttribute("aria-pressed", String(s.dataset.value === lk.icon)));
     const hide = $("#lookHidden");
     if (hide) hide.checked = lk.hidden;
+    const inOsd = $("#lookOsd"), inPanel = $("#lookPanel");
+    if (inOsd) inOsd.checked = lk.osd;
+    if (inPanel) inPanel.checked = lk.panel;
   }
 
   function section(title) {
@@ -849,7 +861,15 @@
     hide.className = "check";
     hide.innerHTML = `<input type="checkbox" id="lookHidden"><span>Hide this ${ch.kind === "strip" ? "input" : "output"} from the mixer</span>`;
     $("input", hide).addEventListener("change", (e) => setLook(ch, { hidden: e.target.checked }));
-    lookSec.append(sw, grid, hide);
+    const inOsd = document.createElement("label");
+    inOsd.className = "check";
+    inOsd.innerHTML = `<input type="checkbox" id="lookOsd"><span>Show in the volume overlay when its level changes</span>`;
+    $("input", inOsd).addEventListener("change", (e) => setLook(ch, { osd: e.target.checked }));
+    const inPanel = document.createElement("label");
+    inPanel.className = "check";
+    inPanel.innerHTML = `<input type="checkbox" id="lookPanel"><span>Show in the tray volume panel</span>`;
+    $("input", inPanel).addEventListener("change", (e) => setLook(ch, { panel: e.target.checked }));
+    lookSec.append(sw, grid, hide, inOsd, inPanel);
 
     if (isHw(ch)) {
       const devSec = section(ch.kind === "strip" ? "Input device" : "Output device");
@@ -1057,10 +1077,29 @@
 
   /* ---------- settings dialog ---------- */
   const settingsDlg = $("#settingsDlg");
+  // Overlay screen and tray panel choices (selects, not checkboxes).
+  async function syncDisplayOptions() {
+    const screen = $("#setOverlayScreen");
+    const list = await engine.screens().catch(() => []);
+    screen.innerHTML = "";
+    const add = (value, label) => screen.appendChild(Object.assign(document.createElement("option"), { value, textContent: label }));
+    add("", "The screen the mixer is on");
+    add("primary", "The main screen");
+    for (const m of list) add(m.name, m.label);
+    if (settings.overlayScreen && ![...screen.options].some((o) => o.value === settings.overlayScreen)) add(settings.overlayScreen, "A screen that isn't connected");
+    screen.value = settings.overlayScreen || "";
+    $("#setPanelLayout").value = settings.panelLayout === "columns" ? "columns" : "rows";
+    $("#setPanelScale").value = String(settings.panelScale || 100);
+    $("#setPanelOpacity").value = String(settings.panelOpacity || 100);
+  }
+  $("#setOverlayScreen").addEventListener("change", (e) => { settings.overlayScreen = e.target.value; saveSettings(); });
+  $("#setPanelLayout").addEventListener("change", (e) => { settings.panelLayout = e.target.value; saveSettings(); });
+  $("#setPanelScale").addEventListener("change", (e) => { settings.panelScale = +e.target.value; saveSettings(); });
+  $("#setPanelOpacity").addEventListener("change", (e) => { settings.panelOpacity = +e.target.value; saveSettings(); });
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setExtraBuses: "showExtraBuses",
+    setCheckUpdates: "checkUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setPanelIcons: "panelIcons", setPanelMeters: "panelMeters", setPanelMute: "panelMute", setExtraBuses: "showExtraBuses",
     setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode", setLockArrangement: "lockArrangement",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
@@ -1141,6 +1180,7 @@
     $("#historyOn").checked = HI().on !== false;
     renderHotkeys();
     refreshStreamDeck();
+    syncDisplayOptions();
     settingsDlg.showModal();
   });
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
@@ -2102,7 +2142,7 @@
   const recBtn = $("#recBtn"), recDlg = $("#recDlg");
   let rec = null, recHoldUntil = 0, recTimer = null, recArmKey = "";
   const REC_STATES = { stopped: "Stopped", recording: "Recording", playing: "Playing", paused: "Paused" };
-  const recRunning = () => rec && (rec.state === "recording" || rec.state === "playing");
+  const recRunning = () => rec && (rec.state === "recording" || (rec.state === "playing" && !rec.external));
   function recClock() {
     if (!rec) return "00:00";
     const ms = (rec.elapsed || 0) + (rec.since && recRunning() ? Math.max(0, Date.now() - rec.since) : 0);
@@ -2125,7 +2165,9 @@
   }
   function paintRecorder() {
     if (!rec) return;
-    const state = rec.state || "stopped";
+    // Playback started outside Sleekmeeter (a macro button's sound, Voicemeeter's window):
+    // Voicemeeter keeps calling it playing after the file ends, so don't run a clock for it.
+    const state = rec.state === "playing" && rec.external ? "stopped" : rec.state || "stopped";
     recBtn.dataset.state = state;
     $("#recLabel").textContent = state === "stopped" ? "" : state === "paused" ? "Paused" : recClock();
     recBtn.title = state === "stopped" ? "Recorder" : `Recorder: ${REC_STATES[state].toLowerCase()}`;
@@ -2375,15 +2417,40 @@
     const view = $("#miniView");
     const cs = getComputedStyle(view);
     const lists = [...view.children].filter((el) => el.offsetHeight > 0);
-    const content = lists.reduce((h, el) => h + el.offsetHeight, 0)
-      + Math.max(0, lists.length - 1) * parseFloat(cs.rowGap || cs.gap || 0)
+    // Rows stack the inputs and outputs; the panel's column layout puts them side by side.
+    const across = getComputedStyle(view).flexDirection === "row";
+    const content = (across
+      ? Math.max(0, ...lists.map((el) => el.offsetHeight))
+      : lists.reduce((h, el) => h + el.offsetHeight, 0) + Math.max(0, lists.length - 1) * parseFloat(cs.rowGap || cs.gap || 0))
       + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     const border = parseFloat(getComputedStyle(document.body).borderTopWidth) * 2;
     return { h: Math.ceil($(".bar").offsetHeight + content + border), border };
   }
   function fitPanel() {
     const { h, border } = miniHeight();
-    engine.fitPanel(h, miniWidth() + border).catch(() => {});
+    const zoom = (+settings.panelScale || 100) / 100;
+    const view = $("#miniView");
+    const width = settings.panelLayout === "columns"
+      ? Math.max(view.scrollWidth, $(".bar").scrollWidth) + border
+      : miniWidth() + border;
+    engine.fitPanel(Math.ceil(h * zoom), Math.ceil(width * zoom)).catch(() => {});
+  }
+  // Settings → Tray volume panel: size, opacity and what the panel shows.
+  let panelLayoutBuilt = null;
+  function applyPanelOptions() {
+    if (!PANEL) return;
+    const layout = settings.panelLayout === "columns" ? "columns" : "rows";
+    // The faders are built for one layout, so switching layout reloads the panel.
+    if (panelLayoutBuilt && panelLayoutBuilt !== layout) { location.reload(); return; }
+    panelLayoutBuilt = layout;
+    const b = document.body;
+    b.classList.toggle("panel-columns", layout === "columns");
+    b.classList.toggle("panel-no-icons", settings.panelIcons === false);
+    b.classList.toggle("panel-no-mute", settings.panelMute === false);
+    b.classList.toggle("panel-no-meters", settings.panelMeters === false);
+    b.style.setProperty("--panel-opacity", String(Math.min(100, Math.max(30, +settings.panelOpacity || 100)) / 100));
+    document.documentElement.style.zoom = String((+settings.panelScale || 100) / 100);
+    requestAnimationFrame(fitPanel);
   }
   // Mini mode in the main window: size it to the channels, so it never needs a scroll bar and
   // switching to and from the full mixer is seamless. Redone whenever the channels change.
@@ -3544,11 +3611,21 @@
         applyTheme();
         applyPanelDock();
         chans.forEach(paintLook);
+        applyPanelOptions();
         applyVisibility();
       }).catch(() => {});
       applyPanelDock();
+      applyPanelOptions();
+      // Saved in the mixer (theme, colours, panel options): follow at once, even while open.
       engine.onSettingsChanged((s) => {
-        if (s && "panelDocked" in s) { settings.panelDocked = s.panelDocked; applyPanelDock(); }
+        if (!s) return;
+        settings = Object.assign(clone(DEFAULT_SETTINGS), s);
+        delete settings.autoTheme;
+        applyTheme();
+        applyPanelDock();
+        chans.forEach(paintLook);
+        applyPanelOptions();
+        applyVisibility();
       }).catch(() => {});
     } else {
       setMini(!!settings.mini, false);
