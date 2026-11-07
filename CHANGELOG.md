@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1
+- **Show in Mix** (Potato): untick it in an output's settings to leave that output out of **Mix**, for example A3 to A5 when you don't use them, while its fader stays in the mixer. Outputs hidden from the mixer stay out of Mix too. Mix updates straight away, also when popped out
+- Fixed: in **Mix** (Potato), the A/B buttons under the sliders never lit up when on, so a route turned on from the Stream Deck, Voicemeeter or a strip only showed as a brighter slider. They now light up like the strips' buttons, and a button you clicked earlier keeps following changes made elsewhere
+
 ## 0.17.0
 Everything since 0.15.3. The Stream Deck plugin is now numbered with the app: plugin 0.17.0.0 goes with Sleekmeeter 0.17.
 
