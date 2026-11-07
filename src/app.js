@@ -169,7 +169,7 @@
 
   function look(ch) {
     const saved = (settings.appearance || {})[ch.key] || {};
-    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden, hideSub: !!saved.hideSub, osd: saved.osd !== false, panel: saved.panel !== false };
+    return { color: saved.color || "slate", icon: saved.icon || ch.info.icon, hidden: !!saved.hidden, hideSub: !!saved.hideSub, osd: saved.osd !== false, panel: saved.panel !== false, mix: saved.mix !== false };
   }
   function setLook(ch, patch) {
     settings.appearance = settings.appearance || {};
@@ -806,6 +806,8 @@
     const inOsd = $("#lookOsd"), inPanel = $("#lookPanel");
     if (inOsd) inOsd.checked = lk.osd;
     if (inPanel) inPanel.checked = lk.panel;
+    const inMix = $("#lookMix");
+    if (inMix) inMix.checked = lk.mix;
   }
 
   function section(title) {
@@ -875,6 +877,14 @@
     inPanel.innerHTML = `<input type="checkbox" id="lookPanel"><span>Show in the tray volume panel</span>`;
     $("input", inPanel).addEventListener("change", (e) => setLook(ch, { panel: e.target.checked }));
     lookSec.append(sw, grid, hide, inOsd, inPanel);
+    // Potato's output mix: leave an unused output out of Mix without hiding its fader here.
+    if (ch.kind === "bus" && layout && layout.edition === 3) {
+      const inMix = document.createElement("label");
+      inMix.className = "check";
+      inMix.innerHTML = `<input type="checkbox" id="lookMix"><span>Show in Mix (the output mix)</span>`;
+      $("input", inMix).addEventListener("change", (e) => setLook(ch, { mix: e.target.checked }));
+      lookSec.appendChild(inMix);
+    }
 
     if (isHw(ch)) {
       const devSec = section(ch.kind === "strip" ? "Input device" : "Output device");
@@ -1013,13 +1023,14 @@
     const el = document.createElement("div");
     el.className = "mx-sl"; el.tabIndex = 0; el.setAttribute("role", "slider");
     el.setAttribute("aria-valuemin", String(MIN_DB)); el.setAttribute("aria-valuemax", String(MAX_DB));
-    el.innerHTML = '<span class="mx-val"></span><div class="mx-track"><div class="mx-unity"></div><div class="mx-fill"></div><div class="mx-thumb"></div></div><button type="button" class="tog"></button>';
     const id = bus.info.id, param = `GainLayer[${bus.i}]`;
-    const track = $(".mx-track", el), route = $(".tog", el);
+    // Same look as the strips' A/B buttons, so it lights up in every theme when on.
+    el.innerHTML = `<span class="mx-val"></span><div class="mx-track"><div class="mx-unity"></div><div class="mx-fill"></div><div class="mx-thumb"></div></div><button type="button" class="route ${id[0] === "A" ? "a" : "b"}"></button>`;
+    const track = $(".mx-track", el), route = $(".route", el);
     route.textContent = id;
     route.title = `Send ${displayName(ch)} to ${id} ${displayName(bus)}`;
     $(".mx-unity", el).style.bottom = `${dbToPos(0) * 100}%`;
-    const s = { ch, bus, el, v: 0, lockUntil: 0 };
+    const s = { ch, bus, el, v: 0, lockUntil: 0, routeLock: 0 };
     const paint = () => {
       const p = dbToPos(s.v);
       $(".mx-fill", el).style.height = `${p * 100}%`;
@@ -1039,7 +1050,7 @@
     track.addEventListener("pointermove", (e) => { if (s.drag) set(at(e)); });
     const end = () => { s.drag = false; };
     track.addEventListener("pointerup", end); track.addEventListener("pointercancel", end);
-    el.addEventListener("dblclick", (e) => { if (!e.target.closest(".tog")) set((ch.data && ch.data.gain) || 0); });
+    el.addEventListener("dblclick", (e) => { if (!e.target.closest(".route")) set((ch.data && ch.data.gain) || 0); });
     el.addEventListener("wheel", (e) => { e.preventDefault(); set(s.v + (e.deltaY < 0 ? 1 : -1) * (e.altKey ? 0.1 : 0.5)); }, { passive: false });
     el.addEventListener("keydown", (e) => {
       const step = e.shiftKey ? 0.1 : 0.5;
@@ -1050,16 +1061,20 @@
       const on = route.getAttribute("aria-pressed") !== "true";
       route.setAttribute("aria-pressed", String(on));
       el.classList.toggle("off", !on);
+      s.routeLock = performance.now() + 800;   // until Voicemeeter's state catches up
       sendFloat(`${ch.prefix}.${id}`, on ? 1 : 0);
     });
     s.paint = paint; s.route = route;
     mixSliders.push(s);
     return el;
   }
+  const mixSig = () => chans.map((c) => { const l = look(c); return `${c.kind}${c.i}:${displayName(c)}:${l.hidden ? 1 : 0}${l.mix ? 1 : 0}:${l.color}:${l.icon}`; }).join("|");
   function buildMixView() {
     mixViewEl.textContent = "";
     mixSliders = [];
-    const buses = chans.filter((c) => c.kind === "bus");
+    mixViewDlg.dataset.built = mixSig();
+    // Outputs hidden from the mixer, or just from Mix (output settings), stay out.
+    const buses = chans.filter((c) => c.kind === "bus" && !look(c).hidden && look(c).mix);
     for (const ch of chans.filter((c) => c.kind === "strip" && !look(c).hidden)) {
       const col = document.createElement("div");
       col.className = "mx-col";
@@ -1087,8 +1102,11 @@
       if (v !== undefined && !s.drag && performance.now() > s.lockUntil) s.v = v;
       const id = s.bus.info.id, n = +id.slice(1) - 1;
       const on = !!(id[0] === "A" ? (d.a || [])[n] : (d.b || [])[n]);
-      if (document.activeElement !== s.route) s.route.setAttribute("aria-pressed", String(on));
-      s.el.classList.toggle("off", !on);
+      // Follow every change (Stream Deck, Voicemeeter, the strips), except just after a click here.
+      if (performance.now() > s.routeLock) {
+        s.route.setAttribute("aria-pressed", String(on));
+        s.el.classList.toggle("off", !on);
+      }
       s.el.classList.toggle("picked", picked === s.bus.i);
       s.paint();
     }
@@ -1131,10 +1149,10 @@
     if (MIXWIN) {
       $("#mixViewNote").hidden = on;
       $("#mixView").hidden = !on;
-      // Channels and outputs can change while the window stays open: rebuild when they do.
-      const sig = on ? chans.map((c) => `${c.kind}${c.i}:${displayName(c)}:${look(c).hidden ? 1 : 0}:${look(c).color}:${look(c).icon}`).join("|") : "";
-      if (sig !== mixViewDlg.dataset.built) { mixViewDlg.dataset.built = sig; if (on) buildMixView(); }
     } else if (!on && mixViewDlg.open) mixViewDlg.close();
+    // Channels and outputs can change (renamed, hidden, recoloured) while Mix is open: rebuild when they do.
+    if (!on) mixViewDlg.dataset.built = "";
+    else if ((MIXWIN || mixViewDlg.open) && mixSig() !== mixViewDlg.dataset.built) buildMixView();
     paintMixView();
     if (!on) { document.body.classList.remove("mixing-output"); return; }
     const buses = chans.filter((c) => c.kind === "bus");

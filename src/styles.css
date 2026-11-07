@@ -727,7 +727,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .mx-fill { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 4px; background: var(--acc); opacity: .85; }
 .mx-thumb { position: absolute; left: 50%; width: 22px; height: 12px; margin: 0 0 -6px -11px; border-radius: 4px; background: var(--cap-metal); box-shadow: var(--cap-shadow); pointer-events: none; }
 .mx-unity { position: absolute; left: -4px; right: -4px; height: 1px; background: var(--muted); opacity: .6; }
-.mx-sl .tog { width: 26px; height: 22px; padding: 0; font-size: 10px; }
+.mx-sl .route { width: 26px; height: 22px; padding: 0; font-size: 10px; }
 .mx-sl.off .mx-track { opacity: .35; }
 .mx-sl.off .mx-val { opacity: .5; }
 .mx-sl.picked .mx-val { color: var(--amber); font-weight: 700; }

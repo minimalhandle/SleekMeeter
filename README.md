@@ -15,7 +15,7 @@ A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on t
 
 ## New in 0.17.0
 
-- **Output mix (Voicemeeter Potato):** every input's level on every output at once, like Voicemeeter's Streamer View, and it can pop out into its own window for a second screen.
+- **Output mix (Voicemeeter Potato):** every input's level on every output at once, like Voicemeeter's Streamer View, and it can pop out into its own window for a second screen. Untick **Show in Mix** in an output's settings to leave out outputs you don't use.
 - **Swap route on Stream Deck:** one key switches between two routes, such as which mic goes to your Discord bus, or which headset your game plays on.
 - **Per-output level keys:** a Stream Deck key can turn your game up in your headphones without touching your stream, and holding it keeps stepping.
 - **Now Playing works everywhere:** including Apple Music and browser players, on PCs where it showed nothing before.
