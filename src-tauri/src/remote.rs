@@ -30,6 +30,7 @@ const ALLOWED: &[&str] = &[
     "routeswap",
     "replay",
     "musicguard",
+    "partmute",
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
@@ -226,6 +227,8 @@ fn state_json(app: &AppHandle) -> Value {
                     // Potato: an input's level on each output, and the output the faders set.
                     "layers": c["layers"].clone(),
                     "sel": c["sel"].clone(),
+                    // Inputs: the outputs it's muted on by Mute on one output ("B1" …).
+                    "partMute": c["partMute"].clone(),
                 })
             })
             .collect()

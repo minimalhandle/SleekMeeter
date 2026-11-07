@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.18.0
+Everything since 0.17.1. The Stream Deck plugin moves to 0.18.0.0 with it.
+
 - **Mute on one output:** right-click an input's **Mute** (in the mixer or the tray panel) to mute it on just B1, B2 or any other output it's sent to, for example your mic in Discord while your stream still hears you. The Mute button gets a red outline listing those outputs, and unmuting turns back on exactly those. On Potato it fades out and back in like a normal mute, and the input's own level on that output is kept. Sleekmeeter remembers it after a restart, and turning that output's button back on yourself ends it too
+- **Stream Deck: Mute on outputs (plugin 0.18.0.0):** a key that does the same: mute an input on the outputs you tick (B1 to B3 unless you change them) while your headphones still hear it, and press again to unmute exactly those. It turns red while muted and follows mutes made in the mixer
 - **"You're muted":** talk into a muted mic and the overlay says so, even with Sleekmeeter in the tray, and the mic's strip flashes red. Not while Be right back is on, or while a push-to-talk key is up (unless you want it then too). On by default; set the mic and how loud counts as talking in **Settings → Going live**
 - **Go-live check:** the new **Go live** button checks that your mic is on and sent to the stream, the stream output isn't muted and has sound, OBS is linked, Windows plays through Voicemeeter, and Twitch chat and Instant replay are running. Anything wrong comes first, most with a button that fixes it. With the OBS link, it also runs a few seconds after you start streaming and opens if something's wrong
 - **Silent stream warning:** in **Settings → Going live**, Sleekmeeter can warn you when your stream output has had no sound for a while (5 to 60 seconds), or when it clips. By default only while OBS says you're live

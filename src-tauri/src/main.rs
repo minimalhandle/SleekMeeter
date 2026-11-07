@@ -23,6 +23,7 @@ mod hold;
 mod layers;
 mod obs;
 mod outputs;
+mod partmute;
 mod recorder;
 mod remote;
 mod replay;
@@ -189,7 +190,7 @@ fn vm_route_mute(
     out: String,
     mute: bool,
 ) -> Result<(), String> {
-    fades::route_mute(&app, api(&vm)?, strip, &out, mute)
+    partmute::set(&app, api(&vm)?, strip, &out, mute)
         .inspect_err(|e| log_warn!("Muting Strip[{strip}] on {out} failed: {e}"))
 }
 
@@ -489,13 +490,15 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         value["window"] = current["window"].clone();
     }
     // The tray panel's position and the output mix window are recorded in Rust too.
-    // So is what Music off stream switched off (watch.rs).
+    // So are what Music off stream switched off (watch.rs) and the inputs muted on some
+    // outputs only (partmute.rs), which a Stream Deck key can change while the window is open.
     for k in [
         "panelPos",
         "mixWin",
         "mixWinOpen",
         "seenVersion",
         "musicGuardEngaged",
+        "partMute",
     ] {
         value[k] = current[k].clone();
     }
@@ -837,6 +840,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     outputs::dress(&app, &mut snap);
                     brb::dress(&app, &mut snap);
                     watch::dress(&app, &mut snap);
+                    partmute::dress(&app, &mut snap);
                     if edition >= 2 {
                         recorder::dress(&app, &mut snap, api.recorder(&layout));
                     }

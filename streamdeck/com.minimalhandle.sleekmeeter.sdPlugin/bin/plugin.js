@@ -101,7 +101,14 @@ function levelOf(ch) {
   const reading = pair && pair[Number(m[2])];
   return Array.isArray(reading) ? Math.round(Math.max(...reading)) : null;
 }
-const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf });
+// Mute on outputs: is this input muted on any of these outputs (Sleekmeeter's list, or a press
+// we just made, until Sleekmeeter catches up).
+function partMuteOf(ch, outs) {
+  const l = local[`${ch.key}#part:${outs.join(',')}`];
+  if (l && Date.now() < l.until) return l.v;
+  return outs.some((o) => (ch.partMute || []).includes(o));
+}
+const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf, partMuteOf });
 const MEDIA_ACTIONS = ['nowplaying', 'nowplayingkey', 'trackdial'];
 const media = new MediaSession(() => { for (const [context, c] of contexts) if (MEDIA_ACTIONS.includes(c.action)) render(context); });
 // Changing page or opening a folder hides every action for a moment, so the worker outlives that.
@@ -280,6 +287,21 @@ function toggleRoute(context, key, bus) {
   act(context, 'route', `${key}.${bus}`);
 }
 
+// Mute on outputs: mute the input on the chosen outputs only, or unmute it there. Sleekmeeter
+// remembers which outputs it switched off, like right-clicking Mute in the mixer.
+function togglePartMute(context, s) {
+  const ch = chan(s.channel || MIC_DEFAULT);
+  if (!ch || !Array.isArray(ch.partMute)) { showAlert(context); return; }
+  const outs = studio.partOutputs(s, ch, { routeOf });
+  if (!outs.length) { showAlert(context); return; }
+  const muted = partMuteOf(ch, outs);
+  // Muting only works on outputs the input is sent to.
+  if (!muted && !outs.some((o) => routeOf(ch, o))) { showAlert(context); return; }
+  local[`${ch.key}#part:${outs.join(',')}`] = { v: !muted, until: Date.now() + 1500 };
+  renderAll();
+  act(context, 'partmute', `${ch.key}:${outs.join(',')}`);
+}
+
 function rotate(c, ticks) {
   const ch = chan((c.settings || {}).channel);
   if (!ch) return;
@@ -425,6 +447,7 @@ function onKeyDown(context, c) {
     case 'route': return toggleRoute(context, s.channel || MIC_DEFAULT, s.bus || 'B1');
     case 'mixfor': return pickMixFor(context, c);
     case 'swap': return swapRoute(context, s);
+    case 'partmute': return togglePartMute(context, s);
     case 'mic': {
       const key = s.channel || MIC_DEFAULT;
       const ch = chan(key);

@@ -2,7 +2,8 @@
 //! phone remote: "mute the mic", "be right back", "load a scene", "play a sound".
 
 use crate::{
-    brb, fades, outputs, recorder, replay, settings, show_osd_text, sounds, watch, Settings, Vm,
+    brb, fades, outputs, partmute, recorder, replay, settings, show_osd_text, sounds, watch,
+    Settings, Vm,
 };
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager};
@@ -75,6 +76,14 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
             fades::set_float(app, &api, off, 0.0)?;
             fades::set_float(app, &api, on, 1.0)?;
             log_info!("Command: route swap to {on}");
+        }
+        "partmute" => {
+            // target looks like "Strip[0]:B1,B2,B3": mute that input on those outputs only,
+            // or unmute it there if it's muted on any of them.
+            let api = need_api()?;
+            let (i, outs) =
+                partmute::parse_target(target).ok_or("Choose an input and its outputs")?;
+            partmute::toggle(app, &api, i, &outs)?;
         }
         "window" => crate::toggle_main(app),
         "output" if !target.is_empty() => outputs::switch_with_osd(app, target, "shortcut"),

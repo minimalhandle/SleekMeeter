@@ -374,6 +374,19 @@
   // Someone sent the input to that output again elsewhere (Voicemeeter, a scene): forget the mute.
   // Right after Sleekmeeter changes it, the state can still be a poll behind, so wait a moment.
   function reconcilePartMute(ch) {
+    // The app keeps the list (partmute.rs), so a Stream Deck key or the phone can change it too:
+    // follow it, except right after a change made here, while the app catches up.
+    const d = ch.data;
+    if (d && Array.isArray(d.partMute)) {
+      if (performance.now() - (ch.partAt || 0) >= 2000) {
+        const now = d.partMute.filter((p) => ROUTE.test(p));
+        if (now.join() !== partMuted(ch).join()) {
+          settings.partMute = Object.assign({}, settings.partMute);
+          if (now.length) settings.partMute[ch.key] = now; else delete settings.partMute[ch.key];
+        }
+      }
+      return paintPartMute(ch);
+    }
     const list = partMuted(ch);
     if (!list.length || performance.now() - (ch.partAt || 0) < 2000) return paintPartMute(ch);
     const left = list.filter((p) => !routeOn(ch, p));
