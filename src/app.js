@@ -1649,8 +1649,10 @@
       status.textContent = u && u.newer
         ? `Sleekmeeter ${u.latest} is out. Use the Update button at the top of the window.`
         : `You have the newest version${u && u.current ? ` (${u.current})` : ""}.`;
-    } catch (_) {
-      status.textContent = "Couldn't reach GitHub. Check your internet connection and try again.";
+    } catch (err) {
+      // Rust explains what went wrong (offline, GitHub's hourly limit, ...).
+      const msg = typeof err === "string" ? err : err && err.message;
+      status.textContent = msg || "Couldn't reach GitHub. Check your internet connection and try again.";
     }
     btn.disabled = false;
   });

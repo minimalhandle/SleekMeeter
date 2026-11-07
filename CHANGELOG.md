@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Fixed: **Check for updates** said "Couldn't reach GitHub" when GitHub's hourly limit for your internet connection was used up (60 checks an hour, shared with everything on that connection). Sleekmeeter now reads GitHub's release pages instead, which that limit doesn't cover, so update checks and in-app updates keep working. If those can't be reached either, it says what went wrong and when to try again
+
 ## 0.17.1
 - **Show in Mix** (Potato): untick it in an output's settings to leave that output out of **Mix**, for example A3 to A5 when you don't use them, while its fader stays in the mixer. Outputs hidden from the mixer stay out of Mix too. Mix updates straight away, also when popped out
 - Fixed: in **Mix** (Potato), the A/B buttons under the sliders never lit up when on, so a route turned on from the Stream Deck, Voicemeeter or a strip only showed as a brighter slider. They now light up like the strips' buttons, and a button you clicked earlier keeps following changes made elsewhere
