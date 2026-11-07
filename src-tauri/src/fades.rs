@@ -225,6 +225,94 @@ pub fn nudge(app: &AppHandle, api: &Api, key: &str, delta: f32) -> Result<f32, S
     Ok(target)
 }
 
+/// "A1" → 0 … "A5" → 4, "B1" → 5 … "B3" → 7: the output's gain layer on Potato.
+fn layer_of(out: &str) -> Option<usize> {
+    let n: usize = out.get(1..)?.parse().ok()?;
+    match out.as_bytes().first()? {
+        b'A' if (1..=5).contains(&n) => Some(n - 1),
+        b'B' if (1..=3).contains(&n) => Some(4 + n),
+        _ => None,
+    }
+}
+
+/// Output mutes whose fade is still running: (strip, layer) → (which press, the layer's own
+/// level, fade done by). A press during the fade must use that level, not the half-faded one.
+type Pending = std::collections::HashMap<(usize, usize), (u64, f32, Instant)>;
+static ROUTE_FADES: std::sync::Mutex<Option<Pending>> = std::sync::Mutex::new(None);
+static ROUTE_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Mute an input on one output only (right-click Mute): turn its send to that output off or
+/// back on. On Potato, with fades on, the input's own level on that output (its gain layer)
+/// fades out first, then the send switches off and the layer goes back to where it was, so the
+/// per-output mix is kept. Unmuting starts the layer at the floor and fades it back up.
+pub fn route_mute(
+    app: &AppHandle,
+    api: &std::sync::Arc<Api>,
+    strip: usize,
+    out: &str,
+    mute: bool,
+) -> Result<(), String> {
+    let j = layer_of(out).ok_or("Not an output")?;
+    let key = format!("Strip[{strip}]");
+    let send = format!("{key}.{out}");
+    let f = current_fades(app);
+    if !f.on || api.edition() != Some(3) {
+        return api.set_float(&send, if mute { 0.0 } else { 1.0 });
+    }
+    let layer = format!("{key}.GainLayer[{j}]");
+    let ms = f.mute_ms;
+    let now = Instant::now();
+    let seq = ROUTE_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+    let (level, fading) = {
+        let mut guard = ROUTE_FADES.lock().unwrap();
+        let map = guard.get_or_insert_with(Pending::new);
+        let running = map
+            .get(&(strip, j))
+            .filter(|(_, _, until)| now < *until)
+            .map(|(_, v, _)| *v);
+        let level = match running {
+            Some(v) => v,
+            None => api
+                .get_float(&layer)
+                .ok_or("This input has no level on that output")?,
+        };
+        map.insert(
+            (strip, j),
+            (seq, level, now + Duration::from_millis(ms + 60)),
+        );
+        (level, running.is_some())
+    };
+    if mute {
+        api.script(&[format!("{layer}.FadeTo = ({FLOOR:.1}, {ms});")])?;
+        let api = api.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(ms + 30));
+            {
+                let mut guard = ROUTE_FADES.lock().unwrap();
+                let map = guard.get_or_insert_with(Pending::new);
+                // Unmuted (or pressed again) during the fade: that press decides.
+                if map.get(&(strip, j)).map(|e| e.0) != Some(seq) {
+                    return;
+                }
+                map.remove(&(strip, j));
+            }
+            let lines = [format!("{send} = 0;"), format!("{layer} = {level:.2};")];
+            if let Err(e) = api.script(&lines) {
+                log_warn!("Output mute rejected: {e} ({})", lines.join(" "));
+            }
+        });
+        return Ok(());
+    }
+    // Still sending (unmuted during the fade-out): just fade back up from where it is.
+    let mut lines = Vec::new();
+    if !fading && !api.get_bool(&send) {
+        lines.push(format!("{layer} = {FLOOR:.2};"));
+        lines.push(format!("{send} = 1;"));
+    }
+    lines.push(format!("{layer}.FadeTo = ({level:.1}, {ms});"));
+    api.script(&lines)
+}
+
 /// Runs on every poll tick while Voicemeeter is connected (poll thread only: reads levels).
 pub fn tick(app: &AppHandle, api: &Api, layout: &Layout) {
     let now = Instant::now();
@@ -465,4 +553,20 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
         let _ = api.script(&fix);
     });
     Ok(())
+}
+
+#[cfg(test)]
+mod route_tests {
+    use super::layer_of;
+
+    #[test]
+    fn outputs_map_to_potatos_gain_layers() {
+        assert_eq!(layer_of("A1"), Some(0));
+        assert_eq!(layer_of("A5"), Some(4));
+        assert_eq!(layer_of("B1"), Some(5));
+        assert_eq!(layer_of("B3"), Some(7));
+        assert_eq!(layer_of("B4"), None);
+        assert_eq!(layer_of("A0"), None);
+        assert_eq!(layer_of("Mute"), None);
+    }
 }

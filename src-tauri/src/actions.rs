@@ -1,7 +1,9 @@
 //! Things Sleekmeeter can do on request, shared by shortcuts, Twitch chat commands and the
 //! phone remote: "mute the mic", "be right back", "load a scene", "play a sound".
 
-use crate::{brb, fades, outputs, recorder, settings, show_osd_text, sounds, Settings, Vm};
+use crate::{
+    brb, fades, outputs, recorder, replay, settings, show_osd_text, sounds, watch, Settings, Vm,
+};
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -117,6 +119,24 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
                 let text = if rec { "Recording" } else { "Stopped" };
                 show_osd_text(app, "Recorder", text, rec, "record");
             }
+        }
+        // Save the last seconds of the stream output (instant replay).
+        "replay" => {
+            if !replay::status()["running"].as_bool().unwrap_or(false) {
+                show_osd_text(app, "Instant replay", "Not on", false, "record");
+                return Err("Instant replay isn't running (Settings → Instant replay)".into());
+            }
+            let app = app.clone();
+            // Writing a minute of audio takes a moment: don't hold up the shortcut or chat.
+            std::thread::spawn(move || {
+                if let Err(e) = replay::save(&app) {
+                    log_warn!("Instant replay: {e}");
+                }
+            });
+        }
+        // Music off stream, now, until OBS next starts or stops.
+        "musicguard" => {
+            watch::toggle_guard(app)?;
         }
         _ => return Err(format!("Unknown action {kind:?}")),
     }

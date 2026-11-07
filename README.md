@@ -122,6 +122,8 @@ Voicemeeter Potato can give every input its own level on each output (its "gain 
 
 ### Smooth fades
 
+To mute an input on some outputs only, right-click its **Mute** (in the mixer or the tray panel) and pick the outputs, for example **Mute on B1** to mute your mic in Discord while your stream still hears you. The Mute button gets a red outline listing those outputs, and unmuting turns back on exactly the ones it turned off. On Potato it fades the input's level on that output first (with the mute fade time), and that level comes back as it was; on Standard and Banana the switch is instant.
+
 Mute fades out before it mutes, and unmute fades back in, so nothing clicks or jumps. Typed levels, double-click to 0 dB, volume shortcuts and scene changes glide too. Set the mute and scene fade times in **Settings → Smooth fades**, or turn fades off there. Dragging a fader is always direct.
 
 A scene fades its levels first and then loads everything else (routing, devices, EQ). Scenes saved before 0.6 load straight away the first time; after that they fade as well.
@@ -180,6 +182,19 @@ The cup button in the header (**Be right back**) does your whole "be right back"
 
 In **Settings → OBS Studio**, connect Sleekmeeter to OBS (in OBS turn on **Tools → WebSocket Server Settings → Enable WebSocket server**; add the password there if you set one). Then you can pick what happens when OBS switches to a scene, like loading a Voicemeeter scene, or starting or ending Be right back when you switch to your BRB scene. You can also choose what happens when you go live and when the stream ends, and a red **LIVE** tag shows in the header while OBS is streaming. Twitch streams are covered because OBS tells Sleekmeeter when it goes live. Sleekmeeter only listens; it never changes anything in OBS. This needs OBS Studio 28 or newer.
 
+### Going live
+
+**Settings → Going live** has the things that catch stream mistakes before chat does. They all use the output your stream gets (**Stream gets**: B2 unless you change it).
+
+- **"You're muted":** talk into a muted mic and the overlay says so, even with Sleekmeeter in the tray, and the mic's strip flashes red. It stays quiet while Be right back is on and while a push-to-talk key is up (tick the box to be told then too). It's on by default. If it pops up when you're not talking, raise **Louder than**.
+- **Go-live check:** the **Go live** button in the header checks your mic is on and sent to the stream, the stream output isn't muted or turned right down and has had sound in the last few seconds, OBS is linked, Windows plays through Voicemeeter, and Twitch chat and Instant replay are running. Problems come first, most with a button that fixes them. With the OBS link, it also runs a few seconds after you start streaming, says on the overlay if something's wrong and opens the list in the mixer.
+- **Silent stream warning:** a warning on the overlay when the stream output has had no sound for 5 to 60 seconds, and if you like when it clips. By default only while OBS says you're live.
+- **Music off stream:** keeps your music out of the stream (and your VODs) while you still hear it. Play your music app into one channel (drag it there under **Apps**), choose that channel, and choose when: while you're live, while OBS records, either, or only when you press its key. Sleekmeeter switches that channel's button for the stream output off (with a fade on Potato) and back on afterwards. The music key in the header, a shortcut, a Twitch command or the phone remote switches it by hand until OBS next starts or stops. Turning the button back on yourself also ends it.
+
+### Instant replay
+
+Turn on **Settings → Instant replay** and Sleekmeeter keeps the last 15 to 120 seconds of your stream output in memory. Press the replay button in the header (or a shortcut, a Twitch command such as `!clip`, or the phone remote) and they're saved as a WAV file in **Music\Sleekmeeter replays**, for clipping a funny moment without OBS's replay buffer. Nothing is written to disk until you save, and nothing leaves your PC. It listens to the stream output through Windows (**Voicemeeter Out B2**); pick another of Voicemeeter's outputs under **Of**.
+
 ### Mic level
 
 **Settings → Mic level → Check my mic level** listens while you talk for 8 seconds and tells you whether your mic is too quiet, about right or too loud, and can set the fader for you. It aims to keep your voice peaking around −10 dB with room for a laugh or a jump scare. You can also turn on a warning when a channel goes over 0 dB, where audio distorts.
@@ -228,9 +243,11 @@ Let chat, or just your mods, run things while you stream. In **Settings → Twit
 
 Sleekmeeter joins your chat as a silent, anonymous viewer: **no sign-in, nothing is ever posted**, and it only reacts to the exact commands you add. Choose who may use them: only you, you and your mods (the default), or everyone. A wait time stops a command from being spammed.
 
+**Channel point rewards** can play a sound or run any other action too. Press **Add a reward…**, then redeem the reward once in your chat, and Sleekmeeter adds it to the list. Twitch only shows a redemption in chat when the reward asks the viewer to type something, so tick **Require viewer to enter text** for it on Twitch. What the viewer types can pick the sound. Anyone who redeems a reward can run it, with the same wait time as commands.
+
 ### Phone remote
 
-Turn on **Settings → Phone remote** and open the address it shows on a phone or tablet on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles. The long code in the address is the password, so don't share it, and **Make a new key** signs every phone out. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
+Turn on **Settings → Phone remote** and open the address it shows on a phone or tablet on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles, and **Music off stream** and **Save replay** once they're set up. The long code in the address is the password, so don't share it, and **Make a new key** signs every phone out. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
 
 ### Stream Deck
 

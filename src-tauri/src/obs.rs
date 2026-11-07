@@ -4,7 +4,8 @@
 //! - when OBS switches scene, run the rule you set for that scene (load a Voicemeeter scene,
 //!   start or end Be right back);
 //! - when you go live or the stream ends, do the same;
-//! - show a LIVE marker in the mixer.
+//! - show a LIVE marker in the mixer;
+//! - know when OBS records, so music can be kept off the stream (watch.rs).
 //!
 //! Streaming to Twitch from OBS is covered by this: OBS tells us when the stream starts and
 //! stops. Sleekmeeter never changes anything in OBS.
@@ -31,7 +32,7 @@ const RETRY: Duration = Duration::from_secs(3);
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
 
 fn idle(message: &str) -> Value {
-    json!({ "connected": false, "live": false, "scene": null, "scenes": [], "message": message })
+    json!({ "connected": false, "live": false, "recording": false, "scene": null, "scenes": [], "message": message })
 }
 
 /// What the mixer shows about OBS right now.
@@ -180,12 +181,13 @@ struct Obs {
     scenes: Vec<String>,
     scene: Option<String>,
     live: bool,
+    recording: bool,
 }
 
 fn publish_state(app: &AppHandle, o: &Obs) {
     publish(
         app,
-        json!({ "connected": true, "live": o.live, "scene": o.scene, "scenes": o.scenes,
+        json!({ "connected": true, "live": o.live, "recording": o.recording, "scene": o.scene, "scenes": o.scenes,
                 "message": if o.live { "Connected to OBS, live" } else { "Connected to OBS" } }),
     );
 }
@@ -253,6 +255,9 @@ fn on_live(app: &AppHandle, live: bool) {
     };
     log_info!("OBS: {because}");
     act(app, &what, &scene, because);
+    if live {
+        crate::golive::on_live(app);
+    }
 }
 
 /// One connection, from signing in until it drops or the settings change.
@@ -262,6 +267,7 @@ fn session(app: &AppHandle, c: &Cfg) -> Result<(), String> {
     let mut o = Obs::default();
     request(&mut ws, "GetSceneList", "scenes")?;
     request(&mut ws, "GetStreamStatus", "stream")?;
+    request(&mut ws, "GetRecordStatus", "record")?;
     publish_state(app, &o);
     loop {
         if cfg(app) != *c {
@@ -289,6 +295,7 @@ fn session(app: &AppHandle, c: &Cfg) -> Result<(), String> {
                         o.scene = d["currentProgramSceneName"].as_str().map(String::from);
                     }
                     Some("stream") => o.live = d["outputActive"].as_bool().unwrap_or(false),
+                    Some("record") => o.recording = d["outputActive"].as_bool().unwrap_or(false),
                     _ => continue,
                 }
                 publish_state(app, &o);
@@ -309,6 +316,14 @@ fn session(app: &AppHandle, c: &Cfg) -> Result<(), String> {
                             o.live = live;
                             publish_state(app, &o);
                             on_live(app, live);
+                        }
+                    }
+                    Some("RecordStateChanged") => {
+                        let rec = d["outputActive"].as_bool().unwrap_or(false);
+                        if rec != o.recording {
+                            o.recording = rec;
+                            log_info!("OBS: recording {}", if rec { "started" } else { "stopped" });
+                            publish_state(app, &o);
                         }
                     }
                     Some("SceneListChanged")

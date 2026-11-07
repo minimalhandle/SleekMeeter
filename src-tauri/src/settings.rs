@@ -120,11 +120,29 @@ pub fn defaults() -> Value {
         "soundboard": { "device": "", "volume": 100, "sounds": [] },
         // Twitch chat commands: commands [{ "cmd": "!brb", "action": "brb", "target": "" }];
         // who can use them: "broadcaster", "mods" or "everyone".
-        "twitch": { "on": false, "channel": "", "who": "mods", "cooldown": 3, "commands": [] },
+        // Channel point rewards that ask the viewer for text show up in chat with their id:
+        // rewards [{ "id", "name", "action", "target" }] (anyone who redeems one may run it).
+        "twitch": { "on": false, "channel": "", "who": "mods", "cooldown": 3, "commands": [], "rewards": [] },
         // Control from a phone on the same network. `key` is the secret in the address.
         "remote": { "on": false, "port": 8787, "key": "" },
         // Record how loud each channel is, for the level history.
-        "history": { "on": true }
+        "history": { "on": true },
+        // The output your stream gets, like "Bus[4]". "" = B2 (B on Voicemeeter Standard).
+        "streamBus": "",
+        // Warn when someone talks into `target` while it's muted (louder than `threshold` dB
+        // before the fader). `ptt`: also while a push-to-talk key isn't held.
+        "mutedTalk": { "on": true, "target": "Strip[0]", "threshold": -35, "ptt": false },
+        // Warn when the stream output is silent for `silentSecs`, or clips (`clip`).
+        // `onlyLive`: only while OBS says you're live.
+        "streamWatch": { "on": false, "silentSecs": 15, "clip": true, "onlyLive": true },
+        // Run the go-live check when OBS starts streaming.
+        "goLive": { "onLive": true },
+        // Keep music off the stream: turn `strip`'s send to the stream output off while OBS
+        // records ("recording"), streams ("live"), either ("either"), or only by key ("manual").
+        "musicGuard": { "on": false, "strip": "", "when": "either" },
+        // Instant replay: keep the last `secs` seconds of `device` (a Voicemeeter output as
+        // Windows lists it, "" = the stream output) ready to save as a WAV file.
+        "replay": { "on": false, "device": "", "secs": 60 }
     })
 }
 

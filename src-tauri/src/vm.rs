@@ -412,7 +412,8 @@ impl Api {
         })
     }
 
-    /// Linear level → dBFS. kind: 1 = post-fader input, 3 = output.
+    /// Linear level → dBFS. kind: 0 = pre-fader input, 1 = post-fader input, 2 = post-mute
+    /// input, 3 = output.
     fn level_db(&self, kind: i32, channel: usize) -> f32 {
         let mut v = 0f32;
         if unsafe { (self.get_level)(kind, channel as i32, &mut v) } != 0 || v <= 1e-6 {
@@ -443,6 +444,24 @@ impl Api {
             (layout.hw_strips * 2 + (strip - layout.hw_strips) * 8, 8)
         };
         let [l, r] = self.pair(2, base, count);
+        l.max(r)
+    }
+
+    /// Loudest channel of one input strip before its fader and mute (dBFS), so a muted mic
+    /// still shows that someone is talking into it. Poll thread only.
+    pub fn strip_level_pre(&self, layout: &Layout, strip: usize) -> f32 {
+        let (base, count) = if strip < layout.hw_strips {
+            (strip * 2, 2)
+        } else {
+            (layout.hw_strips * 2 + (strip - layout.hw_strips) * 8, 8)
+        };
+        let [l, r] = self.pair(0, base, count);
+        l.max(r)
+    }
+
+    /// Loudest channel of one output bus (dBFS), what that output sends out. Poll thread only.
+    pub fn bus_level(&self, bus: usize) -> f32 {
+        let [l, r] = self.pair(3, bus * 8, 8);
         l.max(r)
     }
 

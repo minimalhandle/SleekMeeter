@@ -16,6 +16,7 @@ mod devwatch;
 mod fades;
 mod files;
 mod gain;
+mod golive;
 mod health;
 mod history;
 mod hold;
@@ -24,6 +25,7 @@ mod obs;
 mod outputs;
 mod recorder;
 mod remote;
+mod replay;
 mod routing;
 mod selftest;
 mod settings;
@@ -33,6 +35,7 @@ mod twitch;
 mod update;
 mod usage;
 mod vm;
+mod watch;
 mod win;
 mod winout;
 
@@ -175,6 +178,19 @@ fn chain_param(name: &str) -> bool {
             .any(|p| tail == *p || tail.strip_prefix(p).is_some_and(|t| t.starts_with('.')))
         && tail.len() < 24
         && tail.chars().all(|c| c.is_ascii_alphanumeric() || c == '.')
+}
+
+/// Mute an input on one output only ("B1"), with a fade on Potato. See fades::route_mute.
+#[tauri::command]
+fn vm_route_mute(
+    app: AppHandle,
+    vm: State<'_, Vm>,
+    strip: usize,
+    out: String,
+    mute: bool,
+) -> Result<(), String> {
+    fades::route_mute(&app, api(&vm)?, strip, &out, mute)
+        .inspect_err(|e| log_warn!("Muting Strip[{strip}] on {out} failed: {e}"))
 }
 
 /// Glide a strip or bus ("Strip[0]") to a level instead of jumping there.
@@ -473,7 +489,14 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         value["window"] = current["window"].clone();
     }
     // The tray panel's position and the output mix window are recorded in Rust too.
-    for k in ["panelPos", "mixWin", "mixWinOpen", "seenVersion"] {
+    // So is what Music off stream switched off (watch.rs).
+    for k in [
+        "panelPos",
+        "mixWin",
+        "mixWinOpen",
+        "seenVersion",
+        "musicGuardEngaged",
+    ] {
         value[k] = current[k].clone();
     }
     let usage_changed = current["usagePing"] != value["usagePing"];
@@ -639,6 +662,17 @@ fn place_osd(app: &AppHandle, osd: &WebviewWindow) {
 
 /// The overlay with words instead of a level (shortcuts for ducking and recording).
 fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) {
+    let color = if icon == "record" { "rose" } else { "amber" };
+    osd_words(app, name, text, on, icon, color, 1600);
+}
+
+/// A warning on the overlay (watch.rs: talking while muted, a silent stream), shown longer
+/// and in red, even when the volume overlay is switched off.
+pub fn show_osd_alert(app: &AppHandle, name: &str, text: &str, icon: &str) {
+    osd_words(app, name, text, false, icon, "rose", 3000);
+}
+
+fn osd_words(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str, color: &str, ms: u64) {
     let Some(osd) = app.get_webview_window("osd") else {
         return;
     };
@@ -649,11 +683,10 @@ fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) 
         "osd",
         "osd",
         json!({ "theme": theme, "name": name, "text": text, "on": on, "icon": icon, "fresh": fresh,
-                "color": if icon == "record" { "rose" } else { "amber" } }),
+                "color": color }),
     );
     let _ = osd.show();
-    *app.state::<Vm>().osd_until.lock().unwrap() =
-        Some(Instant::now() + Duration::from_millis(1600));
+    *app.state::<Vm>().osd_until.lock().unwrap() = Some(Instant::now() + Duration::from_millis(ms));
 }
 
 /// What changed between two snapshots: ("strip" | "bus", index) for gain or mute changes.
@@ -793,6 +826,9 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 let layout = Layout::for_edition(edition);
                 fades::tick(&app, &api, &layout);
                 let settling = Instant::now() < reread_until;
+                if !settling {
+                    watch::tick(&app, &api, &layout);
+                }
                 let periodic = last_full.elapsed() > Duration::from_secs(1);
                 if dirty == 1 || periodic || settling {
                     last_full = Instant::now();
@@ -800,6 +836,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     fades::dress(&app, &mut snap);
                     outputs::dress(&app, &mut snap);
                     brb::dress(&app, &mut snap);
+                    watch::dress(&app, &mut snap);
                     if edition >= 2 {
                         recorder::dress(&app, &mut snap, api.recorder(&layout));
                     }
@@ -1453,6 +1490,45 @@ fn obs_status() -> Value {
 }
 
 /// Whether Windows' default sound output is one of Voicemeeter's inputs.
+/// The go-live check (golive.rs).
+#[tauri::command]
+async fn golive_check(app: AppHandle) -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || golive::run(&app))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Instant replay: save the last seconds now. Returns the file's path.
+#[tauri::command]
+async fn replay_save(app: AppHandle) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || replay::save(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn replay_status() -> Value {
+    replay::status()
+}
+
+#[tauri::command]
+async fn replay_devices() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(replay::devices)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn replay_open_folder() -> Result<(), String> {
+    replay::open_folder()
+}
+
+/// Music off stream on or off by hand, until OBS next starts or stops.
+#[tauri::command]
+fn music_guard_toggle(app: AppHandle) -> Result<bool, String> {
+    watch::toggle_guard(&app)
+}
+
 #[tauri::command]
 async fn windows_output(app: AppHandle) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || winout::status(&app))
@@ -1969,6 +2045,7 @@ fn main() {
             vm_set_float,
             vm_get_floats,
             vm_glide,
+            vm_route_mute,
             app_info,
             open_logs,
             streamdeck_status,
@@ -2023,6 +2100,12 @@ fn main() {
             brb_toggle,
             obs_status,
             health_check,
+            golive_check,
+            replay_save,
+            replay_status,
+            replay_devices,
+            replay_open_folder,
+            music_guard_toggle,
             backups_list,
             backup_restore,
             backup_before,
@@ -2146,6 +2229,7 @@ fn main() {
                 obs::spawn(handle.clone());
                 twitch::spawn(handle.clone());
                 remote::spawn(handle.clone());
+                replay::spawn(handle.clone());
                 winout::spawn(handle.clone());
                 usage::spawn(handle.clone());
                 routing::spawn(handle.clone());

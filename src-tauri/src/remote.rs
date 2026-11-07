@@ -28,6 +28,8 @@ const ALLOWED: &[&str] = &[
     "mute",
     "route",
     "routeswap",
+    "replay",
+    "musicguard",
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
@@ -257,15 +259,26 @@ fn state_json(app: &AppHandle) -> Value {
                 .unwrap_or(false);
         (sounds, profiles, brb_set)
     };
-    let duck = app.state::<Settings>().0.lock().unwrap()["ducking"]["on"]
-        .as_bool()
-        .unwrap_or(false);
+    let (duck, guard_set, replay_on) = {
+        let state = app.state::<Settings>();
+        let s = state.0.lock().unwrap();
+        let g = &s["musicGuard"];
+        (
+            s["ducking"]["on"].as_bool().unwrap_or(false),
+            g["on"].as_bool().unwrap_or(false)
+                && g["strip"].as_str().map(|x| !x.is_empty()).unwrap_or(false),
+            s["replay"]["on"].as_bool().unwrap_or(false),
+        )
+    };
     json!({
         "connected": snap["connected"].as_bool().unwrap_or(false),
         "recording": snap["recorder"]["recording"].as_bool().unwrap_or(false),
         "duck": duck,
         "brb": snap["brb"].as_bool().unwrap_or(false),
         "brbSet": brb_set,
+        "musicGuard": snap["musicGuard"].as_bool().unwrap_or(false),
+        "musicGuardSet": guard_set,
+        "replay": replay_on,
         "strips": list("strips", "Strip", "Input"),
         "buses": list("buses", "Bus", "Output"),
         "scenes": crate::scene_list().unwrap_or_default(),

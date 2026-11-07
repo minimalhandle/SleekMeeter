@@ -314,9 +314,144 @@
       const on = btn.getAttribute("aria-pressed") !== "true";
       for (const t of ch.toggles) if (t.param === param) t.btn.setAttribute("aria-pressed", String(on));
       if (param === "Mute") markMuted(ch, on);
+      // Sending to an output again by hand ends a mute on that output.
+      if (on && ROUTE.test(param) && partMuted(ch).includes(param)) setPartMuted(ch, partMuted(ch).filter((p) => p !== param));
       sendFloat(`${ch.prefix}.${param}`, on ? 1 : 0);
     });
+    if (param === "Mute" && ch.kind === "strip") {
+      btn.addEventListener("contextmenu", (e) => { e.preventDefault(); openMuteMenu(ch, btn, e); });
+    }
   }
+
+  /* ---------- muting an input on some outputs only (right-click Mute) ---------- */
+  // Sleekmeeter turns the input's send to those outputs off and remembers which ones it turned off,
+  // so unmuting puts back exactly those (and survives a restart).
+  const ROUTE = /^[AB]\d$/;
+  const partMuted = (ch) => ((settings.partMute || {})[ch.key] || []).filter((p) => ROUTE.test(p));
+  function setPartMuted(ch, list) {
+    settings.partMute = Object.assign({}, settings.partMute);
+    if (list.length) settings.partMute[ch.key] = list; else delete settings.partMute[ch.key];
+    ch.partAt = performance.now();
+    saveSettings();
+    paintPartMute(ch);
+  }
+  const routeOn = (ch, param) => {
+    const d = ch.data;
+    if (!d) return false;
+    return !!(param[0] === "A" ? d.a : d.b)[+param.slice(1) - 1];
+  };
+  function partMuteOutput(ch, param, mute) {
+    const list = partMuted(ch);
+    if (mute === list.includes(param)) return;
+    setPartMuted(ch, mute ? [...list, param] : list.filter((p) => p !== param));
+    for (const t of ch.toggles) if (t.param === param) t.btn.setAttribute("aria-pressed", String(!mute));
+    // On Potato this fades the input's level on that output first (fades.rs route_mute).
+    engine.routeMute(ch.i, param, mute).catch(fail);
+  }
+  function busLabel(param) {
+    const j = layout.buses.findIndex((b) => b.param === param);
+    const bus = chans.find((c) => c.kind === "bus" && c.i === j);
+    const name = bus && bus.data && bus.data.label;
+    return name ? `${param} · ${name}` : param;
+  }
+  function paintPartMute(ch) {
+    const list = partMuted(ch);
+    for (const t of ch.toggles) {
+      if (t.param === "Mute") {
+        t.btn.classList.toggle("part", list.length > 0);
+        if (list.length) {
+          t.btn.dataset.part = list.join(" ");
+          t.btn.title = `Muted on ${list.map(busLabel).join(", ")}. Right-click to change`;
+        } else {
+          delete t.btn.dataset.part;
+          t.btn.title = "Right-click to mute on some outputs only";
+        }
+      } else if (ROUTE.test(t.param)) {
+        t.btn.classList.toggle("part-muted", list.includes(t.param));
+      }
+    }
+  }
+  // Someone sent the input to that output again elsewhere (Voicemeeter, a scene): forget the mute.
+  // Right after Sleekmeeter changes it, the state can still be a poll behind, so wait a moment.
+  function reconcilePartMute(ch) {
+    const list = partMuted(ch);
+    if (!list.length || performance.now() - (ch.partAt || 0) < 2000) return paintPartMute(ch);
+    const left = list.filter((p) => !routeOn(ch, p));
+    if (left.length !== list.length) setPartMuted(ch, left); else paintPartMute(ch);
+  }
+
+  const muteMenu = Object.assign(document.createElement("div"), { className: "menu mute-menu", id: "muteMenu", hidden: true });
+  muteMenu.setAttribute("role", "menu");
+  document.body.appendChild(muteMenu);
+  let muteMenuBack = null;
+  function closeMuteMenu(focusBack) {
+    if (muteMenu.hidden) return;
+    muteMenu.hidden = true;
+    if (focusBack && muteMenuBack) muteMenuBack.focus({ preventScroll: true });
+    muteMenuBack = null;
+  }
+  function openMuteMenu(ch, btn, e) {
+    if (!ch.data) return;
+    muteMenuBack = btn;
+    muteMenu.textContent = "";
+    const item = (text, checked, run) => {
+      const b = Object.assign(document.createElement("button"), { type: "button", textContent: text });
+      b.setAttribute("role", "menuitemcheckbox");
+      b.setAttribute("aria-checked", String(checked));
+      b.addEventListener("click", () => { closeMuteMenu(true); run(); });
+      muteMenu.appendChild(b);
+      return b;
+    };
+    const head = Object.assign(document.createElement("div"), { className: "menu-head", textContent: displayName(ch) });
+    muteMenu.appendChild(head);
+    const full = !!ch.data.mute;
+    item("Mute everywhere", full, () => btn.click());
+    muteMenu.appendChild(Object.assign(document.createElement("hr"), {}));
+    const list = partMuted(ch);
+    let any = false;
+    for (const bus of layout.buses) {
+      const muted = list.includes(bus.param);
+      if (!muted && !routeOn(ch, bus.param)) continue;
+      any = true;
+      item(`Mute on ${busLabel(bus.param)}`, muted, () => partMuteOutput(ch, bus.param, !muted));
+    }
+    if (!any) {
+      const none = Object.assign(document.createElement("p"), { className: "menu-note", textContent: "Not sent to any output. Turn on A1–B3 above the fader first." });
+      muteMenu.appendChild(none);
+    }
+    if (list.length > 1) {
+      muteMenu.appendChild(document.createElement("hr"));
+      const b = item("Unmute all outputs", false, () => { for (const p of list) partMuteOutput(ch, p, false); });
+      b.setAttribute("role", "menuitem");
+      b.removeAttribute("aria-checked");
+    }
+    muteMenu.hidden = false;
+    // Keyboard (Shift+F10, Menu key) has no pointer position: open under the button.
+    const r = btn.getBoundingClientRect();
+    const fromKey = !e || (e.clientX === 0 && e.clientY === 0);
+    let x = fromKey ? r.left : e.clientX, y = fromKey ? r.bottom + 4 : e.clientY;
+    const w = muteMenu.offsetWidth, h = muteMenu.offsetHeight;
+    x = Math.max(4, Math.min(x, innerWidth - w - 4));
+    if (y + h > innerHeight - 4) y = Math.max(4, (fromKey ? r.top - 4 : y) - h);
+    muteMenu.style.left = `${x}px`;
+    muteMenu.style.top = `${y}px`;
+    muteMenu.querySelector("button")?.focus({ preventScroll: true });
+  }
+  document.addEventListener("pointerdown", (e) => { if (!muteMenu.hidden && !muteMenu.contains(e.target)) closeMuteMenu(false); }, true);
+  addEventListener("blur", () => closeMuteMenu(false));
+  addEventListener("resize", () => closeMuteMenu(false));
+  muteMenu.addEventListener("keydown", (e) => {
+    const items = [...muteMenu.querySelectorAll("button")];
+    const at = items.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeMuteMenu(true); }
+    else if (e.key === "Tab") { e.preventDefault(); closeMuteMenu(true); }
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const n = items.length;
+      items[(at + (e.key === "ArrowDown" ? 1 : -1) + n) % n].focus();
+    } else if (e.key === "Home") { e.preventDefault(); items[0].focus(); }
+    else if (e.key === "End") { e.preventDefault(); items[items.length - 1].focus(); }
+  });
   function markMuted(ch, on) {
     // A mute or unmute fades levels inside Voicemeeter. The fader's own level doesn't change, so while
     // that runs the cap ignores incoming levels and can't wobble with the fade's in-between values.
@@ -520,12 +655,14 @@
         t.btn.setAttribute("aria-pressed", String(!!on));
       }
       markMuted(ch, !!d.mute);
+      if (ch.kind === "strip") reconcilePartMute(ch);
       for (const r of ch.rows) r.classList.toggle("ducked", !!d.ducked);
     }
     applyMixFor(st);
     applyRecorder(st.recorder);
     applyOutputs(st);
     applyBrb(st);
+    applyStreamButtons(st);
     sizeToNames();
     if (drawerCh) renderDrawerValues();
     if (!fitted) { fitted = true; requestAnimationFrame(fitWindowToMixer); }
@@ -1369,6 +1506,8 @@
     syncObs();
     syncClip();
     syncTwitch();
+    syncLive();
+    syncReplay();
     syncRemote();
     $("#historyOn").checked = HI().on !== false;
     renderHotkeys();
@@ -1384,9 +1523,10 @@
     ["volup", "Turn up 2 dB"], ["voldown", "Turn down 2 dB"],
     ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
     ["window", "Show or hide Sleekmeeter"], ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"],
-    ["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"]];
+    ["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"],
+    ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"]];
   // Actions that aren't about one channel.
-  const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb", "soundstop"]);
+  const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb", "soundstop", "replay", "musicguard"]);
   // Actions whose second box is a list of names, not channels.
   const NAMED = { output: "Output profile", scene: "Scene", sound: "Sound" };
   let knownScenes = [];
@@ -3055,8 +3195,9 @@
   const TW = () => (settings.twitch = Object.assign({}, DEFAULT_SETTINGS.twitch, settings.twitch));
   const TW_ACTIONS = [["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"],
     ["mute", "Mute or unmute"], ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
-    ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"]];
-  const TW_NO_TARGET = new Set(["brb", "soundstop", "outputnext", "duck", "record"]);
+    ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"],
+    ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"]];
+  const TW_NO_TARGET = new Set(["brb", "soundstop", "outputnext", "duck", "record", "replay", "musicguard"]);
   let twitchState = null;
   function applyTwitch(st) {
     twitchState = st || null;
@@ -3069,13 +3210,13 @@
     text.dataset.ok = on ? "1" : "";
   }
   const twRange = bindRange("twitchCooldown", () => TW().cooldown, (v) => { TW().cooldown = v; }, (v) => (v ? `${v} s` : "none"));
-  function twTarget(sel, cmd) {
+  function twTarget(sel, cmd, typed = "What's typed after it") {
     sel.textContent = "";
     const none = TW_NO_TARGET.has(cmd.action);
     sel.style.visibility = none ? "hidden" : "visible";
     if (none) { cmd.target = ""; return; }
     sel.setAttribute("aria-label", "On");
-    if (cmd.action === "scene" || cmd.action === "sound") sel.appendChild(new Option("What's typed after it", ""));
+    if (cmd.action === "scene" || cmd.action === "sound") sel.appendChild(new Option(typed, ""));
     const names = cmd.action === "mute" ? chans.map((ch) => [displayName(ch), ch.prefix]) : namesFor(cmd.action).map((n) => [n, n]);
     for (const [label, value] of names) sel.appendChild(new Option(label, value));
     if (cmd.action === "mute" && !/^(Strip|Bus)\[/.test(cmd.target || "")) cmd.target = "Strip[0]";
@@ -3110,8 +3251,67 @@
       list.appendChild(row);
     });
   }
+  // Channel point rewards: like commands, but found by the reward's id (learned from chat).
+  function renderTwitchRewards() {
+    const list = $("#twitchRewards");
+    list.textContent = "";
+    const rewards = TW().rewards || (TW().rewards = []);
+    $("#rewardHead").hidden = rewards.length === 0;
+    rewards.forEach((r, idx) => {
+      const row = document.createElement("div");
+      row.className = "rule twitch-rule";
+      const name = Object.assign(document.createElement("input"), { type: "text", value: r.name || "", placeholder: "Reward name", spellcheck: false, autocomplete: "off" });
+      name.maxLength = 40;
+      name.title = `Reward id ${r.id}`;
+      name.setAttribute("aria-label", "Reward name");
+      name.addEventListener("change", () => { r.name = name.value.trim(); saveSettings(); });
+      const act = document.createElement("select");
+      act.setAttribute("aria-label", "What it does");
+      for (const [v, l] of TW_ACTIONS) act.appendChild(new Option(l, v));
+      act.value = r.action || "sound";
+      const tgt = document.createElement("select");
+      twTarget(tgt, r, "What the viewer typed");
+      act.addEventListener("change", () => { r.action = act.value; r.target = ""; twTarget(tgt, r, "What the viewer typed"); saveSettings(); });
+      tgt.addEventListener("change", () => { r.target = tgt.value; saveSettings(); });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn icon"; del.setAttribute("aria-label", "Remove reward");
+      del.innerHTML = `<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      del.addEventListener("click", () => { rewards.splice(idx, 1); saveSettings(); renderTwitchRewards(); });
+      row.append(name, act, tgt, del);
+      list.appendChild(row);
+    });
+  }
+  // "Add a reward…": wait for the next redemption in chat and add its id.
+  let learnTimer = null;
+  function stopLearn(note) {
+    clearInterval(learnTimer); learnTimer = null;
+    $("#addReward").textContent = "Add a reward…";
+    if (note !== undefined) $("#rewardLearn").textContent = note;
+  }
+  $("#addReward").addEventListener("click", () => {
+    if (learnTimer) { stopLearn(""); return; }
+    const t = TW();
+    if (!t.on || !t.channel) { $("#rewardLearn").textContent = "Turn on chat commands and enter your channel first."; return; }
+    const since = Date.now();
+    $("#addReward").textContent = "Stop waiting";
+    $("#rewardLearn").textContent = "Now redeem the reward on your channel (type anything)…";
+    learnTimer = setInterval(async () => {
+      const st = await engine.twitchStatus().catch(() => null);
+      const r = st && st.reward;
+      if (!r || !r.id || !(r.at > since)) return;
+      const list = TW().rewards || (TW().rewards = []);
+      if (list.some((x) => x.id === r.id)) { stopLearn("That reward is already in the list."); return; }
+      list.push({ id: r.id, name: `Reward ${list.length + 1}`, action: "sound", target: "" });
+      saveSettings();
+      renderTwitchRewards();
+      stopLearn(`Got it: ${r.user} redeemed it${r.text ? ` with “${r.text}”` : ""}. Give it a name and choose what it does.`);
+      const names = document.querySelectorAll("#twitchRewards input");
+      if (names.length) { names[names.length - 1].focus(); names[names.length - 1].select(); }
+    }, 1000);
+  });
   function syncTwitch() {
-    engine.listScenes().then((n) => { knownScenes = n; renderTwitchCmds(); }).catch(() => renderTwitchCmds());
+    engine.listScenes().then((n) => { knownScenes = n; renderTwitchCmds(); renderTwitchRewards(); }).catch(() => { renderTwitchCmds(); renderTwitchRewards(); });
+    stopLearn("");
     const t = TW();
     $("#twitchOn").checked = !!t.on;
     $("#twitchOpts").hidden = !t.on;
@@ -3129,6 +3329,192 @@
     const inputs = document.querySelectorAll("#twitchCmds input");
     inputs[inputs.length - 1].focus();
   });
+
+  /* ---------- going live: muted mic, stream sound, the go-live check, music off stream ---------- */
+  const MT = () => (settings.mutedTalk = Object.assign({}, DEFAULT_SETTINGS.mutedTalk, settings.mutedTalk));
+  const SW = () => (settings.streamWatch = Object.assign({}, DEFAULT_SETTINGS.streamWatch, settings.streamWatch));
+  const GL = () => (settings.goLive = Object.assign({}, DEFAULT_SETTINGS.goLive, settings.goLive));
+  const MG = () => (settings.musicGuard = Object.assign({}, DEFAULT_SETTINGS.musicGuard, settings.musicGuard));
+  const RP = () => (settings.replay = Object.assign({}, DEFAULT_SETTINGS.replay, settings.replay));
+  // The output the stream gets: the setting, else B2 (B on Standard), like watch.rs.
+  function defaultStreamBus() {
+    const hb = layout.buses.filter((b) => b.kind === "hw").length, vb = layout.buses.length - hb;
+    const j = hb + (vb >= 2 ? 1 : 0);
+    return j < layout.buses.length ? j : -1;
+  }
+  const liveRanges = [
+    bindRange("mutedTalkDb", () => MT().threshold, (v) => { MT().threshold = v; }, fmtDbShort),
+    bindRange("watchSecs", () => SW().silentSecs, (v) => { SW().silentSecs = v; }, (v) => `${v} s`),
+  ];
+  // A list of the inputs, by name.
+  function fillStrips(sel, value, none) {
+    sel.textContent = "";
+    if (none) sel.appendChild(new Option(none, ""));
+    for (const ch of chans) if (ch.kind === "strip") sel.appendChild(new Option(displayName(ch), ch.prefix));
+    sel.value = value || "";
+    if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+    return sel.value;
+  }
+  function syncLive() {
+    const sb = $("#streamBus");
+    sb.textContent = "";
+    const def = defaultStreamBus();
+    sb.appendChild(new Option(def >= 0 ? `Automatic (${busLabel(layout.buses[def].param)})` : "Automatic", ""));
+    layout.buses.forEach((b, j) => sb.appendChild(new Option(busLabel(b.param), `Bus[${j}]`)));
+    sb.value = settings.streamBus || "";
+    if (sb.selectedIndex < 0) sb.value = "";
+    const mt = MT();
+    $("#mutedTalkOn").checked = mt.on !== false;
+    $('[data-needs="mutedtalk"]').hidden = mt.on === false;
+    mt.target = fillStrips($("#mutedTalkTarget"), mt.target);
+    $("#mutedTalkPtt").checked = !!mt.ptt;
+    $("#mutedTalkPttRow").hidden = !(settings.hotkeys || []).some((h) => h.action === "ptt" && h.target === mt.target);
+    const w = SW();
+    $("#watchOn").checked = !!w.on;
+    $('[data-needs="watch"]').hidden = !w.on;
+    $("#watchClip").checked = w.clip !== false;
+    $("#watchLive").checked = w.onlyLive !== false;
+    $("#goLiveOnLive").checked = GL().onLive !== false;
+    const g = MG();
+    $("#guardOn").checked = !!g.on;
+    $('[data-needs="guard"]').hidden = !g.on;
+    g.strip = fillStrips($("#guardStrip"), g.strip, "Choose the channel");
+    $("#guardWhen").value = g.when || "either";
+    for (const r of liveRanges) r._sync();
+  }
+  const onCheck = (id, set) => $("#" + id).addEventListener("change", (e) => { set(e.target.checked); saveSettings(); syncLive(); applyStreamButtons(lastState); });
+  onCheck("mutedTalkOn", (v) => { MT().on = v; });
+  onCheck("mutedTalkPtt", (v) => { MT().ptt = v; });
+  onCheck("watchOn", (v) => { SW().on = v; });
+  onCheck("watchClip", (v) => { SW().clip = v; });
+  onCheck("watchLive", (v) => { SW().onlyLive = v; });
+  onCheck("goLiveOnLive", (v) => { GL().onLive = v; });
+  onCheck("guardOn", (v) => { MG().on = v; });
+  const onPick = (id, set) => $("#" + id).addEventListener("change", (e) => { set(e.target.value); saveSettings(); syncLive(); applyStreamButtons(lastState); });
+  onPick("streamBus", (v) => { settings.streamBus = v; });
+  onPick("mutedTalkTarget", (v) => { MT().target = v; });
+  onPick("guardStrip", (v) => { MG().strip = v; });
+  onPick("guardWhen", (v) => { MG().when = v; });
+
+  // The header buttons for Music off stream and Instant replay show once they're set up.
+  function applyStreamButtons(st) {
+    const g = MG();
+    const mb = $("#musicBtn");
+    mb.hidden = SIDE || !g.on || !g.strip;
+    const on = !!(st && st.musicGuard);
+    mb.setAttribute("aria-pressed", String(on));
+    mb.title = on ? "Your music is off the stream. Click to put it back on" : "Music off stream: click to keep your music out of the stream now";
+    mb.setAttribute("aria-label", on ? "Music is off the stream" : "Music off stream");
+    $("#replayBtn").hidden = SIDE || !RP().on;
+  }
+  $("#musicBtn").addEventListener("click", () => engine.musicGuardToggle().catch(fail));
+
+  // Warnings from the app: talking while muted, a silent or clipping stream.
+  function onAlert(a) {
+    if (!a || SIDE) return;
+    toast(`${a.name}: ${a.text}`);
+    if (a.kind !== "mutedTalk") return;
+    const ch = chans.find((c) => c.prefix === MT().target);
+    if (!ch) return;
+    for (const r of ch.rows) r.classList.add("clipped");
+    setTimeout(() => { for (const r of ch.rows) r.classList.remove("clipped"); }, 2500);
+  }
+
+  // The go-live check.
+  const goLiveDlg = $("#goLiveDlg");
+  const RANK = { bad: 0, warn: 1, ok: 2 };
+  function paintGoLive(items) {
+    const list = $("#goLiveList");
+    list.textContent = "";
+    const todo = items.filter((i) => i.state !== "ok").length;
+    const sum = $("#goLiveSum");
+    sum.textContent = !todo ? "All good. Have a great stream!" : todo === 1 ? "1 thing to check before you go live." : `${todo} things to check before you go live.`;
+    sum.dataset.ok = todo ? "" : "1";
+    for (const it of [...items].sort((a, b) => (RANK[a.state] ?? 2) - (RANK[b.state] ?? 2))) {
+      const li = document.createElement("li");
+      li.dataset.state = it.state;
+      const mark = Object.assign(document.createElement("span"), { className: "mark", textContent: it.state === "ok" ? "✓" : it.state === "warn" ? "!" : "×" });
+      const body = document.createElement("div");
+      body.append(Object.assign(document.createElement("b"), { textContent: it.label }), Object.assign(document.createElement("span"), { className: "detail", textContent: it.detail }));
+      const button = (text, run) => {
+        const b = Object.assign(document.createElement("button"), { className: "btn primary", type: "button", textContent: text });
+        b.addEventListener("click", async () => { b.disabled = true; try { await run(); } catch (e) { fail(e); } setTimeout(runGoLive, 700); });
+        body.appendChild(b);
+      };
+      if (it.action === "fixAudio") button("Fix my audio", () => fixAudio());
+      else if (it.action === "set" && it.param) button(it.button || "Fix it", () => engine.setFloat(it.param, it.value));
+      li.append(mark, body);
+      list.appendChild(li);
+    }
+  }
+  async function runGoLive() {
+    const list = $("#goLiveList");
+    list.textContent = "";
+    $("#goLiveSum").textContent = "";
+    list.appendChild(Object.assign(document.createElement("li"), { className: "busy", textContent: "Checking…" }));
+    let items;
+    try { items = await engine.goLiveCheck(); } catch (e) { items = [{ state: "bad", label: "Go-live check", detail: String(e && e.message ? e.message : e) }]; }
+    paintGoLive(items);
+  }
+  $("#goLiveBtn").addEventListener("click", () => { if (!goLiveDlg.open) goLiveDlg.showModal(); runGoLive(); });
+  $("#goLiveAgain").addEventListener("click", runGoLive);
+  $("#goLiveSettings").addEventListener("click", () => {
+    goLiveDlg.close();
+    $("#settingsBtn").click();
+    const fold = $("#liveFold");
+    fold.open = true;
+    requestAnimationFrame(() => fold.scrollIntoView({ block: "start" }));
+  });
+  goLiveDlg.addEventListener("click", (e) => { if (e.target === goLiveDlg) goLiveDlg.close(); });
+  // OBS went live and the check found something: show what (the overlay already said so).
+  function onGoLive(p) {
+    if (SIDE || !p || !p.items) return;
+    paintGoLive(p.items);
+    if (!goLiveDlg.open) goLiveDlg.showModal();
+  }
+
+  // Instant replay.
+  const replayRange = bindRange("replaySecs", () => RP().secs, (v) => { RP().secs = v; }, (v) => `${v} s`);
+  let replayTimer = null;
+  async function refreshReplay() {
+    let st = { running: false, message: "" };
+    try { st = await engine.replayStatus(); } catch (e) { /* keep the blank state */ }
+    const on = !!st.running;
+    $("#replayNote").textContent = !RP().on ? "" : on ? "On" : "Not running";
+    $("#replayNote").dataset.ok = on ? "1" : "";
+    const text = $("#replayStatusText");
+    text.textContent = RP().on ? st.message || "" : "";
+    text.dataset.ok = on ? "1" : "";
+  }
+  async function syncReplay() {
+    const r = RP();
+    $("#replayOn").checked = !!r.on;
+    $('[data-needs="replay"]').hidden = !r.on;
+    replayRange._sync();
+    let devs = [];
+    try { devs = await engine.replayDevices(); } catch (e) { /* none listed */ }
+    const sel = $("#replayDevice");
+    sel.textContent = "";
+    sel.appendChild(new Option("The stream output (automatic)", ""));
+    for (const d of devs) sel.appendChild(new Option(d, d));
+    if (r.device && !devs.includes(r.device)) sel.appendChild(new Option(`${r.device} (not connected)`, r.device));
+    sel.value = r.device || "";
+    refreshReplay();
+    clearInterval(replayTimer);
+    replayTimer = setInterval(() => {
+      if (!settingsDlg.open) { clearInterval(replayTimer); replayTimer = null; return; }
+      refreshReplay();
+    }, 2000);
+  }
+  $("#replayOn").addEventListener("change", (e) => { RP().on = e.target.checked; saveSettings(); syncReplay(); applyStreamButtons(lastState); setTimeout(refreshReplay, 1200); });
+  $("#replayDevice").addEventListener("change", (e) => { RP().device = e.target.value; saveSettings(); setTimeout(refreshReplay, 1500); });
+  function saveReplay() {
+    engine.replaySave().then((p) => toast(`Replay saved: ${String(p).split(/[\\/]/).pop()}`)).catch(fail);
+  }
+  $("#replayBtn").addEventListener("click", saveReplay);
+  $("#replaySaveNow").addEventListener("click", saveReplay);
+  $("#replayFolder").addEventListener("click", () => engine.replayOpenFolder().catch(fail));
+  settingsDlg.addEventListener("close", () => stopLearn(""));
 
   /* ---------- phone remote ---------- */
   const RM = () => (settings.remote = Object.assign({}, DEFAULT_SETTINGS.remote, settings.remote));
@@ -3922,6 +4308,8 @@
       engine.onObsStatus(applyObs).catch(() => {});
       engine.twitchStatus().then(applyTwitch).catch(() => {});
       engine.onTwitchStatus(applyTwitch).catch(() => {});
+      engine.onAlert(onAlert).catch(() => {});
+      engine.onGoLive(onGoLive).catch(() => {});
     }
     engine.onSceneAuto((e) => {
       setScene(e.scene);

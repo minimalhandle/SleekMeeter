@@ -4,6 +4,11 @@
 //! ever posted) and watches for the commands you set up, like `!brb` or `!sound airhorn`.
 //! A command only runs when it comes from someone you allow: just you, you and your mods, or
 //! everyone. Chat text is never run as anything else: only a command you added can do something.
+//!
+//! Channel point rewards: a reward that asks the viewer to type something shows up in chat
+//! with the reward's id, so Sleekmeeter can play a sound (or run any other action) for it.
+//! Rewards without text never reach chat, so they can't be used. Anyone who redeems a reward
+//! can run it (they paid for it), with the same wait between runs as commands.
 
 use crate::{actions, Settings};
 use serde_json::{json, Value};
@@ -18,6 +23,9 @@ const SERVER: &str = "irc.chat.twitch.tv:6667";
 const RETRY: Duration = Duration::from_secs(5);
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
+/// The last channel point redemption seen in chat, so Settings can add it as a reward:
+/// `{ id, user, text, at }` (`at` in ms since 1970, to tell a new one from an old one).
+static REWARD: Mutex<Value> = Mutex::new(Value::Null);
 
 fn idle(message: &str) -> Value {
     json!({ "connected": false, "message": message, "last": "" })
@@ -25,16 +33,14 @@ fn idle(message: &str) -> Value {
 
 pub fn status() -> Value {
     let s = STATUS.lock().unwrap().clone();
-    if s.is_null() {
-        idle("Off")
-    } else {
-        s
-    }
+    let mut s = if s.is_null() { idle("Off") } else { s };
+    s["reward"] = REWARD.lock().unwrap().clone();
+    s
 }
 
 fn publish(app: &AppHandle, v: Value) {
-    *STATUS.lock().unwrap() = v.clone();
-    let _ = app.emit("twitch-status", v);
+    *STATUS.lock().unwrap() = v;
+    let _ = app.emit("twitch-status", status());
 }
 
 #[derive(PartialEq, Clone)]
@@ -72,6 +78,8 @@ struct Chat {
     broadcaster: bool,
     moderator: bool,
     text: String,
+    /// The channel point reward this message redeems ("" for a normal message).
+    reward: String,
 }
 
 /// Pick a chat message apart: `@tags :nick!nick@nick.tmi.twitch.tv PRIVMSG #chan :text`.
@@ -85,6 +93,7 @@ fn parse_message(line: &str) -> Option<Chat> {
     let nick = head.trim_start_matches(':').split('!').next()?.to_string();
     let mut name = nick;
     let (mut broadcaster, mut moderator) = (false, false);
+    let mut reward = String::new();
     for tag in tags.split(';') {
         let Some((k, v)) = tag.split_once('=') else {
             continue;
@@ -95,6 +104,13 @@ fn parse_message(line: &str) -> Option<Chat> {
             "badges" => {
                 broadcaster = v.split(',').any(|b| b.starts_with("broadcaster/"));
             }
+            "custom-reward-id" => {
+                reward = v
+                    .chars()
+                    .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+                    .take(64)
+                    .collect()
+            }
             _ => {}
         }
     }
@@ -104,7 +120,57 @@ fn parse_message(line: &str) -> Option<Chat> {
         broadcaster,
         moderator: moderator || broadcaster,
         text,
+        reward,
     })
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// A channel point redemption: run the reward's action, if one is set up for it.
+fn handle_reward(
+    app: &AppHandle,
+    c: &Chat,
+    cooldowns: &mut HashMap<String, Instant>,
+) -> Option<String> {
+    let text: String = c.text.trim().chars().take(100).collect();
+    *REWARD.lock().unwrap() =
+        json!({ "id": c.reward, "user": c.name, "text": text, "at": now_ms() });
+    let (found, cooldown) = {
+        let state = app.state::<Settings>();
+        let s = state.0.lock().unwrap();
+        let t = &s["twitch"];
+        let hit = t["rewards"].as_array().and_then(|list| {
+            list.iter()
+                .find(|x| x["id"].as_str() == Some(c.reward.as_str()))
+                .cloned()
+        });
+        (hit, t["cooldown"].as_f64().unwrap_or(3.0).clamp(0.0, 600.0))
+    };
+    let Some(reward) = found else {
+        return Some(format!("an unknown reward from {}", c.name));
+    };
+    let key = format!("reward:{}", c.reward);
+    if let Some(at) = cooldowns.get(&key) {
+        if at.elapsed().as_secs_f64() < cooldown {
+            return None;
+        }
+    }
+    cooldowns.insert(key, Instant::now());
+    let action = reward["action"].as_str().unwrap_or("").to_string();
+    let label = reward["name"].as_str().unwrap_or("A reward").to_string();
+    // No fixed target: use what the viewer typed, like a sound's name.
+    let fixed = reward["target"].as_str().unwrap_or("").to_string();
+    let target = if fixed.is_empty() { text } else { fixed };
+    log_info!("Twitch: {} redeemed {label} ({action})", c.name);
+    if let Err(e) = actions::perform(app, &action, &target) {
+        log_warn!("Twitch reward {label}: {e}");
+    }
+    Some(format!("{label} from {}", c.name))
 }
 
 fn allowed(who: &str, c: &Chat) -> bool {
@@ -222,7 +288,12 @@ fn session(app: &AppHandle, c: &Cfg) -> Result<(), String> {
             let _ = writer.write_all(b"PONG :tmi.twitch.tv\r\n");
         } else if line.contains(" PRIVMSG ") {
             if let Some(chat) = parse_message(&line) {
-                if let Some(ran) = handle(app, &c.who, &chat, &mut cooldowns) {
+                let ran = if chat.reward.is_empty() {
+                    handle(app, &c.who, &chat, &mut cooldowns)
+                } else {
+                    handle_reward(app, &chat, &mut cooldowns)
+                };
+                if let Some(ran) = ran {
                     last = ran;
                     publish(
                         app,
@@ -305,6 +376,16 @@ mod tests {
         let c = parse_message(":v!v@v.tmi.twitch.tv PRIVMSG #me :!brb").unwrap();
         assert!(!allowed("mods", &c));
         assert!(allowed("everyone", &c));
+    }
+
+    #[test]
+    fn reads_a_channel_point_redemption() {
+        let line = "@badges=;custom-reward-id=27c8e486-a386-40cc-9a4b-dbb5cf01e439;display-name=Viewer :viewer!viewer@viewer.tmi.twitch.tv PRIVMSG #me :airhorn";
+        let c = parse_message(line).unwrap();
+        assert_eq!(c.reward, "27c8e486-a386-40cc-9a4b-dbb5cf01e439");
+        assert_eq!(c.text, "airhorn");
+        let plain = parse_message(":v!v@v.tmi.twitch.tv PRIVMSG #me :hi").unwrap();
+        assert!(plain.reward.is_empty());
     }
 
     #[test]

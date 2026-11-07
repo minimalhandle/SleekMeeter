@@ -19,6 +19,9 @@
   button[aria-pressed="true"] { background:var(--amber); color:#1b1204; border-color:var(--amber); font-weight:600; }
   .brb { width:100%; font-size:18px; font-weight:600; }
   .brb[aria-pressed="true"] { background:var(--red); color:#fff; border-color:var(--red); }
+  .live-row { display:flex; gap:8px; margin-top:8px; }
+  .live-row button { flex:1; }
+  .live-row:not(:has(button:not([hidden]))) { display:none; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
   .row { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; }
   .row .name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -34,6 +37,7 @@
 <h1>Sleekmeeter <small id="status">connecting…</small></h1>
 <div id="app" hidden>
   <button class="brb" id="brb" type="button" aria-pressed="false">Be right back</button>
+  <div class="live-row"><button id="music" type="button" aria-pressed="false" hidden>Music off stream</button><button id="replay" type="button" hidden>Save replay</button></div>
   <div id="blocks"></div>
 </div>
 <p class="msg" id="msg" hidden></p>
@@ -104,6 +108,10 @@
     $("brb").setAttribute("aria-pressed", String(!!s.brb));
     $("brb").textContent = s.brb ? "Back live" : "Be right back";
     $("brb").hidden = !s.brbSet && !s.brb;
+    $("music").hidden = !s.musicGuardSet && !s.musicGuard;
+    $("music").setAttribute("aria-pressed", String(!!s.musicGuard));
+    $("music").textContent = s.musicGuard ? "Music is off stream" : "Music off stream";
+    $("replay").hidden = !s.replay;
     document.querySelectorAll("#blocks [data-name]").forEach((b) => { if (s.outputs.includes(b.dataset.name)) b.setAttribute("aria-pressed", String(b.dataset.name === s.outputNow)); });
     [...s.strips, ...s.buses].forEach((c) => {
       const r = rows.get(c.key); if (!r) return;
@@ -116,6 +124,8 @@
     $("status").textContent = s.connected ? "connected" : "Voicemeeter isn't running";
   }
   $("brb").addEventListener("click", () => act("brb"));
+  $("music").addEventListener("click", () => act("musicguard"));
+  $("replay").addEventListener("click", () => api("/api/action", { action: "replay", target: "" }).then(() => flash("replay saved")).catch((e) => flash(e.message)));
   let failures = 0;
   async function refresh() {
     try { const s = await api("/api/state"); failures = 0; show(""); build(s); paint(s); }

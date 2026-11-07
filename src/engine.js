@@ -26,7 +26,7 @@
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
  *   selftestInputs() -> {devices} / selftestRun(input, output, secs)   hear-yourself test
  *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPickPack() -> {folder,count}|null (copied into the data folder) / soundImport(paths) -> [copied paths] / soundPlay(name) / soundStop()   soundboard
- *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last} of the Twitch chat link
+ *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last, reward: {id, user, text, at}|null} of the Twitch chat link
  *   remoteStatus() -> {running, message, urls}   the phone remote
  *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
  *   appRouteDevices() -> [{id, name}] / appRouteSet(pids, deviceId)   send an app to another output
@@ -34,6 +34,10 @@
  *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
  *   healthCheck() -> [{state: ok|warn|bad, label, detail, action?}]   "Check my setup"
+ *   goLiveCheck() -> same shape (action "set" adds {button, param, value}) / onGoLive(cb) cb({items}) when OBS went live and something's wrong
+ *   onAlert(cb)   cb({kind: mutedTalk|silent|clip, name, text}): talking while muted, a silent or clipping stream
+ *   musicGuardToggle() -> bool   Music off stream on or off by hand (state.musicGuard tells which)
+ *   replaySave() -> path / replayStatus() -> {running, message, device} / replayDevices() -> [names] / replayOpenFolder()   instant replay
  *   screens() -> [{name, label}]   for Settings → Volume overlay
  *   backupsList() -> [{file, label}] / backupRestore(file) / backupBefore(why)   Voicemeeter backups
  *   windowsOutput() -> {state: ok|wrong|unknown, output, calls, target} / fixAudio() -> {moved, restarted} / onWindowsOutput(cb)
@@ -89,9 +93,15 @@
     obs: { on: false, host: "127.0.0.1", port: 4455, password: "", rules: [], liveDo: "", liveScene: "", offDo: "", offScene: "" },
     clipWarn: { on: false, target: "Strip[0]" },
     soundboard: { device: "", volume: 100, sounds: [] },
-    twitch: { on: false, channel: "", who: "mods", cooldown: 3, commands: [] },
+    twitch: { on: false, channel: "", who: "mods", cooldown: 3, commands: [], rewards: [] },
     remote: { on: false, port: 8787, key: "" },
     history: { on: true },
+    streamBus: "",
+    mutedTalk: { on: true, target: "Strip[0]", threshold: -35, ptt: false },
+    streamWatch: { on: false, silentSecs: 15, clip: true, onlyLive: true },
+    goLive: { onLive: true },
+    musicGuard: { on: false, strip: "", when: "either" },
+    replay: { on: false, device: "", secs: 60 },
     appRoutes: {},
   };
 
@@ -137,6 +147,7 @@
     runningApps() { return this.invoke("running_apps"); }
     onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
     glide(key, value) { return this.invoke("vm_glide", { key, value }); }
+    routeMute(strip, out, mute) { return this.invoke("vm_route_mute", { strip, out, mute }); }
     appInfo() { return this.invoke("app_info"); }
     whatsNew(all) { return this.invoke("whats_new", { all: !!all }); }
     openLogs() { return this.invoke("open_logs"); }
@@ -171,6 +182,14 @@
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
     onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
     healthCheck() { return this.invoke("health_check"); }
+    goLiveCheck() { return this.invoke("golive_check"); }
+    onGoLive(cb) { return this.listen("golive", (e) => cb(e.payload)); }
+    onAlert(cb) { return this.listen("watch-alert", (e) => cb(e.payload)); }
+    musicGuardToggle() { return this.invoke("music_guard_toggle"); }
+    replaySave() { return this.invoke("replay_save"); }
+    replayStatus() { return this.invoke("replay_status"); }
+    replayDevices() { return this.invoke("replay_devices"); }
+    replayOpenFolder() { return this.invoke("replay_open_folder"); }
     screens() { return this.invoke("screens"); }
     backupsList() { return this.invoke("backups_list"); }
     backupRestore(file) { return this.invoke("backup_restore", { file }); }
@@ -305,6 +324,8 @@
         return d[m[2]];
       }));
     }
+    // No fades in the simulator: the send just switches.
+    routeMute(strip, out, mute) { return this.setFloat(`Strip[${strip}].${out}`, mute ? 0 : 1); }
     setFloat(name, value) {
       if (/^Strip\[\d\]\.(Comp|Gate|Denoiser)/.test(name)) { (this._chain = this._chain || {})[name] = value; }
       const rec = this.state.recorder;
@@ -507,7 +528,14 @@
     soundPickFolder() { return Promise.resolve(["rimshot.wav", "wilhelm-scream.mp3", "oof.ogg", "bell_ding.flac", "applause.wav"].map((f) => "C:\\Sounds\\Memes\\" + f)); }
     soundPlay(name) { this.played = name; return Promise.resolve(); }
     soundStop() { return Promise.resolve(); }
-    twitchStatus() { return Promise.resolve(this._twitch || { connected: false, message: "Off", last: "" }); }
+    // With chat on, a viewer seems to redeem a channel point reward every few seconds (for adding rewards).
+    twitchStatus() {
+      const t = this.settings.twitch || {};
+      if (!t.on) return Promise.resolve({ connected: false, message: "Off", last: "", reward: null });
+      if (!t.channel) return Promise.resolve({ connected: false, message: "Enter your channel name", last: "", reward: null });
+      const at = Math.floor(Date.now() / 3000) * 3000;
+      return Promise.resolve({ connected: true, message: `In #${t.channel} chat`, last: "", reward: { id: "27c8e486-a386-40cc-9a4b-dbb5cf01e439", user: "Viewer", text: "airhorn", at } });
+    }
     onTwitchStatus(cb) { this._twitchCb = cb; return Promise.resolve(); }
     remoteStatus() {
       const r = this.settings && this.settings.remote;
@@ -589,6 +617,124 @@
       ]), 500);
       });
     }
+    /* Going live, simulated the way watch.rs and golive.rs do it in the app. */
+    streamBus() {
+      const L = this.layout, hb = L.buses.filter((x) => x.kind === "hw").length, vb = L.buses.length - hb;
+      const m = /^Bus\[(\d)\]$/.exec(this.settings.streamBus || "");
+      if (m && +m[1] < L.buses.length) return +m[1];
+      const j = hb + (vb >= 2 ? 1 : 0);
+      return j < L.buses.length ? j : -1;
+    }
+    // The route from strip i to bus j: ["b", 1] for B2.
+    routeOf(j) {
+      const hb = this.layout.buses.filter((x) => x.kind === "hw").length;
+      return j < hb ? ["a", j] : ["b", j - hb];
+    }
+    goLiveCheck() {
+      const st = this.state, s = this.settings, out = [];
+      const item = (state, label, detail, extra) => out.push(Object.assign({ state, label, detail }, extra || {}));
+      if (!st.connected) { item("bad", "Voicemeeter", "Voicemeeter isn't running, so nothing reaches your stream."); return Promise.resolve(out); }
+      const mm = /^Strip\[(\d)\]$/.exec((s.mutedTalk || {}).target || "");
+      const mi = mm && +mm[1] < st.strips.length ? +mm[1] : 0;
+      const mic = st.strips[mi], micName = mic.label || "Your mic";
+      const j = this.streamBus(), bus = st.buses[j], p = this.layout.buses[j] ? this.layout.buses[j].param : "";
+      const busName = bus ? (bus.label ? `${bus.label} (${p})` : p) : "the stream output";
+      if (st.brb) item("warn", "Mic", "Be right back is on, so your mic is muted. Press Back live when you're ready.");
+      else if (mic.mute) item("bad", "Mic", `${micName} is muted.`, { action: "set", button: "Unmute", param: `Strip[${mi}].Mute`, value: 0 });
+      else item("ok", "Mic", `${micName} is on.`);
+      if (bus) {
+        const [k, n] = this.routeOf(j);
+        if (mic[k][n]) item("ok", "Mic on stream", `${micName} goes to ${busName}.`);
+        else item("bad", "Mic on stream", `${micName} isn't sent to ${busName}, so viewers won't hear you.`, { action: "set", button: `Send it to ${p}`, param: `Strip[${mi}].${p}`, value: 1 });
+        if (bus.mute) item("bad", "Stream output", `${busName} is muted, so your stream gets no sound.`, { action: "set", button: "Unmute", param: `Bus[${j}].Mute`, value: 0 });
+        else if (bus.gain <= -20) item("warn", "Stream output", `${busName} is turned down to ${Math.round(bus.gain)} dB, so your stream will be quiet.`);
+        else item("ok", "Stream output", `${busName} is on.`);
+        const ago = this._soundAt ? (performance.now() - this._soundAt) / 1000 : null;
+        if (ago !== null && ago < 10) item("ok", "Sound on stream", `Sound is reaching ${busName}.`);
+        else item("warn", "Sound on stream", ago === null ? `${busName} hasn't had any sound since Sleekmeeter started.` : `${busName} has been silent for ${Math.round(ago)} seconds. Say something, or check that your game and music are sent to ${p}.`);
+      }
+      const g = s.musicGuard || {};
+      if (g.on) {
+        const gm = /^Strip\[(\d)\]$/.exec(g.strip || "");
+        const when = { recording: "while OBS records", live: "while you're live", manual: "when you press its key" }[g.when] || "while you're live or recording";
+        if (gm && st.strips[+gm[1]]) item("ok", "Music off stream", `${st.strips[+gm[1]].label || "Music"} is kept off the stream ${when}.${st.musicGuard ? " It's off the stream now." : ""}`);
+        else item("warn", "Music off stream", "Choose your music channel in Settings → Going live.");
+      }
+      if ((s.obs || {}).on) item("ok", "OBS", /[?&]live\b/.test(location.search) ? "Connected, and you're live." : "Connected.");
+      else item("warn", "OBS", "Not linked, so Sleekmeeter can't tell when you go live. Turn it on in Settings → OBS Studio.");
+      if (/[?&]audio=wrong\b/.test(location.search) && !this._audioFixed) item("bad", "Windows sound output", "Windows sends sound to Headphones (Arctis Nova Pro Wireless), not Voicemeeter, so those apps skip the mixer.", { action: "fixAudio" });
+      else item("ok", "Windows sound output", "Windows plays through Voicemeeter.");
+      if ((s.twitch || {}).on) item((s.twitch.channel ? "ok" : "warn"), "Twitch chat", s.twitch.channel ? `In #${s.twitch.channel} chat` : "Not connected: enter your channel name. Chat commands and channel point sounds won't work.");
+      if ((s.replay || {}).on) item("ok", "Instant replay", `Keeping the last ${s.replay.secs || 60} seconds of Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO).`);
+      return new Promise((r) => setTimeout(() => r(out), 400));
+    }
+    onGoLive() { return Promise.resolve(); }
+    onAlert(cb) { this._alert = cb; return Promise.resolve(); }
+    // Music off stream: switch the music channel's route to the stream output off, or back on.
+    guard(on) {
+      const st = this.state;
+      if (on && !this._guardRoute) {
+        const gm = /^Strip\[(\d)\]$/.exec((this.settings.musicGuard || {}).strip || ""), j = this.streamBus();
+        if (!gm || j < 0 || !st.strips[+gm[1]]) return;
+        const [k, n] = this.routeOf(j), strip = st.strips[+gm[1]];
+        if (!strip[k][n]) return;
+        strip[k][n] = 0; this._guardRoute = [strip, k, n]; st.musicGuard = true;
+      } else if (!on && this._guardRoute) {
+        const [strip, k, n] = this._guardRoute;
+        strip[k][n] = 1; this._guardRoute = null; st.musicGuard = false;
+      } else return;
+      this.emit();
+    }
+    musicGuardToggle() {
+      const g = this.settings.musicGuard || {};
+      if (!g.on || !/^Strip\[\d\]$/.test(g.strip || "")) return Promise.reject(new Error("Choose your music channel in Settings → Going live first"));
+      this._guardManual = !this.state.musicGuard;
+      this.guard(this._guardManual);
+      return Promise.resolve(!!this.state.musicGuard);
+    }
+    // Called with every meter reading: talking while muted, a silent or clipping stream, Music off stream.
+    watch(t, raw, outputs) {
+      const s = this.settings, st = this.state, now = performance.now();
+      const say = (kind, name, text) => { if (this._alert) this._alert({ kind, name, text }); };
+      const mt = s.mutedTalk || {}, mm = /^Strip\[(\d)\]$/.exec(mt.target || "");
+      const ptt = (s.hotkeys || []).some((h) => h.action === "ptt" && h.target === mt.target) && !mt.ptt;
+      const mic = mm ? st.strips[+mm[1]] : null;
+      this._talk = this._talk || [];
+      if (mt.on !== false && mic && mic.mute && !st.brb && !ptt) {
+        this._talk.push(raw[+mm[1]] > (mt.threshold ?? -35));
+        if (this._talk.length > 36) this._talk.shift();
+        if (this._talk.filter(Boolean).length >= 21 && !(now - (this._talkAt || -1e9) < 8000)) { this._talkAt = now; say("mutedTalk", mic.label || "Your mic", "You're muted"); }
+      } else this._talk = [];
+      const j = this.streamBus(), live = /[?&]live\b/.test(location.search);
+      if (j >= 0) {
+        const lv = Math.max(...outputs[j]);
+        if (lv > -60) { this._soundAt = now; this._quietAt = null; this._silentAt = null; } else if (!this._quietAt) this._quietAt = now;
+        const w = s.streamWatch || {};
+        if (w.on && (!w.onlyLive || live)) {
+          const bus = st.buses[j], name = bus.label || this.layout.buses[j].param;
+          if (this._quietAt && now - this._quietAt >= (w.silentSecs || 15) * 1000 && !(now - (this._silentAt || -1e9) < 60000)) { this._silentAt = now; say("silent", name, "Your stream is silent"); }
+          this._clipRun = w.clip !== false && lv >= -0.3 ? (this._clipRun || 0) + 1 : 0;
+          if (this._clipRun >= 6 && !(now - (this._clipAt || -1e9) < 15000)) { this._clipAt = now; say("clip", name, "Your stream is clipping"); }
+        }
+      }
+      const g = s.musicGuard || {};
+      const auto = g.when === "manual" ? false : live && g.when !== "recording";
+      if (this._guardAuto !== auto) { this._guardAuto = auto; this._guardManual = undefined; }
+      const want = !!g.on && (this._guardManual ?? auto);
+      if (want !== !!st.musicGuard) this.guard(want);
+    }
+    replayStatus() {
+      const r = this.settings.replay || {};
+      return Promise.resolve(r.on ? { running: true, device: "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", message: `Keeping the last ${r.secs || 60} seconds of Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO).` } : { running: false, device: "", message: "Off" });
+    }
+    replayDevices() { return Promise.resolve(["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", "Voicemeeter Out B3 (VB-Audio Voicemeeter VAIO3)"]); }
+    replaySave() {
+      const r = this.settings.replay || {};
+      if (!r.on) return Promise.reject(new Error("Turn on Instant replay in Settings → Instant replay first"));
+      const d = new Date(), p = (n) => String(n).padStart(2, "0");
+      return Promise.resolve(`C:\\Users\\you\\Music\\Sleekmeeter replays\\Replay ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}.wav`);
+    }
+    replayOpenFolder() { return Promise.resolve(); }
     settingsExport() { return Promise.resolve("Sleekmeeter settings.json"); }
     settingsImport() { return Promise.resolve(null); }
     resetLayout() { return Promise.resolve(); }
@@ -666,6 +812,7 @@
         const db = 10 * Math.log10(pw) + bus.gain;
         return [db + 0.6 * Math.sin(t * 7 + j), db - 0.6 * Math.sin(t * 7 + j)];
       });
+      this.watch(t, raw, outputs);
       return { inputs, outputs };
     }
   }
