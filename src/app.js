@@ -6722,7 +6722,7 @@
     ["oled", "OLED black", "Pure black with high-contrast controls"],
     ["glass", "Glass", "Iridescent glass panels, pearl faders and a drifting aurora"],
     ["hadal", "Hadal", "Deep blue panels, cyan faders and drifting sonar rings"],
-    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders"],
+    ["hyrule", "Kokiri Forest", "Sunlit forest, mossy wood panels, fireflies and Hylian Shield faders"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
     ["arcade", "Arcade", "8-bit cabinet with pixel corners and bright colours"],

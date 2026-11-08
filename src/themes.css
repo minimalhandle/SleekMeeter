@@ -905,26 +905,48 @@ body[data-theme="sticker"] {
   font-weight: 400 900;
   font-display: swap;
 }
+/* A sunlit forest clearing: mossy wood panels, gold-leaf lettering, light shafts through the canopy,
+   lime fireflies and one blue-white guide fairy. */
 [data-theme="hyrule"] {
- --bg:#0b211b; --bay:#081912; --mod-a:#234737; --mod-b:#112d23; --key:#2c463b; --key-hi:color-mix(in srgb, #2c463b, #f7ebce 12%); --key-ink:#f7ebce; --flyout:#112d23; --panel-hi:#2c463b;
- --ink:#f7ebce; --ink-2:#aebfa9; --muted:#aebfa9; --line:color-mix(in srgb, #112d23, #f7ebce 26%); --amber:#e6c573; --cyan:#83baff; --on-ink:#17131a; --red:#ff887d;
- --focus:#83baff; --well:#081912; --track:#081912; --cap-metal:linear-gradient(145deg,#fff2ba,#a77a34 48%,#604117 52%,#d4ac64); --font:"Saira SC", "Segoe UI", sans-serif; --glow:0; color-scheme:dark;
- --mod-edge:var(--line); --key-edge:var(--line); --bay-edge:var(--line);
- --led-g:#82e1a8; --led-y:#ffd177; --led-r:var(--red);
- --led-g-off:color-mix(in srgb,var(--well),var(--led-g) 14%); --led-y-off:color-mix(in srgb,var(--well),var(--led-y) 14%); --led-r-off:color-mix(in srgb,var(--well),var(--led-r) 14%);
- --cap-shadow:0 4px 8px #0006,inset 0 1px #fff7;
+  --bg: #12301f; --bay: #0c2216a6; --bay-edge: #6a4a2a; --bay-shadow: inset 0 2px 10px #0008;
+  --mod-a: #2d4b2b; --mod-b: #182b1b; --mod-edge: #8fc25a55; --mod-shadow: 0 8px 18px #0007;
+  --key: #33482b; --key-hi: #415a34; --key-edge: #8fc25a33; --key-ink: #f5ead0; --key-shadow: inset 0 0 0 1px #5a4024;
+  --flyout: #1b311d; --panel-hi: #33482b; --line: #6a4a2a;
+  --ink: #fbf3dc; --ink-2: #cfdcb8; --muted: #b6c6a0;
+  --amber: #f1c75b; --cyan: #9fdcff; --red: #ff9a52; --solo: #c7a6ff; --on-ink: #1a1408; --focus: #9fdcff;
+  --well: #0a1b10; --track: #0a1b10;
+  --led-g: #8be04e; --led-y: #f1c75b; --led-r: #ff8a2a;
+  --led-g-off: color-mix(in srgb, var(--well) 84%, var(--led-g)); --led-y-off: color-mix(in srgb, var(--well) 86%, var(--led-y)); --led-r-off: color-mix(in srgb, var(--well) 86%, var(--led-r));
+  --glow: .6; --scroll: #6a4a2a; --scroll-hi: #8a6236;
+  --cap-metal: linear-gradient(145deg, #fff2ba, #a77a34 48%, #604117 52%, #d4ac64);
+  --cap-shadow: 0 4px 8px #0006, inset 0 1px #fff7;
+  --c-slate: #c2c9a8; --c-amber: #f1c75b; --c-coral: #ff9a52; --c-rose: #ff8fb0;
+  --c-violet: #c7a6ff; --c-blue: #8fc8ff; --c-cyan: #7fe3d6; --c-green: #8be04e;
+  --gold-leaf: linear-gradient(180deg, #fff6c4 0%, #f6d475 38%, #c48f2f 52%, #f1c75b 70%, #ffe7a0 100%);
+  --font: "Saira SC", "Segoe UI", sans-serif;
+  color-scheme: dark;
 }
+/* Light opens in the canopy above and settles as mist on the forest floor. */
 body[data-theme="hyrule"] {
-  background: radial-gradient(ellipse at 48% 10%, #30483270, transparent 58%),
-    radial-gradient(ellipse at 18% 100%, #1b3827, #081611 65%);
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 75% 50% at 50% -12%, #fbf1c466, transparent 72%),
+    radial-gradient(ellipse 130% 38% at 50% 112%, #d9efcf30, transparent 72%),
+    linear-gradient(180deg, #2a4d2f 0%, #163823 38%, #0d2619 100%);
+  background-attachment: fixed;
 }
-[data-theme="hyrule"] .strip, [data-theme="hyrule"] .mini-row { border-radius:5px; box-shadow:inset 0 0 0 1px #897046,inset 0 0 0 4px #152d24,inset 0 0 0 5px #9b794d60; }
-[data-theme="hyrule"] .btn, [data-theme="hyrule"] .route, [data-theme="hyrule"] .tog, [data-theme="hyrule"] .thumb { border-radius:5px; }
-[data-theme="hyrule"] .group-head h2 { color:#e6c573; text-transform:uppercase; letter-spacing:.12em; font-size:13px; }
+[data-theme="hyrule"] .btn, [data-theme="hyrule"] .route, [data-theme="hyrule"] .tog, [data-theme="hyrule"] .thumb { border-radius: 5px; }
 [data-theme="hyrule"] :is(.brand-name, .group-head h2, .dlg-head h2) {
   font-family: Cinzel, "Palatino Linotype", serif;
   font-weight: 700;
 }
+/* Gold-leaf lettering, like a title carved and gilded. */
+[data-theme="hyrule"] :is(.brand-name, .group-head h2) {
+  background: var(--gold-leaf); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 1px 0 #2a1808) drop-shadow(0 0 7px #f1c75b59);
+}
+[data-theme="hyrule"] .group-head h2 { text-transform: uppercase; letter-spacing: .12em; font-size: 13px; }
+[data-theme="hyrule"] .dlg-head h2 { color: #f1c75b; }
 [data-theme="hyrule"] .brand-mark { display: none; }
 [data-theme="hyrule"] .brand::before,
 [data-theme="hyrule"] .group-head h2::before {
@@ -934,66 +956,57 @@ body[data-theme="hyrule"] {
   height: 16px;
   background: url("hyrule-triforce.svg") center / contain no-repeat;
 }
-[data-theme="hyrule"] .brand::before { width: 25px; height: 22px; }
+[data-theme="hyrule"] .brand::before { width: 25px; height: 22px; filter: drop-shadow(0 0 6px #f1c75b80); }
 [data-theme="hyrule"] .group-head h2::before { margin-right: 7px; vertical-align: -3px; }
-[data-theme="hyrule"] .group-head h2::after { content: " ✦" / ""; color: #b6ed9a; }
+[data-theme="hyrule"] .group-head h2::after { content: " ✦" / ""; color: #c8f59a; -webkit-text-fill-color: #c8f59a; }
 [data-theme="hyrule"] .name { font-family: "Saira SC", "Segoe UI", sans-serif; }
-[data-theme="hyrule"] .readout { color:#e6c573; }
-[data-theme="hyrule"] .strip .chip { box-shadow: inset 0 0 0 1px var(--line); border-radius:5px; }
-[data-theme="hyrule"] .dlg { border-radius:5px; box-shadow:inset 0 0 0 1px #897046,inset 0 0 0 4px #152d24,inset 0 0 0 5px #9b794d60,0 20px 60px #0006; }
-[data-theme="hyrule"] .tog.mute[aria-pressed="true"] { color:#21121b; }
+[data-theme="hyrule"] .readout { color: #f1c75b; text-shadow: 0 0 10px #f1c75b40; }
+[data-theme="hyrule"] .strip .chip { box-shadow: inset 0 0 0 1px #8fc25a55; border-radius: 5px; }
 
-[data-theme="hyrule"] .strip {
-  background: radial-gradient(ellipse at top, #36503b70, transparent 60%),
-    linear-gradient(#142d23, #0d221a 77%, #11283b);
-  box-shadow: inset 0 0 0 1px #9d7543, inset 0 0 0 4px #11251c, inset 0 0 0 5px #bc985d50;
+/* Mossy wood: a bark frame with a gilded hairline, moss along the top, and sunlight falling on the face. */
+[data-theme="hyrule"] :is(.strip, .mini-row) {
+  position: relative; border-radius: 7px;
+  background:
+    radial-gradient(ellipse 95% 45% at 50% 0%, #fff3c42b, transparent 72%),
+    linear-gradient(180deg, #2f4f2c, #1d3420 52%, #162a1a);
+  box-shadow: inset 0 0 0 1px #24170c, inset 0 0 0 5px #694829, inset 0 0 0 6px #d3ab5f5c, var(--mod-shadow);
+}
+[data-theme="hyrule"] .mini-row { border-radius: 6px; }
+[data-theme="hyrule"] :is(.strip, .mini-row)::before {
+  content: ""; position: absolute; top: -3px; left: 6px; right: 6px; height: 9px; pointer-events: none;
+  background:
+    radial-gradient(circle at 5px 6px, #9ad65e 0 3px, transparent 3.5px) 0 0 / 11px 9px repeat-x,
+    radial-gradient(circle at 9px 7px, #6ea843 0 3.5px, transparent 4px) 0 0 / 15px 9px repeat-x,
+    linear-gradient(transparent 5px, #4f8233 5px 8px, transparent 8px);
+  filter: drop-shadow(0 1px 1px #0008);
+}
+[data-theme="hyrule"] .dlg {
+  border-radius: 7px;
+  background: radial-gradient(ellipse 90% 40% at 50% 0%, #fff3c41f, transparent 70%), linear-gradient(180deg, #24402a, #142719);
+  box-shadow: inset 0 0 0 1px #24170c, inset 0 0 0 5px #694829, inset 0 0 0 6px #d3ab5f5c, 0 24px 60px #000a;
 }
 
-/* Small fairy lights drift over the forest without drawing attention away from controls. */
-.kokiri-fairies { display: none; }
-body[data-theme="hyrule"]:not(.is-mini, .is-panel, .is-mixwin) .kokiri-fairies {
-  display: block; position: fixed; inset: 0; z-index: 10; pointer-events: none; overflow: clip;
+/* Wooden fader tracks with a vine growing up to the shield. */
+[data-theme="hyrule"] .well {
+  background: #0a1b10;
+  box-shadow: inset 0 0 0 1px #3e2b17, inset 0 2px 6px #000a;
 }
-.kokiri-fairies i {
-  position: absolute; width: 4px; height: 4px; border-radius: 50%;
-  left: var(--x); top: var(--y); color: var(--light, #d0ffb1);
-  background: #f6ffe2; box-shadow: 0 0 7px 1px currentColor, 0 0 19px 3px currentColor;
-  opacity: .28;
+[data-theme="hyrule"] .groove {
+  width: 8px; margin-left: -4px; border-radius: 4px;
+  background:
+    linear-gradient(to top, #8be04e calc(var(--cap-h) / 2 + (100% - var(--cap-h)) * var(--p, .8)), transparent 0) center / 2px 100% no-repeat,
+    linear-gradient(90deg, #24170b, #6e4b28 40%, #8a6236 55%, #2a1a0d);
+  box-shadow: inset 0 0 0 1px #1a0f06, 0 0 0 1px #d3ab5f2e;
 }
-.kokiri-fairies i::before, .kokiri-fairies i::after {
-  content: ""; position: absolute; bottom: 2px; width: 3px; height: 7px; border-radius: 65% 65% 28% 28%;
-  background: currentColor; opacity: .55; transform-origin: bottom center;
+[data-theme="hyrule"] .fader.h .track {
+  background:
+    linear-gradient(to right, #8be04e calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0) center / 100% 2px no-repeat,
+    linear-gradient(180deg, #24170b, #6e4b28 40%, #8a6236 55%, #2a1a0d);
+  box-shadow: inset 0 0 0 1px #1a0f06, 0 0 0 1px #d3ab5f2e;
 }
-.kokiri-fairies i::before { left: -1px; transform: rotate(-33deg); }
-.kokiri-fairies i::after { right: -1px; transform: rotate(33deg); }
-.kokiri-fairies i:nth-child(1) { --x: 9%; --y: 20%; --speed: 13s; --phase: -4s; }
-.kokiri-fairies i:nth-child(2) { --x: 27%; --y: 68%; --speed: 19s; --phase: -8s; --light: #a3e7f2; }
-.kokiri-fairies i:nth-child(3) { --x: 53%; --y: 32%; --speed: 16s; --phase: -3s; }
-.kokiri-fairies i:nth-child(4) { --x: 72%; --y: 77%; --speed: 21s; --phase: -11s; --light: #ffe29c; }
-.kokiri-fairies i:nth-child(5) { --x: 88%; --y: 25%; --speed: 17s; --phase: -6s; --light: #a3e7f2; }
-@keyframes kokiri-drift {
-  0% { transform: translate3d(-8px, 9px, 0) rotate(-10deg); opacity: .23; }
-  35% { transform: translate3d(17px, -17px, 0) rotate(11deg); opacity: .47; }
-  69% { transform: translate3d(7px, -34px, 0) rotate(-8deg); opacity: .3; }
-  100% { transform: translate3d(30px, -59px, 0) rotate(14deg); opacity: .48; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-theme-motion="full"] .kokiri-fairies i {
-    animation: kokiri-drift var(--speed) ease-in-out var(--phase) infinite alternate;
-  }
-  [data-theme-motion="subtle"] .kokiri-fairies i {
-    animation: kokiri-drift-subtle calc(var(--speed) * 1.6) ease-in-out var(--phase) infinite alternate;
-  }
-}
-@keyframes kokiri-drift-subtle {
-  from { transform: translate3d(0, 0, 0); opacity: .22; }
-  to { transform: translate3d(12px, -23px, 0); opacity: .38; }
-}
-[data-theme="hyrule"] .well, [data-theme="hyrule"] .groove {
-  background: #0b2115;
-  box-shadow: inset 0 0 0 1px #486859, inset 0 2px 5px #030b08;
-}
-[data-theme="hyrule"] .groove { background: linear-gradient(90deg, #161911, #53452a, #171c13); }
+[data-theme="hyrule"] .unity { background: #f1c75b; opacity: .55; }
+[data-theme="hyrule"] .scale span.zero { color: #f1c75b; }
+
 [data-theme="hyrule"] .app-stack { background: none; box-shadow: none; }
 [data-theme="hyrule"] .app-stack svg { display: none; }
 [data-theme="hyrule"] .app-stack::after {
@@ -1016,7 +1029,7 @@ body[data-theme="hyrule"]:not(.is-mini, .is-panel, .is-mixwin) .kokiri-fairies {
   padding: 3px 0 5px 23px;
   background: url("hyrule-triforce.svg") 2px 4px / 14px 13px no-repeat;
   border-bottom: 1px solid #b28c4d70;
-  color: #e6c573;
+  color: #f1c75b;
   font: 700 12px/1.4 Cinzel, serif;
 }
 [data-theme="hyrule"] .app-chips .sa-chip { border-radius: 4px; background: #233757; }
@@ -1034,7 +1047,7 @@ body[data-theme="hyrule"]:not(.is-mini, .is-panel, .is-mixwin) .kokiri-fairies {
   background-size: auto 100%;
 }
 [data-theme="hyrule"] .fader.h .db { background: none; }
-[data-theme="hyrule"] .fader.dragging .thumb { filter: drop-shadow(0 0 5px #e6c573); }
+[data-theme="hyrule"] .fader.dragging .thumb { filter: drop-shadow(0 0 4px #fff3c4) drop-shadow(0 0 10px #f1c75b); }
 [data-theme="hyrule"] .toggles .tog.mute {
   display: inline-flex;
   flex-direction: column;
@@ -1054,16 +1067,127 @@ body[data-theme="hyrule"]:not(.is-mini, .is-panel, .is-mixwin) .kokiri-fairies {
 [data-theme="hyrule"] .toggles .tog.mute.part:not([aria-pressed="true"])::after {
   font-size: 9px;
 }
-[data-theme="hyrule"] :is(.toggles, .mini-row) .tog.mute[aria-pressed="true"] {
-  background: #9c3035;
-  color: #fff4df;
+/* Muted glows like a fairy calling for attention. */
+[data-theme="hyrule"] :is(.toggles, .mini-row) .tog.mute[aria-pressed="true"],
+[data-theme="hyrule"] :is(.toggles, .mini-row) .tog.mute[aria-pressed="true"]:hover {
+  background: radial-gradient(ellipse at 50% 35%, #ffffff, #dcf2ff 40%, #9fd6ff 85%);
+  color: #0c2a45;
+  box-shadow: inset 0 0 0 1px #fff, 0 0 12px #a8dcffcc, 0 0 28px #7cc4ff66;
 }
 
-/* Theme-picker samples use the same panel and fader materials as the mixer. */
-.theme-card[data-theme="hyrule"] .tc-mod {
-  background: linear-gradient(150deg, var(--mod-a), var(--mod-b));
-  box-shadow: inset 0 0 0 1px var(--line);
+/* Sunbeams slant down through the canopy behind the mixer; a faint copy falls across the panels. */
+body[data-theme="hyrule"]:not(.is-mini, .is-panel, .is-mixwin) .theme-light { display: block; background: none; }
+body[data-theme="hyrule"] .theme-light::before {
+  --ambient-accent: radial-gradient(ellipse 55% 30% at 40% 22%, #fff4c43d, transparent),
+    radial-gradient(ellipse 45% 22% at 70% 80%, #cdeec033, transparent);
 }
+body[data-theme="hyrule"] .theme-light::after,
+body[data-theme="hyrule"] .kokiri-fairies::before {
+  content: ""; position: absolute; top: -10%; left: 8%; width: 84%; height: 115%; pointer-events: none;
+  background: linear-gradient(100deg,
+    transparent 4%, #fff6d22e 8%, transparent 13%,
+    transparent 22%, #fff6d21f 25%, transparent 29%,
+    transparent 41%, #fff6d238 46%, transparent 53%,
+    transparent 64%, #fff6d21a 67%, transparent 71%,
+    transparent 80%, #fff6d22a 85%, transparent 91%);
+  -webkit-mask-image: linear-gradient(#000, #000 25%, transparent 88%);
+  mask-image: linear-gradient(#000, #000 25%, transparent 88%);
+  transform-origin: 50% 0; transform: skewX(-16deg);
+}
+body[data-theme="hyrule"] .kokiri-fairies::before { opacity: .35; mix-blend-mode: soft-light; }
+
+/* Lime fireflies drift and twinkle; one blue-white fairy wanders the clearing. */
+.kokiri-fairies { display: none; }
+body[data-theme="hyrule"]:not(.is-mini, .is-panel, .is-mixwin) .kokiri-fairies {
+  display: block; position: fixed; inset: 0; z-index: 10; pointer-events: none; overflow: clip;
+}
+.kokiri-fairies i {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%;
+  left: var(--x); top: var(--y);
+  background: #f3ffc4; box-shadow: 0 0 5px 1px #c9ff6e, 0 0 12px 3px #9ee84a99;
+  opacity: .5;
+}
+.kokiri-fairies i:nth-child(1) { --x: 6%; --y: 22%; --speed: 14s; --tw: 2.6s; --phase: -4s; }
+.kokiri-fairies i:nth-child(2) { --x: 17%; --y: 64%; --speed: 19s; --tw: 3.4s; --phase: -8s; }
+.kokiri-fairies i:nth-child(3) { --x: 29%; --y: 38%; --speed: 16s; --tw: 2.2s; --phase: -3s; }
+.kokiri-fairies i:nth-child(4) { --x: 38%; --y: 82%; --speed: 22s; --tw: 3.8s; --phase: -11s; }
+.kokiri-fairies i:nth-child(5) { --x: 47%; --y: 16%; --speed: 18s; --tw: 2.9s; --phase: -6s; }
+.kokiri-fairies i:nth-child(6) { --x: 55%; --y: 56%; --speed: 15s; --tw: 2.4s; --phase: -9s; }
+.kokiri-fairies i:nth-child(7) { --x: 63%; --y: 30%; --speed: 21s; --tw: 3.1s; --phase: -2s; }
+.kokiri-fairies i:nth-child(8) { --x: 71%; --y: 74%; --speed: 17s; --tw: 2.7s; --phase: -13s; }
+.kokiri-fairies i:nth-child(9) { --x: 79%; --y: 44%; --speed: 20s; --tw: 3.6s; --phase: -5s; }
+.kokiri-fairies i:nth-child(10) { --x: 86%; --y: 18%; --speed: 13s; --tw: 2.3s; --phase: -7s; }
+.kokiri-fairies i:nth-child(11) { --x: 92%; --y: 62%; --speed: 18s; --tw: 3.2s; --phase: -10s; }
+.kokiri-fairies i:nth-child(12) { --x: 12%; --y: 88%; --speed: 23s; --tw: 2.8s; --phase: -1s; }
+.kokiri-guide {
+  position: absolute; left: 0; top: 0; width: 7px; height: 7px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 6px 2px #e6f6ff, 0 0 16px 6px #9fd6ffaa, 0 0 34px 12px #7cc4ff44;
+  transform: translate3d(88vw, 14vh, 0); opacity: 0;
+}
+.kokiri-guide::before, .kokiri-guide::after {
+  content: ""; position: absolute; top: -6px; width: 9px; height: 7px; border-radius: 50%;
+  background: #dff3ffb3; box-shadow: 0 0 4px #bfe6ff; transform-origin: 50% 100%;
+}
+.kokiri-guide::before { right: 4px; transform: rotate(-28deg); }
+.kokiri-guide::after { left: 4px; transform: rotate(28deg); }
+@keyframes kokiri-drift {
+  0% { transform: translate3d(-8px, 9px, 0); }
+  35% { transform: translate3d(17px, -17px, 0); }
+  69% { transform: translate3d(7px, -34px, 0); }
+  100% { transform: translate3d(30px, -59px, 0); }
+}
+@keyframes kokiri-drift-subtle { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(12px, -23px, 0); } }
+@keyframes kokiri-twinkle { 0%, 30% { opacity: .15; } 70%, 100% { opacity: .85; } }
+@keyframes kokiri-guide {
+  0% { transform: translate3d(88vw, 14vh, 0); }
+  18% { transform: translate3d(64vw, 34vh, 0); }
+  36% { transform: translate3d(38vw, 18vh, 0); }
+  54% { transform: translate3d(14vw, 46vh, 0); }
+  72% { transform: translate3d(32vw, 76vh, 0); }
+  86% { transform: translate3d(70vw, 62vh, 0); }
+  100% { transform: translate3d(88vw, 14vh, 0); }
+}
+@keyframes kokiri-flutter-l { from { transform: rotate(-28deg) scaleY(1); } to { transform: rotate(-40deg) scaleY(.55); } }
+@keyframes kokiri-flutter-r { from { transform: rotate(28deg) scaleY(1); } to { transform: rotate(40deg) scaleY(.55); } }
+@keyframes kokiri-beams {
+  from { transform: skewX(-16deg) translate3d(-2%, 0, 0); opacity: var(--beam-lo, .7); }
+  to { transform: skewX(-11deg) translate3d(2%, 0, 0); opacity: var(--beam-hi, 1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme-motion="full"] .kokiri-fairies i {
+    animation: kokiri-drift var(--speed) ease-in-out var(--phase) infinite alternate, kokiri-twinkle var(--tw) ease-in-out var(--phase) infinite alternate;
+  }
+  [data-theme-motion="subtle"] .kokiri-fairies i {
+    animation: kokiri-drift-subtle calc(var(--speed) * 1.6) ease-in-out var(--phase) infinite alternate, kokiri-twinkle calc(var(--tw) * 1.8) ease-in-out var(--phase) infinite alternate;
+  }
+  [data-theme-motion="full"] .kokiri-guide { opacity: .9; animation: kokiri-guide 70s ease-in-out infinite; }
+  [data-theme-motion="subtle"] .kokiri-guide { opacity: .75; animation: kokiri-guide 140s ease-in-out infinite; }
+  :is([data-theme-motion="full"], [data-theme-motion="subtle"]) .kokiri-guide::before { animation: kokiri-flutter-l .16s linear infinite alternate; }
+  :is([data-theme-motion="full"], [data-theme-motion="subtle"]) .kokiri-guide::after { animation: kokiri-flutter-r .16s linear infinite alternate; }
+  body[data-theme="hyrule"][data-theme-motion="full"] .theme-light::after,
+  body[data-theme="hyrule"][data-theme-motion="full"] .kokiri-fairies::before { animation: kokiri-beams 24s ease-in-out infinite alternate; }
+  body[data-theme="hyrule"][data-theme-motion="subtle"] .theme-light::after,
+  body[data-theme="hyrule"][data-theme-motion="subtle"] .kokiri-fairies::before { animation: kokiri-beams 42s ease-in-out infinite alternate; }
+  body[data-theme="hyrule"]:is([data-theme-motion="full"], [data-theme-motion="subtle"]) .theme-light::before {
+    animation: ambient-drift var(--ambient-time) ease-in-out infinite alternate;
+  }
+}
+body[data-theme="hyrule"] .theme-light::after { --beam-lo: .7; --beam-hi: 1; }
+body[data-theme="hyrule"][data-theme-motion="subtle"] .theme-light::after { --beam-lo: .85; }
+body[data-theme="hyrule"] .kokiri-fairies::before { --beam-lo: .25; --beam-hi: .4; }
+body[data-theme="hyrule"][data-theme-motion="subtle"] .kokiri-fairies::before { --beam-lo: .32; }
+
+/* Theme-picker samples use the same panel and fader materials as the mixer. */
+.theme-card[data-theme="hyrule"] .tc-desk {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, #fbf1c466, transparent 70%), linear-gradient(180deg, #2a4d2f, #0d2619);
+  box-shadow: none;
+}
+.theme-card[data-theme="hyrule"] .tc-mod {
+  background: radial-gradient(ellipse 95% 45% at 50% 0%, #fff3c42b, transparent 72%), linear-gradient(180deg, #2f4f2c, #162a1a);
+  box-shadow: inset 0 0 0 1px #24170c, inset 0 0 0 3px #694829, inset 0 0 0 4px #d3ab5f5c;
+  padding: 6px;
+}
+.theme-card[data-theme="hyrule"] .tc-slot::before { width: 4px; margin-left: -2px; background: linear-gradient(90deg, #24170b, #8a6236, #2a1a0d); }
 
 /* Surface finishes. Keep each theme's control shapes and layouts. */
 [data-theme="console"] {
@@ -1120,10 +1244,6 @@ body[data-theme="terminal"]::after {
 :is([data-theme="bubblegum"], [data-theme="peach"], [data-theme="sticker"]) .chip[data-icon="bell"]::before { content: "🔔"; }
 :is([data-theme="bubblegum"], [data-theme="peach"], [data-theme="sticker"]) .chip[data-icon="people"]::before { content: "👥"; }
 :is([data-theme="bubblegum"], [data-theme="peach"], [data-theme="sticker"]) .chip[data-icon="sliders"]::before { content: "🎛️"; }
-[data-theme="hyrule"] :is(.strip, .mini-row) {
-  background: radial-gradient(ellipse at 46% 0%, #51724962, transparent 65%),
-    linear-gradient(#1d3b2a, #102a20 81%, #142a3e);
-}
 
 /* Lit and idle controls keep their original shapes. Partially muted buttons retain their own outline. */
 [data-theme="console"] :is(.btn, .route, .tog):not([aria-pressed="true"], .part, .part-muted):enabled:hover {
@@ -1308,12 +1428,6 @@ body[data-theme="console"] {
 [data-theme="hadal"] .thumb { box-shadow: 0 4px 8px #0009, 0 0 0 1px var(--line), 0 0 12px #3df1e333; }
 [data-theme="hadal"] .fader.dragging .thumb { box-shadow: 0 0 0 2px #8dffef, 0 0 20px #3df1e399, 0 6px 14px #0009; }
 [data-theme="hadal"] :is(.strip, .mini-row):hover { box-shadow: inset 0 1px var(--mod-edge), inset 0 0 0 1px #63e6e0aa, var(--mod-shadow); }
-
-/* Kokiri Forest: warm lantern glow on lit keys, gilded headings, and brighter fairies. */
-[data-theme="hyrule"] { --glow: .5; }
-[data-theme="hyrule"] .group-head h2 { text-shadow: 0 0 10px #e6c57355; }
-[data-theme="hyrule"] .readout { text-shadow: 0 0 10px #e6c57340; }
-.kokiri-fairies i { opacity: .34; }
 
 /* Neon: the sign flickers now and then. */
 @media (prefers-reduced-motion: no-preference) {

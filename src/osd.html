@@ -6,6 +6,7 @@
   <style>
     @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-SemiBold.woff") format("woff"); font-weight: 600; font-display: block; }
     @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-Bold.woff") format("woff"); font-weight: 700; font-display: block; }
+    @font-face { font-family: Cinzel; src: url("fonts/Cinzel.ttf") format("truetype"); font-weight: 400 900; font-display: swap; }
     /* Matches the mixer's theme (data-theme on body); Console is the default */
     :root {
       --mod-a: #202027; --mod-b: #18181d; --edge: rgba(255,255,255,.07); --line: #2a2a31; --ink: #eeedf2; --muted: #7f7e89;
@@ -24,7 +25,7 @@
     body[data-theme="peach"] { --mod-a: #fffaf6; --mod-b: #fff1ea; --edge: #fff; --line: #ffcabb; --ink: #6b2a3a; --muted: #995764; --well: #ffdcd0; --red: #a82d4f; --key: #ffe3d9; --glow: .5; color-scheme: light; }
     body[data-theme="sticker"] { --mod-a: #fff3a8; --mod-b: #fff3a8; --edge: transparent; --line: #1a1a1a; --ink: #1a1a1a; --muted: #6b6354; --well: #fff; --red: #a8272c; --key: #fff; --glow: 0; color-scheme: light; }
     body[data-theme="oled"] { --mod-a: #000; --mod-b: #000; --edge: transparent; --line: #1f1f24; --well: #000; --glow: .6; --key: #000; }
-    body[data-theme="hyrule"] { --mod-a: #234737; --mod-b: #112d23; --edge: #897046; --line: #897046; --ink: #f7ebce; --muted: #aebfa9; --well: #081912; --key: #2c463b; --red: #ff887d; --c-amber: #e6c573; --c-blue: #83baff; }
+    body[data-theme="hyrule"] { --mod-a: #2f4f2c; --mod-b: #162a1a; --edge: #fff3c433; --line: #694829; --ink: #fbf3dc; --muted: #b6c6a0; --well: #0a1b10; --key: #33482b; --red: #9fdcff; --glow: .6; --c-amber: #f1c75b; --c-blue: #8fc8ff; --c-green: #8be04e; --c-coral: #ff9a52; --c-cyan: #7fe3d6; }
     body[data-theme="hadal"] { --mod-a: #164c65; --mod-b: #0a2039; --edge: #63e6e0; --line: #407b96; --ink: #e9fcff; --muted: #a1cddb; --well: #06182b; --key: #11394f; --red: #ff9fae; --c-blue: #84b6ff; --c-cyan: #3df1e3; }
     [data-color="slate"] { --acc: var(--c-slate); } [data-color="amber"] { --acc: var(--c-amber); }
     [data-color="coral"] { --acc: var(--c-coral); } [data-color="rose"] { --acc: var(--c-rose); }
@@ -73,8 +74,10 @@
     body[data-theme="neon"] .card { box-shadow: 0 0 0 1px var(--line), 0 0 18px #ff2e9759, inset 0 0 22px #ff2e971f; }
     body[data-theme="neon"] .value { color: var(--acc); text-shadow: 0 0 10px var(--acc); }
     body[data-theme="hadal"] .card { box-shadow: inset 0 1px 0 #ffffff33, 0 0 0 1px var(--line), 0 0 16px #3df1e326; }
-    body[data-theme="hyrule"] .card { border-radius: 5px; box-shadow: inset 0 0 0 1px #897046, inset 0 0 0 4px #152d24, inset 0 0 0 5px #9b794d60; }
-    body[data-theme="hyrule"] .value { color: #e6c573; }
+    body[data-theme="hyrule"] .card { border-radius: 7px; background: radial-gradient(ellipse 95% 60% at 50% 0%, #fff3c42b, transparent 72%), linear-gradient(180deg, var(--mod-a), var(--mod-b)); box-shadow: inset 0 0 0 1px #24170c, inset 0 0 0 4px #694829, inset 0 0 0 5px #d3ab5f5c; }
+    body[data-theme="hyrule"] .value { color: #f1c75b; text-shadow: 0 0 8px #f1c75b55; }
+    body[data-theme="hyrule"] .name { font-family: Cinzel, "Palatino Linotype", serif; }
+    body[data-theme="hyrule"] .muted .value { color: #9fdcff; text-shadow: 0 0 8px #7cc4ff88; }
     body[data-theme="terminal"] :is(.name, .value) { text-shadow: 0 0 6px #3dff7a66; }
     body[data-theme="arcade"] .card { box-shadow: 0 0 0 3px #fff; }
     body[data-theme="arcade"] .value { color: #ffd400; text-shadow: 2px 2px 0 #ff3b3b; }
