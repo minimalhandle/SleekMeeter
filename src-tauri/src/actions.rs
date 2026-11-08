@@ -71,7 +71,11 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
             let api = need_api()?;
             let (first, second) = swap_pair(target)?;
             let to_second = api.get_bool(first) && !api.get_bool(second);
-            let (on, off) = if to_second { (second, first) } else { (first, second) };
+            let (on, off) = if to_second {
+                (second, first)
+            } else {
+                (first, second)
+            };
             // Off first: never both on for a moment (no doubled mic or echo).
             fades::set_float(app, &api, off, 0.0)?;
             fades::set_float(app, &api, on, 1.0)?;
@@ -84,6 +88,14 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
             let (i, outs) =
                 partmute::parse_target(target).ok_or("Choose an input and its outputs")?;
             partmute::toggle(app, &api, i, &outs)?;
+        }
+        "chatgame" | "chatchat" | "chatcentre" => {
+            let (amount, relative) = match kind {
+                "chatgame" => (-10, true),
+                "chatchat" => (10, true),
+                _ => (0, false),
+            };
+            crate::chat_balance::change(app, None, amount, relative, false)?;
         }
         "window" => crate::toggle_main(app),
         "output" if !target.is_empty() => outputs::switch_with_osd(app, target, "shortcut"),

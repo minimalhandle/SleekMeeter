@@ -12,6 +12,7 @@ mod appvol;
 mod audio_events;
 mod backups;
 mod brb;
+mod chat_balance;
 mod devwatch;
 mod fades;
 mod files;
@@ -596,6 +597,7 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         "vstPresets",
         "vstQuarantine",
         "micFxLive",
+        "chatBalanceLive",
     ] {
         value[k] = current[k].clone();
     }
@@ -752,6 +754,16 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
         return;
     }
     if !pressed {
+        return;
+    }
+    if matches!(kind, "chatgame" | "chatchat" | "chatcentre") {
+        let app = app.clone();
+        let kind = kind.to_owned();
+        std::thread::spawn(move || {
+            if let Err(e) = actions::perform(&app, &kind, &target) {
+                show_osd_text(&app, "Game / Chat", &e, false, "chat");
+            }
+        });
         return;
     }
     if let Err(e) = actions::perform(app, kind, &target) {
@@ -1534,11 +1546,17 @@ async fn mix_monitor_start(
     window: tauri::WebviewWindow,
     input: String,
     output: String,
+    cue: Option<bool>,
 ) -> Result<(), String> {
     let owner = window.label().to_owned();
-    tauri::async_runtime::spawn_blocking(move || selftest::live_start(app, owner, input, output))
-        .await
-        .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        if cue.is_some() {
+            obs::check_cue_output(&app, &output)?;
+        }
+        selftest::live_start(app, owner, input, output, cue)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -1715,6 +1733,38 @@ fn brb_toggle(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 fn obs_status() -> Value {
     obs::status()
+}
+
+#[tauri::command]
+async fn obs_audio_check(app: AppHandle) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || obs::audio_check(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn chat_balance_set(
+    app: AppHandle,
+    selection: chat_balance::Selection,
+    position: i32,
+    use_main: Option<bool>,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        chat_balance::change(
+            &app,
+            Some(selection),
+            position,
+            false,
+            use_main.unwrap_or(false),
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn chat_balance_status(app: AppHandle) -> Value {
+    chat_balance::status(&app)
 }
 
 /// Whether Windows' default sound output is one of Voicemeeter's inputs.
@@ -2508,6 +2558,9 @@ fn main() {
             running_apps,
             brb_toggle,
             obs_status,
+            obs_audio_check,
+            chat_balance_set,
+            chat_balance_status,
             health_check,
             golive_check,
             replay_save,

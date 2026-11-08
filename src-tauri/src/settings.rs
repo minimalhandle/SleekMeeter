@@ -204,10 +204,12 @@ pub fn save(s: &Value) -> Result<(), String> {
 /// The chosen theme. Before themes there was only "Pure black for OLED" (`oled`).
 pub fn theme(s: &Value) -> String {
     match s["theme"].as_str() {
-        // Retired themes show as their closest remaining one.
+        // Retired themes fall back to Console.
         Some("midnight") | Some("minimal") | Some("analog") | Some("clean") | Some("studio")
         | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") | Some("rack")
-        | Some("titanium") | Some("afterburner") | Some("opal") => "console".into(),
+        | Some("titanium") | Some("afterburner") | Some("opal") | Some("onyx")
+        | Some("afterhours") | Some("caldera") | Some("blueprint") | Some("letterpress")
+        | Some("eventhorizon") | Some("lunar") => "console".into(),
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
         _ => "console".into(),

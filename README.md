@@ -78,33 +78,28 @@ Channels use a consistent width to keep the mixer tidy, and the input and output
 
 ### Themes
 
-Choose a theme in **Settings → Appearance & layout → Appearance**. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** offers Off, Subtle, or Full for Glass and Kokiri Forest. Windows reduced motion takes priority.
+Choose from twelve themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 12 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** offers Off, Subtle, or Full for Glass, Hadal, Kokiri Forest, Neon, and Arcade. Windows reduced motion takes priority.
 
 <table>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-hyrule.webp" alt="Kokiri Forest with green and gold panels and shield faders" width="260"><br><sub><b>Kokiri Forest</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-afterhours.webp" alt="After Hours with plum panels and pink lighting" width="260"><br><sub><b>After Hours</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-lunar.png" alt="Lunar: satin aluminium and violet circular faders" width="260" height="161"><br><sub><b>Lunar</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/console.webp" alt="The Console theme" width="260"><br><sub><b>Console</b> (default)</sub></td>
+<td align="center" valign="top"><img src="site/img/themes/oled.webp" alt="The OLED black theme" width="260"><br><sub><b>OLED black</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with translucent panels and pearl faders" width="260"><br><sub><b>Glass</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-onyx.png" alt="Onyx: dark mix bays with electric-blue details" width="260" height="161"><br><sub><b>Onyx</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-glass.webp" alt="Glass with translucent panels and pearl faders" width="260" height="161"><br><sub><b>Glass</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/mixer.png" alt="The Console theme" width="260" height="161"><br><sub><b>Console</b> (default)</sub></td>
+<td align="center" valign="top"><img src="site/img/themes/hadal.webp" alt="Hadal with deep blue panels and cyan faders" width="260"><br><sub><b>Hadal</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/hyrule.webp" alt="Kokiri Forest with green and gold panels and shield faders" width="260"><br><sub><b>Kokiri Forest</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/neon.webp" alt="The Neon theme" width="260"><br><sub><b>Neon</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-neon.png" alt="The Neon theme" width="260" height="161"><br><sub><b>Neon</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-bubblegum.png" alt="The Bubblegum theme" width="260" height="161"><br><sub><b>Bubblegum</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-blueprint.png" alt="The Blueprint theme" width="260" height="161"><br><sub><b>Blueprint</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/arcade.webp" alt="The Arcade theme" width="260"><br><sub><b>Arcade</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/block.webp" alt="The Block theme" width="260"><br><sub><b>Block</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="260" height="161"><br><sub><b>Block</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="260" height="161"><br><sub><b>Arcade</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-terminal.png" alt="The Terminal theme" width="260" height="161"><br><sub><b>Terminal</b></sub></td>
-</tr>
-<tr>
-<td align="center" valign="top"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="260" height="161"><br><sub><b>OLED black</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-peach.png" alt="The Peaches &amp; Cream theme" width="260" height="161"><br><sub><b>Peaches &amp; Cream</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="260" height="161"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/sticker.webp" alt="The Sticker Bomb theme" width="260"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/bubblegum.webp" alt="The Bubblegum theme" width="260"><br><sub><b>Bubblegum</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/peach.webp" alt="The Peaches &amp; Cream theme" width="260"><br><sub><b>Peaches &amp; Cream</b></sub></td>
 </tr>
 </table>
 
@@ -126,11 +121,17 @@ Use **Undo mixer change** in the toolbar or **Ctrl+Z** to reverse recent mixer f
 
 In **Settings → Mixer & devices → Linked fader groups**, add a group and choose its channels. Main faders in a group move by the same dB until one reaches its limit. Per-output input mixes are independent. Hold **Alt** when you start dragging or when using the wheel or fader keys to adjust just one member.
 
-**⋯ → Game / Chat balance** lets you choose two inputs and turn down one side by up to 24 dB. Restore centre to recover the levels from before you applied the balance. On Potato it adjusts the selected hardware output's gain layers. Standard and Banana use the main input faders. On Potato, **Mix → Personal / Stream** shows the routes and levels for a hardware listening bus and a virtual audience bus side by side.
+Open **Game / Chat** beside the mixer inputs or in Potato's **Mix** window. Choose separate inputs and use **Set up game and chat apps** to assign the Windows apps and verify their playback paths. On Potato, send both inputs to the selected hardware listening output in Normal mode. The slider changes only that output's gain layers and shows the levels Voicemeeter reports. Standard and Banana use the main input faders, which affect all routes. The end stops put the opposite fader at minimum. **Restore centre** keeps independent fader edits and remembers the centre across restarts. On Potato, **Copy main levels to listening output** can recover levels left low by an older build. Save the assignments to use the optional pinned slider and shortcuts in **Controls & remote**.
 
 Use **Listen to a mix** from **Outputs** or the Potato **Mix** window to hear a virtual output live. Pick a separate physical playback device. Monitoring plays at reduced volume, leaves your routes alone and stops when you close the monitor.
 
 To mute an input on some outputs only, right-click its **Mute** (in the mixer or the tray panel) and pick the outputs, for example **Mute on B1** to mute your mic in Discord while your stream still hears you. The Mute button gets a red outline listing those outputs, and unmuting turns back on exactly the ones it turned off. On Potato it fades the input's level on that output first (with the mute fade time), and that level comes back as it was; on Standard and Banana the switch is instant.
+
+To make one of those destinations the normal left-click action, open the input’s **Routing → Mute button destination** and choose Everyone, Audience, Headphones, or Voice chat. For Voice chat, select its virtual output.
+
+Use **Cue in headphones** from the input’s **Sound** tab to hear the input before its fader and effects. Cue uses the Windows endpoint and plays to a physical device without changing the Voicemeeter sends. Select headphones outside your streaming app’s desktop capture. **Listen to a mix** has Personal and Stream buttons. For an isolated comparison, select a separate playback device and use the personal output’s recording mirror if available.
+
+**Settings → Streaming → OBS Studio → Check audio tracks** reads the current OBS profile and shows which audio sources share the live, VOD and recording tracks. It flags overlapping capture paths for review.
 
 Mute fades out before it mutes, and unmute fades back in, so nothing clicks or jumps. Typed levels, double-click to 0 dB, volume shortcuts and scene changes glide too. Set the mute and scene fade times in **Settings → Mixer & devices → Smooth fades**, or turn fades off there. Dragging a fader is always direct.
 

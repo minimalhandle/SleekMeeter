@@ -7,9 +7,9 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
 <link rel="preload" href="fonts/SairaSemiCondensed-SemiBold.woff" as="font" type="font/woff" crossorigin>
 <title>Sleekmeeter: a modern face for Voicemeeter</title>
-<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows: fifteen themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and a phone remote.">
+<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows. Explore twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and a phone remote.">
 <meta property="og:title" content="Sleekmeeter: a modern face for Voicemeeter">
-<meta property="og:description" content="Free and open source. Fifteen themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and a phone remote.">
+<meta property="og:description" content="Free and open source. Twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and a phone remote.">
 <meta property="og:image" content="https://sleekmeeter.app/img/themes/console.webp">
 <meta property="og:url" content="https://sleekmeeter.app/">
 <meta name="theme-color" content="#08090b">
@@ -348,7 +348,7 @@ footer a { color: var(--ink-2); }
           <h1>A modern face for <span class="lit">Voicemeeter</span></h1>
         </div>
         <div class="hero-side">
-        <p class="lede">Sleekmeeter sits on top of Voicemeeter Standard, Banana and Potato and controls it through the official Remote API. Voicemeeter keeps doing the audio. You get fifteen themes, a separate mix for every output on Potato, a Stream Deck plugin, fades that never click, talk-over ducking, a soundboard and a remote on your phone.</p>
+        <p class="lede">Sleekmeeter sits on top of Voicemeeter Standard, Banana and Potato and controls it through the official Remote API. Voicemeeter keeps doing the audio. You get twelve themes, a separate mix for every output on Potato, a Stream Deck plugin, fades that never click, talk-over ducking, a soundboard and a remote on your phone.</p>
         <div>
           <div class="hero-cta">
             <a class="btn primary" href="https://github.com/minimalhandle/SleekMeeter/releases/latest" target="_blank" rel="noopener">
@@ -428,7 +428,7 @@ footer a { color: var(--ink-2); }
         <div class="window"><img src="img/mix.webp" alt="The Output mix window: a column of sliders for each input, one per output from A1 to B3. Desktop and Discord are lower on B1 to B3 than on A1." width="1440" height="812" loading="lazy" decoding="async"></div>
         <dl class="points">
           <div><dt>Every input, every output</dt><dd><b>Mix</b> in the header lays out each input's level on A1 to B3, with the output's on/off button under each slider. Drag, scroll, or double-click to match the main fader.</dd></div>
-          <div><dt>Personal / Stream</dt><dd>Put your listening and audience faders and routes side by side. Game / Chat balance can adjust just your listening output on Potato.</dd></div>
+          <div><dt>Personal / Stream</dt><dd>Put your listening and audience faders side by side. Assign and verify game and chat apps, then pin a live balance slider to your mixer.</dd></div>
           <div><dt>Listen to a mix</dt><dd>Audition a Voicemeeter virtual output live on headphones while your routes stay in place.</dd></div>
           <div><dt>Pop it out <span class="pill">New</span></dt><dd>Open the mix in a window of its own and keep it on a second screen. It remembers where you left it.</dd></div>
           <div><dt>Faders set one output</dt><dd>Pick an output above the inputs and the normal faders set that output's mix. <b>All outputs</b> goes back.</dd></div>
@@ -443,8 +443,8 @@ footer a { color: var(--ink-2); }
     <div class="wrap">
       <div class="head">
         <p class="eyebrow">Appearance</p>
-        <h2>Fifteen themes, to match your mood</h2>
-        <p class="lede">A theme changes shapes and materials as well as colours. Faders become capsules, pucks, hearts, tick marks or starbursts, and the tray panel and volume overlay follow along. A game rule can even switch theme while you play.</p>
+        <h2>Twelve themes to match your mood</h2>
+        <p class="lede">Explore Glass’s drifting aurora, Hadal’s deep-sea currents, and Kokiri Forest’s fairy lights. The tray panel and volume overlay follow the mixer. Choose how much ambient motion you want in Appearance.</p>
       </div>
       <div class="theme-stage">
         <div class="window ar-theme" id="themeWin">
@@ -626,6 +626,8 @@ footer a { color: var(--ink-2); }
         <div class="spec"><dt>Devices that come back</dt><dd>Unplug USB headphones or lose Bluetooth and the audio engine restarts by itself when the device returns.</dd></div>
         <div class="spec"><dt>Shared device fallback policies</dt><dd>Copy or link an ordered playback list across hardware outputs and see which device is preferred or active.</dd></div>
         <div class="spec"><dt>Audio Event History</dt><dd>See playback device changes, output fallbacks, app route recovery and plugin quarantine in a local timeline. Select an event to open its controls.</dd></div>
+        <div class="spec"><dt>Mute destinations and headphone cue</dt><dd>Choose what each channel’s Mute button targets. Audition an input through a physical playback device or switch between Personal and Stream in Listen to a mix.</dd></div>
+        <div class="spec"><dt>OBS audio tracks</dt><dd>Inspect live, VOD and recording track assignments and spot possible duplicate audio captures.</dd></div>
         <div class="spec"><dt>Quick Actions</dt><dd>Press Ctrl+K to find a channel, scene, output profile, tool or setting from the mixer.</dd></div>
         <div class="spec"><dt>Global shortcuts</dt><dd>Mute, volume, scenes, sounds, recording, ducking and BRB from any app, with an on-screen level overlay.</dd></div>
         <div class="spec"><dt>Mic level check</dt><dd>Talk for eight seconds and it tells you if you're too quiet or too loud, then sets the fader for you.</dd></div>
@@ -814,20 +816,17 @@ footer a { color: var(--ink-2); }
   /* ---------- theme picker ---------- */
   const THEMES = [
     ["console", "Console", "The dark hardware desk with amber light. The default."],
-    ["oled", "OLED black", "Everything that isn't information turns true black."],
-    ["lunar", "Lunar", "Satin aluminium, violet keys and circular fader pucks."],
-    ["onyx", "Onyx", "Polished dark mix bays in electric blue, with sculpted faders."],
-    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders."],
-    ["afterhours", "After Hours", "Blackberry lacquer, plum panels, and soft pink lights."],
+    ["oled", "OLED black", "True black with high-contrast controls."],
     ["glass", "Glass", "Iridescent glass panels, pearl faders, and a slowly drifting aurora."],
+    ["hadal", "Hadal", "Deep ocean blue with cyan faders, moving currents and sonar rings."],
+    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders."],
     ["neon", "Neon", "A dark synth night with glowing outlines and flat light-bar caps."],
     ["terminal", "Terminal", "Green phosphor, monospace type, square corners and [bracketed] keys."],
-    ["bubblegum", "Bubblegum", "Pink and sparkly, with heart-capped candy faders and cute icons for each channel."],
-    ["blueprint", "Blueprint", "White lines on drafting-paper blue, with tick-mark faders."],
-    ["block", "Block", "Bold and flat, with thick outlines, hard shadows and bright colour blocks."],
     ["arcade", "Arcade", "An 8-bit cabinet with pixel-stepped corners and chunky blocks."],
-    ["peach", "Peaches & Cream", "Peach-capped faders, heart-shaped meters, scalloped cards and a lavender Sleepy button in place of Mute."],
+    ["block", "Block", "Bold and flat, with thick outlines, hard shadows and bright colour blocks."],
     ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, with starburst fader caps."],
+    ["bubblegum", "Bubblegum", "Pink and sparkly, with heart-capped candy faders and cute icons for each channel."],
+    ["peach", "Peaches & Cream", "Peach-capped faders, heart-shaped meters, scalloped cards and a lavender Sleepy button in place of Mute."],
   ];
   const CYCLE = 3600;
   const picker = document.getElementById("picker"), win = document.getElementById("themeWin");

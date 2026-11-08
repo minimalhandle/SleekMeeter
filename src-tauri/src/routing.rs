@@ -10,10 +10,20 @@ use serde_json::{json, Value};
 /// Playback devices Windows has, as `{ id, name }`; Voicemeeter's virtual inputs first.
 #[cfg(windows)]
 pub fn devices() -> Vec<Value> {
+    endpoints("Render", 0)
+}
+
+#[cfg(windows)]
+pub fn capture_devices() -> Vec<Value> {
+    endpoints("Capture", 1)
+}
+
+#[cfg(windows)]
+fn endpoints(kind: &str, flow: u8) -> Vec<Value> {
     use winreg::enums::HKEY_LOCAL_MACHINE;
     use winreg::RegKey;
-    const BASE: &str = r"SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render";
-    let Ok(render) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey(BASE) else {
+    let path = format!(r"SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\{kind}");
+    let Ok(render) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey(path) else {
         return Vec::new();
     };
     let mut list: Vec<(String, String)> = Vec::new();
@@ -40,7 +50,7 @@ pub fn devices() -> Vec<Value> {
             (true, false) => adapter,
             (false, false) => format!("{short} ({adapter})"),
         };
-        list.push((format!("{{0.0.0.00000000}}.{guid}"), name));
+        list.push((format!("{{0.0.{flow}.00000000}}.{guid}"), name));
     }
     list.sort_by(|a, b| {
         let va = a.1.to_lowercase().contains("voicemeeter");
@@ -54,6 +64,11 @@ pub fn devices() -> Vec<Value> {
 
 #[cfg(not(windows))]
 pub fn devices() -> Vec<Value> {
+    Vec::new()
+}
+
+#[cfg(not(windows))]
+pub fn capture_devices() -> Vec<Value> {
     Vec::new()
 }
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.20.0
+
+- **Game / Chat** can assign and verify separate Windows app routes, pin a live slider to the mixer, and move or centre from global shortcuts. Potato verifies the listening gain layers after every change and shows the resulting levels. It warns about Composite outputs and keeps the other mixes intact.
+- **Mute destinations** let each input’s main Mute button target Everyone, Headphones, Audience, or a chosen Voice chat bus.
+- **Private cue and mix switching** let you audition a source in headphones and switch between Personal and Stream in Listen to a mix.
+- **OBS audio tracks** reports live, VOD and recording track assignments, source mute states, and possible duplicate capture.
+- Added **Hadal**, a dark animated theme with deep ocean blue, moving currents and sonar rings. It includes matching mini, tray, and volume overlay styling.
+- Retired **Lunar**, **Onyx**, **After Hours**, **Caldera**, and **Blueprint**. Sleekmeeter switches those selections to Console.
+- Console has a brushed hardware finish and a warm lamp glow, OLED black has clearer edges and a soft bloom on lit keys, and Glass has sharper translucent edges that catch the light under the pointer.
+- Neon has richer synth lighting, Terminal has softer scanlines, Block has colour-coded edges, and Arcade has brighter cabinet panels. Bubblegum, Peaches & Cream, and Sticker Bomb now show distinct emoji for the newer channel icons.
+- Kokiri Forest has richer forest greens with sapphire near the base, gold trim, drifting fairies, and shield faders.
+- Neon and Arcade join Glass and Kokiri Forest in supporting ambient theme motion. Choose Off, Subtle, or Full in Appearance. Windows reduced motion takes priority.
+- Fixed the muted Sleepy label in Peaches & Cream, strengthened mute contrast across themes, and matched square Settings switch knobs to their tracks in Block, Arcade, and Terminal.
+- Reordered the 12 themes in Appearance from dark to light: Console, OLED black, Glass, Hadal, Kokiri Forest, Neon, Terminal, Arcade, Block, Sticker Bomb, Bubblegum, and Peaches & Cream. Their controls, previews, and volume overlays are refined, and animated backgrounds blend into the window edges, with separate Off, Subtle, and Full settings.
+- Buttons, chips, fader caps and channel strips now ease between states in every theme. Hadal's caps glow cyan, Kokiri Forest's lit keys glow like lanterns, Neon's sign flickers now and then, Terminal has phosphor glow, Arcade moves in 8-bit steps, Block has a halftone backdrop, Sticker Bomb's stickers straighten when you point at them, and Mute bounces in Bubblegum, Peaches & Cream, and Sticker Bomb.
+
 ## 0.19.0
 Everything since 0.18.1. The Stream Deck plugin moves to 0.19.0.1 with a Mic clean-up key and an editable Stream Deck + profile.
 

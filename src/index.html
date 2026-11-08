@@ -9,6 +9,7 @@
 </head>
 <body>
   <div class="glass-aurora" aria-hidden="true"></div>
+  <div class="theme-light" aria-hidden="true"></div>
   <header class="bar">
     <span class="brand">
       <svg class="brand-mark" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="var(--panel-hi)"/><rect x="6" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="6" y="12" width="2.2" height="7" rx="1.1" fill="var(--amber)"/><rect x="11" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="11" y="8" width="2.2" height="11" rx="1.1" fill="var(--amber)"/><rect x="16" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="16" y="10" width="2.2" height="9" rx="1.1" fill="var(--cyan)"/></svg>
@@ -132,8 +133,13 @@
     <section class="group" aria-labelledby="inputsTitle">
       <div class="group-head">
         <h2 id="inputsTitle">Inputs</h2>
+        <button class="btn" id="balanceMixer" type="button" hidden>Game / Chat</button>
         <label class="mix-for" id="mixForWrap" hidden title="Potato: choose an output and the input faders set what that output gets, like Voicemeeter's own output select"><span>Faders set</span><select id="mixFor"></select></label>
         <button class="linkish" type="button" data-reveal="strip" hidden></button>
+      </div>
+      <div class="balance-scale balance-pin" id="balancePin" hidden>
+        <span>Game</span><input id="balancePinnedValue" type="range" min="-100" max="100" value="0" aria-label="Pinned Game and Chat balance"><span>Chat</span>
+        <button id="balancePinnedReset" type="button" class="btn">Centre</button>
       </div>
       <div class="strips" id="inputs"></div>
     </section>
@@ -311,6 +317,7 @@
       <label class="mix-pair" hidden>Personal <select id="mixPersonal"></select></label>
       <label class="mix-pair" hidden>Stream <select id="mixStream"></select></label>
       <button class="btn" type="button" id="mixMonitorOpen">Listen to a mix…</button>
+      <button class="btn" type="button" id="balanceMix" hidden>Game / Chat</button>
     </div>
     <p class="hint" id="mixViewHint">Drag or scroll to set the level for one output. Double-click a slider to match the main fader. The button below each slider turns its route on or off.</p>
     <p class="hint" id="mixViewNote" hidden>The output mix needs Voicemeeter Potato. It appears here once Potato is running.</p>
@@ -331,6 +338,10 @@
       <button class="btn primary" id="mixMonitorStart" type="button" disabled>Start listening</button>
       <button class="btn" id="mixMonitorStop" type="button" disabled>Stop</button>
     </div>
+    <div class="btn-row" id="monitorMixSwitch">
+      <button class="btn" id="mixMonitorPersonal" type="button">Personal</button>
+      <button class="btn" id="mixMonitorStream" type="button">Stream</button>
+    </div>
     <p class="hint" id="mixMonitorStatus" role="status"></p>
   </dialog>
 
@@ -349,10 +360,41 @@
       <span>More game</span><input type="range" id="balanceValue" min="-100" max="100" value="0" aria-label="Game and chat balance"><span>More chat</span>
     </div>
     <p id="balanceStatus" class="hint" role="status">Centred</p>
+    <p id="balanceRoute" class="hint" role="status"></p>
+    <p id="balanceApplied" class="hint" role="status"></p>
+    <p id="balanceSignal" class="hint"></p>
     <div class="btn-row">
-      <button class="btn primary" id="balanceApply" type="button">Apply balance</button>
       <button class="btn" id="balanceReset" type="button">Restore centre</button>
+      <button class="btn" id="balanceSave" type="button">Save inputs and output</button>
+      <button class="btn" id="balanceUseMain" type="button" hidden>Copy main levels to listening output</button>
     </div>
+    <label class="check"><input id="balancePinToggle" type="checkbox"><span>Pin Game / Chat slider beside the mixer inputs</span></label>
+    <details class="inspect-panel" id="balanceSetup">
+      <summary>Set up game and chat apps</summary>
+      <p class="hint">Choose two inputs above that have different Windows playback devices. Assign an app to each. Some apps move when you restart their audio.</p>
+      <div class="route-inspect-controls">
+        <label>Game app <input id="balanceGameApp" list="balanceApps" placeholder="game.exe"></label>
+        <label>Chat app <input id="balanceChatApp" list="balanceApps" placeholder="discord.exe"></label>
+        <datalist id="balanceApps"></datalist>
+      </div>
+      <div class="btn-row">
+        <button class="btn" type="button" id="balanceAssign">Assign apps</button>
+        <button class="btn" type="button" id="balanceSend">Send both inputs to listening output</button>
+        <button class="btn" type="button" id="balanceVerify">Verify app paths</button>
+      </div>
+      <p id="balanceSetupStatus" class="hint" role="status"></p>
+    </details>
+  </dialog>
+
+  <dialog class="dlg events-dlg" id="obsAudioDlg" aria-labelledby="obsAudioTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="obsAudioTitle">OBS audio tracks</h2>
+      <button class="btn" value="close">Close</button>
+    </form>
+    <p class="hint" id="obsAudioStatus" role="status"></p>
+    <ul class="health-list" id="obsAudioWarnings"></ul>
+    <ul class="health-list" id="obsAudioSources"></ul>
+    <button class="btn" type="button" id="obsAudioRefresh">Check again</button>
   </dialog>
 
   <dialog class="dlg outputs-dlg" id="outputsDlg" aria-labelledby="outputsTitle">
@@ -776,9 +818,9 @@
       <section data-settings-category="appearance">
         <h3>Appearance</h3>
         <div class="theme-grid" id="themePicker" role="radiogroup" aria-label="Theme"></div>
+        <button type="button" class="theme-more" id="themeMore" aria-expanded="false" aria-controls="themePicker"><span id="themeMoreText"></span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div class="field wide"><label for="themeMotion">Theme motion</label><select id="themeMotion"><option value="off">Off</option><option value="subtle">Subtle</option><option value="full">Full</option></select></div>
-        <p class="hint">Changes animation in Glass and Kokiri Forest. Windows reduced motion takes priority.</p>
-        <button type="button" class="theme-more" id="themeMore" aria-expanded="false"><span id="themeMoreText"></span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <p class="hint">Controls ambient motion in Glass, Hadal, Event Horizon, Kokiri Forest, Neon, and Arcade. Windows reduced motion takes priority.</p>
       </section>
       <section data-settings-category="mixer">
         <h3>Mixer tools</h3>
@@ -925,6 +967,7 @@
               <div class="field wide"><label for="obsHost">Address</label><div class="pair"><input type="text" id="obsHost" spellcheck="false" autocomplete="off" aria-label="OBS address"><input type="number" id="obsPort" min="1" max="65535" aria-label="OBS port"></div></div>
               <div class="field wide"><label for="obsPass">Password</label><input type="password" id="obsPass" autocomplete="off" placeholder="Only if you set one in OBS"></div>
               <p class="hint obs-status" id="obsStatusText" role="status"></p>
+              <button class="btn" type="button" id="obsAudioOpen">Check audio tracks…</button>
               <div class="rule-head obs-head" id="obsHead" aria-hidden="true"><span>When OBS switches to</span><span>Do</span><span>Scene</span><span></span></div>
               <div class="rule-list" id="obsRules"></div>
               <datalist id="obsSceneList"></datalist>

@@ -1,8 +1,7 @@
 /*
  * Sleekmeeter — "Console": a premium hardware desk. Each channel is a raised module in a recessed
  * bay, meters are wells of LEDs, faders ride in slots with machined caps, and buttons light up
- * when they're on. Themes (Settings → Appearance) swap the colour and material tokens below:
- * Console (default), Midnight, Analog, Studio (light), Minimal and OLED black.
+ * when they're on. The other themes override these colour and material tokens in themes.css.
  *
  * Performance: meters and fader caps only ever change `transform` (see app.js), so they are
  * composited on the GPU and never trigger layout or repaint.
@@ -304,7 +303,7 @@ body.hide-solo-mono .toggles .tog:is(.solo, .mono):not([aria-pressed="true"]) { 
 body.hide-solo-mono .strip .modes .tog:not([aria-pressed="true"]) { visibility: hidden; }
 .drawer-togs { height: auto; }
 .tog.mute[aria-pressed="true"] {
-  background: var(--red); color: #fff;
+  background: var(--red); color: #260c16;
   box-shadow: 0 0 calc(16px * var(--glow)) color-mix(in srgb, var(--red) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
 }
 /* Muted on some outputs only (right-click Mute): red outline and which outputs, under the word. */
@@ -741,6 +740,11 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 #faderGroupList legend { max-inline-size: 100%; }
 .balance-scale { display: flex; align-items: center; gap: 10px; margin: 16px 0 6px; }
 .balance-scale input { flex: 1; min-width: 0; }
+#balanceMixer { height: 24px; padding-inline: 8px; font-size: var(--s-1); }
+#balanceRoute:empty { display: none; }
+.balance-pin { margin: 0 6px 9px; max-width: 390px; }
+.balance-pin .btn { height: 24px; padding-inline: 8px; }
+#balanceApplied:empty, #balanceSetupStatus:empty, #balanceSignal:empty { display: none; }
 .mx-role { display: block; font-size: var(--s-1); color: var(--muted); }
 .mix-paired .mx-sl { width: 45px; }
 #guidedAudio h4 { margin-bottom: 4px; }

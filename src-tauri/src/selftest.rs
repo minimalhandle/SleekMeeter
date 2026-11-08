@@ -58,14 +58,15 @@ pub fn live_start(
     owner: String,
     input: String,
     output: String,
+    cue: Option<bool>,
 ) -> Result<(), String> {
     #[cfg(windows)]
     {
-        imp::live_start(app, owner, input, output)
+        imp::live_start(app, owner, input, output, cue)
     }
     #[cfg(not(windows))]
     {
-        let _ = (app, owner, input, output);
+        let _ = (app, owner, input, output, cue);
         Err("Only available on Windows".into())
     }
 }
@@ -112,6 +113,7 @@ mod imp {
         let sink = data.clone();
         let (stream, channels, rate) = listen(
             input,
+            false,
             move |d| sink.lock().unwrap().extend_from_slice(d),
             |e| log_warn!("Hear-yourself test: {e}"),
         )?;
@@ -126,16 +128,26 @@ mod imp {
 
     fn listen(
         input: &str,
+        loopback: bool,
         mut push: impl FnMut(&[f32]) + Send + 'static,
         err: impl FnMut(rodio::cpal::StreamError) + Send + 'static,
     ) -> Result<(rodio::cpal::Stream, u16, u32), String> {
         let host = rodio::cpal::default_host();
-        let dev = host
-            .input_devices()
-            .map_err(|e| e.to_string())?
-            .find(|d| d.name().ok().as_deref() == Some(input))
-            .ok_or_else(|| format!("Couldn't find the input {input:?}"))?;
-        let cfg = dev.default_input_config().map_err(|e| e.to_string())?;
+        let dev = if loopback {
+            output_device(input)?
+        } else {
+            host.input_devices()
+                .map_err(|e| e.to_string())?
+                .find(|d| d.name().ok().as_deref() == Some(input))
+                .ok_or_else(|| format!("Couldn't find the input {input:?}"))?
+        };
+        // CPAL's WASAPI backend opens render endpoints as loopback capture when building an input stream.
+        let cfg = if loopback {
+            dev.default_output_config()
+        } else {
+            dev.default_input_config()
+        }
+        .map_err(|e| e.to_string())?;
         let (rate, channels) = (cfg.sample_rate().0, cfg.channels());
         let mut converted = Vec::new();
         let stream = match cfg.sample_format() {
@@ -234,6 +246,7 @@ mod imp {
         owner: String,
         input: String,
         output: String,
+        cue: Option<bool>,
     ) -> Result<(), String> {
         let mut live = LIVE.lock().unwrap();
         if let Some(previous) = live.as_ref().filter(|m| m.owner != owner) {
@@ -250,8 +263,13 @@ mod imp {
         let thread = std::thread::spawn(move || {
             let lost = Arc::new(AtomicBool::new(false));
             let open = || -> Result<_, String> {
-                if !inputs().iter().any(|name| name == &input) {
+                if cue.is_none() && !inputs().iter().any(|name| name == &input) {
                     return Err("Choose an available Voicemeeter virtual output.".into());
+                }
+                if cue == Some(true) && input.eq_ignore_ascii_case(&output) {
+                    return Err(
+                        "Choose a different device for cue playback to avoid a loop.".into(),
+                    );
                 }
                 let device = monitor_device(&output)?;
                 let (playback, handle) =
@@ -261,6 +279,7 @@ mod imp {
                 let on_error = lost.clone();
                 let (capture, channels, rate) = listen(
                     &input,
+                    cue.unwrap_or(false),
                     move |d| {
                         let _ = send.try_send(d.to_vec());
                     },

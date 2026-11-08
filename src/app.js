@@ -427,6 +427,7 @@
     ch.toggles.push({ btn, param });
     btn.addEventListener("click", () => {
       const on = btn.getAttribute("aria-pressed") !== "true";
+      if (param === "Mute" && ch.kind === "strip" && on && scopedMute(ch)) return;
       const returnFocus = !on && settings.simpleMode && ROUTE.test(param) && document.activeElement === btn
         && ch.routeExpand && !ch.routeExpand.parentElement.classList.contains("expanded");
       recordMixerChange([{ ch, param, before: !on, after: on, wasPartMuted: on && ROUTE.test(param) && partMuted(ch).includes(param) }]);
@@ -442,6 +443,24 @@
   // Sleekmeeter turns the input's send to those outputs off and remembers which ones it turned off,
   // so unmuting puts back exactly those (and survives a restart).
   const ROUTE = /^[AB]\d$/;
+  function muteDestination(ch) {
+    const cfg = settings.muteDestinations?.[ch.key] || {};
+    const buses = chans.filter((c) => c.kind === "bus");
+    if (cfg.mode === "personal") return buses.find((c) => c.prefix === (settings.personalBus || settings.chatBalance?.bus) && isHw(c)) || buses.find(isHw);
+    if (cfg.mode === "audience") return buses.find((c) => c.prefix === settings.audienceBus && !isHw(c)) || streamBus();
+    if (cfg.mode === "chat") return buses.find((c) => c.prefix === cfg.bus && !isHw(c));
+    return null;
+  }
+  function scopedMute(ch) {
+    const mode = settings.muteDestinations?.[ch.key]?.mode;
+    if (!["personal", "audience", "chat"].includes(mode)) return false;
+    const bus = muteDestination(ch);
+    if (!bus) { toast("Choose a mute destination in the channel’s Routing tab"); return true; }
+    const route = bus.info.param, muted = partMuted(ch).includes(route);
+    if (!muted && !routeOn(ch, route)) { toast(`${displayName(ch)} is already off on ${displayName(bus)}`); return true; }
+    partMuteOutput(ch, route, !muted);
+    return true;
+  }
   const partMuted = (ch) => ((settings.partMute || {})[ch.key] || []).filter((p) => ROUTE.test(p));
   function setPartMuted(ch, list) {
     settings.partMute = Object.assign({}, settings.partMute);
@@ -479,7 +498,9 @@
           t.btn.title = `Muted on ${list.map(busLabel).join(", ")}. Right-click to change`;
         } else {
           delete t.btn.dataset.part;
-          t.btn.title = "Right-click to mute on some outputs only";
+          const destination = muteDestination(ch);
+          t.btn.title = destination ? `Mute to ${displayName(destination)} · Right-click for other outputs`
+            : "Right-click to mute on some outputs only";
         }
       } else if (ROUTE.test(t.param)) {
         t.btn.classList.toggle("part-muted", list.includes(t.param));
@@ -821,7 +842,10 @@
     showOffline(!st.installed ? "missing" : !st.connected ? "stopped" : null);
     const wasConnected = connected;
     connected = !!st.connected;
+    $("#balanceMixer").hidden = SIDE || !connected || !st.strips;
+    $("#balancePin").hidden = SIDE || !connected || !settings.chatBalancePinned || !settings.chatBalance;
     if (!st.connected || !st.strips) {
+      if (balanceDlg.open) paintBalance();
       scheduleRouteTrace();
       if (outputsDlg.open) paintOutputDevices();
       return;
@@ -859,6 +883,11 @@
     }
     scheduleRouteTrace();
     applyMixFor(st);
+    if (balanceDlg.open || !$("#balancePin").hidden) {
+      if (!balanceDlg.open && !balanceBusy && balanceQueued === null && !balanceSession) populateBalance();
+      paintBalance();
+    }
+    if (!wasConnected && !SIDE) refreshBalanceStatus();
     applyRecorder(st.recorder);
     applyOutputs(st);
     applyBrb(st);
@@ -1001,6 +1030,7 @@
     if (micDlg.open) micLevels(lv);
     if (tuneDlg.open) micTuneLevels(lv);
     if (chainDlg.open) chainLevels(lv);
+    if (balanceDlg.open) paintBalanceSignal(lv);
   }
   // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
   // are composited on the GPU without repainting. The loop stops when every meter is at rest
@@ -1199,6 +1229,31 @@
     const ch = drawerCh;
     for (const panel of Object.values(drawerPanels)) panel.replaceChildren();
     $("#drawerAppsTab").hidden = ch.kind !== "strip";
+    if (ch.kind === "strip") {
+      const dest = section("Mute button destination", "routing");
+      const mode = Object.assign(document.createElement("select"), { ariaLabel: "Mute button destination" });
+      const chat = Object.assign(document.createElement("select"), { ariaLabel: "Voice chat output" });
+      mode.append(new Option("Everyone", "all"), new Option("Audience", "audience"),
+        new Option("Headphones", "personal"), new Option("Voice chat", "chat"));
+      chat.append(new Option("Choose voice chat output", ""), ...busOptions(chans.filter((c) => c.kind === "bus" && !isHw(c))));
+      const cfg = settings.muteDestinations?.[ch.key] || {};
+      mode.value = cfg.mode || "all";
+      chat.value = cfg.bus || "";
+      chat.hidden = mode.value !== "chat";
+      const update = () => {
+        settings.muteDestinations = { ...settings.muteDestinations, [ch.key]: { mode: mode.value, bus: chat.value } };
+        chat.hidden = mode.value !== "chat";
+        paintPartMute(ch); saveSettings();
+      };
+      mode.addEventListener("change", update); chat.addEventListener("change", update);
+      dest.append(mode, chat, Object.assign(document.createElement("p"), {
+        className: "hint", textContent: "Applies to the main Mute button in the mixer and tray. Right-click to choose other outputs."
+      }));
+      const monitor = section("Private monitoring");
+      const cue = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Cue in headphones…" });
+      cue.addEventListener("click", () => openMonitor(ch));
+      monitor.append(cue);
+    }
 
     const lookSec = section("Look", "look");
     const sw = document.createElement("div");
@@ -1477,6 +1532,7 @@
     || chans.find((b) => b.prefix === `Bus[${defaultStreamBus()}]`);
   function captureForBus(bus, devices) {
     const number = bus.info.id.slice(1) || "1";
+    if (isHw(bus)) return devices.find((d) => new RegExp(`voicemeeter out a${number}\\b`, "i").test(d)) || "";
     const legacy = { 1: /voicemeeter output/i, 2: /voicemeeter aux output/i, 3: /vaio3 output/i }[number];
     return devices.find((d) => new RegExp(`voicemeeter out b${number}\\b`, "i").test(d)) || devices.find((d) => legacy?.test(d)) || "";
   }
@@ -1585,13 +1641,23 @@
   const monitorDlg = $("#mixMonitorDlg"), monitorIn = $("#mixMonitorInput"), monitorOut = $("#mixMonitorOutput");
   const monitorStart = $("#mixMonitorStart"), monitorStop = $("#mixMonitorStop"), monitorStatus = $("#mixMonitorStatus");
   let monitorBusy = false, monitoring = false, monitorGeneration = 0;
+  let monitorCue = null, monitorStreamEndpoint = "", monitorPersonalEndpoint = "", monitorPersonalDevice = "";
   function paintMonitor() {
     monitorStart.disabled = monitorBusy || monitoring || !monitorIn.value || !monitorOut.value;
     monitorStop.disabled = monitorBusy || !monitoring;
     monitorIn.disabled = monitorOut.disabled = monitorBusy || monitoring;
+    $("#mixMonitorPersonal").disabled = monitorBusy;
+    $("#mixMonitorStream").disabled = monitorBusy || !monitorOut.value || !monitorStreamEndpoint;
   }
-  async function openMonitor() {
+  async function openMonitor(source) {
     if (!connected) return toast("Start Voicemeeter to listen to a mix");
+    if (monitorDlg.open) return;
+    const cue = source?.kind === "strip" ? source : null;
+    monitorCue = null;
+    monitorStreamEndpoint = "";
+    monitorPersonalEndpoint = monitorPersonalDevice = "";
+    $("#monitorMixSwitch").hidden = !!cue;
+    $("#mixMonitorTitle").textContent = cue ? `Cue · ${displayName(cue)}` : "Listen to a mix";
     const generation = ++monitorGeneration, previous = monitorOut.value;
     monitorIn.replaceChildren();
     monitorOut.replaceChildren();
@@ -1599,17 +1665,36 @@
     paintMonitor();
     monitorDlg.showModal();
     try {
-      const [capture, playback] = await Promise.all([engine.selftestInputs(), engine.soundDevices()]);
+      const [capture, playback, routes] = await Promise.all([
+        engine.selftestInputs(), engine.soundDevices(), cue ? engine.appRouteDevices() : Promise.resolve(null),
+      ]);
       if (generation !== monitorGeneration) return;
-      const available = chans.filter((c) => c.kind === "bus" && !isHw(c)).map((c) => [c, captureForBus(c, capture.devices || [])])
+      const available = chans.filter((c) => c.kind === "bus").map((c) => [c, captureForBus(c, capture.devices || [])])
         .filter(([, endpoint]) => endpoint);
       monitorIn.replaceChildren(...available.map(([c, endpoint]) => new Option(`${c.info.id} · ${displayName(c)}`, endpoint)));
-      const desired = available.find(([c]) => c.prefix === settings.audienceBus) || available.find(([c]) => c === streamBus());
-      if (desired) monitorIn.value = desired[1];
+      const desired = available.find(([c]) => !isHw(c) && c.prefix === settings.audienceBus) || available.find(([c]) => c === streamBus());
+      monitorStreamEndpoint = desired?.[1] || "";
+      if (monitorStreamEndpoint) monitorIn.value = monitorStreamEndpoint;
       const outputs = physicalPlayback(playback.devices || []);
       monitorOut.replaceChildren(new Option("Choose a playback device", ""), ...outputs.map((name) => new Option(name, name)));
-      if (outputs.includes(previous)) monitorOut.value = previous;
+      const personal = chans.find((c) => c.kind === "bus" && c.prefix === settings.personalBus)
+        || chans.find((c) => c.kind === "bus" && isHw(c) && c.i === 0);
+      const device = outputs.find((name) => name === personal?.data?.device);
+      monitorPersonalEndpoint = available.find(([c]) => c === personal)?.[1] || "";
+      monitorPersonalDevice = device || "";
+      if (outputs.includes(previous) || device) monitorOut.value = outputs.includes(previous) ? previous : device;
       monitorStatus.textContent = !available.length ? "No Voicemeeter virtual recording outputs are available." : !outputs.length ? "No headphones or speakers are available." : "";
+      if (cue) {
+        routeDevices = routes;
+        const hardwareCapture = isHw(cue) && cue.data?.device && !/cable|voicemeeter/i.test(cue.data.device);
+        const render = hardwareCapture ? null : deviceForChannel(cue);
+        monitorCue = !!render;
+        const input = render?.name || (isHw(cue) ? cue.data?.device : "");
+        monitorIn.replaceChildren(...(input ? [new Option(input, input)] : []));
+        monitorStatus.textContent = input
+          ? "The cue uses the input before the mixer fader and effects. Choose headphones outside your streaming app’s desktop capture."
+          : "This input has no Windows playback or recording endpoint available for cue.";
+      }
     } catch (e) { if (generation === monitorGeneration) monitorStatus.textContent = String(e); }
     finally { paintMonitor(); }
   }
@@ -1625,17 +1710,37 @@
   $("#outputsMonitorOpen").addEventListener("click", openMonitor);
   monitorIn.addEventListener("change", paintMonitor);
   monitorOut.addEventListener("change", paintMonitor);
-  monitorStart.addEventListener("click", async () => {
+  async function startMonitor() {
     const generation = monitorGeneration;
     monitorBusy = true;
     paintMonitor();
     try {
-      await engine.mixMonitorStart(monitorIn.value, monitorOut.value);
+      await engine.mixMonitorStart(monitorIn.value, monitorOut.value, monitorCue);
       if (generation !== monitorGeneration || !monitorDlg.open) { await engine.mixMonitorStop(); return; }
       monitoring = true;
-      monitorStatus.textContent = `Listening to ${monitorIn.selectedOptions[0].textContent}`;
+      monitorStatus.textContent = monitorCue !== null ? `Cueing ${monitorIn.selectedOptions[0].textContent}`
+        : `Listening to ${monitorIn.selectedOptions[0].textContent}. For an isolated comparison, select a different device from your normal personal output.`;
     } catch (e) { if (generation === monitorGeneration) monitorStatus.textContent = String(e); }
     finally { monitorBusy = false; paintMonitor(); }
+  }
+  monitorStart.addEventListener("click", startMonitor);
+  $("#mixMonitorPersonal").addEventListener("click", async () => {
+    if (monitoring && monitorIn.value === monitorPersonalEndpoint) return;
+    if (monitoring) await stopMonitor();
+    if (!monitorDlg.open) return;
+    if (monitorPersonalEndpoint && monitorOut.value && monitorOut.value !== monitorPersonalDevice) {
+      monitorIn.value = monitorPersonalEndpoint;
+      await startMonitor();
+      return;
+    }
+    monitorStatus.textContent = "Personal mix · listening through your normal mixer outputs";
+  });
+  $("#mixMonitorStream").addEventListener("click", async () => {
+    if (monitoring && monitorIn.value === monitorStreamEndpoint) return;
+    if (monitoring) await stopMonitor();
+    if (!monitorDlg.open) return;
+    monitorIn.value = monitorStreamEndpoint;
+    await startMonitor();
   });
   monitorStop.addEventListener("click", async () => { await stopMonitor(); monitorStatus.textContent = "Stopped"; });
   monitorDlg.addEventListener("close", () => { monitorGeneration++; if (monitoring || monitorBusy) stopMonitor(); });
@@ -1679,72 +1784,238 @@
   /* ---------- Game / Chat balance ---------- */
   const balanceDlg = $("#balanceDlg"), balanceSlider = $("#balanceValue");
   const balanceGame = $("#balanceGame"), balanceChat = $("#balanceChat"), balanceBus = $("#balanceBus");
+  const balancePinned = $("#balancePinnedValue");
   const balancePickers = [balanceGame, balanceChat, balanceBus];
-  let balanceSession = null, balanceBusy = false;
+  let balanceSession = null, balanceBusy = false, balanceQueued = null, balanceTimer = 0;
+  let balanceMeterAt = 0;
   function openBalance() {
+    if (balanceDlg.open) return;
     if (!connected || !layout) { toast("Start Voicemeeter to balance game and chat"); return; }
+    if (balanceBusy || balanceQueued !== null) { balanceDlg.showModal(); return; }
+    populateBalance();
+    balanceSlider.value = balanceQueued ?? balanceSession?.position ?? 0;
+    $("#balancePinToggle").checked = !!settings.chatBalancePinned;
+    $("#balanceGameApp").value = settings.chatBalanceApps?.game || "";
+    $("#balanceChatApp").value = settings.chatBalanceApps?.chat || "";
+    $("#balanceSetupStatus").textContent = "";
+    paintBalance();
+    balanceDlg.showModal();
+    refreshBalanceApps();
+    refreshBalanceStatus();
+  }
+  function populateBalance() {
     const inputs = chans.filter((c) => c.kind === "strip");
     const hardware = chans.filter((c) => c.kind === "bus" && c.info.kind === "hw");
     if (balanceSession?.edition !== layout.edition) balanceSession = null;
     const prefs = balanceSession?.prefs || settings.chatBalance || {};
     for (const [el, list, value, pattern] of [
-      [balanceGame, inputs, prefs.game, /game/i], [balanceChat, inputs, prefs.chat, /chat|discord/i],
+      [balanceGame, inputs, prefs.game, /^(?!.*(?:chat|discord)).*\bgame\b/i],
+      [balanceChat, inputs, prefs.chat, /chat|discord/i],
       [balanceBus, hardware, prefs.bus || settings.personalBus, /headphone/i],
     ]) {
-      el.replaceChildren(...list.map((c) => new Option(displayName(c), c.prefix)));
-      el.value = list.find((c) => c.prefix === value)?.prefix || list.find((c) => pattern.test(displayName(c)))?.prefix || list[0]?.prefix || "";
+      el.replaceChildren(new Option("Choose…", ""), ...list.map((c) => new Option(displayName(c), c.prefix)));
+      el.value = list.find((c) => c.prefix === value)?.prefix || list.find((c) => pattern.test(displayName(c)))?.prefix
+        || (el === balanceBus ? list.find((c) => c.data?.device)?.prefix : "") || "";
     }
-    if (balanceGame.value === balanceChat.value && !balanceSession) balanceChat.value = inputs.find((c) => c.prefix !== balanceGame.value)?.prefix || "";
-    $("#balanceBusRow").hidden = layout.edition !== 3;
     $("#balanceScope").textContent = layout.edition === 3
-      ? "Only the selected listening output changes. Set the two input levels first, then apply a balance."
-      : "Standard and Banana use the main input faders, so balance affects every route from those inputs.";
-    balanceSlider.value = balanceSession?.position || 0;
-    paintBalance();
-    balanceDlg.showModal();
+      ? "Drag to balance your listening output live. Other outputs keep their levels."
+      : "Drag to balance both inputs live. On this edition their main faders affect every route, including stream sends.";
+  }
+  function balanceSelection() {
+    return { game: balanceGame.value, chat: balanceChat.value, bus: balanceBus.value };
+  }
+  function balanceProblem(prefs) {
+    if (!connected) return "Start Voicemeeter to adjust the balance.";
+    const game = chans.find((c) => c.prefix === prefs.game), chat = chans.find((c) => c.prefix === prefs.chat);
+    if (!game || !chat || game === chat) return "Choose two separate inputs for Game and Chat.";
+    if (layout.edition !== 3) return "";
+    const bus = chans.find((c) => c.prefix === prefs.bus);
+    if (!bus) return "Choose your listening output.";
+    const name = `${bus.info.id} · ${displayName(bus)}`;
+    if (!bus.data?.device) return `Choose a playback device for ${name} in Outputs.`;
+    if (bus.data.mute) return `Unmute ${name} to hear the balance.`;
+    if (bus.data.mode?.toLowerCase() === "composite") return `Set ${name} to Normal mode, or choose another listening output.`;
+    const missing = [game, chat].filter((c) => !c.data?.a?.[bus.i]);
+    if (missing.length) return `Enable ${bus.info.id} on ${missing.map(displayName).join(" and ")} to hear both inputs there.`;
+    return "";
   }
   function paintBalance() {
     const v = +balanceSlider.value;
-    $("#balanceStatus").textContent = !v ? "Centred" : `${v < 0 ? "Chat" : "Game"} −${(Math.abs(v) * .24).toFixed(1)} dB when applied`;
-    balancePickers.forEach((el) => { el.disabled = !!balanceSession || balanceBusy; });
-    $("#balanceApply").disabled = balanceBusy || balanceGame.value === balanceChat.value;
-    $("#balanceReset").disabled = balanceBusy || (!balanceSession && !v);
+    const status = !v ? "Centred" : Math.abs(v) === 100 ? `${v < 0 ? "Chat" : "Game"} at minimum` : `${v < 0 ? "Chat" : "Game"} −${(Math.abs(v) * .3).toFixed(1)} dB`;
+    if ($("#balanceStatus").textContent !== status) $("#balanceStatus").textContent = status;
+    const prefs = balanceSelection(), problem = balanceProblem(prefs);
+    const muted = [prefs.game, prefs.chat].map((key) => chans.find((c) => c.prefix === key)).filter((ch) => ch?.data?.mute);
+    const route = problem || (muted.length ? `Muted input · ${muted.map(displayName).join(", ")}` : "");
+    if ($("#balanceRoute").textContent !== route) $("#balanceRoute").textContent = route;
+    balanceSlider.disabled = !!problem;
+    balancePinned.value = balanceSlider.value;
+    balancePinned.title = problem || status;
+    balancePinned.disabled = !!problem;
+    balancePickers.forEach((el) => { el.disabled = !!balanceSession || balanceBusy || balanceQueued !== null; });
+    $("#balanceReset").disabled = !connected || (!balanceSession && !v);
+    $("#balancePinnedReset").disabled = $("#balanceReset").disabled;
+    $("#balanceSave").disabled = !prefs.game || !prefs.chat || prefs.game === prefs.chat || (layout.edition === 3 && !prefs.bus);
+    $("#balanceUseMain").hidden = layout.edition !== 3;
+    $("#balanceUseMain").disabled = !connected || balanceBusy || balanceQueued !== null || $("#balanceSave").disabled;
   }
-  async function applyBalance(position) {
-    if (balanceBusy || !connected || balanceGame.value === balanceChat.value) return;
+  function paintBalanceSignal(lv) {
+    if (performance.now() - balanceMeterAt < 260) return;
+    balanceMeterAt = performance.now();
+    const prefs = balanceSelection();
+    const output = $("#balanceSignal");
+    output.textContent = !prefs.game || !prefs.chat ? "" : ["game", "chat"].map((key) => {
+      const ch = chans.find((c) => c.prefix === prefs[key]);
+      const pair = lv.inputs?.[ch?.i];
+      const level = pair ? Math.max(...pair) : -200;
+      return `${key === "game" ? "Game" : "Chat"} ${level > -80 ? fmtDb(level) + " dBFS" : "quiet"}`;
+    }).join(" · ");
+  }
+  function queueBalance(position) {
+    balanceQueued = position;
+    paintBalance();
+    if (!balanceBusy && !balanceTimer) {
+      balanceTimer = setTimeout(() => {
+        balanceTimer = 0;
+        const next = balanceQueued;
+        balanceQueued = null;
+        applyBalance(next);
+      }, 90);
+    }
+  }
+  async function applyBalance(position, useMain = false) {
+    const prefs = balanceSelection();
+    if (!connected || (position ? balanceProblem(prefs) : !balanceSession && !useMain)) {
+      balanceSlider.value = balanceSession?.position ?? 0;
+      paintBalance();
+      return;
+    }
     balanceBusy = true;
     paintBalance();
     try {
-      const prefs = { game: balanceGame.value, chat: balanceChat.value, bus: balanceBus.value };
-      const layer = /\[(\d+)\]$/.exec(prefs.bus)?.[1];
-      const suffix = layout.edition === 3 ? `GainLayer[${layer}]` : "Gain";
-      const names = [prefs.game, prefs.chat].map((input) => `${input}.${suffix}`);
-      const current = await engine.getFloats(names);
-      if (!current.every(Number.isFinite)) throw new Error("Could not read both input levels.");
-      if (balanceSession && current.some((v, i) => Math.abs(v - balanceSession.last[i]) > .15)) {
-        balanceSession = null;
-        balanceSlider.value = 0;
-        toast("Input levels changed elsewhere. The current levels are your new centre.");
-        return;
+      const result = await engine.chatBalanceSet(prefs, position, useMain);
+      acceptBalance(result, prefs);
+      if (JSON.stringify(settings.chatBalance) !== JSON.stringify(prefs)) {
+        settings.chatBalance = prefs;
+        saveSettings();
       }
-      const base = balanceSession?.base || current;
-      const levels = base.map((v, i) => Math.max(MIN_DB, v - (i === 0 ? Math.max(0, position) : Math.max(0, -position)) * .24));
-      const writes = await Promise.allSettled(names.map((name, i) => engine.setFloat(name, levels[i])));
-      if (writes.some((r) => r.status === "rejected")) {
-        await Promise.allSettled(names.map((name, i) => writes[i].status === "fulfilled" ? engine.setFloat(name, current[i]) : Promise.resolve()));
-        throw new Error("Could not set both input levels. Check that Voicemeeter is still running.");
-      }
-      balanceSession = position ? { base, last: levels, position, prefs, edition: layout.edition } : null;
-      balanceSlider.value = position;
-      settings.chatBalance = prefs;
-      saveSettings();
-      toast(position ? "Game / Chat balance applied" : "Game and chat restored to centre");
-    } catch (e) { fail(e); } finally { balanceBusy = false; paintBalance(); }
+    } catch (e) { $("#balanceApplied").textContent = String(e); fail(e); }
+    finally {
+      balanceBusy = false;
+      if (balanceQueued !== null) queueBalance(balanceQueued);
+      else balanceSlider.value = balanceSession?.position ?? 0;
+      paintBalance();
+    }
   }
+  function acceptBalance(result, prefs = settings.chatBalance) {
+    if (result.edition && result.edition !== layout.edition) return;
+    prefs = result.selection || prefs;
+    balanceSession = result.position && prefs ? { position: result.position, prefs, edition: layout.edition } : null;
+    if (!balanceBusy && balanceQueued === null) balanceSlider.value = result.position || 0;
+    if (result.levels) $("#balanceApplied").textContent = `Voicemeeter levels · Game ${fmtDb(result.levels[0])} dB · Chat ${fmtDb(result.levels[1])} dB`;
+    paintBalance();
+  }
+  function refreshBalanceStatus() {
+    engine.chatBalanceStatus().then((result) => {
+      if (connected && layout && !balanceBusy && balanceQueued === null && result.position) {
+        acceptBalance(result);
+        populateBalance();
+        paintBalance();
+      }
+    }).catch(fail);
+  }
+  async function refreshBalanceApps() {
+    try {
+      const [devices, apps] = await Promise.all([engine.appRouteDevices(), engine.appVolumes()]);
+      routeDevices = devices;
+      $("#balanceApps").replaceChildren(...apps.filter((a) => a.exe?.endsWith(".exe")).map((a) => new Option(a.name, a.exe)));
+      return apps;
+    } catch (e) { $("#balanceSetupStatus").textContent = String(e); return []; }
+  }
+  $("#balanceAssign").addEventListener("click", async (e) => {
+    const button = e.currentTarget, status = $("#balanceSetupStatus");
+    const exes = ["#balanceGameApp", "#balanceChatApp"].map((id) => $(id).value.trim().toLowerCase());
+    if (exes[0] === exes[1] || exes.some((exe) => !/^[^\\/:*?"<>|]+\.exe$/i.test(exe))) {
+      status.textContent = "Enter two different executable names, such as game.exe and discord.exe."; return;
+    }
+    button.disabled = true;
+    try {
+      await refreshBalanceApps();
+      const prefs = balanceSelection();
+      const channels = [prefs.game, prefs.chat].map((key) => chans.find((c) => c.prefix === key));
+      const devices = channels.map((ch) => ch && deviceForChannel(ch));
+      if (!devices.every(Boolean) || devices[0].id === devices[1].id) {
+        status.textContent = "Choose two inputs with separate Windows playback devices. Voicemeeter virtual inputs and virtual cables can be assigned."; return;
+      }
+      for (const [i, exe] of exes.entries()) {
+        if (!await saveAssignment(exe, channels[i])) {
+          status.textContent = `Could not save the assignment for ${exe}. Check Windows audio routing and retry.`; return;
+        }
+      }
+      settings.chatBalanceApps = { game: exes[0], chat: exes[1] };
+      settings.chatBalance = prefs;
+      await saveNow();
+      status.textContent = `Game → ${devices[0].name} · Chat → ${devices[1].name}. If an app is still on its old device, restart its audio.`;
+    } finally { button.disabled = false; }
+  });
+  $("#balanceSend").addEventListener("click", async () => {
+    const prefs = balanceSelection();
+    const bus = chans.find((c) => c.prefix === prefs.bus && isHw(c));
+    const inputs = [prefs.game, prefs.chat].map((key) => chans.find((c) => c.prefix === key && c.kind === "strip"));
+    if (!bus || !inputs.every(Boolean) || inputs[0] === inputs[1]) {
+      $("#balanceSetupStatus").textContent = "Choose two separate inputs and a hardware listening output first."; return;
+    }
+    try {
+      for (const ch of inputs) {
+        if (partMuted(ch).includes(bus.info.param)) await engine.routeMute(ch.i, bus.info.param, false);
+        else if (!routeOn(ch, bus.info.param)) await engine.setFloat(`${ch.prefix}.${bus.info.param}`, 1);
+      }
+      $("#balanceSetupStatus").textContent = `Both inputs are sent to ${displayName(bus)}.`;
+    } catch (e) { $("#balanceSetupStatus").textContent = String(e); }
+  });
+  $("#balanceVerify").addEventListener("click", async (e) => {
+    const button = e.currentTarget, status = $("#balanceSetupStatus");
+    button.disabled = true;
+    try {
+      const apps = await refreshBalanceApps();
+      const prefs = balanceSelection();
+      const paths = ["game", "chat"].map((key) => {
+        const title = key === "game" ? "Game" : "Chat";
+        const exe = $(key === "game" ? "#balanceGameApp" : "#balanceChatApp").value.trim().toLowerCase();
+        if (!exe) return `${title}: choose an app`;
+        const channel = chans.find((c) => c.prefix === prefs[key]);
+        const expected = channel && deviceForChannel(channel);
+        if (!expected) return `${title}: selected input has no Windows endpoint`;
+        const app = apps.find((a) => a.exe === exe);
+        if (!app?.endpoints?.length) return `${title}: play audio in ${exe} to verify`;
+        const matches = app.endpoints.some((id) => id.toLowerCase() === expected.id.toLowerCase());
+        return `${title}: ${matches ? displayName(channel) + " confirmed" : exe + " is playing through a different Windows device"}`;
+      });
+      status.textContent = paths.join(" · ");
+    } finally { button.disabled = false; }
+  });
+  $("#balanceSave").addEventListener("click", async () => {
+    settings.chatBalance = balanceSelection();
+    if (await saveNow()) $("#balanceApplied").textContent = "Assignments saved. Game / Chat shortcuts are available in Controls & remote.";
+    if (lastState) applyState(lastState);
+  });
+  $("#balancePinToggle").addEventListener("change", (e) => {
+    settings.chatBalancePinned = e.target.checked;
+    if (!$("#balanceSave").disabled) settings.chatBalance = balanceSelection();
+    saveSettings();
+    if (lastState) applyState(lastState);
+  });
   balancePickers.forEach((el) => el.addEventListener("change", paintBalance));
-  balanceSlider.addEventListener("input", paintBalance);
-  $("#balanceApply").addEventListener("click", () => applyBalance(+balanceSlider.value));
-  $("#balanceReset").addEventListener("click", () => balanceSession ? applyBalance(0) : (balanceSlider.value = 0, paintBalance()));
+  balanceSlider.addEventListener("input", () => queueBalance(+balanceSlider.value));
+  balancePinned.addEventListener("input", () => { balanceSlider.value = balancePinned.value; queueBalance(+balanceSlider.value); });
+  $("#balanceReset").addEventListener("click", () => { balanceSlider.value = 0; queueBalance(0); });
+  $("#balancePinnedReset").addEventListener("click", () => $("#balanceReset").click());
+  $("#balanceUseMain").addEventListener("click", () => applyBalance(0, true));
+  engine.onChatBalance((result) => {
+    if (!balanceBusy && layout) { if (!balanceDlg.open) populateBalance(); acceptBalance(result); }
+  }).catch(() => {});
+  $("#balanceMixer").addEventListener("click", openBalance);
+  $("#balanceMix").hidden = SIDE;
+  $("#balanceMix").addEventListener("click", openBalance);
 
   /* ---------- offline overlay ---------- */
   const launchBtn = $("#launchBtn");
@@ -2155,14 +2426,15 @@
     ["window", "Show or hide Sleekmeeter"], ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"],
     ["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"],
     ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"],
-    ["micfx", "Mic clean-up on or off"]];
+    ["micfx", "Mic clean-up on or off"], ["chatgame", "Game / Chat toward game"],
+    ["chatchat", "Game / Chat toward chat"], ["chatcentre", "Game / Chat restore centre"]];
   // Mic clean-up targets: every mic, or one hardware input. [label, target] pairs.
   const micTargets = () => {
     const hw = layout.strips.filter((s) => s.kind === "hw").length;
     return [["Every mic", ""], ...chans.filter((ch) => { const m = /^Strip\[(\d+)\]$/.exec(ch.prefix); return m && +m[1] < hw; }).map((ch) => [displayName(ch), ch.prefix])];
   };
   // Actions that aren't about one channel.
-  const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb", "soundstop", "replay", "musicguard"]);
+  const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb", "soundstop", "replay", "musicguard", "chatgame", "chatchat", "chatcentre"]);
   // Actions whose second box is a list of names, not channels.
   const NAMED = { output: "Output profile", scene: "Scene", sound: "Sound" };
   let knownScenes = [];
@@ -3215,19 +3487,19 @@
     if (!isHw(ch)) {
       const at = virtualStrips().indexOf(ch);
       const vm = routeDevices.filter((d) => /voicemeeter/i.test(d.name));
-      if (at === 0) return vm.find((d) => !/aux|vaio3/i.test(d.name)) || null;
-      if (at === 1) return vm.find((d) => /aux/i.test(d.name)) || null;
-      return vm.find((d) => /vaio3/i.test(d.name)) || null;
+      const label = [/^voicemeeter\s+input\b/i, /^voicemeeter\s+aux\s+input\b/i, /^voicemeeter\s+vaio3\s+input\b/i][at];
+      return vm.find((d) => label?.test(d.name)) || null;
     }
     const dev = (ch.data && ch.data.device) || "";
-    if (!/cable|vb-?audio/i.test(dev) || /voicemeeter/i.test(dev)) return null;
+    const extension = routeDevices.find((d) => new RegExp(`^voicemeeter\\s+in\\s+${ch.i + 1}\\b`, "i").test(d.name));
+    if (!/cable|vb-?audio/i.test(dev) || /voicemeeter/i.test(dev)) return extension || null;
     const render = routeDevices.filter((d) => !/voicemeeter/i.test(d.name));
     const heard = adapterOf(dev), sameName = dev.replace(/output/i, "input").toLowerCase();
     const letter = (n) => { const m = /cable[\s-]*([a-z])\b/i.exec(n || ""); return m ? m[1].toLowerCase() : ""; };
     return render.find((d) => d.name.toLowerCase() === sameName)
       || (heard && render.find((d) => adapterOf(d.name) === heard))
       || (letter(dev) && render.find((d) => letter(d.name) === letter(dev)))
-      || null;
+      || extension || null;
   }
   const channelForDevice = (id) => chans.find((c) => { const d = deviceForChannel(c); return d && d.id === id; }) || null;
 
@@ -3265,7 +3537,7 @@
   async function saveAssignment(exe, destination) {
     const row = appRows.get(exe);
     const device = destination && deviceForChannel(destination);
-    if (destination && !device) return toast("This input has no available Windows playback device");
+    if (destination && !device) { toast("This input has no available Windows playback device"); return false; }
     try {
       const pids = appsDlg.open ? row?.pids || [] : (await engine.appVolumes()).find((app) => app.exe === exe)?.pids || [];
       if (pids.length) await engine.appRouteSet(pids, device?.id || "");
@@ -3273,12 +3545,13 @@
       if (device) routes[exe] = device.id;
       else if (pids.length || !window.__TAURI__) delete routes[exe];
       else routes[exe] = "";
-      if (!await saveNow()) return;
+      if (!await saveNow()) return false;
       if (row) fillRoute(row, row.session);
       paintAppAssignments(); paintTray(); paintStripApps(); scheduleRouteTrace();
       toast(device ? (pids.length ? "App assignment saved" : "App assignment saved. Waiting for an audio session.")
         : routes[exe] === "" ? "Will restore the Windows default when the app plays audio" : "App assignment removed");
-    } catch (e) { fail(e); }
+      return true;
+    } catch (e) { fail(e); return false; }
   }
   engine.onAppRouteReset((exe) => {
     if (settings.appRoutes?.[exe] !== "") return;
@@ -6211,6 +6484,53 @@
   });
 
   /* ---------- Quick Actions ---------- */
+  const obsAudioDlg = $("#obsAudioDlg"), obsAudioRefresh = $("#obsAudioRefresh");
+  async function checkObsAudio() {
+    if (obsAudioRefresh.disabled) return;
+    const status = $("#obsAudioStatus"), warnings = $("#obsAudioWarnings"), list = $("#obsAudioSources");
+    warnings.replaceChildren(); list.replaceChildren();
+    obsAudioRefresh.disabled = true;
+    status.textContent = "Reading OBS audio sources and tracks…";
+    const item = (text) => Object.assign(document.createElement("li"), { textContent: text });
+    try {
+      const report = await engine.obsAudioCheck();
+      const sources = report.sources || [];
+      const active = sources.filter((source) => source.active !== false && !source.mute);
+      const track = (n) => n ? `track ${n}` : "unavailable";
+      status.textContent = `Live ${track(report.live)} · VOD ${report.vod ? track(report.vod) : "off or unavailable"} · Recording ${report.recording?.length ? report.recording.join(", ") : "unavailable"}`;
+      if (report.limited) warnings.append(item("Showing the first 120 OBS sources."));
+      if (report.live && !active.some((source) => source.tracks.includes(report.live))) warnings.append(item("No active unmuted source was found on the live track."));
+      if (report.vod && !active.some((source) => source.tracks.includes(report.vod))) warnings.append(item("No active unmuted source was found on the VOD track."));
+      const vmCapture = (s) => /voicemeeter.*(?:out|output)|vaio3 output/i.test(`${s.deviceName || ""} ${s.name}`);
+      const renderCapture = (s) => s.kind === "wasapi_output_capture";
+      const overlap = (a, b) => a.tracks.filter((n) => b.tracks.includes(n));
+      let duplicates = 0;
+      for (const [i, a] of active.entries()) for (const b of active.slice(i + 1)) {
+        const tracks = overlap(a, b);
+        if (!tracks.length) continue;
+        const same = a.device && a.kind === b.kind && a.device.toLowerCase() === b.device?.toLowerCase();
+        const potential = (vmCapture(a) && renderCapture(b)) || (vmCapture(b) && renderCapture(a));
+        if ((same || potential) && ++duplicates <= 12) warnings.append(item(`${same ? "Duplicate device" : "Possible double capture"} · ${a.name} and ${b.name} share track${tracks.length > 1 ? "s" : ""} ${tracks.join(", ")}.`));
+      }
+      if (duplicates > 12) warnings.append(item(`${duplicates - 12} more source pairs share a capture device or overlapping mix.`));
+      const roleOf = (s) => vmCapture(s) ? "Voicemeeter mix" : /discord|chat|comms/i.test(s.name) ? "Chat"
+        : /game/i.test(s.name) ? "Game" : /mic/i.test(s.name) ? "Mic" : renderCapture(s) ? "Desktop" : "";
+      list.replaceChildren(...sources.map((s) => item([
+        s.name, roleOf(s), s.deviceName, s.tracks.length ? `Tracks ${s.tracks.join(", ")}` : "No tracks",
+        s.mute ? "Muted" : s.active === false ? "Inactive" : "",
+      ].filter(Boolean).join(" · "))));
+      if (!sources.length) list.append(item("OBS did not report any audio sources."));
+    } catch (e) { status.textContent = String(e); }
+    finally { obsAudioRefresh.disabled = false; }
+  }
+  function openObsAudio() {
+    if (obsAudioDlg.open) return;
+    obsAudioDlg.showModal();
+    checkObsAudio();
+  }
+  $("#obsAudioOpen").addEventListener("click", openObsAudio);
+  obsAudioRefresh.addEventListener("click", checkObsAudio);
+
   const quickDlg = $("#quickDlg"), quickSearch = $("#quickSearch"), quickList = $("#quickResults");
   let quickItems = [], quickMatches = [], quickSelected = 0, quickGeneration = 0;
   function focusSetting(card) {
@@ -6226,6 +6546,8 @@
     const actions = [
       ["Check my setup", "Tools", "health diagnostics fix audio", openHealth],
       ["Audio Event History", "Tools", "timeline log fallback device plugin quarantine", openAudioEvents],
+      ["OBS audio tracks", "Tools", "stream vod recording duplicate desktop capture", openObsAudio],
+      ["Game / Chat balance", "Tools", "chatmix discord headset", openBalance],
       ["Mic Chain", "Tools", "microphone tune-up wizard calibration room tone gate gain compressor denoiser", openChain],
       ["Apps · Volumes", "Tools", "windows application mixer per-app volume", () => openAppVolumes()],
       ["Apps · Audio Flow", "Tools", "route inspector guided audio test", () => openAppVolumes("flow")],
@@ -6393,27 +6715,31 @@
   /* ---------- start ---------- */
   // Pure black for OLED screens (Settings → Appearance).
   /* ---------- themes (Settings → Appearance) ---------- */
-  // Each theme is a set of colour and material tokens in styles.css, keyed by data-theme.
+  // Each theme is a set of colour and material tokens in themes.css, keyed by data-theme.
   const THEMES = [
+    // Dark first: the default desk, then deeper and more atmospheric, then retro; light and playful last.
     ["console", "Console", "Dark hardware desk with amber light"],
-    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders"],
-    ["afterhours", "After Hours", "Blackberry lacquer, plum panels and soft pink lights"],
-    ["oled", "OLED black", "Pure black for OLED screens"],
-    ["lunar", "Lunar", "Satin aluminium, violet keys and circular fader pucks"],
-    ["onyx", "Onyx", "Polished dark mix bays, electric blue and sculpted faders"],
+    ["oled", "OLED black", "Pure black with high-contrast controls"],
     ["glass", "Glass", "Iridescent glass panels, pearl faders and a drifting aurora"],
+    ["hadal", "Hadal", "Deep blue panels, cyan faders and drifting sonar rings"],
+    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
-    ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
-    ["blueprint", "Blueprint", "Drafting paper: white lines on blue, monospace, tick-mark faders"],
-    ["block", "Block", "Bold and flat: thick outlines, hard shadows, bright colour blocks"],
-    ["arcade", "Arcade", "8-bit cabinet: pixel corners, chunky blocks, hot colours"],
-    ["peach", "Peaches & Cream", "Girly pink: peach faders, heart meters, scalloped cards"],
+    ["arcade", "Arcade", "8-bit cabinet with pixel corners and bright colours"],
+    ["block", "Block", "Thick outlines, hard shadows and bright colour blocks"],
     ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, starburst faders"],
+    ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
+    ["peach", "Peaches & Cream", "Warm pastels, peach faders, heart meters and scalloped cards"],
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
-  // Themes that were retired map to their closest remaining one.
-  const RETIRED = { midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console", ink: "console", deco: "console", haunted: "console", cosmic: "console", rack: "console", titanium: "console", afterburner: "console", opal: "console" };
+  // Retired themes fall back to Console.
+  const RETIRED = {
+    midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console",
+    ink: "console", deco: "console", haunted: "console", cosmic: "console", rack: "console",
+    titanium: "console", afterburner: "console", opal: "console", onyx: "console",
+    afterhours: "console", caldera: "console", blueprint: "console",
+    letterpress: "console", eventhorizon: "console", lunar: "console",
+  };
   const currentTheme = () => {
     const t = RETIRED[settings.theme] || settings.theme;
     return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "console";

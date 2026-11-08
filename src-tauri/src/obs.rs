@@ -138,6 +138,214 @@ fn request(ws: &mut Ws, kind: &str, id: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+fn read_batch(ws: &mut Ws, requests: Vec<Value>) -> Result<Vec<Value>, String> {
+    let msg = json!({ "op": 8, "d": { "requestId": "audio-check", "haltOnFailure": false, "requests": requests } });
+    ws.send(Message::Text(msg.to_string().into()))
+        .map_err(|e| e.to_string())?;
+    let until = Instant::now() + Duration::from_secs(8);
+    while let Some(msg) = read_json(ws, until.saturating_duration_since(Instant::now()))? {
+        if msg["op"] == 9 && msg["d"]["requestId"] == "audio-check" {
+            return msg["d"]["results"]
+                .as_array()
+                .cloned()
+                .ok_or("OBS did not return an audio report.".into());
+        }
+        if Instant::now() >= until {
+            break;
+        }
+    }
+    Err("OBS did not finish the audio track check.".into())
+}
+
+fn response(results: &[Value], id: &str) -> Value {
+    results
+        .iter()
+        .find(|r| r["requestId"] == id && r["requestStatus"]["result"] == true)
+        .map(|r| r["responseData"].clone())
+        .unwrap_or_default()
+}
+
+pub fn audio_check(app: &AppHandle) -> Result<Value, String> {
+    let c = cfg(app);
+    if !c.on {
+        return Err("Enable the OBS link in Streaming settings first.".into());
+    }
+    let mut ws = connect(&c)?;
+    let parameter = |id: &str, category: &str, name: &str| {
+        json!({
+            "requestType": "GetProfileParameter", "requestId": id,
+            "requestData": { "parameterCategory": category, "parameterName": name }
+        })
+    };
+    let overview = read_batch(
+        &mut ws,
+        vec![
+            json!({"requestType":"GetInputList","requestId":"inputs"}),
+            json!({"requestType":"GetSpecialInputs","requestId":"special"}),
+            parameter("mode", "Output", "Mode"),
+            parameter("live", "AdvOut", "TrackIndex"),
+            parameter("vod", "AdvOut", "VodTrackIndex"),
+            parameter("vod-on", "AdvOut", "VodTrackEnabled"),
+            parameter("simple-vod", "SimpleOutput", "VodTrackEnabled"),
+            parameter("record", "AdvOut", "RecTracks"),
+            parameter("simple-record", "SimpleOutput", "RecTracks"),
+        ],
+    )?;
+    let inputs = response(&overview, "inputs");
+    let input_list = inputs["inputs"]
+        .as_array()
+        .ok_or("OBS did not provide its source list.")?;
+    let special = response(&overview, "special");
+    let mut names: Vec<(String, String)> = input_list
+        .iter()
+        .filter_map(|i| {
+            Some((
+                i["inputName"].as_str()?.to_string(),
+                i["inputKind"].as_str().unwrap_or("").to_string(),
+            ))
+        })
+        .collect();
+    for (key, value) in special.as_object().into_iter().flatten() {
+        if let Some(name) = value.as_str().filter(|n| !n.is_empty()) {
+            let kind = if key.starts_with("desktop") {
+                "wasapi_output_capture"
+            } else {
+                "wasapi_input_capture"
+            };
+            if !names.iter().any(|(n, _)| n == name) {
+                names.push((name.into(), kind.into()));
+            }
+        }
+    }
+    let count = names.len();
+    names.truncate(120);
+    let devices: Vec<Value> = crate::routing::devices()
+        .into_iter()
+        .chain(crate::routing::capture_devices())
+        .collect();
+    let mut sources = Vec::new();
+    for group in names.chunks(30) {
+        let requests = group
+            .iter()
+            .enumerate()
+            .flat_map(|(i, (name, _))| {
+                [
+                    "GetInputAudioTracks",
+                    "GetInputSettings",
+                    "GetInputMute",
+                    "GetSourceActive",
+                ]
+                .into_iter()
+                .map(move |kind| {
+                    let data = if kind == "GetSourceActive" {
+                        json!({"sourceName":name})
+                    } else {
+                        json!({"inputName":name})
+                    };
+                    json!({"requestType":kind,"requestId":format!("{i}-{kind}"),"requestData":data})
+                })
+            })
+            .collect();
+        let result = read_batch(&mut ws, requests)?;
+        for (i, (name, kind)) in group.iter().enumerate() {
+            let tracks = response(&result, &format!("{i}-GetInputAudioTracks"));
+            let Some(tracks) = tracks["inputAudioTracks"].as_object() else {
+                continue;
+            };
+            let tracks = (1..=6)
+                .filter(|n| tracks.get(&n.to_string()).and_then(Value::as_bool) == Some(true))
+                .collect::<Vec<_>>();
+            let settings = response(&result, &format!("{i}-GetInputSettings"));
+            let mute = response(&result, &format!("{i}-GetInputMute"));
+            let active = response(&result, &format!("{i}-GetSourceActive"));
+            let global = special
+                .as_object()
+                .is_some_and(|inputs| inputs.values().any(|value| value == name));
+            let device = settings["inputSettings"]["device_id"]
+                .as_str()
+                .unwrap_or("");
+            let device_name = devices
+                .iter()
+                .find(|d| {
+                    d["id"]
+                        .as_str()
+                        .is_some_and(|id| id.eq_ignore_ascii_case(device))
+                })
+                .and_then(|d| d["name"].as_str())
+                .unwrap_or("");
+            sources.push(json!({
+                "name": name, "kind": kind, "tracks": tracks, "mute": mute["inputMuted"],
+                "device": device, "deviceName": device_name, "active": if global { json!(true) } else { active["videoActive"].clone() }
+            }));
+        }
+    }
+    let param = |id: &str| {
+        let r = response(&overview, id);
+        r["parameterValue"]
+            .as_str()
+            .or_else(|| r["defaultParameterValue"].as_str())
+            .unwrap_or("")
+            .to_string()
+    };
+    let mode = param("mode");
+    let advanced = mode.eq_ignore_ascii_case("Advanced");
+    let live: Option<u32> = if advanced {
+        param("live").parse().ok()
+    } else {
+        (mode.eq_ignore_ascii_case("Simple")).then_some(1)
+    };
+    let enabled = |id| matches!(param(id).as_str(), "true" | "1");
+    let vod: Option<u32> = if advanced && enabled("vod-on") {
+        param("vod").parse().ok()
+    } else if !advanced && enabled("simple-vod") {
+        Some(2)
+    } else {
+        None
+    };
+    let recording = param(if advanced { "record" } else { "simple-record" })
+        .parse::<u32>()
+        .ok()
+        .map(|mask| {
+            (1..=6)
+                .filter(|n| mask & (1 << (n - 1)) != 0)
+                .collect::<Vec<_>>()
+        });
+    Ok(
+        json!({"sources":sources,"live":live,"vod":vod,"recording":recording,"limited":count > names.len()}),
+    )
+}
+
+pub fn check_cue_output(app: &AppHandle, output: &str) -> Result<(), String> {
+    let state = status();
+    if state["live"] != true && state["recording"] != true {
+        return Ok(());
+    }
+    let report = audio_check(app)?;
+    if report["limited"] == true {
+        return Err("OBS has too many sources to verify that cue playback stays private.".into());
+    }
+    let captured = report["sources"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .any(|source| {
+            if source["kind"] != "wasapi_output_capture"
+                || source["active"] == false
+                || source["mute"] == true
+            {
+                return false;
+            }
+            let name = source["deviceName"].as_str().unwrap_or("");
+            // An unresolved or default Desktop Audio device cannot be ruled out safely.
+            name.is_empty() || name.eq_ignore_ascii_case(output)
+        });
+    if captured {
+        Err("OBS may capture cue playback on that device. Select headphones outside OBS Desktop Audio.".into())
+    } else {
+        Ok(())
+    }
+}
+
 /// Connect, sign in, and return a socket that times out every 400 ms so the caller can poll.
 fn connect(c: &Cfg) -> Result<Ws, String> {
     let url = format!("ws://{}:{}", c.host, c.port);

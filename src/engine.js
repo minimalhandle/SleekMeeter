@@ -184,7 +184,7 @@
     soundPickPack() { return this.invoke("sound_pick_pack"); }
     soundImport(paths) { return this.invoke("sound_import", { paths }); }
     selftestInputs() { return this.invoke("selftest_inputs"); }
-    mixMonitorStart(input, output) { return this.invoke("mix_monitor_start", { input, output }); }
+    mixMonitorStart(input, output, cue = null) { return this.invoke("mix_monitor_start", { input, output, cue }); }
     mixMonitorStop() { return this.invoke("mix_monitor_stop"); }
     onMixMonitorEnded(cb) { return this.listen("mix-monitor-ended", (e) => cb(e.payload)); }
     onAppRouteReset(cb) { return this.listen("app-route-reset", (e) => cb(e.payload)); }
@@ -211,6 +211,10 @@
     appRouteSet(pids, device) { return this.invoke("app_route_set", { pids, device }); }
     brbToggle() { return this.invoke("brb_toggle"); }
     obsStatus() { return this.invoke("obs_status"); }
+    obsAudioCheck() { return this.invoke("obs_audio_check"); }
+    chatBalanceSet(selection, position, useMain = false) { return this.invoke("chat_balance_set", { selection, position, useMain }); }
+    chatBalanceStatus() { return this.invoke("chat_balance_status"); }
+    onChatBalance(cb) { return this.listen("chat-balance", (e) => cb(e.payload)); }
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
     onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
     healthCheck() { return this.invoke("health_check"); }
@@ -434,7 +438,7 @@
       if (rec && name === "Recorder.mode.MultiTrack") rec.multiTrack = !!value;
       if (rec && name === "Recorder.mode.PlayOnLoad") rec.playOnLoad = !!value;
       if (/^Option\./.test(name)) (this._opts = this._opts || {})[name] = value;
-      const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+)$/.exec(name);
+      const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+(?:\[\d\])?)$/.exec(name);
       if (m) {
         const obj = (m[1] === "Strip" ? this.state.strips : this.state.buses)[+m[2]];
         const key = m[3];
@@ -638,13 +642,30 @@
     }
     // Be right back: the simulator does what the real app does, on its own state.
     soundDevices() {
-      return Promise.resolve({ devices: ["Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
+      return Promise.resolve({ devices: ["Realtek Audio", "Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
     }
     soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve([["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]]); }
-    selftestInputs() { return Promise.resolve({ devices: ["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO)"] }); }
-    mixMonitorStart() { return Promise.resolve(); }
-    mixMonitorStop() { return Promise.resolve(); }
+    selftestInputs() { return Promise.resolve({ devices: this.layout.buses.map((b) => `Voicemeeter Out ${b.param} (VB-Audio Voicemeeter VAIO)`) }); }
+    mixMonitorStart(input, output, cue = null) { this.monitor = { input, output, cue }; return Promise.resolve(); }
+    mixMonitorStop() { this.monitor = null; return Promise.resolve(); }
     onMixMonitorEnded() { return Promise.resolve(); }
+    chatBalanceStatus() { return Promise.resolve(this.balance || { position: 0 }); }
+    onChatBalance(cb) { this.balanceListener = cb; return Promise.resolve(); }
+    async chatBalanceSet(selection, position, useMain = false) {
+      const suffix = this.layout.edition === 3 ? `GainLayer[${selection.bus.slice(4, -1)}]` : "Gain";
+      const names = [selection.game, selection.chat].map((ch) => `${ch}.${suffix}`);
+      const current = await this.getFloats(names);
+      if (!current.every(Number.isFinite)) throw new Error("Voicemeeter did not report both input levels.");
+      const centre = current.map((v, i) => this.balance?.position && Math.abs(v - this.balance.levels[i]) <= .15 ? this.balance.centre[i] : v);
+      const levels = useMain ? await this.getFloats([selection.game, selection.chat].map((ch) => `${ch}.Gain`)) : centre.map((v, i) => {
+        const amount = Math.max(0, i === 0 ? position : -position);
+        return amount === 100 ? -60 : Math.max(-60, v - amount * .3);
+      });
+      await Promise.all(names.map((name, i) => this.setFloat(name, levels[i])));
+      this.balance = { position, levels, centre };
+      this.balanceListener?.(this.balance);
+      return this.balance;
+    }
     onAppRouteReset() { return Promise.resolve(); }
     fallbackStatus(bus) {
       const key = this.settings.outputFallbackLinks?.[bus] ?? bus;
@@ -746,9 +767,18 @@
     historyClear() { return Promise.resolve(); }
     appRouteDefaults() { return Promise.resolve(["{0.0.0.00000000}.{aaaa}", "{0.0.0.00000000}.{bbbb}"]); }
     appRouteDevices() {
-      return Promise.resolve([{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" }, { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" }, { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" }, { id: "{0.0.0.00000000}.{dddd}", name: "CABLE-A Input (VB-Audio Cable A)" }]);
+      const endpoints = [{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" },
+        { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" },
+        { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" },
+        { id: "{0.0.0.00000000}.{dddd}", name: "CABLE-A Input (VB-Audio Cable A)" }];
+      if (this.layout.edition === 3) endpoints.push({ id: "{0.0.0.00000000}.{eeee}", name: "Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO3)" });
+      return Promise.resolve(endpoints);
     }
-    appRouteSet(pids, device) { this.routed = { pids, device }; return Promise.resolve(); }
+    appRouteSet(pids, device) {
+      this.routed = { pids, device };
+      for (const app of this.apps) if (app.pids.some((pid) => pids.includes(pid))) app.endpoints = device ? [device] : [];
+      return Promise.resolve();
+    }
     brbToggle() {
       const st = this.state, cfg = Object.assign({ mute: [], lower: [], amount: 30, play: "", playDb: -8 }, this.settings.brb);
       const pick = (key) => {
@@ -773,6 +803,14 @@
     obsStatus() {
       const live = /[?&]live\b/.test(location.search);
       return Promise.resolve({ connected: true, live, scene: "Gameplay", scenes: ["Starting soon", "Gameplay", "Just chatting", "BRB", "Ending"], message: "Connected to OBS" });
+    }
+    obsAudioCheck() {
+      return Promise.resolve({live: 1, vod: 2, recording: [1, 3, 4], sources: [
+        {name: "Stream Mix", kind: "wasapi_input_capture", deviceName: "Voicemeeter Out B2", device: "b2", tracks: [1, 2], mute: false, active: true},
+        {name: "Desktop Audio", kind: "wasapi_output_capture", deviceName: "Headphones", device: "desktop", tracks: [1], mute: false, active: true},
+        {name: "Microphone", kind: "wasapi_input_capture", deviceName: "Shure MV7", device: "mic", tracks: [3], mute: false, active: true},
+        {name: "Game", kind: "wasapi_process_output_capture", tracks: [4], mute: false, active: true},
+      ]});
     }
     onObsStatus() { return Promise.resolve(); }
     onThemeAuto() { return Promise.resolve(); }
@@ -1052,7 +1090,10 @@
         let pw = 0;
         st.strips.forEach((s, i) => {
           if (s.mute) return;
-          if (isA ? s.a[k] : s.b[k]) pw += Math.pow(10, post[i] / 10);
+          if (isA ? s.a[k] : s.b[k]) {
+            const layerOffset = (s.layers?.[j] ?? s.gain) - s.gain;
+            pw += Math.pow(10, (post[i] + layerOffset) / 10);
+          }
         });
         if (bus.mute || pw === 0) return [-200, -200];
         const db = 10 * Math.log10(pw) + bus.gain;
