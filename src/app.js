@@ -156,6 +156,7 @@
     applySoloMono();
     applyStreamer();
     applyArrangementLock();
+    applyRouteNames();
     sizeToNames();
     paintStripApps();
   }
@@ -857,6 +858,7 @@
       if (!d) continue;
       ch.data = d;
       const name = displayName(ch);
+      if (ch.kind === "bus") queueRouteNames();
       for (const n of ch.names) { n.textContent = name; n.title = channelNameHint(name); }
       for (const n of ch.miniNames) { n.textContent = name; n.title = name; }
       for (const s of ch.subs) {
@@ -1332,12 +1334,11 @@
         routeRow.appendChild(b);
       }
       sends.appendChild(routeRow);
-      if (isHw(ch)) {
-        const effects = section("Input effects");
-        const open = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Open this input’s effects chain…" });
-        open.addEventListener("click", () => openInputEffects(ch));
-        effects.append(open);
-      }
+      const effects = section(isHw(ch) ? "Input effects" : "Voice clean-up and plugins");
+      const open = Object.assign(document.createElement("button"), { type: "button", className: "btn",
+        textContent: isHw(ch) ? "Open this input’s effects chain…" : "Clean up voices or add plugins…" });
+      open.addEventListener("click", () => openInputEffects(ch));
+      effects.append(open);
       const pos = section("Position");
       rangeField(pos, { id: "fPan", label: "Pan", param: "Pan_x", min: -0.5, max: 0.5, step: 0.01, center: 0, reset: 0,
         format: (v) => (Math.abs(v) < 0.005 ? "C" : (v < 0 ? "L " : "R ") + Math.round(Math.abs(v) * 200)) });
@@ -1389,7 +1390,12 @@
       for (const [v, label] of BUS_MODES) sel.appendChild(new Option(label, v));
       sel.addEventListener("change", () => sendFloat(`${ch.prefix}.mode.${sel.value}`, 1));
       modeSec.appendChild(sel);
+      const plug = section("Plugins");
+      const open = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Add VST3 plugins to this output…" });
+      open.addEventListener("click", () => openInputEffects(ch));
+      plug.append(open);
     }
+    soundFxSection(ch);
     // With Solo, Mono and EQ hidden from the mixer, they're still here.
     if (settings.hideSoloMono || settings.simpleMode) {
       const btnSec = section("Buttons");
@@ -1412,6 +1418,58 @@
     renderDrawerHead();
     renderDrawerValues();
     selectDrawerTab(drawerTab);
+  }
+
+  // Listening EQ presets and Steadier volume (soundfx.rs): inside Voicemeeter's audio, with no delay.
+  const SOUND_EQ = [["off", "Off"], ["footsteps", "Footsteps"], ["bass", "Bass boost"], ["voice", "Voice clarity"],
+    ["bright", "Brighter"], ["warm", "Warmer"], ["night", "Late night (less bass)"]];
+  const SOUND_LEVEL = [["off", "Off"], ["gentle", "Gentle"], ["night", "Night mode"]];
+  const SOUND_EQ_HINT = {
+    footsteps: "Less rumble from explosions, more of the range footsteps and reloads are in.",
+    bass: "More low end for music and films.", voice: "Clearer speech: less boom, more presence.",
+    bright: "More sparkle in the top end.", warm: "A fuller, softer sound.",
+    night: "Takes the bass out, so it doesn't carry through walls.",
+  };
+  const soundFxOf = (ch) => (settings.soundFx || {})[ch.prefix] || {};
+  function soundFxSection(ch) {
+    const sec = section(ch.kind === "bus" ? "Listening EQ and volume" : "EQ preset and volume");
+    const field = (id, label, list, key) => {
+      const row = Object.assign(document.createElement("div"), { className: "field wide" });
+      const sel = Object.assign(document.createElement("select"), { id });
+      for (const [v, n] of list) sel.appendChild(new Option(n, v));
+      sel.value = soundFxOf(ch)[key] || "off";
+      sel.addEventListener("change", () => {
+        const next = { ...soundFxOf(ch), [key]: sel.value };
+        settings.soundFx = { ...(settings.soundFx || {}), [ch.prefix]: next };
+        if ((next.eq || "off") === "off" && (next.level || "off") === "off") delete settings.soundFx[ch.prefix];
+        saveSettings();
+        paintSoundFx();
+        setTimeout(() => fetchMicFxStatus().then(paintSoundFx), 900);
+      });
+      row.append(Object.assign(document.createElement("label"), { htmlFor: id, textContent: label }), sel);
+      sec.appendChild(row);
+    };
+    field("sfxEq", "EQ preset", SOUND_EQ, "eq");
+    field("sfxLevel", "Steadier volume", SOUND_LEVEL, "level");
+    sec.append(Object.assign(document.createElement("p"), { className: "hint", id: "sfxAbout" }),
+      Object.assign(document.createElement("p"), { className: "hint obs-status", id: "sfxStatus", role: "status" }));
+    paintSoundFx();
+    fetchMicFxStatus().then(paintSoundFx);
+  }
+  function paintSoundFx() {
+    const about = $("#sfxAbout"), status = $("#sfxStatus");
+    if (!about || !drawerCh) return;
+    const v = soundFxOf(drawerCh), eq = v.eq || "off", level = v.level || "off";
+    const parts = [];
+    if (eq !== "off") parts.push(SOUND_EQ_HINT[eq] || "");
+    if (level === "gentle") parts.push("Gentle evens out big jumps in volume.");
+    if (level === "night") parts.push("Night mode brings loud explosions down and quiet dialogue up, so you can keep the volume low.");
+    about.textContent = parts.length ? parts.join(" ")
+      : `Shape how ${drawerCh.kind === "bus" ? "this output sounds" : "this input sounds everywhere it goes"}. Runs inside Voicemeeter with no added delay while Sleekmeeter is open.`;
+    const st = (micFxLast.soundFx || {})[drawerCh.prefix];
+    const on = eq !== "off" || level !== "off";
+    status.textContent = !on ? "" : st ? (st.running ? "On" : st.message || "Starting…") : connected ? "Starting…" : "Waiting for Voicemeeter";
+    status.dataset.ok = st && st.running ? "1" : "";
   }
 
   function fillDevices() {
@@ -1593,11 +1651,26 @@
       s.paint();
     }
   }
+  function setMixHelp(help) {
+    mixViewDlg.classList.toggle("help-mode", help);
+    $("#mixHelp").hidden = !help;
+    for (const id of ["mixView", "mixViewControls", "mixViewHint"]) $("#" + id).hidden = help;
+    $("#mixPopBtn").hidden = help;
+    $("#mixViewTitle").textContent = help ? "Your mix and your stream" : "Output mix";
+  }
   mixViewBtn.addEventListener("click", () => {
+    if (!layout || layout.edition !== 3) { setMixHelp(true); mixViewDlg.showModal(); return; }
+    setMixHelp(false);
     // Already popped out: bring that window forward instead of opening a second copy.
     if (settings.mixWinOpen) { engine.mixWindow(true).catch(() => {}); return; }
     mixViewDlg.showModal(); buildMixView();
   });
+  $("#mixHelpMute").addEventListener("click", () => {
+    mixViewDlg.close();
+    const first = chans.find((c) => c.kind === "strip" && !look(c).hidden);
+    if (first) openDrawer(first, "routing");
+  });
+  $("#mixHelpMusic").addEventListener("click", () => { mixViewDlg.close(); openSettings("streaming"); });
   async function setMixPreference(key, value) {
     const previous = settings[key];
     settings[key] = value;
@@ -1751,12 +1824,15 @@
   function applyMixFor(st) {
     const on = st.edition === 3 && (st.buses || []).length > 0;
     $("#mixForWrap").hidden = !on || PANEL;
-    mixViewBtn.hidden = !on || SIDE;
+    // Banana and Standard: the button opens help for keeping your mix and your stream apart.
+    mixViewBtn.hidden = SIDE || !st.edition;
+    mixViewBtn.title = on ? "Every input's level on every output at once, like Voicemeeter's Streamer View"
+      : "Your mix and your stream's mix: what you can keep apart on this Voicemeeter";
     if (MIXWIN) {
       $("#mixViewNote").hidden = on;
       $("#mixView").hidden = !on;
       $("#mixViewControls").hidden = !on;
-    } else if (!on && mixViewDlg.open) mixViewDlg.close();
+    } else if (!on && mixViewDlg.open && !mixViewDlg.classList.contains("help-mode")) mixViewDlg.close();
     // Channels and outputs can change (renamed, hidden, recoloured) while Mix is open: rebuild when they do.
     if (!on) mixViewDlg.dataset.built = "";
     else if ((MIXWIN || mixViewDlg.open) && mixSig() !== mixViewDlg.dataset.built) buildMixView();
@@ -2260,6 +2336,7 @@
     setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
     setCheckUpdates: "checkUpdates", setBetaUpdates: "betaUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setPanelIcons: "panelIcons", setPanelMeters: "panelMeters", setPanelMute: "panelMute", setExtraBuses: "showExtraBuses",
     setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode", setLockArrangement: "lockArrangement",
+    setRouteNames: "routeNames",
   };
   for (const [id, key] of Object.entries(CHECKS)) {
     $("#" + id).addEventListener("change", (e) => {
@@ -2268,6 +2345,7 @@
       saveSettings();
       if (key === "showExtraBuses") applyExtraBuses();
       if (key === "hideSoloMono") applySoloMono();
+      if (key === "routeNames") applyRouteNames();
       if (key === "streamerMode") applyStreamer();
       if (key === "lockArrangement") applyArrangementLock();
       if (key === "checkUpdates") { if (e.target.checked) checkForUpdate(); else $("#updateWrap").hidden = true; }
@@ -2299,6 +2377,47 @@
   }
   function channelNameHint(name) {
     return `${name}\nClick: show or hide the device name. Double-click: rename. ${settings.lockArrangement ? "Channel arrangement is locked" : "Drag the top of the channel to move it"}`;
+  }
+  // Output names on the routing buttons ("Headphones" instead of "A1"), for people new to Voicemeeter.
+  // A name that starts the same as another output's keeps its full name; long ones end in "…".
+  let routeNamesKey = "", routeNamesQueued = false;
+  function queueRouteNames() {
+    if (routeNamesQueued) return;
+    routeNamesQueued = true;
+    // A timer rather than an animation frame, so it still runs while the window is in the background.
+    setTimeout(() => { routeNamesQueued = false; applyRouteNames(); }, 0);
+  }
+  function routeName(param) {
+    const j = layout.buses.findIndex((b) => b.param === param);
+    const bus = chans.find((c) => c.kind === "bus" && c.i === j);
+    return bus ? displayName(bus) : param;
+  }
+  function applyRouteNames() {
+    if (!layout) return;
+    const on = !!settings.routeNames;
+    const full = layout.buses.map((b) => routeName(b.param));
+    const key = on + "|" + full.join("|");
+    if (key === routeNamesKey) return;
+    routeNamesKey = key;
+    document.body.classList.toggle("route-names", on);
+    const words = full.map((n) => n.split(/\s+/));
+    const short = full.map((n, k) => {
+      const id = layout.buses[k].id;
+      if (n.endsWith(id)) return id; // an output nobody named ("Output A3")
+      const [head, ...rest] = words[k];
+      const clash = words.filter((w) => w[0].toLowerCase() === head.toLowerCase()).length > 1;
+      // "Stream mic" and "Stream mix" keep their whole names, so they can be told apart.
+      return !clash || !rest.length ? head : n;
+    });
+    for (const ch of chans) {
+      if (ch.kind !== "strip") continue;
+      for (const t of ch.toggles) {
+        const k = layout.buses.findIndex((b) => b.param === t.param);
+        if (k < 0) continue;
+        t.btn.textContent = on ? short[k] : t.param;
+        t.btn.title = `Send to ${t.param} · ${full[k]}`;
+      }
+    }
   }
   function applySoloMono() {
     document.body.classList.toggle("hide-solo-mono", !!settings.hideSoloMono);
@@ -2335,7 +2454,7 @@
     ["mixer", "Mixer & devices", "Mixing tools, fader behaviour, audio devices and output recovery."],
     ["microphone", "Microphone", "Mic levels, noise clean-up and VST3 processing."],
     ["streaming", "Streaming", "Go-live checks, replay, OBS and Twitch."],
-    ["controls", "Controls & remote", "Shortcuts, Stream Deck and phone control."],
+    ["controls", "Controls & remote", "Shortcuts, Stream Deck and Sleekmeeter Remote."],
     ["system", "System & backup", "Startup, privacy, updates, backups and diagnostics."],
   ];
   const settingsSearch = $("#settingsSearch"), settingsContent = $("#settingsContent");
@@ -2834,7 +2953,7 @@
         toast("Opening Elgato's download page");
       } else {
         await engine.streamDeckInstall();
-        toast("Finish in the Stream Deck app, then turn on Settings → Phone remote");
+        toast("Finish in the Stream Deck app, then turn on Settings → Sleekmeeter Remote");
       }
     } catch (err) { fail(err); }
   }
@@ -2842,7 +2961,7 @@
     const s = streamDeck, action = $("#streamDeckAction");
     const copy = streamDeckCopy[s?.offer];
     $("#streamDeckNote").textContent = copy ? copy.text(s) : s?.installedVersion
-      ? `Plugin ${s.installedVersion} is installed. Connect it with the address from Phone remote.`
+      ? `Plugin ${s.installedVersion} is installed. Connect it with the address from Sleekmeeter Remote.`
       : "Use Sleekmeeter actions on a Stream Deck with the Studio plugin.";
     action.hidden = !copy;
     if (copy) action.textContent = copy.go;
@@ -5148,7 +5267,7 @@
   $("#replayFolder").addEventListener("click", () => engine.replayOpenFolder().catch(fail));
   settingsDlg.addEventListener("close", () => stopLearn(""));
 
-  /* ---------- phone remote ---------- */
+  /* ---------- Sleekmeeter Remote (phone page, Stream Deck plugin, OBS overlay) ---------- */
   const RM = () => (settings.remote = Object.assign({}, DEFAULT_SETTINGS.remote, settings.remote));
   const newKey = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
   let remoteTimer = null;
@@ -5371,6 +5490,13 @@
     const hw = layout.strips.filter((s) => s.kind === "hw").length;
     return chans.filter((ch) => { const m = /^Strip\[(\d+)\]$/.exec(ch.prefix); return m && +m[1] < hw; });
   };
+  // A chain can run on a mic (hardware input), a chat or app input (virtual input), or an output.
+  const fxKind = (target) => {
+    const ch = chans.find((c) => c.prefix === target);
+    if (!ch) return /^Bus/.test(target || "") ? "bus" : "hw";
+    return ch.kind === "bus" ? "bus" : isHw(ch) ? "hw" : "virt";
+  };
+  const fxChannels = (kind) => chans.filter((ch) => fxKind(ch.prefix) === kind);
   const micName = (c, i) => { const ch = chans.find((x) => x.prefix === c.target); return ch ? displayName(ch) : `Mic ${i + 1}`; };
   let micFxTimer = null;
   let micFxLast = { chains: {}, plugins: {} };
@@ -5430,10 +5556,11 @@
   function pollInputEffects() {
     const m = settings.micFx;
     const configured = m?.on || m?.aec || m?.plugins?.length
-      || m?.chains?.some((c) => c.on || c.aec || c.plugins?.length);
+      || m?.chains?.some((c) => c.on || c.aec || c.plugins?.length)
+      || Object.keys(settings.soundFx || {}).length;
     if (configured && connected) {
-      if (!Array.isArray(m.chains)) MF();
-      fetchMicFxStatus();
+      if (m && !Array.isArray(m.chains)) MF();
+      fetchMicFxStatus().then(() => { if (drawerCh) paintSoundFx(); });
     }
     else paintInputWarnings({});
   }
@@ -5515,22 +5642,33 @@
       b.addEventListener("click", () => { if (micSel !== i) { stopListening(); micSel = i; syncMicFx(); } });
       tabs.appendChild(b);
     });
-    const free = hwInputs().filter((ch) => !cs.some((c) => c.target === ch.prefix));
-    if (free.length && cs.length < 5) {
+    const freeOf = (kind) => fxChannels(kind).filter((ch) => !cs.some((c) => c.target === ch.prefix));
+    const adds = [
+      ["hw", "+ Add a mic", "Clean up another of Voicemeeter's hardware inputs too, like a guest mic"],
+      ["virt", "+ Chat or app input", "Clean up voices on a virtual input, like the one Discord plays into, or add plugins to it"],
+      ["bus", "+ An output", "Run VST3 plugins on an output, like your headphones"],
+    ];
+    let anyFree = false;
+    for (const [kind, label, title] of adds) {
+      const free = freeOf(kind);
+      if (!free.length || cs.length >= 5) continue;
+      anyFree = true;
       const add = document.createElement("button");
       add.type = "button"; add.className = "btn";
-      add.textContent = "+ Add a mic";
-      add.title = "Clean up another of Voicemeeter's hardware inputs too, like a guest mic";
+      add.textContent = label;
+      add.title = title;
       add.addEventListener("click", () => {
         stopListening();
-        cs.push(newChain(free[0].prefix));
+        // Chat: prefer the input named for it.
+        const pick = kind === "virt" ? free.find((ch) => /chat|discord|voice|aux/i.test(displayName(ch))) || free[0] : free[0];
+        cs.push(Object.assign(newChain(pick.prefix), kind === "bus" ? { stereo: true } : {}));
         micSel = cs.length - 1;
         saveSettings();
         syncMicFx();
       });
       tabs.appendChild(add);
     }
-    tabs.hidden = cs.length < 2 && !free.length;
+    tabs.hidden = cs.length < 2 && !anyFree;
     $("#micFxRemoveMic").hidden = cs.length < 2;
   }
 
@@ -5719,14 +5857,14 @@
     if (!listening) return;
     listening = false;
     $("#micFxListen").setAttribute("aria-pressed", "false");
-    $("#micFxListen").textContent = "Listen to this mic";
+    $("#micFxListen").textContent = fxKind(CH().target) === "hw" ? "Listen to this mic" : "Listen to this input";
     engine.micFxListen("", false).catch(() => {});
   }
   $("#micFxListen").addEventListener("click", async () => {
     try {
       listening = await engine.micFxListen(CH().id, !listening);
       $("#micFxListen").setAttribute("aria-pressed", listening ? "true" : "false");
-      $("#micFxListen").textContent = listening ? "Stop listening" : "Listen to this mic";
+      $("#micFxListen").textContent = listening ? "Stop listening" : fxKind(CH().target) === "hw" ? "Listen to this mic" : "Listen to this input";
     } catch (e) { fail(e); }
   });
   const compareBtn = $("#micFxCompare");
@@ -5749,11 +5887,10 @@
     if (c.plugins.length && !btn.dataset.sure) {
       btn.dataset.sure = "1";
       btn.textContent = `Click again to remove it and its ${c.plugins.length === 1 ? "plugin" : "plugins"}`;
-      setTimeout(() => { delete btn.dataset.sure; btn.textContent = "Remove this mic"; }, 4000);
+      setTimeout(() => { delete btn.dataset.sure; btn.textContent = fxKind(CH().target) === "hw" ? "Remove this mic" : "Remove this tab"; }, 4000);
       return;
     }
     delete btn.dataset.sure;
-    btn.textContent = "Remove this mic";
     stopListening();
     cs.splice(micSel, 1);
     micSel = Math.max(0, micSel - 1);
@@ -5764,28 +5901,52 @@
   function syncMicFx() {
     const m = MF(), c = CH();
     renderMicTabs();
-    $("#micFxOn").checked = !!c.on;
-    $("#micFxMode").value = c.stereo ? "stereo" : "mic";
-    $("#micFxStereoHint").hidden = !c.stereo;
-    $("#micFxOn").closest("label").hidden = !!c.stereo;
-    $("#micFxAec").closest("label").hidden = !!c.stereo;
-    $('[data-needs="micfx"]').hidden = !!c.stereo || !c.on;
-    $("#micFxAec").checked = !!c.aec;
-    $('[data-needs="micaec"]').hidden = !!c.stereo || !c.aec;
-    // Only hardware inputs: those are where mics are, and where Voicemeeter's insert has them.
+    // Mics, chat and app inputs, and outputs, each in their own group.
     const sel = $("#micFxTarget");
     sel.textContent = "";
-    for (const ch of hwInputs()) {
-      const taken = m.chains.some((x) => x !== c && x.target === ch.prefix);
-      const o = new Option(displayName(ch) + (taken ? " (another mic tab)" : ""), ch.prefix);
-      o.disabled = taken;
-      sel.appendChild(o);
+    for (const [kind, label] of [["hw", "Mics (hardware inputs)"], ["virt", "Chat and app inputs (virtual)"], ["bus", "Outputs"]]) {
+      const list = fxChannels(kind);
+      if (!list.length) continue;
+      const group = Object.assign(document.createElement("optgroup"), { label });
+      for (const ch of list) {
+        const taken = m.chains.some((x) => x !== c && x.target === ch.prefix);
+        const tag = kind === "bus" ? `${ch.info.id} · ` : "";
+        const o = new Option(tag + displayName(ch) + (taken ? " (another tab)" : ""), ch.prefix);
+        o.disabled = taken;
+        group.appendChild(o);
+      }
+      sel.appendChild(group);
     }
     sel.value = c.target;
     if (sel.selectedIndex < 0 || sel.options[sel.selectedIndex].disabled) {
       const first = [...sel.options].find((o) => !o.disabled);
       if (first) { sel.value = first.value; c.target = first.value; }
     }
+    const kind = fxKind(c.target);
+    // Outputs carry music and games: always stereo, plugins only.
+    if (kind === "bus" && !c.stereo) { c.stereo = true; saveSettings(); }
+    const modeSel = $("#micFxMode");
+    modeSel.options[0].textContent = kind === "virt" ? "Voices (like a voice chat app)" : "Mono microphone";
+    modeSel.options[1].textContent = kind === "virt" ? "Stereo (music, games)" : "Stereo hardware input";
+    modeSel.closest(".field").hidden = kind === "bus";
+    $("#micFxTargetLabel").textContent = kind === "hw" ? "Mic" : kind === "virt" ? "Input" : "Output";
+    $("#micFxOn").checked = !!c.on;
+    $("#micFxOnText").textContent = kind === "virt"
+      ? "Remove background noise from the voices on this input (like your friends in Discord) with NVIDIA's AI, running on the graphics card"
+      : "Remove background noise from this mic with NVIDIA's AI, running on the graphics card";
+    modeSel.value = c.stereo ? "stereo" : "mic";
+    $("#micFxStereoHint").hidden = !c.stereo || kind === "bus";
+    $("#micFxOutHint").hidden = kind !== "bus";
+    $("#micFxVirtHint").hidden = kind !== "virt" || !!c.stereo;
+    $("#micFxOn").closest("label").hidden = !!c.stereo;
+    // Speaker echo only matters on a mic.
+    $("#micFxAec").closest("label").hidden = !!c.stereo || kind !== "hw";
+    $('[data-needs="micfx"]').hidden = !!c.stereo || !c.on;
+    $("#micFxAec").checked = !!c.aec;
+    $('[data-needs="micaec"]').hidden = !!c.stereo || !c.aec || kind !== "hw";
+    $("#micFxListen").hidden = kind === "bus";
+    $("#micFxListen").textContent = listening ? "Stop listening" : kind === "hw" ? "Listen to this mic" : "Listen to this input";
+    $("#micFxRemoveMic").textContent = kind === "hw" ? "Remove this mic" : "Remove this tab";
     const eff = $("#micFxEffect");
     if (!eff.options.length) for (const [k, n] of MICFX_EFFECTS) eff.appendChild(new Option(n, k));
     eff.value = c.effect || "denoiser";
@@ -5815,7 +5976,14 @@
   });
   $("#micFxAec").addEventListener("change", (e) => { CH().aec = e.target.checked; saveSettings(); syncMicFx(); });
   $("#micFxAecRef").addEventListener("change", (e) => { MF().aecRef = e.target.value; saveSettings(); });
-  $("#micFxTarget").addEventListener("change", (e) => { stopListening(); CH().target = e.target.value; saveSettings(); renderMicTabs(); setTimeout(refreshMicFx, 800); });
+  $("#micFxTarget").addEventListener("change", (e) => {
+    stopListening();
+    const c = CH(), wasBus = fxKind(c.target) === "bus";
+    c.target = e.target.value;
+    // Leaving an output: back to the usual mono voice mode.
+    if (wasBus && fxKind(c.target) !== "bus") c.stereo = false;
+    saveSettings(); syncMicFx(); setTimeout(refreshMicFx, 800);
+  });
   $("#micFxEffect").addEventListener("change", (e) => { CH().effect = e.target.value; saveSettings(); setTimeout(refreshMicFx, 800); });
 
   const levelOf = (lv, prefix) => {

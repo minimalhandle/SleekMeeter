@@ -279,6 +279,13 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 24%, var(--key)); 
 .route.a { --c: var(--amber); }
 .route.b { --c: var(--cyan); }
 .route.first-b { grid-column: 1; }
+.mix-help { padding: 0 2px 4px; color: var(--ink-2); }
+.mix-help p { margin: 0 0 10px; }
+.mix-help ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; }
+.mix-help b { color: var(--ink); }
+/* Output names on the routing buttons: two to a row, cut short with "…" (hover for the full name). */
+.route-names .strip-routes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.route-names .strip-routes .route { padding: 0 3px; text-overflow: ellipsis; letter-spacing: 0; font-size: 11px; }
 body:not(.show-extra-buses) .route.extra:not([aria-pressed="true"]) { display: none; }
 .route-expand { display: none; }
 .focused-mixer .strip .strip-routes .route:not([aria-pressed="true"]) { display: none; }
@@ -1052,7 +1059,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .offline-card .linkish { display: block; margin: 14px auto 0; }
 .fold-body > .btn, .fold-body > .btn-row { align-self: flex-start; }
 
-/* ---------- soundboard, Twitch, phone remote, level history ---------- */
+/* ---------- soundboard, Twitch, Sleekmeeter Remote, level history ---------- */
 .dlg.sounds-dlg, .dlg.history-dlg { width: min(640px, calc(100vw - 32px)); }
 .sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
 .sound-tile { position: relative; --sc: var(--amber); }

@@ -27,7 +27,7 @@
  *   selftestInputs() -> {devices} / selftestRun(input, output, secs)   hear-yourself test
  *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPickPack() -> {folder,count}|null (copied into the data folder) / soundImport(paths) -> [copied paths] / soundPlay(name) / soundStop()   soundboard
  *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last, reward: {id, user, text, at}|null} of the Twitch chat link
- *   remoteStatus() -> {running, message, urls}   the phone remote
+ *   remoteStatus() -> {running, message, urls}   Sleekmeeter Remote
  *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
  *   appRouteDevices() -> [{id, name}] / appRouteSet(pids, deviceId)   send an app to another output
  *   brbToggle() -> bool   Be right back on or off (state.brb tells which)
@@ -38,7 +38,7 @@
  *   onAlert(cb)   cb({kind: mutedTalk|silent|clip, name, text}): talking while muted, a silent or clipping stream
  *   musicGuardToggle() -> bool   Music off stream on or off by hand (state.musicGuard tells which)
  *   replaySave() -> path / replayStatus() -> {running, message, device} / replayDevices() -> [names] / replayOpenFolder()   instant replay
- *   micFxStatus() -> {available, message, chains: {id: {running, off, message, latencyMs, underruns}}, plugins: {id: {loaded, error, editor}}}   mic clean-up
+ *   micFxStatus() -> {available, message, chains: {id: {running, off, message, latencyMs, underruns}}, plugins: {id: {loaded, error, editor}}, soundFx: {target: {running, message}}}   clean-up, plugins, listening EQ and leveller
  *   vstScan() / vstBrowse() -> [{name, vendor, path, cid}] / vstEditor(id)   VST3 plugins on the mic
  *   micFxToggle(target) -> on / micFxCompare(id, on) / micFxListen(id, on) -> on   switch, compare, hear a mic
  *   vstPresetSave(id, name) / vstPresetDelete(cid, name) -> presets / vstPresetApply(id, name)   plugin presets
@@ -965,13 +965,19 @@
         const what = [];
         if (nv.length) what.push(`${nv.join(" and ")} on your NVIDIA GPU`);
         if (on) what.push(on === 1 ? "1 plugin" : `${on} plugins`);
-        const label = ["Mic", "Line in", "Hardware input 3"][i] || "Input " + (i + 1);
+        const bus = /^Bus/.test(c.target || "");
+        const label = bus ? (["Headphones", "Speakers", "Output A3", "Stream mic", "Stream mix"][i] || "Output " + (i + 1))
+          : (["Mic", "Line in", "Hardware input 3", "Desktop", "Discord"][i] || "Input " + (i + 1));
         const off = !!(live[c.id] || {}).off;
         chains[c.id] = what.length && !off
-          ? { running: true, off, latencyMs: 26.7, underruns: 0, message: `Cleaning up ${label}: ${what.join(" and ")}.` }
+          ? { running: true, off, latencyMs: 26.7, underruns: 0, message: `${bus ? "Running on" : "Cleaning up"} ${label}: ${what.join(" and ")}.` }
           : { running: false, off, latencyMs: 0, underruns: 0, message: off ? "Switched off." : "" };
       }
-      return Promise.resolve({ available: true, message: "", chains, plugins });
+      const soundFx = {};
+      for (const [target, v] of Object.entries(this.settings.soundFx || {})) {
+        if ((v.eq && v.eq !== "off") || (v.level && v.level !== "off")) soundFx[target] = { running: true, message: "" };
+      }
+      return Promise.resolve({ available: true, message: "", chains, plugins, soundFx });
     }
     micFxToggle(target) {
       const m = this.settings.micFx || {};

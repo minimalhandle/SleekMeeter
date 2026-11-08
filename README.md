@@ -74,6 +74,8 @@ Use **Pin** beside an action in the Stream menu to put it on the toolbar. Live, 
 
 Settings search looks across all categories. On narrow windows, categories move into a grid above the settings. For a clean install, Sleekmeeter opens in the foreground, offers to start Voicemeeter if needed and uses Subtle theme motion. Level history and talking-while-muted alerts are opt-in. Existing settings keep their previous choices.
 
+**Settings → Appearance & layout → Show output names on the routing buttons** labels them with your outputs' names (*Headphones*, *Stream mix*) instead of A1 or B2. Hover over one for the full name.
+
 Channels use a consistent width to keep the mixer tidy, and the input and output sections stay centred in the window. Long names are shortened with an ellipsis; hover over a name to read it in full. Click the dB readout under a fader to type an exact level.
 
 ### Themes
@@ -111,9 +113,20 @@ Drag the top of any channel (its icon and name area) left or right to move it, s
 
 Click a channel's name to hide or show the device line under it (for example "CABLE-A Output"). Double-click the name to rename it.
 
+### Listening EQ and Steadier volume
+
+Each output's and input's **Sound** tab (click its icon) has an **EQ preset** and **Steadier volume**:
+
+- **EQ presets:** **Footsteps** (less rumble, more of the range footsteps and reloads are in), **Bass boost**, **Voice clarity**, **Brighter**, **Warmer** and **Late night** (less bass through the walls).
+- **Steadier volume:** **Gentle** evens out big jumps; **Night mode** brings loud explosions down and quiet dialogue up so you can keep the volume low. Both have a safety limiter, and they don't lift silence or hiss.
+
+They run inside Voicemeeter's audio with no added delay, on Standard, Banana and Potato, while Sleekmeeter is open. They use Voicemeeter's audio insert, like mic clean-up, so another app holding the output insert stops them on outputs until it closes.
+
 ### A different mix on each output (Potato)
 
 Voicemeeter Potato can give every input its own level on each output (its "gain layers"), so your stream can hear less game than your headphones do, the way VB-Audio's Streamer View works. **Mix** in the header shows every input's level on every output at once, like Streamer View, with each output's on/off button under its slider. The button next to its close button pops it out into a window of its own, for example to keep it on a second screen; it reopens where you left it. You can also open an input's settings (click its icon) and use **Level on each output**, or choose an output in **Faders set** above the inputs: the input faders then set that output's mix, and **All outputs** goes back to normal. Moving an input's main fader, muting it, ducking, scenes and Be right back all keep the differences between outputs. Scenes save and restore these per-output levels too (Voicemeeter's own scene file doesn't keep them), and on a Stream Deck the **Output mix** dial, **Faders set** key and **Level step** key (with an output picked) do the same from hardware. Inputs on Banana and Potato also have Voicemeeter's **limiter** under Dynamics in their settings.
+
+On Banana and Standard, **Mix** opens **Your mix and your stream** instead: ways to keep an input or your music off stream, turn the whole stream down, and balance game against chat, which together cover most of what a separate mix is for.
 
 ### Smooth fades
 
@@ -212,11 +225,11 @@ In **Settings → Streaming → OBS Studio**, connect Sleekmeeter to OBS (in OBS
 - **"You're muted":** talk into a muted mic and the overlay says so, even with Sleekmeeter in the tray, and the mic's strip flashes red. It stays quiet while Be right back is on and while a push-to-talk key is up (tick the box to be told then too). It's on by default. If it pops up when you're not talking, raise **Louder than**.
 - **Go-live check:** open it from **Stream** to check your mic, stream output, OBS link, Windows audio routing, Twitch chat, and Instant replay. The OBS link can also run it automatically when you start streaming.
 - **Silent stream warning:** a warning on the overlay when the stream output has had no sound for 5 to 60 seconds, and if you like when it clips. By default only while OBS says you're live.
-- **Music off stream:** keeps your music out of the stream (and your VODs) while you still hear it. Play your music app into one channel (drag it there under **Apps**), choose that channel, and choose when: while you're live, while OBS records, either, or only when you press its key. Sleekmeeter switches that channel's button for the stream output off (with a fade on Potato) and back on afterwards. The music key in the header, a shortcut, a Twitch command or the phone remote switches it by hand until OBS next starts or stops. Turning the button back on yourself also ends it.
+- **Music off stream:** keeps your music out of the stream (and your VODs) while you still hear it. Play your music app into one channel (drag it there under **Apps**), choose that channel, and choose when: while you're live, while OBS records, either, or only when you press its key. Sleekmeeter switches that channel's button for the stream output off (with a fade on Potato) and back on afterwards. The music key in the header, a shortcut, a Twitch command or Sleekmeeter Remote switches it by hand until OBS next starts or stops. Turning the button back on yourself also ends it.
 
 ### Instant replay
 
-Turn on **Settings → Streaming → Instant replay** and Sleekmeeter keeps the last 15 to 120 seconds of your stream output in memory. Press the replay button in the header (or a shortcut, a Twitch command such as `!clip`, or the phone remote) and they're saved as a WAV file in **Music\Sleekmeeter replays**, for clipping a funny moment without OBS's replay buffer. Nothing is written to disk until you save, and nothing leaves your PC. It listens to the stream output through Windows (**Voicemeeter Out B2**); pick another of Voicemeeter's outputs under **Of**.
+Turn on **Settings → Streaming → Instant replay** and Sleekmeeter keeps the last 15 to 120 seconds of your stream output in memory. Press the replay button in the header (or a shortcut, a Twitch command such as `!clip`, or Sleekmeeter Remote) and they're saved as a WAV file in **Music\Sleekmeeter replays**, for clipping a funny moment without OBS's replay buffer. Nothing is written to disk until you save, and nothing leaves your PC. It listens to the stream output through Windows (**Voicemeeter Out B2**); pick another of Voicemeeter's outputs under **Of**.
 
 ### Mic level
 
@@ -226,7 +239,7 @@ Turn on **Settings → Streaming → Instant replay** and Sleekmeeter keeps the 
 
 ### Mic clean-up (NVIDIA)
 
-With an NVIDIA RTX graphics card, **Settings → Microphone → Mic clean-up and plugins** removes background noise (keyboard, fans, the dog), room echo, or both from your mic using NVIDIA's AI on the graphics card. It's much stronger than Voicemeeter's own denoiser. Pick the mic (one of Voicemeeter's hardware inputs) and how strong it should be; Settings shows whether it's running and how much delay it adds (about 25 ms).
+With an NVIDIA RTX graphics card, **Settings → Microphone → Clean-up and plugins** removes background noise (keyboard, fans, the dog), room echo, or both from your mic using NVIDIA's AI on the graphics card. It's much stronger than Voicemeeter's own denoiser. Pick the mic (one of Voicemeeter's hardware inputs) and how strong it should be; Settings shows whether it's running and how much delay it adds (about 25 ms).
 
 It runs inside Voicemeeter, before the fader, gate and compressor, so every output gets the clean voice. Sleekmeeter does the work, so it only runs while Sleekmeeter is open; if Sleekmeeter closes, your mic carries on without it. It needs:
 
@@ -238,19 +251,24 @@ It runs inside Voicemeeter, before the fader, gate and compressor, so every outp
 
 **More than one mic:** **+ Add a mic** gives another of Voicemeeter's hardware inputs its own clean-up and plugins, for example a guest mic. Each mic has its own tab; a green dot means it's running.
 
+**Your friends' voices too:** **+ Chat or app input** cleans up a virtual input, such as the one Discord plays into, so you don't hear your friends' keyboards and fans. Choose **Voices** for voice chat (left and right are cleaned as one voice) or **Stereo** for music and games, where you can use VST3 plugins. Up to five mics, inputs and outputs can have clean-up or plugins at once.
+
 **Hear the difference:** **Listen to this mic** sends the mic to A1 (usually your headphones) while you set it up, and switches A1 back off when you stop. Hold **Hold to hear it without** to hear the mic raw, with the same delay, and let go to hear the clean-up again.
 
-**Switch it from anywhere:** a shortcut, the **Mic clean-up** Stream Deck key, the phone remote or a Twitch command (**Mic clean-up on or off**) switches one mic's clean-up and plugins off and back on, or every mic at once. Scenes remember which mics have it on and how strong NVIDIA's clean-up is, so a podcast scene can use a lighter touch than a loud game.
+**Switch it from anywhere:** a shortcut, the **Mic clean-up** Stream Deck key, Sleekmeeter Remote or a Twitch command (**Mic clean-up on or off**) switches one mic's clean-up and plugins off and back on, or every mic at once. Scenes remember which mics have it on and how strong NVIDIA's clean-up is, so a podcast scene can use a lighter touch than a loud game.
 
 ### VST3 plugins on your mic
 
-For a capture card or another stereo hardware source, add its input in **Settings → Microphone → Mic clean-up and plugins**, choose **Stereo hardware input**, then add a VST3 effect with stereo input and output. This mode keeps left and right separate. NVIDIA mic processing is available in the mono microphone mode.
+**On an output:** **+ An output** in **Settings → Microphone → Clean-up and plugins** (or **Add VST3 plugins to this output…** in an output's **Sound** tab) runs your own VST3 plugins on that output, for example a spatial audio or headphone EQ plugin on A1. Outputs are always stereo, and plugins there add a little delay, so leave the outputs your stream or recording uses alone unless you want the effect there too.
 
-If the helper crashes during a tracked plugin load or audio call, Sleekmeeter bypasses the plugin involved and restarts the remaining chain. Quarantine is saved across restarts. Use the recovery panel in **Settings → Microphone → Mic clean-up and plugins** to bypass a plugin manually or retry a bypassed plugin.
+
+For a capture card or another stereo hardware source, add its input in **Settings → Microphone → Clean-up and plugins**, choose **Stereo hardware input**, then add a VST3 effect with stereo input and output. This mode keeps left and right separate. NVIDIA mic processing is available in the mono microphone mode.
+
+If the helper crashes during a tracked plugin load or audio call, Sleekmeeter bypasses the plugin involved and restarts the remaining chain. Quarantine is saved across restarts. Use the recovery panel in **Settings → Microphone → Clean-up and plugins** to bypass a plugin manually or retry a bypassed plugin.
 
 In **Portable chain preset**, export the selected mic's NVIDIA effect settings, ordered VST3 list and plugin state as JSON. On the destination PC, select the mic and preview the import. Sleekmeeter matches VST3 effects by identity against local installations, flags missing or quarantined plugins, and shows whether the NVIDIA runtime is installed before you apply the chain.
 
-**Settings → Microphone → Mic clean-up and plugins** can also run your own VST3 effects on the mic, like an EQ, a de-esser, a compressor or a limiter, with no separate plugin host and no ASIO insert setup. **Add a plugin…** lists the effects installed in the usual VST3 folders (`C:\Program Files\Common Files\VST3`, and `%LOCALAPPDATA%\Programs\Common\VST3` for plugins installed just for you); **Browse for a .vst3 file…** picks one from anywhere else.
+**Settings → Microphone → Clean-up and plugins** can also run your own VST3 effects on the mic, like an EQ, a de-esser, a compressor or a limiter, with no separate plugin host and no ASIO insert setup. **Add a plugin…** lists the effects installed in the usual VST3 folders (`C:\Program Files\Common Files\VST3`, and `%LOCALAPPDATA%\Programs\Common\VST3` for plugins installed just for you); **Browse for a .vst3 file…** picks one from anywhere else.
 
 - Plugins run top to bottom, after NVIDIA's clean-up if that's on. Use the arrows to reorder them, the tick to switch one off, and **Edit** to open its own window.
 - Each plugin's settings are saved as you change them and come back after a restart.
@@ -296,7 +314,7 @@ The record button opens the recorder: transport buttons, which channels to recor
 
 ### OBS overlay
 
-Under **Settings → Controls & remote → Phone remote** there is a second address for OBS. Add a **Browser** source in OBS, paste the address and you get a see-through overlay with a red **MUTED** or amber **BRB** badge, a meter for your mic and the name of the sound that just played. It works while Sleekmeeter is in the tray. If your mic isn't the first channel, add `&mic=1` (second channel), `&mic=2` and so on to the address, and use `&show=badge,meter` to pick which parts appear. It uses the same secret key as the phone remote, so keep the address private.
+Under **Settings → Controls & remote → Sleekmeeter Remote** there is a second address for OBS. Add a **Browser** source in OBS, paste the address and you get a see-through overlay with a red **MUTED** or amber **BRB** badge, a meter for your mic and the name of the sound that just played. It works while Sleekmeeter is in the tray. If your mic isn't the first channel, add `&mic=1` (second channel), `&mic=2` and so on to the address, and use `&show=badge,meter` to pick which parts appear. It uses the same secret key as Sleekmeeter Remote, so keep the address private.
 
 ### Twitch chat commands
 
@@ -306,15 +324,17 @@ Sleekmeeter joins your chat as a silent, anonymous viewer: **no sign-in, nothing
 
 **Channel point rewards** can play a sound or run any other action too. Press **Add a reward…**, then redeem the reward once in your chat, and Sleekmeeter adds it to the list. Twitch only shows a redemption in chat when the reward asks the viewer to type something, so tick **Require viewer to enter text** for it on Twitch. What the viewer types can pick the sound. Anyone who redeems a reward can run it, with the same wait time as commands.
 
-### Phone remote
+### Sleekmeeter Remote
 
-Turn on **Settings → Controls & remote → Phone remote** and open the address it shows on a phone or tablet on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles, and **Music off stream** and **Save replay** once they're set up. The long code in the address is the password, so don't share it, and **Make a new key** signs every phone out. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
+**Sleekmeeter Remote** connects Sleekmeeter to other things on your own network: a phone or tablet and the Stream Deck plugin control it, and the OBS overlay shows its status. Turn it on under **Settings → Controls & remote → Sleekmeeter Remote**.
+
+**On a phone or tablet:** open the address it shows on a device on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles, and **Music off stream** and **Save replay** once they're set up. The long code in the address is the password, so don't share it, and **Make a new key** signs out every phone and the Stream Deck plugin. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
 
 ### Stream Deck
 
 ![Four Stream Deck + dials: Now Playing with a channel level, Now Playing with track controls, a channel level and an app's volume](docs/screenshots/streamdeck-dials.png)
 
-There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels (or mute an input on some outputs only, like right-clicking Mute), load scenes, play sounds, and turn Be right back, recording, ducking and mic clean-up on or off, with the keys lighting up to match. If Sleekmeeter finds the Stream Deck app it offers to install the plugin (also in Settings → Controls & remote → Stream Deck), or double-click `Sleekmeeter-Studio.streamDeckPlugin` yourself. Then paste the phone-remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
+There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels (or mute an input on some outputs only, like right-clicking Mute), load scenes, play sounds, and turn Be right back, recording, ducking and mic clean-up on or off, with the keys lighting up to match. If Sleekmeeter finds the Stream Deck app it offers to install the plugin (also in Settings → Controls & remote → Stream Deck), or double-click `Sleekmeeter-Studio.streamDeckPlugin` yourself. Then paste the Sleekmeeter Remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
 
 The dials also show what's playing, with album art, and can control one app's volume. For your other keys, the [icon pack](streamdeck/Sleekmeeter-Studio-Icons.streamDeckIconPack) adds 486 icons in the same style to the Stream Deck icon library.
 

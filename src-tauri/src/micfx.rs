@@ -128,6 +128,8 @@ struct LaneShared {
     bypass: AtomicBool,
     /// Echo removal is on: the audio thread sends this lane what the speakers play.
     want_ref: AtomicBool,
+    /// On an output (Voicemeeter's output insert) rather than an input.
+    output: AtomicBool,
     /// Wakes the worker when audio arrives (Windows event handle).
     wake: AtomicUsize,
 }
@@ -149,6 +151,7 @@ impl LaneShared {
             reset_output: AtomicBool::new(false),
             bypass: AtomicBool::new(false),
             want_ref: AtomicBool::new(false),
+            output: AtomicBool::new(false),
             wake: AtomicUsize::new(sys::new_event()),
         }
     }
@@ -304,12 +307,24 @@ fn to_mono(left: &[f32], right: &[f32], power: &mut [f32; 2], out: &mut [f32]) {
 }
 
 fn process_in(sh: &Shared, b: &AudioBuffer) {
+    run_lanes(sh, b, false);
+    let n = b.nbs.max(0) as usize;
+    let chans = (b.nbi.min(b.nbo).max(0) as usize).min(128);
+    unsafe { crate::soundfx::process(&b.w, chans, n, false) };
+}
+
+/// The lanes on this insert (inputs or outputs): hand their audio to the workers and play back
+/// what they made. Every other channel passes straight through.
+fn run_lanes(sh: &Shared, b: &AudioBuffer, output: bool) {
     let n = b.nbs.max(0) as usize;
     let chans = (b.nbi.min(b.nbo).max(0) as usize).min(128);
     let rate = sh.sample_rate.load(Ordering::Relaxed);
     let mut locals: Vec<_> = AUDIO.iter().map(|m| m.try_lock().ok()).collect();
     let mut ready = [usize::MAX; LANES];
     for (i, l) in sh.lanes.iter().enumerate() {
+        if l.output.load(Ordering::Relaxed) != output {
+            continue;
+        }
         let c0 = l.channel.load(Ordering::Relaxed);
         let ok = l.active.load(Ordering::Acquire)
             && c0.checked_add(1).is_some_and(|c1| c1 < chans)
@@ -334,6 +349,9 @@ fn process_in(sh: &Shared, b: &AudioBuffer) {
             .any(|&c0| c0 != usize::MAX && (ch == c0 || ch == c0 + 1))
     });
     for (i, l) in sh.lanes.iter().enumerate() {
+        if l.output.load(Ordering::Relaxed) != output {
+            continue;
+        }
         let c0 = ready[i];
         let Some(Some(a)) = locals[i].as_deref_mut() else {
             continue;
@@ -385,15 +403,25 @@ fn process_in(sh: &Shared, b: &AudioBuffer) {
     }
 }
 
-/// The output insert (only joined for echo removal): pass everything through, and send what
-/// the speakers' bus plays to each mic that removes speaker echo.
+/// The output insert (joined for speaker echo removal, plugins on outputs, and listening EQ or
+/// the leveller): run the output lanes, send what the speakers' bus plays to each mic that removes
+/// speaker echo, then shape the outputs that have an EQ preset or leveller.
 fn process_out(sh: &Shared, b: &AudioBuffer) {
     let n = b.nbs.max(0) as usize;
     let chans = (b.nbi.min(b.nbo).max(0) as usize).min(128);
-    pass_through(b, chans, n, |_| false);
+    run_lanes(sh, b, true);
+    send_reference(sh, b, n, chans);
+    unsafe { crate::soundfx::process(&b.w, chans, n, true) };
+}
+
+/// What the speakers' bus plays (before anything here changes it), for speaker echo removal.
+fn send_reference(sh: &Shared, b: &AudioBuffer, n: usize, chans: usize) {
     let c0 = sh.ref_channel.load(Ordering::Relaxed);
     if c0.checked_add(1).is_none_or(|c1| c1 >= chans) || b.r[c0].is_null() || b.r[c0 + 1].is_null()
     {
+        return;
+    }
+    if !sh.lanes.iter().any(|l| l.want_ref.load(Ordering::Relaxed)) {
         return;
     }
     let Ok(mut scratch) = REF_SCRATCH.try_lock() else {
@@ -667,6 +695,8 @@ struct WorkerKey {
     rate: u32,
     stereo: bool,
     channel: usize,
+    /// On an output (Voicemeeter's output insert).
+    output: bool,
 }
 
 struct Worker {
@@ -713,6 +743,7 @@ impl Worker {
         l.frame.store(frame, Ordering::Relaxed);
         l.worker_rate.store(key.rate, Ordering::Relaxed);
         l.stereo.store(key.stereo, Ordering::Relaxed);
+        l.output.store(key.output, Ordering::Relaxed);
         l.channel.store(key.channel, Ordering::Relaxed);
         l.reset_output.store(true, Ordering::Release);
         l.cushion.store(START_CUSHION, Ordering::Relaxed);
@@ -1056,6 +1087,31 @@ fn strip_index(target: &str) -> Option<usize> {
         .and_then(|t| t.parse().ok())
 }
 
+fn bus_index(target: &str) -> Option<usize> {
+    target
+        .strip_prefix("Bus[")
+        .and_then(|t| t.strip_suffix(']'))
+        .and_then(|t| t.parse().ok())
+}
+
+/// Where a chain's target is in Voicemeeter's inserts: (first channel, on the output insert).
+/// Hardware inputs have 2 channels each, then virtual inputs 8 each; every bus has 8. Virtual
+/// inputs and buses are cleaned on their front left and right (where voices and stereo are).
+fn insert_slot(target: &str, layout: &crate::vm::Layout) -> Option<(usize, bool)> {
+    if let Some(i) = strip_index(target) {
+        if i < layout.hw_strips {
+            return Some((i * 2, false));
+        }
+        if i < layout.strips() {
+            return Some((layout.hw_strips * 2 + (i - layout.hw_strips) * 8, false));
+        }
+        return None;
+    }
+    bus_index(target)
+        .filter(|&j| j < layout.buses())
+        .map(|j| (j * 8, true))
+}
+
 /// The chains in `micFx`. Before several mics there was one, in micFx itself: that becomes the
 /// first chain (id "c1"), so old settings keep working.
 pub fn chains_json(m: &Value) -> Vec<Value> {
@@ -1111,6 +1167,8 @@ struct Cfg {
     /// Switched off / strength set by shortcuts, scenes and so on: { id: { off, strength } }.
     live: Value,
     states: Value,
+    /// Listening EQ and leveller per channel (soundfx.rs).
+    sound: Value,
 }
 
 fn cfg(app: &AppHandle) -> Cfg {
@@ -1126,6 +1184,7 @@ fn cfg(app: &AppHandle) -> Cfg {
         aec_bus,
         live: s["micFxLive"].clone(),
         states: s["vstState"].clone(),
+        sound: s["soundFx"].clone(),
     }
 }
 
@@ -1285,6 +1344,9 @@ pub fn listen(app: &AppHandle, id: &str, on: bool) -> Result<bool, String> {
         .iter()
         .find(|ch| ch.id == id)
         .ok_or("That mic isn't set up")?;
+    if ch.target.starts_with("Bus[") {
+        return Err("Plugins on an output already play on it.".into());
+    }
     let param = format!("{}.A1", ch.target);
     if api.get_float(&param).unwrap_or(0.0) == 0.0 {
         api.set_float(&param, 1.0)?;
@@ -1428,7 +1490,8 @@ pub fn spawn(app: AppHandle) {
                         cid: s("cid"),
                         name: s("name"),
                         on: p["on"].as_bool().unwrap_or(true) && !off,
-                        stereo: ch.stereo,
+                        // Outputs are always stereo.
+                        stereo: ch.stereo || bus_index(&ch.target).is_some(),
                         c: c.states[&s("id")]["c"].as_str().unwrap_or("").to_string(),
                         e: c.states[&s("id")]["e"].as_str().unwrap_or("").to_string(),
                     });
@@ -1448,10 +1511,16 @@ pub fn spawn(app: AppHandle) {
                 Ordering::Relaxed,
             );
 
-            // Each mic: what can run, and why not.
+            // Listening EQ and leveller: built for Voicemeeter's rate, run in the callback.
+            let fx = crate::soundfx::wants(&c.sound, &layout);
+            crate::soundfx::sync(&fx, rate);
+            let (fx_in, fx_out) = crate::soundfx::needs(&fx);
+
+            // Each mic (or chat input, or output): what can run, and why not.
             let mut chain_status = serde_json::Map::new();
-            let mut used: Vec<usize> = Vec::new();
-            let mut any = false;
+            let mut used: Vec<String> = Vec::new();
+            let mut any_in = false;
+            let mut any_out = false;
             let mut any_aec = false;
             for lane in 0..LANES {
                 let Some(ch) = chains.get(lane) else {
@@ -1468,27 +1537,39 @@ pub fn spawn(app: AppHandle) {
                 strengths[lane].store(strength.to_bits(), Ordering::Relaxed);
                 let plugins_on = wants.iter().filter(|w| w.lane == lane && w.on).count();
                 let mut notes: Vec<String> = Vec::new();
-                let channel = match ch.strip {
-                    Some(i) if i < layout.hw_strips && !used.contains(&i) => {
-                        used.push(i);
-                        i * 2
+                let slot = insert_slot(&ch.target, &layout);
+                let output = slot.is_some_and(|(_, o)| o);
+                // Outputs carry music and games: always stereo, plugins only.
+                let stereo = ch.stereo || output;
+                let channel = match slot {
+                    Some((c0, _)) if !used.contains(&ch.target) => {
+                        used.push(ch.target.clone());
+                        c0
                     }
-                    Some(i) if used.contains(&i) => {
-                        notes.push("Another mic above already uses this input.".into());
+                    Some(_) => {
+                        notes.push("Another tab above already uses this channel.".into());
                         usize::MAX
                     }
-                    _ => {
-                        notes.push("Pick one of Voicemeeter's hardware inputs.".into());
+                    None => {
+                        notes.push("Pick one of Voicemeeter's inputs or outputs.".into());
                         usize::MAX
                     }
                 };
-                let nv_wanted = !ch.stereo && (ch.on || ch.aec);
+                let channel = if output && !out_free && channel != usize::MAX {
+                    if let Some((who, _)) = &out_blocked {
+                        notes.push(format!("{who} is using Voicemeeter's output insert, so plugins on outputs are off."));
+                    }
+                    usize::MAX
+                } else {
+                    channel
+                };
+                let nv_wanted = !stereo && (ch.on || ch.aec);
                 if nv_wanted && !available() {
                     notes.push("NVIDIA's Audio Effects runtime isn't installed (it needs an NVIDIA RTX graphics card).".into());
                 } else if nv_wanted && rate != RATE {
                     notes.push(format!("NVIDIA's effects need 48 kHz, and Voicemeeter runs at {} kHz: in Voicemeeter, open Menu → System Settings and set Preferred Main SampleRate to 48000.", rate as f32 / 1000.0));
                 }
-                let nv_can = !ch.stereo && available() && rate == RATE;
+                let nv_can = !stereo && available() && rate == RATE;
                 let mut nv_ok = ch.on && nv_can;
                 let mut aec_ok = ch.aec && nv_can;
                 if aec_ok && !ref_ok {
@@ -1523,8 +1604,9 @@ pub fn spawn(app: AppHandle) {
                     effect: nv_ok.then(|| ch.effect.clone()),
                     aec: aec_ok,
                     rate,
-                    stereo: ch.stereo,
+                    stereo,
                     channel,
+                    output,
                 };
                 if !need {
                     workers[lane] = None;
@@ -1550,15 +1632,22 @@ pub fn spawn(app: AppHandle) {
                 }
                 let running = need && workers[lane].is_some();
                 l.active.store(running, Ordering::Release);
-                any |= running;
+                if output {
+                    any_out |= running;
+                } else {
+                    any_in |= running;
+                }
                 any_aec |= running && key.aec;
 
-                // What Settings says about this mic.
-                let label = ch
-                    .strip
-                    .and_then(|i| api.get_string(&format!("Strip[{i}].Label")))
+                // What Settings says about this mic, chat input or output.
+                let label = api
+                    .get_string(&format!("{}.Label", ch.target))
                     .filter(|t| !t.trim().is_empty())
-                    .unwrap_or_else(|| format!("Input {}", ch.strip.unwrap_or(0) + 1));
+                    .unwrap_or_else(|| match (ch.strip, bus_index(&ch.target)) {
+                        (Some(i), _) => format!("Input {}", i + 1),
+                        (_, Some(j)) => format!("Output {}", j + 1),
+                        _ => "this channel".into(),
+                    });
                 let mut what: Vec<String> = Vec::new();
                 if key.aec {
                     what.push("speaker echo removal".into());
@@ -1591,7 +1680,11 @@ pub fn spawn(app: AppHandle) {
                     "Switched off (by a shortcut, the Stream Deck, the phone, chat or a scene)."
                         .to_string()
                 } else if running {
-                    let mut m = format!("Cleaning up {label}: {}.", what.join(" and "));
+                    let mut m = if output {
+                        format!("Running on {label}: {}.", what.join(" and "))
+                    } else {
+                        format!("Cleaning up {label}: {}.", what.join(" and "))
+                    };
                     if !notes.is_empty() {
                         m = format!("{m} {}", notes.join(" "));
                     }
@@ -1611,15 +1704,20 @@ pub fn spawn(app: AppHandle) {
                 );
             }
 
-            // Join (or leave) Voicemeeter's inserts: inputs always, outputs for echo removal.
+            // Join (or leave) Voicemeeter's inserts: inputs for anything on an input, outputs for
+            // echo removal, plugins on outputs, and EQ or levelling on an output.
             let mut global = String::new();
-            let want_mode = if !any {
-                0
-            } else if any_aec {
-                crate::vm::AUDIOCALLBACK_IN | crate::vm::AUDIOCALLBACK_OUT
-            } else {
+            let need_in = (any_in || any_aec || fx_in) && vm_up;
+            let need_out = (any_out || any_aec || (fx_out && out_free)) && vm_up;
+            let want_mode = (if need_in {
                 crate::vm::AUDIOCALLBACK_IN
-            };
+            } else {
+                0
+            }) | (if need_out {
+                crate::vm::AUDIOCALLBACK_OUT
+            } else {
+                0
+            });
             if !callback_ok {
                 global = "This Voicemeeter is too old for mic clean-up. Update Voicemeeter.".into();
             } else if !vm_up {
@@ -1679,10 +1777,39 @@ pub fn spawn(app: AppHandle) {
                     }
                 }
             }
+            // Listening EQ and leveller: running once Sleekmeeter is in the right insert.
+            let mode = REG_MODE.load(Ordering::Acquire);
+            let mut fx_status = serde_json::Map::new();
+            for w in &fx {
+                let bit = if w.output {
+                    crate::vm::AUDIOCALLBACK_OUT
+                } else {
+                    crate::vm::AUDIOCALLBACK_IN
+                };
+                let running = global.is_empty() && mode & bit != 0;
+                let message = if running {
+                    String::new()
+                } else if !global.is_empty() {
+                    global.clone()
+                } else if w.output && !out_free {
+                    out_blocked.as_ref().map_or_else(String::new, |(who, _)| {
+                        format!(
+                            "{who} is using Voicemeeter's output insert, so this is off for now."
+                        )
+                    })
+                } else {
+                    "Starting…".into()
+                };
+                fx_status.insert(
+                    w.target.clone(),
+                    json!({ "running": running, "message": message }),
+                );
+            }
             *STATUS.lock().unwrap() = json!({
                 "available": available(),
                 "message": global,
                 "chains": Value::Object(chain_status),
+                "soundFx": Value::Object(fx_status),
             });
         }
     });
@@ -1705,6 +1832,20 @@ mod tests {
         assert!(q.pop(&mut out));
         assert_eq!(out, [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
         assert!(!q.pop(&mut [0f32; 1]));
+    }
+
+    #[test]
+    fn insert_slots_for_mics_chat_inputs_and_outputs() {
+        let banana = crate::vm::Layout::for_edition(2); // 3 hardware inputs, 2 virtual, 5 buses
+        assert_eq!(insert_slot("Strip[0]", &banana), Some((0, false)));
+        assert_eq!(insert_slot("Strip[2]", &banana), Some((4, false)));
+        // Virtual inputs start after the hardware inputs' pairs, 8 channels each.
+        assert_eq!(insert_slot("Strip[3]", &banana), Some((6, false)));
+        assert_eq!(insert_slot("Strip[4]", &banana), Some((14, false)));
+        assert_eq!(insert_slot("Strip[5]", &banana), None);
+        assert_eq!(insert_slot("Bus[0]", &banana), Some((0, true)));
+        assert_eq!(insert_slot("Bus[4]", &banana), Some((32, true)));
+        assert_eq!(insert_slot("Bus[5]", &banana), None);
     }
 
     /// Needs NVIDIA's runtime and an RTX GPU: `cargo test nvidia -- --ignored --nocapture`.

@@ -24,6 +24,7 @@ mod hold;
 mod layers;
 mod mic_tune;
 mod micfx;
+mod soundfx;
 mod micpreset;
 mod notes;
 mod obs;

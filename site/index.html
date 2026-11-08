@@ -7,9 +7,9 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
 <link rel="preload" href="fonts/SairaSemiCondensed-SemiBold.woff" as="font" type="font/woff" crossorigin>
 <title>Sleekmeeter: a modern face for Voicemeeter</title>
-<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows. Explore twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and a phone remote.">
+<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows. Explore twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and remote control from your phone or Stream Deck.">
 <meta property="og:title" content="Sleekmeeter: a modern face for Voicemeeter">
-<meta property="og:description" content="Free and open source. Twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and a phone remote.">
+<meta property="og:description" content="Free and open source. Twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and remote control from your phone or Stream Deck.">
 <meta property="og:image" content="https://sleekmeeter.app/img/themes/console.webp">
 <meta property="og:url" content="https://sleekmeeter.app/">
 <meta name="theme-color" content="#08090b">
@@ -496,7 +496,7 @@ footer a { color: var(--ink-2); }
             <div class="head" style="gap:12px">
               <h3>486 icons to match</h3>
               <p>The Studio icon pack adds keys for Discord, Spotify, Twitch, OBS, Philips Hue and more to the Stream Deck icon library, in the same dark style, for your other buttons.</p>
-              <p style="color:var(--ink-3);font-size:15px">The plugin talks to Sleekmeeter on your own PC through its phone-remote address, pasted once. Nothing goes over the internet.</p>
+              <p style="color:var(--ink-3);font-size:15px">The plugin talks to Sleekmeeter on your own PC through its Sleekmeeter Remote address, pasted once. Nothing goes over the internet.</p>
             </div>
           </div>
         </div>
@@ -510,7 +510,7 @@ footer a { color: var(--ink-2); }
       <div class="head">
         <p class="eyebrow">Streaming</p>
         <h2>Run the show without leaving the game</h2>
-        <p class="lede">Sounds, an on-stream overlay, chat commands and a phone remote. Everything runs from the tray while you play.</p>
+        <p class="lede">Sounds, an on-stream overlay, chat commands and remote control from your phone. Everything runs from the tray while you play.</p>
       </div>
       <div class="board">
         <article class="tile b-sound">
@@ -524,14 +524,14 @@ footer a { color: var(--ink-2); }
 
         <article class="tile b-phone">
           <div class="txt">
-            <span class="where">Settings → Controls &amp; remote → Phone remote</span>
+            <span class="where">Settings → Controls &amp; remote → Sleekmeeter Remote</span>
             <h3>The mixer in your pocket</h3>
             <p>Faders, mutes, Be right back, scenes, sounds and output profiles on any phone on your Wi-Fi. A secret key in the address keeps it yours, and nothing leaves your home network.</p>
           </div>
           <div class="media">
             <div class="phone">
               <span class="island" aria-hidden="true"></span>
-              <div class="screen"><video data-src="media/remote.mp4" data-poster="media/remote.webp" data-loop muted playsinline preload="none" disablepictureinpicture aria-label="The phone remote: Be right back, output switching, a fader and a mute"></video></div>
+              <div class="screen"><video data-src="media/remote.mp4" data-poster="media/remote.webp" data-loop muted playsinline preload="none" disablepictureinpicture aria-label="Sleekmeeter Remote on a phone: Be right back, output switching, a fader and a mute"></video></div>
               <span class="home" aria-hidden="true"></span>
             </div>
           </div>
@@ -539,7 +539,7 @@ footer a { color: var(--ink-2); }
 
         <article class="tile b-overlay">
           <div class="txt">
-            <span class="where">Settings → Controls &amp; remote → Phone remote · OBS Studio</span>
+            <span class="where">Settings → Controls &amp; remote → Sleekmeeter Remote · OBS Studio</span>
             <h3>An overlay that tells chat what's going on</h3>
             <p>Add one browser source in OBS and your scene shows a <b>MUTED</b> or <b>BRB</b> badge, a mic meter and the sound that just played. Connect OBS and Sleekmeeter can follow your scenes and react when you go live.</p>
           </div>
@@ -635,6 +635,9 @@ footer a { color: var(--ink-2); }
         <div class="spec"><dt>NVIDIA mic clean-up</dt><dd>On an RTX card, NVIDIA's AI removes keyboard, fan and room noise from your mic, inside Voicemeeter, so every output hears the clean voice.</dd></div>
         <div class="spec"><dt>VST3 plugins on your mic</dt><dd>Your own EQ, de-esser or compressor on the mic, right inside Voicemeeter, with presets. Plugins run in a separate helper, so one that crashes can't take your mic down.</dd></div>
         <div class="spec"><dt>Speaker echo removal</dt><dd>No headphones? NVIDIA's AI takes your speakers out of your mic, so games and friends don't echo onto your stream.</dd></div>
+        <div class="spec"><dt>Clean up your friends too</dt><dd>Run NVIDIA's noise removal on the input Discord plays into, so you don't hear their keyboards and fans.</dd></div>
+        <div class="spec"><dt>Listening EQ and Night mode</dt><dd>Footsteps, Bass boost and Voice clarity presets, and a leveller that brings explosions down and dialogue up. No added delay, on every Voicemeeter.</dd></div>
+        <div class="spec"><dt>Plugins on outputs</dt><dd>Your own VST3 plugins on an output, like spatial audio on your headphones.</dd></div>
         <div class="spec"><dt>Every mic, any key</dt><dd>Clean up a guest mic too. Switch clean-up off and on from a shortcut, the Stream Deck, your phone or chat, and per scene.</dd></div>
         <div class="spec"><dt>Hear yourself</dt><dd>Records five seconds of your stream mix and plays it back, so you hear exactly what viewers hear.</dd></div>
         <div class="spec"><dt>Guided audio tests</dt><dd>Send test tones through your game, chat and stream routes. Replay one mic take raw and processed at matched levels.</dd></div>

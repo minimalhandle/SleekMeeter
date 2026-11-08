@@ -5,6 +5,13 @@
 - **Game / Chat** can assign and verify separate Windows app routes, pin a live slider to the mixer, and move or centre from global shortcuts. Potato verifies the listening gain layers after every change and shows the resulting levels. It warns about Composite outputs and keeps the other mixes intact.
 - **Mute destinations** let each input’s main Mute button target Everyone, Headphones, Audience, or a chosen Voice chat bus.
 - **Private cue and mix switching** let you audition a source in headphones and switch between Personal and Stream in Listen to a mix.
+- **Phone remote** is now **Sleekmeeter Remote**, because the same switch also connects the Stream Deck plugin and the OBS overlay. Your address and key stay the same.
+- **Clean up your friends' voices:** **Settings → Microphone → Clean-up and plugins → + Chat or app input** runs NVIDIA's noise removal (and VST3 plugins) on a virtual input, such as the one Discord plays into, so you don't hear their keyboards and fans.
+- **VST3 plugins on outputs:** **+ An output** runs your own plugins on an output, like a spatial audio plugin on your headphones.
+- **Listening EQ presets:** each output's and input's **Sound** tab has EQ presets: Footsteps, Bass boost, Voice clarity, Brighter, Warmer and Late night. They run inside Voicemeeter with no added delay, on every edition.
+- **Steadier volume:** **Gentle** or **Night mode** on any output or input brings loud explosions down and quiet dialogue up, with a safety limiter, so you can keep the volume low.
+- **Output names on routing buttons:** **Settings → Appearance** can show *Headphones* or *Stream mix* on the routing buttons instead of A1 or B2.
+- **Your mix and your stream (Banana and Standard):** **Mix** in the header now explains how to keep things off your stream, turn the stream down, and balance game against chat without Potato.
 - **OBS audio tracks** reports live, VOD and recording track assignments, source mute states, and possible duplicate capture.
 - Added **Hadal**, a dark animated theme with deep ocean blue, moving currents and sonar rings. It includes matching mini, tray, and volume overlay styling.
 - Retired **Lunar**, **Onyx**, **After Hours**, **Caldera**, and **Blueprint**. Sleekmeeter switches those selections to Console.

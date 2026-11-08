@@ -322,6 +322,20 @@
     <p class="hint" id="mixViewHint">Drag or scroll to set the level for one output. Double-click a slider to match the main fader. The button below each slider turns its route on or off.</p>
     <p class="hint" id="mixViewNote" hidden>The output mix needs Voicemeeter Potato. It appears here once Potato is running.</p>
     <div class="mixview" id="mixView"></div>
+    <div class="mix-help" id="mixHelp" hidden>
+      <p>Voicemeeter Banana and Standard have one level for each input, so an input is as loud on your stream as in your headphones. You can still keep most things apart:</p>
+      <ul>
+        <li><b>Keep an input off your stream</b> but in your headphones: right-click its <b>Mute</b> and pick the outputs, or set its Mute button destination in its settings.</li>
+        <li><b>Keep your music off stream</b> (and out of VODs) while you still hear it, with <b>Music off stream</b>.</li>
+        <li><b>Turn the whole stream down</b> with your stream output's own fader, without changing what you hear.</li>
+        <li><b>Balance game against chat</b> for yourself with <b>Game / Chat</b>.</li>
+      </ul>
+      <p>For a different level for every input on every output, use <b>Voicemeeter Potato</b> from VB-Audio (vb-audio.com). Sleekmeeter's Output mix then appears here, with Personal and Stream views.</p>
+      <div class="btn-row">
+        <button class="btn" type="button" id="mixHelpMute">Set an input's Mute destination…</button>
+        <button class="btn" type="button" id="mixHelpMusic">Set up Music off stream…</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog class="dlg health-dlg" id="mixMonitorDlg" aria-labelledby="mixMonitorTitle">
@@ -951,7 +965,7 @@
               <div class="field wide"><label for="replaySecs">Keep</label><input type="range" id="replaySecs" min="15" max="120" step="5"><output for="replaySecs"></output></div>
               <div class="field wide"><label for="replayDevice">Of</label><select id="replayDevice"></select></div>
               <p class="hint obs-status" id="replayStatusText" role="status"></p>
-              <p class="hint">Save with the replay button in the header, a shortcut, a Twitch command or the phone remote. Replays go to <b>Music\Sleekmeeter replays</b>. The audio stays in memory until you save it.</p>
+              <p class="hint">Save with the replay button in the header, a shortcut, a Twitch command or Sleekmeeter Remote. Replays go to <b>Music\Sleekmeeter replays</b>. The audio stays in memory until you save it.</p>
               <div class="btn-row"><button class="btn" id="replaySaveNow" type="button">Save a replay now</button><button class="btn" id="replayFolder" type="button">Open the folder</button></div>
             </div>
           </div>
@@ -1004,18 +1018,18 @@
       </section>
       <section data-settings-category="controls" class="fold">
         <details id="remoteFold">
-          <summary><h3>Phone remote</h3><span class="fold-note" id="remoteNote"></span></summary>
+          <summary><h3>Sleekmeeter Remote</h3><span class="fold-note" id="remoteNote"></span></summary>
           <div class="fold-body">
-            <label class="check"><input type="checkbox" id="remoteOn"><span>Control the mixer from a phone or tablet on the same Wi-Fi</span></label>
+            <label class="check"><input type="checkbox" id="remoteOn"><span>Use Sleekmeeter from a phone or tablet, the Stream Deck plugin and the OBS overlay on this network</span></label>
             <div class="fold-body" id="remoteOpts">
-              <p class="hint">Open the address below on your phone. The long code in it is the password: anyone on your network who has the address can use the remote, so don't share it. Nothing goes over the internet. Windows may ask once to allow Sleekmeeter on your network; choose private networks.</p>
+              <p class="hint">Open the address below on a phone or tablet on the same Wi-Fi, or paste it into the Stream Deck plugin. The long code in it is the password: anyone on your network who has the address can use the remote, so don't share it. Nothing goes over the internet. Windows may ask once to allow Sleekmeeter on your network; choose private networks.</p>
               <div class="field wide"><label for="remotePort">Port</label><input type="number" id="remotePort" min="1024" max="65535"></div>
               <div class="remote-url" id="remoteUrl" hidden><code id="remoteUrlText"></code><button class="btn" id="remoteCopy" type="button">Copy</button></div>
               <p class="hint obs-status" id="remoteStatusText" role="status"></p>
               <p class="hint">For OBS: add a Browser source and paste this address. It shows a MUTED or BRB badge, your mic meter and the name of the sound that just played, on a see-through background. Add <code>&amp;mic=1</code> if your mic is not the first channel.</p>
               <div class="remote-url" id="overlayUrl" hidden><code id="overlayUrlText"></code><button class="btn" id="overlayCopy" type="button">Copy</button></div>
               <div class="btn-row"><button class="btn" id="remoteNewKey" type="button">Make a new key</button></div>
-              <p class="hint">A new key signs every phone out until you open the new address on it.</p>
+              <p class="hint">A new key signs out every phone and the Stream Deck plugin until you give them the new address.</p>
             </div>
           </div>
         </details>
@@ -1043,17 +1057,20 @@
       </section>
       <section data-settings-category="microphone" data-settings-keywords="noise suppression denoiser room echo dereverb speaker echo AEC NVIDIA SDK VST3 equalizer preset import export quarantine" class="fold">
         <details id="micFxFold">
-          <summary><h3>Mic clean-up and plugins</h3><span class="fold-note" id="micFxNote"></span></summary>
+          <summary><h3>Clean-up and plugins</h3><span class="fold-note" id="micFxNote"></span></summary>
           <div class="fold-body">
-            <div class="mic-tabs" id="micTabs" role="tablist" aria-label="Mics"></div>
+            <p class="hint">Clean up your mic, clean up your friends' voices on a chat input, or run VST3 plugins on an output.</p>
+            <div class="mic-tabs" id="micTabs" role="tablist" aria-label="Mics, inputs and outputs"></div>
             <div class="mic-off" id="micFxOffRow" hidden>
               <span id="micFxOffText">Switched off by a shortcut, the Stream Deck, the phone, chat or a scene.</span>
               <button class="btn" id="micFxBackOn" type="button">Switch back on</button>
             </div>
-            <div class="field wide"><label for="micFxTarget">Hardware input</label><select id="micFxTarget"></select></div>
+            <div class="field wide"><label for="micFxTarget" id="micFxTargetLabel">Mic</label><select id="micFxTarget"></select></div>
             <div class="field wide"><label for="micFxMode">Input format</label><select id="micFxMode"><option value="mic">Mono microphone</option><option value="stereo">Stereo hardware input</option></select></div>
             <p class="hint" id="micFxStereoHint" hidden>Stereo mode keeps left and right separate for capture cards and other hardware sources. Use VST3 effects with stereo input and output. NVIDIA mic effects are available in mono mode.</p>
-            <label class="check"><input type="checkbox" id="micFxOn"><span>Remove background noise from this mic with NVIDIA's AI, running on the graphics card</span></label>
+            <p class="hint" id="micFxOutHint" hidden>Plugins on an output change what everyone listening to it hears, like a spatial audio plugin on your headphones. They add a little delay, so keep outputs your stream or recording uses free of them unless you want the effect there too.</p>
+            <p class="hint" id="micFxVirtHint" hidden>Voice clean-up treats this input's left and right as one voice, which suits voice chat. Pick Stereo for music or games.</p>
+            <label class="check"><input type="checkbox" id="micFxOn"><span id="micFxOnText">Remove background noise from this mic with NVIDIA's AI, running on the graphics card</span></label>
             <p class="hint" id="micFxMissing" hidden>NVIDIA's clean-up needs an NVIDIA RTX graphics card and NVIDIA's free <b>Audio Effects SDK</b> runtime, which isn't installed. Get it from NVIDIA's Maxine Audio Effects page, then come back here.</p>
             <div class="fold-body" data-needs="micfx">
               <div class="field wide"><label for="micFxEffect">Remove</label><select id="micFxEffect"></select></div>
@@ -1093,7 +1110,7 @@
               <button class="btn" id="micFxCompare" type="button" title="Hold to hear this mic without clean-up or plugins, then let go to hear them again">Hold to hear it without</button>
               <button class="btn" id="micFxRemoveMic" type="button" hidden>Remove this mic</button>
             </div>
-            <p class="hint">All of this happens inside Voicemeeter before its fader, gate and compressor, so it reaches every output, and adds a little delay (shown above). It runs while Sleekmeeter is open; if Sleekmeeter closes, your mic carries on without it. NVIDIA's clean-up needs Voicemeeter at 48 kHz. Plugins run in a separate helper, so one that crashes doesn't take Sleekmeeter with it. Switch a mic's clean-up off and on with a shortcut, a Stream Deck key, the phone remote or a chat command, and scenes remember it.</p>
+            <p class="hint">On an input, all of this happens inside Voicemeeter before its fader, gate and compressor, so it reaches every output. On an output, it happens just before the sound leaves. Either way it adds a little delay (shown above). It runs while Sleekmeeter is open; if Sleekmeeter closes, your mic carries on without it. NVIDIA's clean-up needs Voicemeeter at 48 kHz. Plugins run in a separate helper, so one that crashes doesn't take Sleekmeeter with it. Switch a mic's clean-up off and on with a shortcut, a Stream Deck key, Sleekmeeter Remote or a chat command, and scenes remember it.</p>
           </div>
         </details>
       </section>
@@ -1126,6 +1143,7 @@
       </section>
       <section data-settings-category="appearance">
         <h3>Channel buttons</h3>
+        <label class="check"><input type="checkbox" id="setRouteNames"><span>Show output names on the routing buttons (like Headphones instead of A1)</span></label>
         <label class="check"><input type="checkbox" id="setHideSoloMono"><span>Hide the Solo and Mono buttons under each input and the Mono and EQ buttons on each output, for a cleaner mixer. They're still in each channel's settings (click its icon), and a button that's switched on keeps showing</span></label>
       </section>
       <section data-settings-category="appearance">
