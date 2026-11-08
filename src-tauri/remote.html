@@ -50,7 +50,7 @@
   try { if (key) sessionStorage.setItem("k", key); else key = sessionStorage.getItem("k") || ""; } catch (e) {}
   if (params.has("k")) history.replaceState(null, "", location.pathname);
   const show = (text) => { $("msg").textContent = text; $("msg").hidden = !text; $("app").hidden = !!text; };
-  if (!key) { show("Open the address shown in Sleekmeeter → Settings → Phone remote."); return; }
+  if (!key) { show("Open the address shown in Sleekmeeter → Settings → Sleekmeeter Remote."); return; }
 
   const api = async (path, body) => {
     const r = await fetch(path, { method: body ? "POST" : "GET", headers: { "X-Key": key, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });

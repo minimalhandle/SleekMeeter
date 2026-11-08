@@ -1,4 +1,5 @@
-//! Phone remote: a small web page on your own network that works the mixer.
+//! Sleekmeeter Remote: a small web server on your own network that works the mixer. It serves
+//! the phone page and the OBS overlay, and the HTTP API the Stream Deck plugin uses.
 //!
 //! Off by default. When it's on, Sleekmeeter listens on a port and serves a page; the address
 //! contains a secret key, and every request that changes something has to carry it. It never
@@ -435,7 +436,7 @@ fn serve(app: &AppHandle, c: &Cfg) -> Result<(), String> {
         "message": "On",
         "urls": [format!("http://{host}:{}/?k={}", c.port, c.key)],
     }));
-    log_info!("Phone remote listening on port {}", c.port);
+    log_info!("Sleekmeeter Remote listening on port {}", c.port);
     let mut idle_ticks = 0u32;
     loop {
         match listener.accept() {
@@ -454,7 +455,7 @@ fn serve(app: &AppHandle, c: &Cfg) -> Result<(), String> {
                     return Ok(());
                 }
             }
-            Err(e) => return Err(format!("The phone remote stopped: {e}")),
+            Err(e) => return Err(format!("Sleekmeeter Remote stopped: {e}")),
         }
     }
 }
@@ -483,7 +484,7 @@ pub fn spawn(app: AppHandle) {
                 continue;
             }
             if message != last_error {
-                log_warn!("Phone remote: {message}");
+                log_warn!("Sleekmeeter Remote: {message}");
                 last_error = message.clone();
             }
             publish(json!({ "running": false, "message": message, "urls": [] }));

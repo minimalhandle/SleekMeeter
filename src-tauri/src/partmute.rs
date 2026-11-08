@@ -1,5 +1,5 @@
 //! Mute on one output: an input muted on some outputs only (B1, B2 …), from right-clicking
-//! Mute in the mixer or the tray panel, a Stream Deck key or the phone remote.
+//! Mute in the mixer or the tray panel, a Stream Deck key or Sleekmeeter Remote.
 //!
 //! Muting switches the input's send to that output off (fades.rs route_mute, with a fade on
 //! Potato) and remembers which sends it switched off, in settings.json under `partMute`

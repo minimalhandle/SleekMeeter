@@ -22,7 +22,7 @@ Install **[`Sleekmeeter-Studio.streamDeckPlugin`](Sleekmeeter-Studio.streamDeckP
 
 The 200 × 100 touch-strip panel displays cover art, title, artist, elapsed and total time, track progress and the independently controlled channel's dB/level bar. Missing artwork gets a music placeholder; missing timeline data gets unknown-time placeholders. Media metadata depends on what the player exposes to Windows. Spotify desktop must publish a media session; Spotify in a browser can use Current Windows media app, which follows Windows' current session and may switch when another player becomes active. Show text hides the channel label, not the requested track information or level readout.
 
-The plugin launches one hidden Windows PowerShell media-session worker only while a Now Playing action is visible. It uses the built-in Windows.Media.Control API and System.Drawing, keeps a small in-memory cover cache and exits a minute after the last Now Playing action leaves the screen, or when the parent closes. There is no Spotify account/token storage, local HTTP media server, web scraping or new npm dependency. Windows PowerShell must be available under the normal user policy. No system policy is changed. The plugin still needs the existing Sleekmeeter phone-remote connection for channel controls. Media display can remain available while that audio connection is offline.
+The plugin launches one hidden Windows PowerShell media-session worker only while a Now Playing action is visible. It uses the built-in Windows.Media.Control API and System.Drawing, keeps a small in-memory cover cache and exits a minute after the last Now Playing action leaves the screen, or when the parent closes. There is no Spotify account/token storage, local HTTP media server, web scraping or new npm dependency. Windows PowerShell must be available under the normal user policy. No system policy is changed. The plugin still needs the existing Sleekmeeter Remote connection for channel controls. Media display can remain available while that audio connection is offline.
 
 Rebuild artwork with `node streamdeck/tests/build-studio-assets.cjs` (development-only sharp dependency), run `node --test streamdeck/tests/plugin.test.cjs streamdeck/tests/studio.test.cjs streamdeck/tests/media-worker.test.cjs`, and run `powershell -File streamdeck/tests/media-art.ps1` on Windows for the native thumbnail round-trip.
 
@@ -42,7 +42,7 @@ Audio controls operate through **Sleekmeeter**; the new Now Playing action separ
 
 ## Install
 
-1. Open Sleekmeeter → **Settings → Phone remote**, turn it on, and click **Copy** next to the address.
+1. Open Sleekmeeter → **Settings → Sleekmeeter Remote**, turn it on, and click **Copy** next to the address.
 2. Accept Sleekmeeter's offer to install the plugin (also in **Settings → Stream Deck**), or double-click **`Sleekmeeter-Studio.streamDeckPlugin`** in this folder. The Stream Deck app installs it.
 3. Drag **Channel level** onto a dial, pick a channel in the settings below, and paste the address into **Connection**. Press **Connect**. You only paste it once; every other button uses the same address.
 
@@ -76,9 +76,9 @@ Four dials, four channels: add **Channel level** to each dial and pick Mic, Disc
 
 ## How it works
 
-The plugin talks to the phone-remote server Sleekmeeter already runs on your PC (the same one your phone uses). Nothing goes over the internet. It reads the state about twice a second so the keys and dials stay in step with Sleekmeeter, Voicemeeter and your other controllers.
+The plugin talks to the Sleekmeeter Remote server Sleekmeeter already runs on your PC (the same one your phone uses). Nothing goes over the internet. It reads the state about twice a second so the keys and dials stay in step with Sleekmeeter, Voicemeeter and your other controllers.
 
-If a button says **Sleekmeeter not found**, check Sleekmeeter is open and the phone remote is on. **Wrong key** means the address was changed with "Make a new key"; paste the new one.
+If a button says **Sleekmeeter not found**, check Sleekmeeter is open and Sleekmeeter Remote is on. **Wrong key** means the address was changed with "Make a new key"; paste the new one.
 
 ## Icons
 

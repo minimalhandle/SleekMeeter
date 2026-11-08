@@ -1,6 +1,6 @@
 //! Instant replay: Sleekmeeter keeps listening to one of Voicemeeter's outputs (the stream
 //! output by default) and holds the last 15 to 120 seconds in memory. A shortcut, the header
-//! button, a Twitch command or the phone remote saves them as a WAV file in
+//! button, a Twitch command or Sleekmeeter Remote saves them as a WAV file in
 //! Music\Sleekmeeter replays, for clipping a funny moment without OBS's replay buffer.
 //!
 //! It listens through Windows ("Voicemeeter Out B2"), the same way the hear-yourself test

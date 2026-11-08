@@ -1,5 +1,5 @@
 //! Things Sleekmeeter can do on request, shared by shortcuts, Twitch chat commands and the
-//! phone remote: "mute the mic", "be right back", "load a scene", "play a sound".
+//! Sleekmeeter Remote: "mute the mic", "be right back", "load a scene", "play a sound".
 
 use crate::{
     brb, fades, outputs, partmute, recorder, replay, settings, show_osd_text, sounds, watch,
