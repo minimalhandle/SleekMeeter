@@ -50,6 +50,17 @@ function routeProblem(ch,bus) {
   if(!Array.isArray(have))return 'Update Sleekmeeter';
   return have.length?`Only ${bus[0]}1–${bus[0]}${have.length}`:`No ${bus[0]} buses`;
 }
+// Mute on outputs: the outputs a key is set to (B1 to B3 unless chosen), that this input has.
+const ALL_OUTPUTS=['A1','A2','A3','A4','A5','B1','B2','B3'];
+function partOutputs(s,ch,e){
+  const want=Array.isArray(s.outs)?s.outs:['B1','B2','B3'];
+  return ALL_OUTPUTS.filter(o=>want.includes(o)&&(e.routeOf?e.routeOf(ch,o)!==null:true));
+}
+// "B1–B3" for a run of the same kind, else "A1 B2".
+function outputsLabel(outs){
+  const run=outs.length>2&&outs.every(o=>o[0]===outs[0][0])&&outs.every((o,i)=>i===0||Number(o.slice(1))===Number(outs[i-1].slice(1))+1);
+  return run?`${outs[0]}–${outs[outs.length-1]}`:outs.join(' ');
+}
 function outputIcon(name, settings) {
   const choices={speakers:'speaker',headphones:'headphones',wireless:'wireless-headphones'};
   if(choices[(settings.outputIcons||{})[name]])return choices[settings.outputIcons[name]];
@@ -59,9 +70,9 @@ function renderKey(c,e) {
   const s=c.settings||{},showText=s.showText!==false;
   if(c.action==='soundstop')return tile({showText,icon:'stop',caption:'STOP SOUNDS'});
   if(e.status!=='ok'||!e.st){const note=e.status==='key'?'Check the key':e.status==='novm'?'Start Voicemeeter':'Open Sleekmeeter';return tile({name:'CONNECTION',icon:'connection',caption:note,color:C.amber});}
-  const st=e.st,ch=e.chan(s.channel||(['mic','route'].includes(c.action)?'Strip[0]':''));
+  const st=e.st,ch=e.chan(s.channel||(['mic','route','partmute'].includes(c.action)?'Strip[0]':''));
   const draw=options=>tile({showText,...options});
-  if(['mic','mute','route','level'].includes(c.action)&&!ch)return tile({name:c.action,icon:'settings',caption:'Choose channel',color:C.amber});
+  if(['mic','mute','route','level','partmute'].includes(c.action)&&!ch)return tile({name:c.action==='partmute'?'MUTE ON':c.action,icon:'settings',caption:'Choose channel',color:C.amber});
   switch(c.action){
     case 'mic':{const m=e.muteOf(ch);return draw({name:ch.name,icon:'mic',color:m?C.red:C.green,slash:m,active:!m});}
     case 'mute':{const m=e.muteOf(ch);return draw({name:ch.name,icon:'speaker',caption:m?'MUTED':'',value:m?'':db(e.gainOf(ch))+' dB',color:m?C.red:C.cyan,slash:m});}
@@ -76,9 +87,26 @@ function renderKey(c,e) {
       if(live<0)return draw({name:'SWAP ROUTE',bus:side[0].bus===side[1].bus?side[0].bus:'?',state:'PRESS TO SET',color:C.muted,active:false,pulse:.25});
       const x=side[live];return draw({name:x.label,bus:x.bus,state:live?'2 OF 2':'1 OF 2',color:x.bus[0]==='A'?C.amber:C.blue,active:true});
     }
+    case 'partmute':{
+      // Mute on outputs: the input muted on some outputs only, like right-clicking Mute in Sleekmeeter.
+      if(String(ch.key).startsWith('Bus['))return tile({name:'MUTE ON',icon:'route',caption:'Inputs only',color:C.muted});
+      if(!Array.isArray(ch.partMute))return tile({name:'MUTE ON',icon:'route',caption:'Update Sleekmeeter',color:C.muted});
+      const outs=partOutputs(s,ch,e);
+      if(!outs.length)return tile({name:'MUTE ON',icon:'settings',caption:'Choose outputs',color:C.amber});
+      const m=e.partMuteOf?e.partMuteOf(ch,outs):outs.some(o=>ch.partMute.includes(o));
+      return draw({name:ch.name,icon:'speaker',slash:m,caption:(m?'MUTED ':'ON ')+outputsLabel(outs),color:m?C.red:C.cyan,active:!m});
+    }
     case 'scene':return draw({name:'SCENE',icon:'scene',caption:s.scene||'Choose scene'});
     case 'sound':return draw({name:'SOUNDBOARD',icon:'play',caption:s.sound||'Choose sound'});
     case 'soundstop':return draw({icon:'stop',caption:'STOP SOUNDS'});
+    case 'micfx':{
+      // Mic clean-up: one mic (or every mic set up) switched off or on by Sleekmeeter.
+      const mf=st.micFx;if(!mf)return tile({name:'MIC CLEAN-UP',icon:'mic',caption:'Update Sleekmeeter',color:C.muted});
+      const keys=s.channel?[s.channel]:Object.keys(mf);
+      if(!keys.length||!keys.every(k=>mf[k]))return tile({name:'MIC CLEAN-UP',icon:'settings',caption:'Set up in Sleekmeeter',color:C.amber});
+      const on=keys.some(k=>mf[k].on);
+      return draw({name:s.channel&&ch?ch.name:'ALL MICS',icon:'mic',caption:on?'CLEAN-UP ON':'CLEAN-UP OFF',color:on?C.green:C.muted,active:on});
+    }
     case 'brb':return draw({name:'STREAM MODE',icon:'coffee',caption:st.brb?'BACK LIVE':st.brbSet?'GO BRB':'Not set up',color:st.brb?C.amber:C.cyan,active:!!st.brb});
     case 'record':return draw({name:'RECORDER',icon:'record',caption:st.recording?'RECORDING':'START RECORD',color:st.recording?C.red:C.cyan,active:!!st.recording});
     case 'duck':return draw({name:'TALK OVER',icon:'duck',caption:st.duck?'DUCKING ON':'DUCKING OFF',color:st.duck?C.green:C.muted,active:!!st.duck});
@@ -159,4 +187,25 @@ function renderAppDial(c,a) {
 function renderNote(line1,line2){return base(200,100,text(line1,12,43,12,C.amber)+text(line2,12,64,11,C.subtle),C.amber);}
 /* Potato: an output's place in an input's gain layers. A1… come first, then B1…. */
 function busIndex(st,bus){if(!bus||bus==='all')return -1;const a=((st&&st.strips||[])[0]||{}).a||[],n=Number(bus.slice(1));if(!(n>=1))return -1;return bus[0]==='A'?n-1:a.length+n-1;}
-module.exports={busIndex,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time};
+function profileSettings(settings, state) {
+  const s = settings || {};
+  const { strips = [], scenes = [] } = state || {};
+  const patterns = {
+    mic: /\b(mic(?:rophone)?|vocals?)\b/i,
+    game: /\b(games?|gaming)\b/i,
+    chat: /\b(chat|discord|teamspeak|comms)\b/i,
+    music: /\b(music|spotify)\b/i,
+  };
+  if (s.channelRole && !s.channel) {
+    const pattern = Object.hasOwn(patterns, s.channelRole) && patterns[s.channelRole];
+    const ch = strips.find((c) => pattern && pattern.test(c.name)) || (s.channelRole === "mic" ? strips[0] : null);
+    return ch ? { ...s, channel: ch.key } : s;
+  }
+  if (s.sceneRole && !s.scene) {
+    const pattern = s.sceneRole === "gaming" ? /gam(e|ing)/i : /stream/i;
+    const scene = scenes.find((name) => pattern.test(name));
+    return scene ? { ...s, scene } : s;
+  }
+  return s;
+}
+module.exports={busIndex,partOutputs,outputsLabel,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time,profileSettings};

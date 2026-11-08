@@ -6,7 +6,7 @@
 //! waits a moment for Windows to finish setting it up and restarts the engine for you.
 
 use crate::{outputs, settings, Settings, Vm};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
@@ -17,6 +17,176 @@ const EVERY: Duration = Duration::from_millis(1500);
 const SETTLE: Duration = Duration::from_millis(2500);
 /// Never restart more often than this.
 const COOLDOWN: Duration = Duration::from_secs(10);
+
+#[derive(Default)]
+struct FallbackWatch {
+    candidate: Option<(String, String, Instant)>,
+    attempted: Option<Instant>,
+}
+
+fn effective_fallbacks(s: &Value) -> Value {
+    let mut chains = s["outputFallbacks"]
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    if let Some(links) = s["outputFallbackLinks"].as_object() {
+        for (target, source) in links {
+            let Some(source) = source.as_str() else {
+                continue;
+            };
+            // Share from the original output, ignoring imported loops.
+            if source == target || links.contains_key(source) {
+                continue;
+            }
+            let chain = chains.get(source).cloned().unwrap_or_else(|| json!([]));
+            chains.insert(target.clone(), chain);
+        }
+    }
+    Value::Object(chains)
+}
+
+pub fn fallback_status(app: &AppHandle, bus: usize) -> Result<String, String> {
+    let config = effective_fallbacks(&app.state::<Settings>().0.lock().unwrap());
+    let Some(chain) = config[bus.to_string()].as_array().filter(|c| !c.is_empty()) else {
+        return Ok("No fallback policy is configured for this output.".into());
+    };
+    let vm = app.state::<Vm>();
+    let api = crate::api(&vm)?;
+    let current = api
+        .get_string(&format!("Bus[{bus}].device.name"))
+        .ok_or("Output unavailable")?;
+    if !current.is_empty()
+        && !chain
+            .iter()
+            .any(|d| d["name"].as_str().is_some_and(|n| same_device(n, &current)))
+    {
+        return Ok(format!(
+            "{current} was selected outside the policy. Automatic switching is paused."
+        ));
+    }
+    let system = system_devices();
+    if system.is_empty() {
+        return Ok("Windows playback device availability is unknown.".into());
+    }
+    let devices = api.devices();
+    let outputs = devices["outputs"]
+        .as_array()
+        .ok_or("Playback devices unavailable")?;
+    let Some((name, _)) = fallback_choice(chain, &current, &system, outputs) else {
+        return Ok(
+            "No device in this policy is currently available in Windows and Voicemeeter.".into(),
+        );
+    };
+    let priority = chain.iter().position(|d| d["name"] == name).unwrap_or(0) + 1;
+    Ok(if same_device(name, &current) {
+        format!("{name} is in use. It is the first available device (priority {priority}).")
+    } else {
+        format!("{name} is the first available device (priority {priority}). Waiting for automatic switching.")
+    })
+}
+
+fn fallback_choice<'a>(
+    chain: &'a [Value],
+    current: &str,
+    system: &[String],
+    vm_devices: &[Value],
+) -> Option<(&'a str, &'a str)> {
+    if !current.is_empty()
+        && !chain
+            .iter()
+            .any(|d| d["name"].as_str().is_some_and(|n| same_device(n, current)))
+    {
+        return None;
+    }
+    chain.iter().find_map(|d| {
+        let name = d["name"].as_str()?;
+        let kind = d["type"].as_str()?;
+        if !matches!(kind, "wdm" | "ks" | "mme")
+            || !system.iter().any(|n| same_device(name, n))
+            || !vm_devices.iter().any(|d| {
+                d["type"] == kind && d["name"].as_str().is_some_and(|n| same_device(name, n))
+            })
+        {
+            return None;
+        }
+        Some((name, kind))
+    })
+}
+
+fn check_fallbacks(
+    app: &AppHandle,
+    config: &Value,
+    system: &[String],
+    watches: &mut BTreeMap<usize, FallbackWatch>,
+) {
+    let Some(chains) = config.as_object().filter(|m| !m.is_empty()) else {
+        watches.clear();
+        return;
+    };
+    let vm = app.state::<Vm>();
+    let Some(api) = &vm.api else { return };
+    let Some(edition) = api.edition() else {
+        watches.clear();
+        return;
+    };
+    let devices = api.devices();
+    let Some(outputs) = devices["outputs"].as_array() else {
+        return;
+    };
+    let hw = crate::vm::Layout::for_edition(edition).hw_buses;
+    watches.retain(|bus, _| *bus < hw && chains.contains_key(&bus.to_string()));
+    for (key, chain) in chains {
+        let Ok(bus) = key.parse::<usize>() else {
+            continue;
+        };
+        let Some(chain) = chain.as_array().filter(|c| bus < hw && !c.is_empty()) else {
+            continue;
+        };
+        let Some(current) = api.get_string(&format!("Bus[{bus}].device.name")) else {
+            continue;
+        };
+        let watch = watches.entry(bus).or_default();
+        let Some((name, kind)) = fallback_choice(chain, &current, system, outputs)
+            .filter(|(name, _)| !same_device(name, &current))
+        else {
+            watch.candidate = None;
+            continue;
+        };
+        let now = Instant::now();
+        let stable = watch.candidate.as_ref().is_some_and(|(n, k, since)| {
+            n == name && k == kind && now.duration_since(*since) >= SETTLE
+        });
+        if !watch
+            .candidate
+            .as_ref()
+            .is_some_and(|(n, k, _)| n == name && k == kind)
+        {
+            watch.candidate = Some((name.to_owned(), kind.to_owned(), now));
+        }
+        if !stable
+            || watch
+                .attempted
+                .is_some_and(|t| now.duration_since(t) < COOLDOWN)
+        {
+            continue;
+        }
+        watch.attempted = Some(now);
+        match api.set_string(&format!("Bus[{bus}].device.{kind}"), name) {
+            Ok(()) => {
+                log_info!("Output A{} fallback selected {name:?}", bus + 1);
+                let _ = app.emit("output-fallback", json!({ "bus": bus, "name": name }));
+                crate::audio_events::record(
+                    app,
+                    "fallback",
+                    &format!("A{} switched by fallback policy", bus + 1),
+                    name,
+                    &bus.to_string(),
+                );
+            }
+            Err(e) => log_warn!("Couldn't switch output A{} to {name:?}: {e}", bus + 1),
+        }
+    }
+}
 
 fn norm(s: &str) -> String {
     s.trim().to_lowercase()
@@ -171,22 +341,31 @@ pub fn spawn(app: AppHandle) {
         let mut watch: BTreeMap<String, bool> = BTreeMap::new();
         let mut due: Option<(Instant, String)> = None;
         let mut last_restart: Option<Instant> = None;
+        let mut fallback_watches = BTreeMap::new();
         loop {
             std::thread::sleep(EVERY);
-            let (restart_on, auto) = {
+            let (restart_on, auto, fallbacks) = {
                 let state = app.state::<Settings>();
                 let s = state.0.lock().unwrap();
                 (
                     settings::flag_or(&s, "autoRestart", true),
                     outputs::auto_devices(&s),
+                    effective_fallbacks(&s),
                 )
             };
             let assigned = assigned_devices(&app);
             // Devices that an output profile with "switch automatically" is waiting for.
             let wanted: Vec<String> = auto.iter().map(|(_, d)| d.clone()).collect();
-            if (!restart_on && wanted.is_empty())
-                || (assigned.is_empty() && wanted.is_empty() && watch.is_empty())
-            {
+            let has_fallbacks = fallbacks.as_object().is_some_and(|m| {
+                m.values()
+                    .any(|v| v.as_array().is_some_and(|d| !d.is_empty()))
+            });
+            if !has_fallbacks {
+                fallback_watches.clear();
+            }
+            let watch_reconnect = (restart_on || !wanted.is_empty())
+                && !(assigned.is_empty() && wanted.is_empty() && watch.is_empty());
+            if !has_fallbacks && !watch_reconnect {
                 watch.clear();
                 due = None;
                 continue;
@@ -194,6 +373,14 @@ pub fn spawn(app: AppHandle) {
             let system = system_devices();
             if system.is_empty() {
                 continue; // couldn't read the device list this time
+            }
+            if has_fallbacks {
+                check_fallbacks(&app, &fallbacks, &system, &mut fallback_watches);
+            }
+            if !watch_reconnect {
+                watch.clear();
+                due = None;
+                continue;
             }
             let present = |name: &str| system.iter().any(|s| same_device(name, s));
             for name in assigned.iter().chain(wanted.iter()) {
@@ -249,6 +436,13 @@ pub fn spawn(app: AppHandle) {
                             log_info!("Restarted the audio engine because {name} came back");
                             last_restart = Some(Instant::now());
                             let _ = app.emit("engine-restarted", json!({ "device": name }));
+                            crate::audio_events::record(
+                                &app,
+                                "device",
+                                "Audio engine restarted after reconnect",
+                                &name,
+                                "",
+                            );
                         }
                         Err(e) => log_warn!("Couldn't restart the audio engine: {e}"),
                     }
@@ -260,7 +454,45 @@ pub fn spawn(app: AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::same_device;
+    use super::{effective_fallbacks, fallback_choice, same_device};
+    use serde_json::json;
+
+    #[test]
+    fn linked_fallbacks_use_the_latest_source_policy_and_ignore_cycles() {
+        let mut settings = json!({
+            "outputFallbacks": { "0": [{"name":"Headphones","type":"wdm"}], "3": [], "4": [] },
+            "outputFallbackLinks": { "1": "0", "2": "1", "3": "4", "4": "3" }
+        });
+        let effective = effective_fallbacks(&settings);
+        assert_eq!(effective["1"], effective["0"]);
+        assert!(effective.get("2").is_none());
+        assert_eq!(effective["3"], json!([]));
+        settings["outputFallbacks"]["0"][0]["name"] = json!("Speakers");
+        assert_eq!(effective_fallbacks(&settings)["1"][0]["name"], "Speakers");
+    }
+
+    #[test]
+    fn fallback_prefers_the_first_available_device_and_respects_manual_selection() {
+        let devices = [
+            json!({"name":"Headphones","type":"wdm"}),
+            json!({"name":"Speakers","type":"wdm"}),
+        ];
+        let both = ["Headphones".into(), "Speakers".into()];
+        let speakers = ["Speakers".into()];
+        assert_eq!(
+            fallback_choice(&devices, "Headphones", &speakers, &devices),
+            Some(("Speakers", "wdm"))
+        );
+        assert_eq!(
+            fallback_choice(&devices, "Speakers", &both, &devices),
+            Some(("Headphones", "wdm"))
+        );
+        assert_eq!(
+            fallback_choice(&devices, "External DAC", &both, &devices),
+            None
+        );
+        assert_eq!(fallback_choice(&devices, "Headphones", &[], &devices), None);
+    }
 
     #[test]
     fn matching() {

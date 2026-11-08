@@ -1,6 +1,6 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.17.0.0",
+  "Version": "0.20.0.0",
   "Author": "minimalhandle",
   "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
@@ -113,6 +113,40 @@
       "States": [
         {
           "Image": "imgs/keys/route",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Mute on outputs",
+      "UUID": "com.minimalhandle.sleekmeeter.partmute",
+      "Icon": "imgs/actions/mute",
+      "Tooltip": "Mute an input on some outputs only, for example your mic on B1 to B3 while your headphones still hear it. Press again to unmute.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/mute",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Mic clean-up",
+      "UUID": "com.minimalhandle.sleekmeeter.micfx",
+      "Icon": "imgs/actions/mic",
+      "Tooltip": "Switch a mic's clean-up and plugins off or back on.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/mic",
           "ShowTitle": false
         }
       ]

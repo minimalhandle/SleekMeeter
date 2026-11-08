@@ -17,6 +17,8 @@
   .hint { margin: 2px 0 0; color: #8c8c8c; line-height: 1.35; }
   .sub { margin: 12px 0 2px; color: #d0d0d0; font-weight: 600; }
   [hidden] { display: none !important; }
+  .outs { flex: 1; line-height: 26px; }
+  .out { display: inline-flex; align-items: center; gap: 3px; margin-right: 10px; }
 </style>
 </head>
 <body>
@@ -66,11 +68,11 @@ function opts(list, current, empty) {
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-function channelSelect(def, key = "channel") {
+function channelSelect(def, key = "channel", inputsOnly = false) {
   const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
   const buses = (lists ? lists.buses : []).map((c) => ({ v: c.key, t: c.name }));
   const cur = settings[key] || def || "";
-  if (key !== "channel") return `<select data-k="${key}"><option value="">Pick an input…</option>${opts(strips, cur)}</select>`;
+  if (key !== "channel" || inputsOnly) return `<select data-k="${key}"><option value="">Pick an input…</option>${opts(strips, cur)}</select>`;
   return `<select data-k="channel"><option value="">Pick a channel…</option>` +
     (strips.length ? `<optgroup label="Inputs">${opts(strips, cur)}</optgroup>` : "") +
     (buses.length ? `<optgroup label="Outputs">${opts(buses, cur)}</optgroup>` : "") + `</select>`;
@@ -138,10 +140,20 @@ function buildFields() {
     h += row("Bus", busPick("bus2"));
     h += row("Name", name("label2", "The input's name"));
     h += `<p class="hint">Each press turns one route on and the other off, for example your headset mic or your main mic on B2, or your game on A1 or A2. The key shows which one is live.</p>`;
+  } else if (action === "partmute") {
+    h += row("Input", channelSelect("Strip[0]", "channel", true));
+    const outs = Array.isArray(settings.outs) ? settings.outs : ["B1", "B2", "B3"];
+    const box = (o) => `<label class="out"><input type="checkbox" data-out="${o}" ${outs.includes(o) ? "checked" : ""}>${o}</label>`;
+    h += row("Outputs", `<span class="outs">${["A1", "A2", "A3", "A4", "A5"].map(box).join("")}<br>${["B1", "B2", "B3"].map(box).join("")}</span>`);
+    h += `<p class="hint">Mutes this input on the ticked outputs only, like right-clicking Mute in Sleekmeeter, for example your mic on B1 to B3 while your headphones still hear it. Press again to unmute: exactly the outputs it muted come back. Outputs your Voicemeeter doesn't have are skipped.</p>`;
   } else if (action === "mic") {
     h += row("Channel", channelSelect("Strip[0]"));
     h += row("When pressed", `<select data-k="mode">${opts([{ v: "toggle", t: "Mute or unmute" }, { v: "ptt", t: "Hold to talk" }], settings.mode || "toggle")}</select>`);
     h += `<p class="hint">Green mic means active; red with a slash means muted. It starts on your first input; pick a different channel if your mic is elsewhere. "Hold to talk" opens the mic only while you hold the key.</p>`;
+  } else if (action === "micfx") {
+    const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
+    h += row("Mic", `<select data-k="channel">${opts(strips, settings.channel || "", "Every mic")}</select>`);
+    h += `<p class="hint">Switches the mic's clean-up (NVIDIA's noise and echo removal, and its plugins) off, and on again with the next press. Green means on. Set it up first in Sleekmeeter: Settings → Mic clean-up and plugins.</p>`;
   } else if (action === "mute") {
     h += row("Channel", channelSelect());
   } else if (action === "level") {
@@ -177,6 +189,9 @@ function buildFields() {
       save(el.dataset.k, v);
       if (el.dataset.k === "mode") buildFields();
     });
+  }
+  for (const el of f.querySelectorAll("[data-out]")) {
+    el.addEventListener("change", () => save("outs", [...f.querySelectorAll("[data-out]:checked")].map((x) => x.dataset.out)));
   }
   for (const el of f.querySelectorAll("[data-output-name]")) {
     el.addEventListener("change", () => save("outputIcons", { ...(settings.outputIcons || {}), [el.dataset.outputName]: el.value }));

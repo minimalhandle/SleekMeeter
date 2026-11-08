@@ -1,8 +1,7 @@
 /*
  * Sleekmeeter — "Console": a premium hardware desk. Each channel is a raised module in a recessed
  * bay, meters are wells of LEDs, faders ride in slots with machined caps, and buttons light up
- * when they're on. Themes (Settings → Appearance) swap the colour and material tokens below:
- * Console (default), Midnight, Analog, Studio (light), Minimal and OLED black.
+ * when they're on. The other themes override these colour and material tokens in themes.css.
  *
  * Performance: meters and fader caps only ever change `transform` (see app.js), so they are
  * composited on the GPU and never trigger layout or repaint.
@@ -86,6 +85,14 @@ body, [data-theme] {
 [data-color="blue"] { --acc: var(--c-blue); }
 [data-color="cyan"] { --acc: var(--c-cyan); }
 [data-color="green"] { --acc: var(--c-green); }
+[data-color="lemon"] { --acc: #ffe46c; }
+[data-color="lime"] { --acc: #b8e866; }
+[data-color="mint"] { --acc: #9af3cd; }
+[data-color="teal"] { --acc: #28c1b2; }
+[data-color="indigo"] { --acc: #8e94ff; }
+[data-color="magenta"] { --acc: #ed71f7; }
+[data-color="ruby"] { --acc: #fa616c; }
+[data-color="copper"] { --acc: #cb996f; }
 
 /* ---------- base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -135,9 +142,33 @@ button { cursor: default; }
 
 /* ---------- top bar ---------- */
 .bar { display: flex; align-items: center; gap: 8px; padding: 12px 18px 10px; flex: none; }
+body:not(.is-mini, .is-panel) .bar { flex-wrap: wrap; }
+.bar-utilities { display: flex; align-items: center; gap: 5px; flex: none; }
 .brand { display: inline-flex; align-items: center; gap: 10px; }
 .brand-name { font-size: var(--s2); font-weight: 700; letter-spacing: .02em; line-height: 28px; }
 .status { display: inline-flex; align-items: center; gap: 9px; color: var(--ink-2); font-size: var(--s-1); margin-left: 10px; min-width: 0; }
+.bar .status { min-height: 28px; padding: 3px 8px; border: 1px solid transparent; border-radius: 7px; background: none; }
+.bar .status:hover, .bar .status:focus-visible { border-color: var(--line); background: var(--key); color: var(--ink); }
+.status[data-audio-warning="true"] .dot { background: var(--led-y); box-shadow: 0 0 8px var(--led-y); }
+.status[data-audio-warning="true"] .dot::after { display: none; }
+.bar-group, .bar-pins { display: flex; align-items: center; gap: 4px; flex: none; }
+.bar-group { padding-inline: 2px; }
+.bar-pins:empty, .bar-pins:not(:has(.btn:not([hidden]):not([data-unpinned]))) { display: none; }
+.bar-pins [data-unpinned] { display: none !important; }
+.no-streamer #streamGroup:not(:has(> button:not([hidden]))) { display: none; }
+.stream-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; }
+#streamMenu .stream-item > button { white-space: normal; overflow-wrap: anywhere; }
+.stream-item label { display: flex; align-items: center; gap: 4px; padding: 6px; color: var(--ink-2); font-size: var(--s-1); }
+.stream-item input { accent-color: var(--amber); margin: 0; }
+.stream-badge, button.live-tag { border: 1px solid currentColor; border-radius: 6px; background: var(--well); color: var(--red); padding: 2px 6px; white-space: nowrap; font-size: var(--s-1); font-weight: 700; }
+#awayBadge { color: var(--amber); }
+@media (max-width: 1300px) {
+  .bar #statusText, #streamPins :is(#recLabel, .brb-label), #streamPins #goLiveBtn span { display: none; }
+  .bar .status { margin-left: 0; }
+}
+@media (max-width: 940px) {
+  body:not(.is-panel) .bar .brand-name, .bar .scene-now { display: none; }
+}
 .status .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
 .status[data-state="online"] .dot { background: var(--led-g); box-shadow: 0 0 calc(8px * var(--glow)) var(--led-g); animation: breathe 2.6s ease-in-out infinite; }
 /* the slow pulse: a soft ring grows out of the LED and fades (transform/opacity only) */
@@ -154,6 +185,8 @@ button { cursor: default; }
 .winctl { display: flex; align-self: flex-start; margin: -12px 0 0 8px; flex: none; }
 .winctl[hidden] { display: none; }
 .custom-chrome .bar { padding-right: 0; }
+.custom-chrome:not(.is-mini, .is-panel) .bar { position: relative; padding-right: 146px; }
+.custom-chrome:not(.is-mini, .is-panel) .winctl { position: absolute; top: 0; right: 0; margin: 0; }
 .custom-chrome.is-mini .bar { padding-right: 0; }
 .is-mini .winctl { margin-top: -9px; }
 .wc {
@@ -185,6 +218,8 @@ button { cursor: default; }
 .menu button { display: block; width: 100%; text-align: left; white-space: nowrap; padding: 7px 12px; border: 0; border-radius: 6px; background: none; color: var(--ink); }
 .menu button:hover, .menu button:focus-visible { background: var(--key); }
 #moreMenu hr { height: 1px; border: 0; background: var(--line); margin: 5px 8px; }
+#moreMenu { max-height: calc(100vh - 70px); overflow-y: auto; }
+#moreMenu .menu-label { color: var(--muted); padding: 5px 12px 2px; font-size: var(--s-1); font-weight: 700; }
 #moreMenu button { position: relative; padding-left: 29px; }
 #moreMenu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 10px; color: var(--amber); }
 
@@ -245,6 +280,13 @@ button.chip:hover { background: color-mix(in srgb, var(--acc) 24%, var(--key)); 
 .route.b { --c: var(--cyan); }
 .route.first-b { grid-column: 1; }
 body:not(.show-extra-buses) .route.extra:not([aria-pressed="true"]) { display: none; }
+.route-expand { display: none; }
+.focused-mixer .strip .strip-routes .route:not([aria-pressed="true"]) { display: none; }
+.focused-mixer .strip .strip-routes:not(.expanded) .route { grid-column: auto; }
+.focused-mixer .strip .strip-routes.expanded .route { display: block; }
+.focused-mixer .strip .strip-routes { min-height: 53px; }
+.focused-mixer .strip .route-expand { display: block; grid-column: 1 / -1; min-height: 23px; height: auto; padding: 2px 5px; font-size: var(--s-1); white-space: normal; }
+.drawer-routes .route.extra { display: block !important; }
 .route[aria-pressed="true"], .modes .tog[aria-pressed="true"], .tog.mono[aria-pressed="true"] {
   background: var(--c, var(--amber)); color: var(--on-ink);
   box-shadow: 0 0 calc(14px * var(--glow)) color-mix(in srgb, var(--c, var(--amber)) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, .45);
@@ -261,9 +303,22 @@ body.hide-solo-mono .toggles .tog:is(.solo, .mono):not([aria-pressed="true"]) { 
 body.hide-solo-mono .strip .modes .tog:not([aria-pressed="true"]) { visibility: hidden; }
 .drawer-togs { height: auto; }
 .tog.mute[aria-pressed="true"] {
-  background: var(--red); color: #fff;
+  background: var(--red); color: #260c16;
   box-shadow: 0 0 calc(16px * var(--glow)) color-mix(in srgb, var(--red) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
 }
+/* Muted on some outputs only (right-click Mute): red outline and which outputs, under the word. */
+.tog.mute.part:not([aria-pressed="true"]) {
+  color: var(--red); box-shadow: inset 0 0 0 1.5px var(--red);
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; line-height: 1.05;
+}
+.tog.mute.part:not([aria-pressed="true"])::after { content: attr(data-part); font-size: .72em; font-weight: 600; opacity: .9; }
+.route.part-muted { box-shadow: inset 0 0 0 1.5px var(--red); color: var(--red); text-decoration: line-through; }
+.mute-menu { position: fixed; right: auto; top: 0; left: 0; z-index: 60; min-width: 200px; }
+.mute-menu .menu-head { padding: 6px 12px 4px; font-size: var(--s0); color: var(--ink-2, var(--ink)); opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
+.mute-menu hr { height: 1px; border: 0; background: var(--line); margin: 5px 8px; }
+.mute-menu button { position: relative; padding-left: 29px; }
+.mute-menu button[aria-checked="true"]::before { content: "✓"; position: absolute; left: 10px; color: var(--red); }
+.mute-menu .menu-note { margin: 4px 12px 6px; max-width: 220px; white-space: normal; font-size: var(--s0); opacity: .75; }
 .tog.solo[aria-pressed="true"] {
   background: var(--solo); color: #fff;
   box-shadow: 0 0 calc(14px * var(--glow)) color-mix(in srgb, var(--solo) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, .35);
@@ -569,6 +624,19 @@ html:has(> body.is-panel) { background: rgba(0, 0, 0, .004); }
 }
 @keyframes slide-in { from { transform: translateX(28px); opacity: 0; } }
 .drawer-head { display: flex; align-items: center; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+.ui-tabs { display: flex; flex-wrap: wrap; gap: 5px; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.ui-tabs .btn { min-height: 32px; height: auto; padding: 5px 10px; white-space: normal; overflow-wrap: anywhere; }
+.ui-tabs .btn[aria-selected="true"] { color: var(--ink); background: var(--key-hi); box-shadow: inset 0 -3px var(--amber); }
+.drawer > .ui-tabs { padding: 8px 12px; margin-bottom: 0; }
+.drawer-body [role="tabpanel"] { overflow-wrap: anywhere; }
+.input-fx-warning { position: absolute; right: 4px; top: 4px; z-index: 2; min-width: 20px; min-height: 20px; padding: 0 4px; border: 1px solid var(--amber); border-radius: 5px; background: var(--well); color: var(--amber); font-weight: 700; }
+.strip:has(.app-stack:not([hidden])) .input-fx-warning { right: 37px; }
+.drawer-apps { list-style: none; margin: 0; padding: 0; }
+.drawer-apps li { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+.drawer-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.drawer-sources .btn { height: auto; min-height: 32px; padding: 5px 8px; white-space: normal; overflow-wrap: anywhere; }
+#outputDevices li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#outputDevices span { display: block; color: var(--ink-2); }
 .drawer-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .drawer-titles h2 { margin: 0; font-size: var(--s2); font-weight: 700; line-height: 26px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .drawer-body { flex: 1; overflow-y: auto; padding: 4px 16px 20px; }
@@ -649,14 +717,44 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 }
 .dlg[open] { animation: pop .16s cubic-bezier(.2, .9, .3, 1); }
 @keyframes pop { from { transform: scale(1.03); opacity: 0; } }
-.dlg.settings { width: min(580px, calc(100vw - 32px)); display: none; flex-direction: column; overflow: hidden; }
+.dlg.settings { width: min(900px, calc(100vw - 32px)); display: none; flex-direction: column; overflow: hidden; }
 .dlg.settings[open] { display: flex; }
 .dlg::backdrop { background: rgba(0, 0, 0, .55); }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; }
 .dlg-head h2 { margin: 0; font-size: var(--s2); font-weight: 700; line-height: 28px; letter-spacing: .02em; }
 .hint { margin: 0 0 14px; color: var(--ink-2); max-width: 60ch; }
-.settings-body { overflow-y: auto; margin: 0 -24px; padding: 0 24px; }
-.settings-body section { padding: 12px 0; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.settings-search { display: flex; gap: 8px; margin: 4px 0 16px; }
+.settings-search input { flex: 1; min-width: 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); font: inherit; }
+.settings-layout { display: grid; grid-template-columns: clamp(170px, 24%, 212px) minmax(0, 1fr); gap: 20px; min-height: 0; height: min(610px, 68vh); }
+.settings-nav { display: grid; align-content: start; grid-template-columns: minmax(0, 1fr); gap: 5px; overflow: auto; padding: 5px; }
+.settings-nav .btn { min-height: 32px; height: auto; padding: 6px 12px; line-height: 1.25; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.settings-nav .btn[aria-current] { color: var(--ink); background: var(--key-hi); box-shadow: inset 3px 0 var(--amber); }
+.settings-body { overflow: auto; padding: 3px 8px 8px 3px; overflow-wrap: anywhere; }
+.settings-intro { padding: 0 0 10px; }
+.settings-intro h3 { font-size: var(--s2); color: var(--ink); }
+.settings-body section { padding: 14px; margin-bottom: 9px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--mod-a) 52%, transparent); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.settings-body .settings-filtered { display: none !important; }
+.settings-body .btn-row .btn:not(.icon) { min-height: 32px; height: auto; padding-block: 5px; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+#faderGroupList { width: 100%; }
+#faderGroupList fieldset { min-inline-size: 0; margin-inline: 0; }
+#faderGroupList legend { max-inline-size: 100%; }
+.balance-scale { display: flex; align-items: center; gap: 10px; margin: 16px 0 6px; }
+.balance-scale input { flex: 1; min-width: 0; }
+#balanceMixer { height: 24px; padding-inline: 8px; font-size: var(--s-1); }
+#balanceRoute:empty { display: none; }
+.balance-pin { margin: 0 6px 9px; max-width: 390px; }
+.balance-pin .btn { height: 24px; padding-inline: 8px; }
+#balanceApplied:empty, #balanceSetupStatus:empty, #balanceSignal:empty { display: none; }
+.mx-role { display: block; font-size: var(--s-1); color: var(--muted); }
+.mix-paired .mx-sl { width: 45px; }
+#guidedAudio h4 { margin-bottom: 4px; }
+@media (max-width: 680px) {
+  .settings-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+  .settings-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 460px) {
+  .settings-nav, .settings-body .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .settings-body section h3 { margin-bottom: 2px; }
 .settings-body .hint { margin: 0 0 4px; }
 .hotkeys { display: flex; flex-direction: column; gap: 6px; width: 100%; }
@@ -671,6 +769,29 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .scene-list .load { flex: 1; text-align: left; height: 40px; padding: 0 14px; font-weight: 600; color: var(--ink); font-size: var(--s1); }
 .scene-list .del { color: var(--ink-2); }
 .scene-list .empty { color: var(--ink-2); padding: 10px 0; }
+.inspect-panel { margin: 10px 0; padding: 10px 12px; border-radius: 8px; background: var(--bay); box-shadow: inset 0 0 0 1px var(--line); }
+.inspect-panel h3 { margin: 0 0 8px; font-size: var(--s1); }
+.inspect-panel :is(ul, ol) { margin: 8px 0; padding-left: 23px; max-height: 180px; overflow: auto; }
+.inspect-panel li { padding: 2px 0; overflow-wrap: anywhere; }
+.inspect-panel .route-warning { color: var(--red); font-weight: 600; }
+.inspect-panel .route-issue { color: var(--red); }
+.route-inspect-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.route-inspect-controls select { flex: 1 1 140px; min-width: 0; padding: 0 8px; }
+#appAssignName { min-width: 0; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
+#appAssignList li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#audioFlowScroll { max-height: 370px; overflow: auto; margin: 8px 0; }
+#audioFlowGraph { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 5vw, 55px); min-width: 470px; padding: 4px; }
+#audioFlowPaths { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+#audioFlowPaths path { fill: none; stroke: var(--cyan); stroke-width: 1.5px; opacity: .6; }
+#audioFlowPaths path.issue { stroke: var(--amber); stroke-dasharray: 3 4; }
+#audioFlowPaths path.dim { opacity: .13; }
+.flow-column { position: relative; }
+.flow-column h4 { margin: 0 0 8px; color: var(--ink-2); font-size: var(--s-1); }
+.flow-node { display: block; width: 100%; min-height: 40px; height: auto; margin: 0 0 6px; padding: 5px 8px; text-align: left; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+.flow-node span { display: block; color: var(--muted); font-size: var(--s-1); margin-top: 2px; }
+.flow-node.issue span { color: var(--amber); }
+.flow-node.dim { opacity: .48; }
+#vstRecovery select { max-width: 100%; }
 .scene-save { display: flex; gap: 8px; }
 /* Potato output select: the input faders set one output's mix. */
 .mix-for { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; white-space: nowrap; font-size: var(--s-1); color: var(--muted); }
@@ -701,7 +822,8 @@ body.mixing-output #inputs .strip { box-shadow: inset 0 0 0 1px color-mix(in srg
 .dlg.mixview-dlg { width: min(1520px, calc(100vw - 32px)); }
 .dlg-tools { display: flex; gap: 6px; }
 /* Popped out into its own window: the Output mix is the whole page, and the sliders grow with it. */
-body.is-mixwin > :not(#mixViewDlg) { display: none !important; }
+body.is-mixwin > :not(#mixViewDlg, #mixMonitorDlg) { display: none !important; }
+#mixMonitorDlg .btn-row { margin-top: 12px; }
 body.is-mixwin { overflow: hidden; }
 body.is-mixwin #mixViewDlg {
   position: fixed; inset: 0; width: auto; max-width: none; height: auto; max-height: none; margin: 0;
@@ -746,6 +868,11 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 
 /* ---------- volume per app ---------- */
 .dlg.apps-dlg { width: min(780px, calc(100vw - 32px)); }
+.dlg.apps-dlg[open] { display: flex; flex-direction: column; overflow: hidden; }
+.apps-dlg > :is(.dlg-head, .ui-tabs) { flex: none; }
+.apps-dlg > [role="tabpanel"] { min-height: 0; overflow: auto; padding: 3px; }
+.apps-volume-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.apps-volume-head .hint { margin: 0; }
 .app-vols { display: flex; flex-direction: column; gap: 2px; max-height: min(56vh, 460px); overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
 .app-row { display: grid; grid-template-columns: minmax(100px, 140px) 1fr 44px 62px minmax(130px, 200px); gap: 12px; align-items: center; padding: 5px 0; }
 .app-name { display: flex; align-items: center; gap: 9px; min-width: 0; font-weight: 600; }
@@ -789,8 +916,19 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .dense .name { font-size: var(--s0); }
 .dense .route { font-size: 11px; }
 .dense .readout { font-size: var(--s1); }
+.dense .strip .sub, .is-mini .mini-row .mini-name { color: var(--ink-2); }
+.dense .strip .route[aria-pressed="true"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dense .strip :is(.route, .tog, .chip, .name):focus-visible,
+.is-mini .mini-row :is(.fader, .chip, .tog):focus-visible { outline-offset: -2px; }
+@media (max-width: 480px) {
+  body.is-mini:not(.panel-columns) .mini-row .fader.h { min-width: 0; }
+  body.is-mini:not(.panel-columns) .mini-name { width: min(var(--mini-name, 96px), 24vw); }
+}
 
-@media (max-width: 700px) { .status { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
@@ -858,8 +996,41 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
   box-shadow: 0 0 calc(10px * var(--glow)) color-mix(in srgb, var(--red) 55%, transparent);
 }
 
+/* ---------- header: going live, music off stream ---------- */
+.golive-btn { display: inline-flex; align-items: center; gap: 6px; }
+/* The music key gets a line through it, and turns amber, while music is kept off the stream. */
+.music-btn .slash { display: none; }
+.music-btn[aria-pressed="true"] { color: var(--amber); }
+.music-btn[aria-pressed="true"] .slash { display: inline; }
+.settings-body h4 { margin: 10px 0 0; font-size: var(--s-1); font-weight: 600; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+#goLiveList .btn { display: block; }
+.golive-sum { margin: 0 0 10px; font-weight: 600; color: var(--ink); }
+.golive-sum[data-ok="1"] { color: var(--led-g); }
+.golive-sum:empty { display: none; }
+.learn-note { margin: 0; align-self: center; }
+
 /* ---------- setup check ---------- */
 .dlg.health-dlg, .dlg.mic-dlg { width: min(540px, calc(100vw - 32px)); }
+.dlg.quick-dlg, .dlg.events-dlg { width: min(630px, calc(100vw - 32px)); }
+.tool-search { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); color: var(--ink); }
+#quickResults, #audioEventList { list-style: none; margin: 10px 0; padding: 3px; display: grid; gap: 4px; }
+#quickResults { max-height: min(410px, 50vh); overflow-y: auto; }
+#quickResults li, .audio-event { padding: 7px 10px; border-radius: 6px; background: var(--key); color: var(--ink); overflow-wrap: anywhere; }
+#quickResults li { display: flex; justify-content: space-between; gap: 8px; cursor: default; }
+#quickResults li[aria-selected="true"] { box-shadow: inset 3px 0 var(--amber); background: var(--key-hi); }
+#quickResults small, .audio-event small, .audio-event time { color: var(--ink-2); }
+.quick-keys, #audioEventStatus { margin: 8px 0 0; }
+.audio-event { display: grid; gap: 2px; width: 100%; border: 0; text-align: left; }
+.audio-event:hover { background: var(--key-hi); }
+.audio-event time { font-size: var(--s-1); }
+#audioEventFilter { width: auto; max-width: 100%; }
+#audioEventConfirm { margin-top: 8px; align-items: center; }
+.mic-tune-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; padding: 0; }
+.mic-tune-steps li { padding: 4px 9px; border-radius: 6px; background: var(--key); color: var(--ink-2); }
+.mic-tune-steps li[aria-current] { color: var(--ink); box-shadow: inset 0 -2px var(--amber); }
+#micTuneReadings { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; margin: 12px 0; }
+#micTuneReadings dd { margin: 0; color: var(--ink-2); }
+#micTuneOptions .check { margin-bottom: 6px; }
 .health-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .health-list li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 8px; background: var(--key); }
 .health-list .mark { width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--on-ink); background: var(--led-g); }
@@ -898,6 +1069,29 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .remote-url { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
 .remote-url code { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 6px; background: var(--well); overflow-wrap: anywhere; user-select: all; font-size: var(--s-1); }
 .twitch-head, .twitch-rule { grid-template-columns: .8fr 1.2fr 1fr 32px; }
+/* Mic plugins: on, name (and why it didn't load), editor, move up/down, remove. */
+.vst-rule { grid-template-columns: 22px minmax(0, 1fr) auto 32px 32px 32px; }
+.vst-rule input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--amber); }
+.vst-name { display: flex; flex-direction: column; min-width: 0; }
+.vst-name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vst-name small { color: var(--muted); font-size: var(--s-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vst-name small.err { color: var(--red); white-space: normal; }
+.vst-rule .btn { height: 30px; }
+.vst-rule .btn:not(.icon) { padding: 0 12px; }
+.vst-pick { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; width: 100%; }
+.vst-pick select { min-width: 0; }
+.vst-rule.with-presets { grid-template-columns: 22px minmax(0, 1fr) minmax(0, 110px) auto 32px 32px 32px; }
+.vst-rule select { min-width: 0; height: 30px; }
+/* One tab per mic, and a button to add another. */
+.mic-tabs { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.mic-tabs .btn { height: 30px; padding: 0 12px; }
+.mic-tabs .btn[aria-selected="true"] { border-color: var(--amber); color: var(--ink); box-shadow: inset 0 -2px 0 var(--amber); }
+.mic-tabs .btn .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--muted); vertical-align: middle; }
+.mic-tabs .btn .dot.on { background: var(--led-g); }
+.mic-off { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--ink); font-size: var(--s-1); }
+.mic-off[hidden] { display: none; }
+#micFxListen[aria-pressed="true"] { border-color: var(--led-g); color: var(--led-g); }
+#micFxCompare:active, #micFxCompare.held { border-color: var(--amber); color: var(--amber); }
 .hist-bar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .hist-seg { display: flex; gap: 5px; }
 .hist-seg .tog { height: 30px; padding: 0 12px; font-size: var(--s0); }
@@ -965,19 +1159,18 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .strip.drop-ok { outline: 2px dashed var(--cyan); outline-offset: -3px; }
 .strip.drop-no { outline: 2px dashed var(--red); outline-offset: -3px; }
 .app-tray.drop-home { outline: 2px dashed var(--cyan); outline-offset: -3px; }
-/* Apps on a channel: badges in the corner, and a list that floats over the strip while you hover its top. */
+/* The stack sits in the corner. The list opens beside the strip, clear of its controls. */
 .strip { position: relative; }
 .app-stack {
   position: absolute; top: 2px; right: 5px; display: inline-flex; align-items: center; gap: 3px;
-  height: 13px; padding: 0 4px; border: 0; border-radius: 7px; cursor: pointer;
+  width: 17px; height: 16px; justify-content: center; padding: 0; border: 0; border-radius: 5px; cursor: pointer;
   background: color-mix(in srgb, var(--acc) 20%, transparent); color: var(--acc);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 35%, transparent);
-  font-size: 9px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums;
 }
 .app-stack:empty { display: none; }
 .app-stack::before { content: ""; position: absolute; inset: -4px; }
 .app-stack:hover { color: var(--ink); }
-.app-stack svg { width: 8px; height: 8px; }
+.app-stack svg { width: 12px; height: 12px; }
 /* On themes with very round channels, sit further in along the top edge so the corner doesn't clip it. */
 :is([data-theme="glass"], [data-theme="bubblegum"], [data-theme="sticker"]) .app-stack { top: 4px; right: 13px; }
 [data-theme="peach"] .app-stack { top: 5px; right: 14px; }
@@ -986,15 +1179,11 @@ body.no-streamer .streamer { display: none !important; }
 /* In the list, each app takes the channel's colour. */
 .app-chips .sa-chip .av { background: color-mix(in srgb, var(--acc) 70%, #000); }
 .app-chips {
-  position: absolute; top: 46px; left: 8px; right: 8px; z-index: 5; display: none;
-  flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; max-height: 180px; overflow-y: auto;
+  position: fixed; inset: auto; margin: 0; border: 0; color: var(--ink);
+  flex-direction: column; align-items: stretch; gap: 4px; padding: 6px; max-height: min(180px, calc(100vh - 16px)); overflow-y: auto;
   background: var(--flyout); border-radius: 9px; box-shadow: 0 0 0 1px var(--line), var(--pop-shadow);
 }
-.dense .app-chips { top: 44px; left: 5px; right: 5px; }
-.strip:not(.apps-dismissed) .head:hover + .app-chips:not(:empty),
-.strip:not(.apps-dismissed) .app-chips:not(:empty):hover,
-.strip:not(.apps-dismissed) .app-chips:not(:empty):focus-within,
-.strip.app-list-open > .app-chips:not(:empty) { display: flex; }
+.app-chips:popover-open { display: flex; }
 .app-chips .sa-chip { height: 22px; }
 .app-chips .sa-chip { cursor: default; padding-right: 2px; }
 .app-chips .sa-chip:hover { background: color-mix(in srgb, var(--acc) 18%, var(--key)); }

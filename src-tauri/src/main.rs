@@ -6,24 +6,33 @@
 // First, so its log_info!/log_warn!/log_error! macros work in every module below.
 #[macro_use]
 mod logs;
-mod notes;
 mod actions;
 mod apps;
 mod appvol;
+mod audio_events;
 mod backups;
 mod brb;
+mod chat_balance;
 mod devwatch;
 mod fades;
 mod files;
 mod gain;
+mod golive;
 mod health;
 mod history;
 mod hold;
 mod layers;
+mod mic_tune;
+mod micfx;
+mod micpreset;
+mod notes;
 mod obs;
 mod outputs;
+mod partmute;
+mod pluginhost;
 mod recorder;
 mod remote;
+mod replay;
 mod routing;
 mod selftest;
 mod settings;
@@ -33,6 +42,9 @@ mod twitch;
 mod update;
 mod usage;
 mod vm;
+#[cfg_attr(not(windows), path = "vst_off.rs")]
+mod vst;
+mod watch;
 mod win;
 mod winout;
 
@@ -136,6 +148,45 @@ fn vm_set_float(app: AppHandle, vm: State<'_, Vm>, name: String, value: f32) -> 
 /// Read mic-chain parameters (compressor, gate, denoiser) for the Mic chain panel. A parameter
 /// this edition doesn't have comes back as null, which is how the panel knows what to show.
 #[tauri::command]
+fn mic_tune_meter(vm: State<'_, Vm>, strip: Option<usize>) -> Result<(), String> {
+    if strip.is_none() {
+        mic_tune::stop_meter();
+        return Ok(());
+    }
+    mic_tune::meter(api(&vm)?, strip)
+}
+
+#[tauri::command]
+fn mic_tune_change(
+    app: AppHandle,
+    strip: usize,
+    expected: mic_tune::Tune,
+    next: mic_tune::Tune,
+    preview: bool,
+) -> Result<(), String> {
+    mic_tune::change(&app, strip, expected, next, preview)
+}
+
+#[tauri::command]
+fn mic_tune_finish(app: AppHandle, keep: bool) -> Result<bool, String> {
+    mic_tune::finish(&app, keep, false)
+}
+
+#[tauri::command]
+async fn audio_events_list() -> Result<Vec<audio_events::Event>, String> {
+    tauri::async_runtime::spawn_blocking(audio_events::list)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn audio_events_clear(app: AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || audio_events::clear(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 fn vm_get_floats(vm: State<'_, Vm>, names: Vec<String>) -> Result<Vec<Option<f32>>, String> {
     let a = api(&vm)?;
     Ok(names
@@ -160,6 +211,17 @@ fn readable_param(name: &str) -> bool {
                 .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '[' || c == ']');
     }
     chain_param(name)
+        || name
+            .strip_prefix("Strip[")
+            .and_then(|s| s.split_once("]."))
+            .is_some_and(|(strip, field)| {
+                strip.parse::<u8>().is_ok_and(|i| i < 8)
+                    && (field == "Gain"
+                        || field
+                            .strip_prefix("GainLayer[")
+                            .and_then(|s| s.strip_suffix(']'))
+                            .is_some_and(|bus| bus.parse::<u8>().is_ok_and(|i| i < 8)))
+            })
 }
 
 fn chain_param(name: &str) -> bool {
@@ -175,6 +237,19 @@ fn chain_param(name: &str) -> bool {
             .any(|p| tail == *p || tail.strip_prefix(p).is_some_and(|t| t.starts_with('.')))
         && tail.len() < 24
         && tail.chars().all(|c| c.is_ascii_alphanumeric() || c == '.')
+}
+
+/// Mute an input on one output only ("B1"), with a fade on Potato. See fades::route_mute.
+#[tauri::command]
+fn vm_route_mute(
+    app: AppHandle,
+    vm: State<'_, Vm>,
+    strip: usize,
+    out: String,
+    mute: bool,
+) -> Result<(), String> {
+    partmute::set(&app, api(&vm)?, strip, &out, mute)
+        .inspect_err(|e| log_warn!("Muting Strip[{strip}] on {out} failed: {e}"))
 }
 
 /// Glide a strip or bus ("Strip[0]") to a level instead of jumping there.
@@ -291,7 +366,7 @@ fn outputs_apply(app: AppHandle, name: String) -> Result<usize, String> {
 
 #[tauri::command]
 async fn app_volumes() -> Result<Vec<Value>, String> {
-    tauri::async_runtime::spawn_blocking(appvol::list)
+    tauri::async_runtime::spawn_blocking(appvol::snapshot)
         .await
         .map_err(|e| e.to_string())?
 }
@@ -302,10 +377,14 @@ async fn app_volume_set(
     volume: Option<f32>,
     mute: Option<bool>,
 ) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || appvol::set(&exe, volume, mute))
-        .await
-        .map_err(|e| e.to_string())?
-        .inspect_err(|e| log_warn!("Per-app volume: {e}"))
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = appvol::set(&exe, volume, mute);
+        appvol::invalidate_snapshot();
+        result
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .inspect_err(|e| log_warn!("Per-app volume: {e}"))
 }
 
 /// Playback devices an app can be sent to.
@@ -316,13 +395,24 @@ async fn app_route_devices() -> Result<Vec<Value>, String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn app_route_defaults() -> Result<Option<(String, String)>, String> {
+    tauri::async_runtime::spawn_blocking(winout::default_ids)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Send apps (by process id) to a playback device; an empty device puts them back on the default.
 #[tauri::command]
 async fn app_route_set(pids: Vec<u32>, device: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || routing::set(&pids, &device))
-        .await
-        .map_err(|e| e.to_string())?
-        .inspect_err(|e| log_warn!("App routing: {e}"))
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = routing::set(&pids, &device);
+        appvol::invalidate_snapshot();
+        result
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .inspect_err(|e| log_warn!("App routing: {e}"))
 }
 
 #[tauri::command]
@@ -408,7 +498,28 @@ fn scene_save(app: AppHandle, vm: State<'_, Vm>, name: String) -> Result<(), Str
         .inspect_err(|e| log_error!("Saving scene {name:?} failed: {e}"))?;
     log_info!("Saved scene {name:?}");
     fades::save_levels(&app, &path);
+    // Each mic's clean-up on or off, and NVIDIA's strength (Voicemeeter's file can't hold them).
+    let _ = std::fs::write(
+        path.with_extension("micfx.json"),
+        micfx::scene_snapshot(&app).to_string(),
+    );
     Ok(())
+}
+
+#[tauri::command]
+fn scene_preview(app: AppHandle, name: String) -> Result<Value, String> {
+    let path = scene_path(&name)?;
+    if !path.is_file() {
+        return Err(format!("The scene “{name}” no longer exists"));
+    }
+    let read = |p: std::path::PathBuf| -> Option<Value> {
+        serde_json::from_slice(&std::fs::read(p).ok()?).ok()
+    };
+    Ok(json!({
+        "channels": read(fades::levels_path(&path)),
+        "mics": read(path.with_extension("micfx.json")),
+        "currentMics": micfx::scene_snapshot(&app),
+    }))
 }
 
 #[tauri::command]
@@ -473,7 +584,21 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         value["window"] = current["window"].clone();
     }
     // The tray panel's position and the output mix window are recorded in Rust too.
-    for k in ["panelPos", "mixWin", "mixWinOpen", "seenVersion"] {
+    // So are what Music off stream switched off (watch.rs) and the inputs muted on some
+    // outputs only (partmute.rs), which a Stream Deck key can change while the window is open.
+    for k in [
+        "panelPos",
+        "mixWin",
+        "mixWinOpen",
+        "seenVersion",
+        "musicGuardEngaged",
+        "partMute",
+        "vstState",
+        "vstPresets",
+        "vstQuarantine",
+        "micFxLive",
+        "chatBalanceLive",
+    ] {
         value[k] = current[k].clone();
     }
     let usage_changed = current["usagePing"] != value["usagePing"];
@@ -489,6 +614,39 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         usage::nudge();
     }
     Ok(json!({ "problems": problems }))
+}
+
+/// Mix can be open in a second window. Update only the selected view or bus.
+#[tauri::command]
+fn mix_preference_set(app: AppHandle, key: String, value: String) -> Result<(), String> {
+    let valid = match key.as_str() {
+        "mixViewMode" => matches!(value.as_str(), "all" | "pair"),
+        "personalBus" | "audienceBus" => value
+            .strip_prefix("Bus[")
+            .and_then(|s| s.strip_suffix(']'))
+            .and_then(|s| s.parse::<u8>().ok())
+            .is_some_and(|i| {
+                if key == "personalBus" {
+                    i < 5
+                } else {
+                    (5..8).contains(&i)
+                }
+            }),
+        _ => false,
+    };
+    if !valid {
+        return Err("Invalid output mix preference.".into());
+    }
+    let state = app.state::<Settings>();
+    let mut current = state.0.lock().unwrap();
+    let mut next = current.clone();
+    next[&key] = json!(value);
+    settings::save(&next)?;
+    *current = next.clone();
+    drop(current);
+    let _ = app.emit_to("main", "settings-changed", &next);
+    let _ = app.emit_to(MIXWIN, "settings-changed", &next);
+    Ok(())
 }
 
 /* ---------------- window: mini mode ---------------- */
@@ -598,6 +756,16 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
     if !pressed {
         return;
     }
+    if matches!(kind, "chatgame" | "chatchat" | "chatcentre") {
+        let app = app.clone();
+        let kind = kind.to_owned();
+        std::thread::spawn(move || {
+            if let Err(e) = actions::perform(&app, &kind, &target) {
+                show_osd_text(&app, "Game / Chat", &e, false, "chat");
+            }
+        });
+        return;
+    }
     if let Err(e) = actions::perform(app, kind, &target) {
         log_warn!("Shortcut {kind}: {e}");
     }
@@ -639,6 +807,17 @@ fn place_osd(app: &AppHandle, osd: &WebviewWindow) {
 
 /// The overlay with words instead of a level (shortcuts for ducking and recording).
 fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) {
+    let color = if icon == "record" { "rose" } else { "amber" };
+    osd_words(app, name, text, on, icon, color, 1600);
+}
+
+/// A warning on the overlay (watch.rs: talking while muted, a silent stream), shown longer
+/// and in red, even when the volume overlay is switched off.
+pub fn show_osd_alert(app: &AppHandle, name: &str, text: &str, icon: &str) {
+    osd_words(app, name, text, false, icon, "rose", 3000);
+}
+
+fn osd_words(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str, color: &str, ms: u64) {
     let Some(osd) = app.get_webview_window("osd") else {
         return;
     };
@@ -649,11 +828,10 @@ fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) 
         "osd",
         "osd",
         json!({ "theme": theme, "name": name, "text": text, "on": on, "icon": icon, "fresh": fresh,
-                "color": if icon == "record" { "rose" } else { "amber" } }),
+                "color": color }),
     );
     let _ = osd.show();
-    *app.state::<Vm>().osd_until.lock().unwrap() =
-        Some(Instant::now() + Duration::from_millis(1600));
+    *app.state::<Vm>().osd_until.lock().unwrap() = Some(Instant::now() + Duration::from_millis(ms));
 }
 
 /// What changed between two snapshots: ("strip" | "bus", index) for gain or mute changes.
@@ -792,7 +970,11 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 }
                 let layout = Layout::for_edition(edition);
                 fades::tick(&app, &api, &layout);
+                mic_tune::tick(&app, &api);
                 let settling = Instant::now() < reread_until;
+                if !settling {
+                    watch::tick(&app, &api, &layout);
+                }
                 let periodic = last_full.elapsed() > Duration::from_secs(1);
                 if dirty == 1 || periodic || settling {
                     last_full = Instant::now();
@@ -800,6 +982,8 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     fades::dress(&app, &mut snap);
                     outputs::dress(&app, &mut snap);
                     brb::dress(&app, &mut snap);
+                    watch::dress(&app, &mut snap);
+                    partmute::dress(&app, &mut snap);
                     if edition >= 2 {
                         recorder::dress(&app, &mut snap, api.recorder(&layout));
                     }
@@ -818,11 +1002,12 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     || window_visible(&app, FLYOUT)
                     || remote::meters_wanted()
                 {
-                    let levels = api.levels(&layout);
+                    let mut levels = api.levels(&layout);
                     remote::set_levels(&levels);
                     if keep_history(&app) {
                         levels_log.feed(&levels);
                     }
+                    mic_tune::sample(&api, &layout, &mut levels);
                     let _ = app.emit("vm-levels", levels);
                 } else if levels_log.due() && keep_history(&app) {
                     // Hidden in the tray: read the meters once a second, just for the history.
@@ -1328,10 +1513,101 @@ fn sound_play(app: AppHandle, name: String) -> Result<(), String> {
 
 /// Hear-yourself test: Voicemeeter's virtual outputs that can be recorded.
 #[tauri::command]
+async fn output_fallback_status(app: AppHandle, bus: usize) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || devwatch::fallback_status(&app, bus))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn selftest_inputs() -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(selftest::inputs)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn guided_audio_test(
+    source: String,
+    stream: String,
+    monitor: String,
+    kind: String,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        selftest::guided(&source, &stream, &monitor, &kind)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn mix_monitor_start(
+    app: AppHandle,
+    window: tauri::WebviewWindow,
+    input: String,
+    output: String,
+    cue: Option<bool>,
+) -> Result<(), String> {
+    let owner = window.label().to_owned();
+    tauri::async_runtime::spawn_blocking(move || {
+        if cue.is_some() {
+            obs::check_cue_output(&app, &output)?;
+        }
+        selftest::live_start(app, owner, input, output, cue)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn mix_monitor_stop(window: tauri::WebviewWindow) -> Result<(), String> {
+    let owner = window.label().to_owned();
+    tauri::async_runtime::spawn_blocking(move || selftest::live_stop(Some(&owner)))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn mic_take_record(app: AppHandle, id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || micfx::record_take(&app, &id))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn mic_take_play(output: String, processed: bool) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || micfx::play_take(&output, processed))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn mic_take_clear() {
+    micfx::clear_take();
+}
+
+#[tauri::command]
+async fn mic_preset_export(app: AppHandle, id: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || micpreset::export(&app, &id))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn mic_preset_preview(app: AppHandle, id: String) -> Result<Option<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || micpreset::preview(&app, &id))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn mic_preset_apply(app: AppHandle, id: String) -> Result<Value, String> {
+    micpreset::apply(&app, &id)
+}
+
+#[tauri::command]
+fn mic_preset_clear() {
+    micpreset::clear();
 }
 
 /// Record a few seconds of `input`, then play it on `output`.
@@ -1434,6 +1710,13 @@ fn streamdeck_install() -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn streamdeck_profile_save() -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(streamdeck::save_plus_profile)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 fn streamdeck_get_app() -> Result<(), String> {
     streamdeck::open_app_page()
 }
@@ -1452,7 +1735,218 @@ fn obs_status() -> Value {
     obs::status()
 }
 
+#[tauri::command]
+async fn obs_audio_check(app: AppHandle) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || obs::audio_check(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn chat_balance_set(
+    app: AppHandle,
+    selection: chat_balance::Selection,
+    position: i32,
+    use_main: Option<bool>,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        chat_balance::change(
+            &app,
+            Some(selection),
+            position,
+            false,
+            use_main.unwrap_or(false),
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn chat_balance_status(app: AppHandle) -> Value {
+    chat_balance::status(&app)
+}
+
 /// Whether Windows' default sound output is one of Voicemeeter's inputs.
+/// The go-live check (golive.rs).
+#[tauri::command]
+async fn golive_check(app: AppHandle) -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || golive::run(&app))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Instant replay: save the last seconds now. Returns the file's path.
+#[tauri::command]
+async fn replay_save(app: AppHandle) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || replay::save(&app))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn micfx_status() -> Value {
+    micfx::status()
+}
+
+#[tauri::command]
+fn vst_recover(id: String, bypass: bool) -> Result<(), String> {
+    pluginhost::recover_plugin(&id, bypass)
+}
+
+/// Hold to compare: a mic's chain bypassed (same delay) while `on`.
+#[tauri::command]
+fn micfx_compare(app: AppHandle, id: String, on: bool) {
+    micfx::compare(&app, &id, on);
+}
+
+/// Hear a mic on A1 while setting it up; returns whether it's on now.
+#[tauri::command]
+fn micfx_listen(app: AppHandle, id: String, on: bool) -> Result<bool, String> {
+    micfx::listen(&app, &id, on)
+}
+
+/// Switch a mic's chain off or back on, as a shortcut would ("" = every mic).
+#[tauri::command]
+fn micfx_toggle(app: AppHandle, target: String) -> Result<bool, String> {
+    micfx::toggle(&app, &target)
+}
+
+/// Every VST3 effect in the usual folders, for Settings → Mic clean-up → Add a plugin.
+#[tauri::command]
+async fn vst_scan() -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(pluginhost::scan)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Pick a .vst3 file anywhere; its effects, or nothing if the dialog was cancelled.
+#[tauri::command]
+async fn vst_browse() -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(|| match files::pick_vst3() {
+        Some(p) => {
+            let v = pluginhost::describe(p)?;
+            if v.is_empty() {
+                Err("That plugin has no audio effects (instruments can't go on a mic)".into())
+            } else {
+                Ok(v)
+            }
+        }
+        None => Ok(Vec::new()),
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn vst_editor(id: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || pluginhost::open_editor(id))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// The plugin with this id, from any mic's chain.
+fn plugin_entry(s: &Value, id: &str) -> Option<Value> {
+    micfx::chains_json(&s["micFx"])
+        .iter()
+        .flat_map(|c| c["plugins"].as_array().cloned().unwrap_or_default())
+        .find(|p| p["id"] == id)
+}
+
+/// Save a plugin's current settings as a named preset (for any plugin of the same kind).
+/// Returns every preset.
+#[tauri::command]
+async fn vst_preset_save(app: AppHandle, id: String, name: String) -> Result<Value, String> {
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err("Give the preset a name".into());
+    }
+    let cid = {
+        let s = app.state::<Settings>();
+        let s = s.0.lock().unwrap();
+        plugin_entry(&s, &id)
+            .and_then(|p| p["cid"].as_str().map(str::to_string))
+            .ok_or("That plugin isn't on a mic any more")?
+    };
+    let st = tauri::async_runtime::spawn_blocking(move || pluginhost::get_state(id))
+        .await
+        .map_err(|e| e.to_string())??;
+    let s = app.state::<Settings>();
+    let mut s = s.0.lock().unwrap();
+    if !s["vstPresets"].is_array() {
+        s["vstPresets"] = json!([]);
+    }
+    let list = s["vstPresets"].as_array_mut().unwrap();
+    list.retain(|p| !(p["cid"] == cid.as_str() && p["name"] == name.as_str()));
+    list.push(json!({ "name": name, "cid": cid, "c": st["c"], "e": st["e"] }));
+    let out = s["vstPresets"].clone();
+    app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
+    log_info!("Plugins: saved a preset");
+    Ok(out)
+}
+
+/// Give a plugin a saved preset.
+#[tauri::command]
+async fn vst_preset_apply(app: AppHandle, id: String, name: String) -> Result<(), String> {
+    let (c, e) = {
+        let s = app.state::<Settings>();
+        let s = s.0.lock().unwrap();
+        let cid = plugin_entry(&s, &id)
+            .and_then(|p| p["cid"].as_str().map(str::to_string))
+            .ok_or("That plugin isn't on a mic any more")?;
+        let p = s["vstPresets"]
+            .as_array()
+            .and_then(|a| {
+                a.iter()
+                    .find(|p| p["cid"] == cid.as_str() && p["name"] == name.as_str())
+                    .cloned()
+            })
+            .ok_or("That preset no longer exists")?;
+        (
+            p["c"].as_str().unwrap_or("").to_string(),
+            p["e"].as_str().unwrap_or("").to_string(),
+        )
+    };
+    tauri::async_runtime::spawn_blocking(move || pluginhost::set_state(id, c, e))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Delete a preset. Returns every preset left.
+#[tauri::command]
+fn vst_preset_delete(app: AppHandle, cid: String, name: String) -> Value {
+    let s = app.state::<Settings>();
+    let mut s = s.0.lock().unwrap();
+    if let Some(list) = s["vstPresets"].as_array_mut() {
+        list.retain(|p| !(p["cid"] == cid.as_str() && p["name"] == name.as_str()));
+    }
+    app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
+    s["vstPresets"].clone()
+}
+
+#[tauri::command]
+fn replay_status() -> Value {
+    replay::status()
+}
+
+#[tauri::command]
+async fn replay_devices() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(replay::devices)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn replay_open_folder() -> Result<(), String> {
+    replay::open_folder()
+}
+
+/// Music off stream on or off by hand, until OBS next starts or stops.
+#[tauri::command]
+fn music_guard_toggle(app: AppHandle) -> Result<bool, String> {
+    watch::toggle_guard(&app)
+}
+
 #[tauri::command]
 async fn windows_output(app: AppHandle) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || winout::status(&app))
@@ -1536,7 +2030,14 @@ async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
     let Some(path) = picked else { return Ok(None) };
     let mut value = app.state::<Settings>().0.lock().unwrap().clone();
     if let Value::Object(m) = &mut value {
-        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "seenVersion", "edition"] {
+        for k in [
+            "window",
+            "panelPos",
+            "mixWin",
+            "mixWinOpen",
+            "seenVersion",
+            "edition",
+        ] {
             m.remove(k);
         }
     }
@@ -1581,7 +2082,14 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
     {
         let state = app.state::<Settings>();
         let cur = state.0.lock().unwrap();
-        for k in ["window", "panelPos", "mixWin", "mixWinOpen", "seenVersion", "edition"] {
+        for k in [
+            "window",
+            "panelPos",
+            "mixWin",
+            "mixWinOpen",
+            "seenVersion",
+            "edition",
+        ] {
             value[k] = cur[k].clone();
         }
         // Backups don't carry the OBS password: keep the one this PC has.
@@ -1878,6 +2386,13 @@ fn window_fit(
 
 fn main() {
     logs::init(&settings::app_dir());
+    // The plugin host: a second copy that runs VST3 plugins for the first (pluginhost.rs).
+    // It starts no window, tray or single-instance check.
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(i) = args.iter().position(|a| a == "--plugin-host") {
+        let parent = args.get(i + 1).and_then(|p| p.parse().ok()).unwrap_or(0);
+        pluginhost::child_main(parent);
+    }
     log_info!(
         "Sleekmeeter {} starting ({}){}",
         env!("CARGO_PKG_VERSION"),
@@ -1968,11 +2483,18 @@ fn main() {
             vm_snapshot,
             vm_set_float,
             vm_get_floats,
+            audio_events_list,
+            audio_events_clear,
+            mic_tune_meter,
+            mic_tune_change,
+            mic_tune_finish,
             vm_glide,
+            vm_route_mute,
             app_info,
             open_logs,
             streamdeck_status,
             streamdeck_install,
+            streamdeck_profile_save,
             streamdeck_get_app,
             ui_log,
             recorder_cmd,
@@ -1984,6 +2506,7 @@ fn main() {
             app_volumes,
             app_volume_set,
             app_route_devices,
+            app_route_defaults,
             app_route_set,
             vm_launch,
             vm_devices,
@@ -1991,9 +2514,11 @@ fn main() {
             scene_list,
             scene_save,
             scene_load,
+            scene_preview,
             scene_delete,
             settings_get,
             settings_set,
+            mix_preference_set,
             window_mini,
             open_mixer,
             mix_window,
@@ -2007,7 +2532,18 @@ fn main() {
             sound_play,
             sound_stop,
             selftest_inputs,
+            output_fallback_status,
             selftest_run,
+            guided_audio_test,
+            mix_monitor_start,
+            mix_monitor_stop,
+            mic_take_record,
+            mic_take_play,
+            mic_take_clear,
+            mic_preset_export,
+            mic_preset_preview,
+            mic_preset_apply,
+            mic_preset_clear,
             sound_pick,
             sound_pick_folder,
             sound_pick_pack,
@@ -2022,7 +2558,27 @@ fn main() {
             running_apps,
             brb_toggle,
             obs_status,
+            obs_audio_check,
+            chat_balance_set,
+            chat_balance_status,
             health_check,
+            golive_check,
+            replay_save,
+            replay_status,
+            micfx_status,
+            vst_recover,
+            vst_scan,
+            vst_browse,
+            vst_editor,
+            micfx_compare,
+            micfx_listen,
+            micfx_toggle,
+            vst_preset_save,
+            vst_preset_apply,
+            vst_preset_delete,
+            replay_devices,
+            replay_open_folder,
+            music_guard_toggle,
             backups_list,
             backup_restore,
             backup_before,
@@ -2146,6 +2702,8 @@ fn main() {
                 obs::spawn(handle.clone());
                 twitch::spawn(handle.clone());
                 remote::spawn(handle.clone());
+                replay::spawn(handle.clone());
+                micfx::spawn(handle.clone());
                 winout::spawn(handle.clone());
                 usage::spawn(handle.clone());
                 routing::spawn(handle.clone());
@@ -2158,6 +2716,7 @@ fn main() {
             // Closing the window keeps Sleekmeeter in the tray; quit from the tray menu.
             // The output mix window really closes (Alt+F4 too), and stays closed next time.
             WindowEvent::CloseRequested { .. } if window.label() == MIXWIN => {
+                selftest::live_stop(Some(MIXWIN));
                 set_mix_window_open(window.app_handle(), false);
             }
             WindowEvent::Resized(_) | WindowEvent::Moved(_) if window.label() == MIXWIN => {
@@ -2166,6 +2725,13 @@ fn main() {
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 if window.label() == "main" {
+                    mic_tune::stop_meter();
+                    let _ = mic_tune::finish(window.app_handle(), false, true);
+                    selftest::live_stop(Some("main"));
+                    let _ = window.emit(
+                        "mix-monitor-ended",
+                        "Monitoring stopped when the window closed.",
+                    );
                     remember_window(window);
                 }
                 let _ = window.hide();
@@ -2193,8 +2759,12 @@ fn main() {
     app.run(move |_handle, event| {
         if let RunEvent::Exit = event {
             log_info!("Sleekmeeter quitting");
+            let _ = mic_tune::finish(_handle, false, true);
+            selftest::live_stop(None);
             // Ducked or fading channels go straight back to their own level.
             fades::release(_handle, api.as_deref());
+            // Give Voicemeeter's audio insert back before logging out.
+            micfx::shutdown(_handle, api.as_deref());
             if let Some(a) = &api {
                 a.logout();
             }

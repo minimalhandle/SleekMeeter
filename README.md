@@ -2,7 +2,7 @@
 
 A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on top of Voicemeeter and controls it through the official Voicemeeter Remote API — Voicemeeter keeps doing the audio, Sleekmeeter is just a nicer mixer to look at and use.
 
-![Sleekmeeter’s Glass theme: frosted channel cards, colourful lighting and capsule faders](docs/screenshots/theme-glass.png)
+![Sleekmeeter Glass with translucent cards, pearl faders, and aurora lighting](docs/screenshots/theme-glass.webp)
 
 **Mini mode and the tray volume panel:** one slim row per channel, with a meter, a fader and a mute button. Double-click the tray icon to open it right above the tray.
 
@@ -59,52 +59,47 @@ If Voicemeeter isn't running, Sleekmeeter offers to start it. Closing the window
 | Focus a fader, then ↑ ↓ / PgUp PgDn / 0 | Keyboard control |
 | Click **A1–A3 / B1–B2** on an input | Route it to that output |
 | Double-click a name (or F2) | Rename the strip or bus in Voicemeeter |
-| Click a strip's icon | Open its panel: color, icon, hide, device, pan, compressor, gate, EQ (virtual inputs) or bus mode (outputs) |
+| Click a strip's icon | Open its Routing, Sound, Apps or Appearance settings |
 | **Scenes** | Save or recall your whole Voicemeeter setup |
-| Cup button | Be right back (it widens to **Back live** while you're away) |
-| Record button (red dot) | Open Voicemeeter's recorder (Banana and Potato); shows the clock while recording |
-| Note button | Sounds: play clips into your mix |
+| **Stream** menu | Go-live check, Be right back, Recorder (Banana and Potato), Soundboard and configured stream tools |
 | Pin button | Keep Sleekmeeter on top of other windows |
 | Mini mode button | Switch to a small window with one row per channel |
-| Gear button | Settings: themes, fades, talk-over ducking, audio devices, startup, volume overlay, updates and global shortcuts |
-| **⋯** menu | Grouped audio tools and appearance options; a checkmark shows Simple mode is on. Navigate with ↑/↓ or Home/End, activate with Enter and close with Escape |
+| Gear button | Searchable Settings, with categories for appearance, mixing, microphones, streaming, remote controls and system options |
+| **⋯** menu | Grouped audio tools and appearance options, including Focused mixer |
+| **Ctrl+K** | Open Quick Actions and search for a channel, scene, output profile, tool or setting |
 
-The cup, record and note buttons are for streamers. Turn off **Settings → Streamer mode** to hide them; their shortcuts keep working.
+Use **Pin** beside an action in the Stream menu to put it on the toolbar. Live, recording, and BRB indicators give you shortcuts to their controls. Click the Voicemeeter status indicator to open **Check my setup**. **Settings → Streaming → Streamer mode** controls whether the Stream menu and pins appear.
+
+**⋯ → Audio Event History** shows playback device changes, output fallbacks, app route recovery and VST3 quarantine. Filter the timeline and select an event to open the relevant controls. The latest 200 events are stored locally and can be cleared from the timeline.
+
+Settings search looks across all categories. On narrow windows, categories move into a grid above the settings. For a clean install, Sleekmeeter opens in the foreground, offers to start Voicemeeter if needed and uses Subtle theme motion. Level history and talking-while-muted alerts are opt-in. Existing settings keep their previous choices.
 
 Channels use a consistent width to keep the mixer tidy, and the input and output sections stay centred in the window. Long names are shortened with an ellipsis; hover over a name to read it in full. Click the dB readout under a fader to type an exact level.
 
 ### Themes
 
-All **15 themes** shown below are included in the [current release](https://github.com/minimalhandle/SleekMeeter/releases/latest). Pick one in **Settings → Appearance → Show all 15 themes**. They change the shapes and materials as well as the colours.
-
-The available themes are: **Console** (the dark hardware desk, the default), **OLED black** (everything that isn't information turns true black), **Glass** (frosted translucent cards over a soft glow, faders as capsules filled with the channel's colour), **Neon** (a dark synth night with glowing outlines and flat light-bar caps), **Terminal** (green phosphor, monospace type, square corners and [bracketed] keys), **Bubblegum** (pink and sparkly, with heart-capped candy faders and cute emoji icons for each channel), **Blueprint** (white lines on drafting-paper blue, with tick-mark faders), **Block** (bold and flat, with thick outlines and hard shadows), **Arcade** (an 8-bit cabinet with pixel-stepped corners and chunky blocks), **Peaches & Cream** (girly pink, with peach-capped faders, heart-shaped meters, scalloped cards and a lavender "Sleepy" button instead of Mute) and **Sticker Bomb** (tilted die-cut stickers on notebook paper, with starburst fader caps that keep their cut-out outline while dragged). The current selection also includes **Afterburner** (graphite panels, orange LEDs and faceted metal faders), **Lunar** (satin aluminium, violet keys and circular fader pucks), **Onyx** (dark mix bays, electric blue and sculpted faders) and **Opal** (pearlescent white, mist and lilac, with satin slide controls). The window buttons, the tray panel and the volume overlay follow the theme too.
-
+Choose from twelve themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 12 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** offers Off, Subtle, or Full for Glass, Hadal, Kokiri Forest, Neon, and Arcade. Windows reduced motion takes priority.
 
 <table>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-afterburner.png" alt="Afterburner: graphite panels and orange meters" width="260" height="161"><br><sub><b>Afterburner</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-lunar.png" alt="Lunar: satin aluminium and violet circular faders" width="260" height="161"><br><sub><b>Lunar</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-onyx.png" alt="Onyx: dark mix bays with electric-blue details" width="260" height="161"><br><sub><b>Onyx</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/console.webp" alt="The Console theme" width="260"><br><sub><b>Console</b> (default)</sub></td>
+<td align="center" valign="top"><img src="site/img/themes/oled.webp" alt="The OLED black theme" width="260"><br><sub><b>OLED black</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with translucent panels and pearl faders" width="260"><br><sub><b>Glass</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-opal.png" alt="Opal: pearlescent white and lilac satin faders" width="260" height="161"><br><sub><b>Opal</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-glass.png" alt="The Glass theme" width="260" height="161"><br><sub><b>Glass</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/mixer.png" alt="The Console theme" width="260" height="161"><br><sub><b>Console</b> (default)</sub></td>
+<td align="center" valign="top"><img src="site/img/themes/hadal.webp" alt="Hadal with deep blue panels and cyan faders" width="260"><br><sub><b>Hadal</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/hyrule.webp" alt="Kokiri Forest with green and gold panels and shield faders" width="260"><br><sub><b>Kokiri Forest</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/neon.webp" alt="The Neon theme" width="260"><br><sub><b>Neon</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-neon.png" alt="The Neon theme" width="260" height="161"><br><sub><b>Neon</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-bubblegum.png" alt="The Bubblegum theme" width="260" height="161"><br><sub><b>Bubblegum</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-blueprint.png" alt="The Blueprint theme" width="260" height="161"><br><sub><b>Blueprint</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/arcade.webp" alt="The Arcade theme" width="260"><br><sub><b>Arcade</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/block.webp" alt="The Block theme" width="260"><br><sub><b>Block</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="docs/screenshots/theme-block.png" alt="The Block theme" width="260" height="161"><br><sub><b>Block</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-arcade.png" alt="The Arcade theme" width="260" height="161"><br><sub><b>Arcade</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-terminal.png" alt="The Terminal theme" width="260" height="161"><br><sub><b>Terminal</b></sub></td>
-</tr>
-<tr>
-<td align="center" valign="top"><img src="docs/screenshots/oled.png" alt="The OLED black theme" width="260" height="161"><br><sub><b>OLED black</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-peach.png" alt="The Peaches &amp; Cream theme" width="260" height="161"><br><sub><b>Peaches &amp; Cream</b></sub></td>
-<td align="center" valign="top"><img src="docs/screenshots/theme-sticker.png" alt="The Sticker Bomb theme" width="260" height="161"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/sticker.webp" alt="The Sticker Bomb theme" width="260"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/bubblegum.webp" alt="The Bubblegum theme" width="260"><br><sub><b>Bubblegum</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/peach.webp" alt="The Peaches &amp; Cream theme" width="260"><br><sub><b>Peaches &amp; Cream</b></sub></td>
 </tr>
 </table>
 
@@ -112,7 +107,7 @@ Meters show post-fader levels on the same scale as the fader, so you can see sig
 
 ### Rearranging channels
 
-Drag the top of any channel (its icon and name area) left or right to move it, so you can put Desktop at the end and Aux before it, or keep the channels you use most together. Inputs and outputs are ordered separately, and mini mode follows the same order. **⋯ → Reset channel order** puts everything back as Voicemeeter has it. Turn on **Settings → Channel arrangement → Lock channel arrangement** to prevent accidental reordering; faders and buttons keep working.
+Drag the top of any channel (its icon and name area) left or right to move it, so you can put Desktop at the end and Aux before it, or keep the channels you use most together. Inputs and outputs are ordered separately, and mini mode follows the same order. **⋯ → Reset channel order** puts everything back as Voicemeeter has it. Turn on **Settings → Appearance & layout → Channel arrangement → Lock channel arrangement** to prevent accidental reordering; faders and buttons keep working.
 
 Click a channel's name to hide or show the device line under it (for example "CABLE-A Output"). Double-click the name to rename it.
 
@@ -122,13 +117,29 @@ Voicemeeter Potato can give every input its own level on each output (its "gain 
 
 ### Smooth fades
 
-Mute fades out before it mutes, and unmute fades back in, so nothing clicks or jumps. Typed levels, double-click to 0 dB, volume shortcuts and scene changes glide too. Set the mute and scene fade times in **Settings → Smooth fades**, or turn fades off there. Dragging a fader is always direct.
+Use **Undo mixer change** in the toolbar or **Ctrl+Z** to reverse recent mixer fader, mute, and routing edits made in that window. A linked fader move or drag counts as one change. Undo skips an action if its affected controls have since changed.
+
+In **Settings → Mixer & devices → Linked fader groups**, add a group and choose its channels. Main faders in a group move by the same dB until one reaches its limit. Per-output input mixes are independent. Hold **Alt** when you start dragging or when using the wheel or fader keys to adjust just one member.
+
+Open **Game / Chat** beside the mixer inputs or in Potato's **Mix** window. Choose separate inputs and use **Set up game and chat apps** to assign the Windows apps and verify their playback paths. On Potato, send both inputs to the selected hardware listening output in Normal mode. The slider changes only that output's gain layers and shows the levels Voicemeeter reports. Standard and Banana use the main input faders, which affect all routes. The end stops put the opposite fader at minimum. **Restore centre** keeps independent fader edits and remembers the centre across restarts. On Potato, **Copy main levels to listening output** can recover levels left low by an older build. Save the assignments to use the optional pinned slider and shortcuts in **Controls & remote**.
+
+Use **Listen to a mix** from **Outputs** or the Potato **Mix** window to hear a virtual output live. Pick a separate physical playback device. Monitoring plays at reduced volume, leaves your routes alone and stops when you close the monitor.
+
+To mute an input on some outputs only, right-click its **Mute** (in the mixer or the tray panel) and pick the outputs, for example **Mute on B1** to mute your mic in Discord while your stream still hears you. The Mute button gets a red outline listing those outputs, and unmuting turns back on exactly the ones it turned off. On Potato it fades the input's level on that output first (with the mute fade time), and that level comes back as it was; on Standard and Banana the switch is instant.
+
+To make one of those destinations the normal left-click action, open the input’s **Routing → Mute button destination** and choose Everyone, Audience, Headphones, or Voice chat. For Voice chat, select its virtual output.
+
+Use **Cue in headphones** from the input’s **Sound** tab to hear the input before its fader and effects. Cue uses the Windows endpoint and plays to a physical device without changing the Voicemeeter sends. Select headphones outside your streaming app’s desktop capture. **Listen to a mix** has Personal and Stream buttons. For an isolated comparison, select a separate playback device and use the personal output’s recording mirror if available.
+
+**Settings → Streaming → OBS Studio → Check audio tracks** reads the current OBS profile and shows which audio sources share the live, VOD and recording tracks. It flags overlapping capture paths for review.
+
+Mute fades out before it mutes, and unmute fades back in, so nothing clicks or jumps. Typed levels, double-click to 0 dB, volume shortcuts and scene changes glide too. Set the mute and scene fade times in **Settings → Mixer & devices → Smooth fades**, or turn fades off there. Dragging a fader is always direct.
 
 A scene fades its levels first and then loads everything else (routing, devices, EQ). Scenes saved before 0.6 load straight away the first time; after that they fade as well.
 
 ### Talk-over ducking
 
-Turn other audio down while you talk, like a radio DJ. In **Settings → Talk-over ducking**, pick the channel that talks (usually your mic), the channels to turn down (music, game, desktop audio) and by how much. Under **Or when these talk** you can add more channels, such as Discord, so the game also turns down when a friend speaks. The **Starts at** slider lights up with your voice; put the knob just under your speaking level. When you stop talking, the channels fade back after the **Back after** time.
+Turn other audio down while you talk, like a radio DJ. In **Settings → Mixer & devices → Talk-over ducking**, pick the channel that talks (usually your mic), the channels to turn down (music, game, desktop audio) and by how much. Under **Or when these talk** you can add more channels, such as Discord, so the game also turns down when a friend speaks. The **Starts at** slider lights up with your voice; put the knob just under your speaking level. When you stop talking, the channels fade back after the **Back after** time.
 
 A ducked channel shows **Ducking** on its meter. Its fader stays at your level, so you can still move it while ducked, and moving it anywhere else (Voicemeeter's own window, a MIDI controller) takes it out of ducking. You can also add a shortcut that turns ducking on or off.
 
@@ -138,17 +149,23 @@ On Banana and Potato, the record button (red dot) in the header opens Voicemeete
 
 ### Devices that come back
 
-Unplug USB headphones or let Bluetooth disconnect, and Voicemeeter often stays silent on that device after it comes back until you restart its audio engine. Sleekmeeter watches the devices Voicemeeter uses. When one of them comes back, it waits a couple of seconds for Windows to set it up, restarts the engine for you and shows a short message. Turn this off in **Settings → Audio devices**.
+Unplug USB headphones or let Bluetooth disconnect, and Voicemeeter often stays silent on that device after it comes back until you restart its audio engine. Sleekmeeter watches the devices Voicemeeter uses. When one of them comes back, it waits a couple of seconds for Windows to set it up, restarts the engine for you and shows a short message. Turn this off in **Settings → Mixer & devices → Audio devices**.
 
 ### Fix my audio
 
-Plug devices in, especially in a different order, and Windows may start playing sound straight to one of them instead of to Voicemeeter. Apps then skip the mixer and its channels go quiet. Sleekmeeter notices when Windows' sound output isn't one of Voicemeeter's inputs and shows a red **Fix my audio** button in the header and in **Check my setup**. One click switches Windows back to the Voicemeeter input it was using and restarts the audio engine. Turn on **Settings → Keep Windows sound on Voicemeeter** to have this happen by itself. Windows' device for calls is checked and switched too, so apps like Discord also go through the mixer.
+Plug devices in, especially in a different order, and Windows may start playing sound straight to one of them instead of to Voicemeeter. Apps then skip the mixer and its channels go quiet. Sleekmeeter notices when Windows' sound output isn't one of Voicemeeter's inputs and shows a red **Fix my audio** button in the header and in **Check my setup**. One click switches Windows back to the Voicemeeter input it was using and restarts the audio engine. Turn on **Settings → Mixer & devices → Audio devices → Keep Windows sound on Voicemeeter** to have this happen by itself. Windows' device for calls is checked and switched too, so apps like Discord also go through the mixer.
 
 ### Privacy and the user count
 
-Sleekmeeter asks once whether you'd like to be counted as a user. If you say yes, it sends sleekmeeter.app one small message a day: a random ID made on your PC, the Sleekmeeter version and your Voicemeeter edition (Standard, Banana or Potato). That's all: no names, devices, settings, audio or anything about your PC. The server keeps one line per ID per day, doesn't store IP addresses, and deletes lines after 400 days. Turn it on or off any time in **Settings → Privacy**; turning it off deletes the ID. The totals are public at [sleekmeeter.app/api/stats](https://sleekmeeter.app/api/stats), and the server code is in [`server/usage`](server/usage).
+Sleekmeeter asks once whether you'd like to be counted as a user. If you say yes, it sends sleekmeeter.app one small message a day: a random ID made on your PC, the Sleekmeeter version and your Voicemeeter edition (Standard, Banana or Potato). That's all: no names, devices, settings, audio or anything about your PC. The server keeps one line per ID per day, doesn't store IP addresses, and deletes lines after 400 days. Turn it on or off any time in **Settings → System & backup → Privacy**; turning it off deletes the ID. The totals are public at [sleekmeeter.app/api/stats](https://sleekmeeter.app/api/stats), and the server code is in [`server/usage`](server/usage).
 
 ### Output profiles
+
+Open **Outputs → Device fallback chains** to rank WDM, KS, or MME playback devices for a hardware output. The chain switches to its first available device and returns to higher-priority devices after they settle. Choosing a device outside the list suspends the chain for that output.
+
+**Outputs → Current devices** shows what each hardware bus uses and the reason for its fallback selection. **Fallbacks…** opens the policy for that bus.
+
+Copy a policy to give another output its own list, or link it to share future changes. Unlinking keeps a copy. The editor shows the preferred available device and why the output is using it or waiting to switch.
 
 Switching between headphones and speakers usually means picking the device on each output by hand. In **Outputs** (header), name the devices your outputs are using now, like *Headphones* or *Speakers*, and click a setup to switch to it. Only the output devices change; levels, routing and the rest stay as they are. Turn on **Auto** for a setup and Sleekmeeter switches to it when one of its devices connects, then restarts the audio engine so the device is picked up. Shortcuts can switch to a chosen setup or step to the next one.
 
@@ -156,33 +173,92 @@ Switching between headphones and speakers usually means picking the device on ea
 
 ### Push to talk and push to mute
 
-In **Settings → Shortcuts**, set an action to **Push to talk (hold)** or **Push to mute (hold)**. These act only while you hold the keys. With push to talk, the mic starts out muted, opens when you press the keys and closes shortly after you let go; **Mic stays open** sets that delay so the end of a word isn't cut off. Push to mute does the opposite, and a channel you had already muted stays muted. If you remove a push-to-talk shortcut, unmute the mic yourself once.
+In **Settings → Controls & remote → Shortcuts**, set an action to **Push to talk (hold)** or **Push to mute (hold)**. These act only while you hold the keys. With push to talk, the mic starts out muted, opens when you press the keys and closes shortly after you let go; **Mic stays open** sets that delay so the end of a word isn't cut off. Push to mute does the opposite, and a channel you had already muted stays muted. If you remove a push-to-talk shortcut, unmute the mic yourself once.
 
 ### App volumes
 
-**Apps** (header) lists the programs that are playing sound with a volume slider and a mute button each, like Windows' own volume mixer. It turns an app down before Voicemeeter hears it, which is handy for Discord, a browser or a game that has no volume control of its own. A green dot means the app is playing right now. Double-click a slider to put it back to 100%.
+**Apps → Volumes** lists programs with Windows audio sessions. A green dot means the app is playing right now. Double-click a slider to put it back to 100%.
 
 **Send an app to another output.** The box on the right of each app chooses which playback device it plays to, for example Discord into a Voicemeeter virtual input, the same setting as Windows' *App volume and device preferences*. This one is new and uses an internal Windows feature, so if your version of Windows doesn't accept it you'll see a message instead and nothing changes.
 
 ### Apps tray: drag an app onto a channel
 
-Click **Apps** in the top bar to open the apps tray along the bottom. Every program that's making sound appears there as a chip. Drag one onto a channel and that app plays through that channel from then on, so you get a fader, routing and mute for it. A small badge in the channel's top corner shows its app count. Hover the header to see the names, or click the badge to keep the list open. Click outside, click the badge again or press Escape to close it. Each app has a small **×** button to return it to the Windows default; clicking the app name does nothing. You can also drag the app back onto the tray. Sleekmeeter remembers where each program goes, even when it isn't running. **Volumes…** opens the per-app volume list.
+Select **Apps → Volumes → Show apps tray** to open the tray along the bottom. Drag an app chip onto a channel to play that app through its fader. A small stack icon marks routed apps, or a green rupee in Kokiri Forest. Hover over the input to see its apps, or click the icon to keep the list open. The channel’s **Apps** tab also lists its assignments. Use **×** in the popover, **Remove** in the drawer, or drag the chip back to the tray to restore the Windows default. **Volumes…** on the tray reopens the Apps workspace.
 
 Which channels accept apps: Voicemeeter's own virtual inputs (VAIO, AUX and, on Potato, VAIO3), and any hardware input that listens to a virtual cable such as VB-Cable. For a cable channel Sleekmeeter sends the app to the other end of that cable (CABLE-A Input for a channel listening to CABLE-A Output). You hear it the usual way: with the channel's A1 (or A2…) button on. Channels with a real microphone or other hardware, and outputs, can't take apps.
+
+In **Apps → Audio Flow → Audio route inspector**, choose an app to trace its Windows playback device, Voicemeeter input, and enabled outputs. The trace flags mute, minimum levels, missing devices, and inputs without enabled routes.
+
+**Audio Flow** shows those paths together. Select an app, input, or output to highlight its connections. Dotted lines mark estimated or interrupted routes. **Apps → Saved assignments** accepts an executable name or a browsed `.exe`. The assignment takes effect when the app opens a Windows audio session.
+
+Open **Guided audio test** there to play distinct tones through your game and chat inputs, or send a tone through an input and hear the recording from your stream bus. Choose a physical playback device for stream and mic playback. The mic comparison captures the same four-second take before and after an active Sleekmeeter chain, matches the playback levels, and keeps the take in memory while the test is open.
+
+In **Scenes**, choose a saved scene to preview differences in levels, mutes, routing, and mic-chain controls before pressing **Apply scene**. Older scenes may only have level data. Save them again to capture routing for future previews.
 
 Some programs only move when their sound restarts, so pause and play once if one doesn't switch straight away. Windows has no public setting for this, so Sleekmeeter uses the same call Windows' own "App volume and device preferences" page uses, run in a separate helper so a problem can't crash Sleekmeeter.
 
 ### Stream mode: Be right back
 
-The cup button in the header (**Be right back**) does your whole "be right back" in one press, with fades: it mutes the channels you pick (your mic), turns others down (the game), and brings up a channel to play (music). Press it again (**Back live**) and everything returns exactly as it was. Choose what it does in **Settings → Stream mode: Be right back**. A shortcut can do it too (**Be right back on or off**), and so can an OBS scene.
+**Stream → Be right back** fades the channels you pick, such as muting your mic and turning down your game. Use **Back live** or click **BRB** in the header to restore the mix. Configure it in **Settings → Streaming → Stream mode: Be right back**. A shortcut or an OBS scene can toggle it too.
 
 ### OBS Studio
 
-In **Settings → OBS Studio**, connect Sleekmeeter to OBS (in OBS turn on **Tools → WebSocket Server Settings → Enable WebSocket server**; add the password there if you set one). Then you can pick what happens when OBS switches to a scene, like loading a Voicemeeter scene, or starting or ending Be right back when you switch to your BRB scene. You can also choose what happens when you go live and when the stream ends, and a red **LIVE** tag shows in the header while OBS is streaming. Twitch streams are covered because OBS tells Sleekmeeter when it goes live. Sleekmeeter only listens; it never changes anything in OBS. This needs OBS Studio 28 or newer.
+In **Settings → Streaming → OBS Studio**, connect Sleekmeeter to OBS (in OBS turn on **Tools → WebSocket Server Settings → Enable WebSocket server**; add the password there if you set one). Then you can pick what happens when OBS switches to a scene, like loading a Voicemeeter scene, or starting or ending Be right back when you switch to your BRB scene. You can also choose what happens when you go live and when the stream ends, and a red **LIVE** tag shows in the header while OBS is streaming. Twitch streams are covered because OBS tells Sleekmeeter when it goes live. Sleekmeeter only listens; it never changes anything in OBS. This needs OBS Studio 28 or newer.
+
+### Going live
+
+**Settings → Streaming → Going live** has the things that catch stream mistakes before chat does. They all use the output your stream gets (**Stream gets**: B2 unless you change it).
+
+- **"You're muted":** talk into a muted mic and the overlay says so, even with Sleekmeeter in the tray, and the mic's strip flashes red. It stays quiet while Be right back is on and while a push-to-talk key is up (tick the box to be told then too). It's on by default. If it pops up when you're not talking, raise **Louder than**.
+- **Go-live check:** open it from **Stream** to check your mic, stream output, OBS link, Windows audio routing, Twitch chat, and Instant replay. The OBS link can also run it automatically when you start streaming.
+- **Silent stream warning:** a warning on the overlay when the stream output has had no sound for 5 to 60 seconds, and if you like when it clips. By default only while OBS says you're live.
+- **Music off stream:** keeps your music out of the stream (and your VODs) while you still hear it. Play your music app into one channel (drag it there under **Apps**), choose that channel, and choose when: while you're live, while OBS records, either, or only when you press its key. Sleekmeeter switches that channel's button for the stream output off (with a fade on Potato) and back on afterwards. The music key in the header, a shortcut, a Twitch command or the phone remote switches it by hand until OBS next starts or stops. Turning the button back on yourself also ends it.
+
+### Instant replay
+
+Turn on **Settings → Streaming → Instant replay** and Sleekmeeter keeps the last 15 to 120 seconds of your stream output in memory. Press the replay button in the header (or a shortcut, a Twitch command such as `!clip`, or the phone remote) and they're saved as a WAV file in **Music\Sleekmeeter replays**, for clipping a funny moment without OBS's replay buffer. Nothing is written to disk until you save, and nothing leaves your PC. It listens to the stream output through Windows (**Voicemeeter Out B2**); pick another of Voicemeeter's outputs under **Of**.
 
 ### Mic level
 
-**Settings → Mic level → Check my mic level** listens while you talk for 8 seconds and tells you whether your mic is too quiet, about right or too loud, and can set the fader for you. It aims to keep your voice peaking around −10 dB with room for a laugh or a jump scare. You can also turn on a warning when a channel goes over 0 dB, where audio distorts.
+**Settings → Microphone → Mic Chain & levels → Check my mic level** listens while you talk for 8 seconds and tells you whether your mic is too quiet, about right or too loud, and can set the fader for you. It aims to keep your voice peaking around −10 dB with room for a laugh or a jump scare. You can also turn on a warning when a channel goes over 0 dB, where audio distorts.
+
+**Guided tune-up** is inside **⋯ → Mic Chain**, also accessible from **Settings → Microphone → Mic Chain & levels**. It measures room tone, normal speech and a loud phrase using meter readings. Choose which suggestions to apply, or preview them for eight seconds. Preview changes are heard on the input’s existing routes, including stream sends. Sleekmeeter restores the previous values unless you keep the preview.
+
+### Mic clean-up (NVIDIA)
+
+With an NVIDIA RTX graphics card, **Settings → Microphone → Mic clean-up and plugins** removes background noise (keyboard, fans, the dog), room echo, or both from your mic using NVIDIA's AI on the graphics card. It's much stronger than Voicemeeter's own denoiser. Pick the mic (one of Voicemeeter's hardware inputs) and how strong it should be; Settings shows whether it's running and how much delay it adds (about 25 ms).
+
+It runs inside Voicemeeter, before the fader, gate and compressor, so every output gets the clean voice. Sleekmeeter does the work, so it only runs while Sleekmeeter is open; if Sleekmeeter closes, your mic carries on without it. It needs:
+
+- NVIDIA's free **Audio Effects SDK** runtime for your card, from NVIDIA's Maxine developer site. Sleekmeeter doesn't include or download it, and only loads it while mic clean-up is on (it uses some memory on the graphics card).
+- Voicemeeter running at 48 kHz (**Menu → System Settings → Preferred Main SampleRate**).
+- No other app using Voicemeeter's audio insert at the same time.
+
+**Speakers instead of headphones?** Tick **Remove my speakers from this mic** and pick the output your speakers are on (A1 unless you change it). NVIDIA's echo removal hears what the speakers play and takes it out of the mic, so your game and friends don't echo back to your stream or Discord. It can run with or without the noise removal.
+
+**More than one mic:** **+ Add a mic** gives another of Voicemeeter's hardware inputs its own clean-up and plugins, for example a guest mic. Each mic has its own tab; a green dot means it's running.
+
+**Hear the difference:** **Listen to this mic** sends the mic to A1 (usually your headphones) while you set it up, and switches A1 back off when you stop. Hold **Hold to hear it without** to hear the mic raw, with the same delay, and let go to hear the clean-up again.
+
+**Switch it from anywhere:** a shortcut, the **Mic clean-up** Stream Deck key, the phone remote or a Twitch command (**Mic clean-up on or off**) switches one mic's clean-up and plugins off and back on, or every mic at once. Scenes remember which mics have it on and how strong NVIDIA's clean-up is, so a podcast scene can use a lighter touch than a loud game.
+
+### VST3 plugins on your mic
+
+For a capture card or another stereo hardware source, add its input in **Settings → Microphone → Mic clean-up and plugins**, choose **Stereo hardware input**, then add a VST3 effect with stereo input and output. This mode keeps left and right separate. NVIDIA mic processing is available in the mono microphone mode.
+
+If the helper crashes during a tracked plugin load or audio call, Sleekmeeter bypasses the plugin involved and restarts the remaining chain. Quarantine is saved across restarts. Use the recovery panel in **Settings → Microphone → Mic clean-up and plugins** to bypass a plugin manually or retry a bypassed plugin.
+
+In **Portable chain preset**, export the selected mic's NVIDIA effect settings, ordered VST3 list and plugin state as JSON. On the destination PC, select the mic and preview the import. Sleekmeeter matches VST3 effects by identity against local installations, flags missing or quarantined plugins, and shows whether the NVIDIA runtime is installed before you apply the chain.
+
+**Settings → Microphone → Mic clean-up and plugins** can also run your own VST3 effects on the mic, like an EQ, a de-esser, a compressor or a limiter, with no separate plugin host and no ASIO insert setup. **Add a plugin…** lists the effects installed in the usual VST3 folders (`C:\Program Files\Common Files\VST3`, and `%LOCALAPPDATA%\Programs\Common\VST3` for plugins installed just for you); **Browse for a .vst3 file…** picks one from anywhere else.
+
+- Plugins run top to bottom, after NVIDIA's clean-up if that's on. Use the arrows to reorder them, the tick to switch one off, and **Edit** to open its own window.
+- Each plugin's settings are saved as you change them and come back after a restart.
+- **Presets:** a plugin's **Presets** menu saves its current settings under a name, and loads them again, on any mic that has the same plugin.
+- They get your mic in mono (or the same signal on both sides, for stereo-only plugins), and work at whatever rate Voicemeeter runs.
+- Like the NVIDIA clean-up, they run inside Voicemeeter before its fader, and only while Sleekmeeter is open.
+- **Crash-safe:** plugins run in a separate helper (a second `sleekmeeter.exe`), so a plugin that crashes doesn't take Sleekmeeter or your mic with it. Your mic carries on without plugins, Settings says what happened, and the plugins start again. After three crashes in two minutes they stay off for a while, so you can switch off or remove the one that crashes. A plugin that stops answering is skipped rather than allowed to hold up your mic.
+- VST3 only: older VST2 plugins (`.dll` files) aren't supported.
 
 ### Per-game profiles
 
@@ -190,9 +266,9 @@ In **Settings → OBS Studio**, connect Sleekmeeter to OBS (in OBS turn on **Too
 
 ### Backup, layout and the setup check
 
-**Voicemeeter backups:** once a day, and before loading a scene, running the setup assistant or restoring a backup, Sleekmeeter saves a copy of Voicemeeter's whole setup (the last 14 daily copies and 10 others are kept). **Settings → Backup and layout** lists them; **Restore** puts one back after saving your current setup, so you can undo it.
+**Voicemeeter backups:** once a day, and before loading a scene, running the setup assistant or restoring a backup, Sleekmeeter saves a copy of Voicemeeter's whole setup (the last 14 daily copies and 10 others are kept). **Settings → System & backup → Backup and layout** lists them; **Restore** puts one back after saving your current setup, so you can undo it.
 
-**Settings → Backup and layout** saves your settings to a file and restores them (your scenes are the .xml files in the `scenes` folder next to Sleekmeeter, so copy that too), and **Reset the layout** brings the window back to its default size and unhides every channel. **Settings → About → Check my setup** (also on the "Voicemeeter isn't running" screen) checks the things that usually go wrong: Voicemeeter and its remote library, audio devices Windows doesn't list, shortcuts that couldn't be registered, the OBS link, and whether settings can be saved.
+**Settings → System & backup → Backup and layout** saves your settings to a file and restores them (your scenes are the .xml files in the `scenes` folder next to Sleekmeeter, so copy that too), and **Reset the layout** brings the window back to its default size and unhides every channel. **Settings → System & backup → About → Check my setup** (also on the "Voicemeeter isn't running" screen) checks the things that usually go wrong: Voicemeeter and its remote library, audio devices Windows doesn't list, shortcuts that couldn't be registered, the OBS link, and whether settings can be saved.
 
 ### Soundboard
 
@@ -220,25 +296,29 @@ The record button opens the recorder: transport buttons, which channels to recor
 
 ### OBS overlay
 
-Under **Settings → Phone remote** there is a second address for OBS. Add a **Browser** source in OBS, paste the address and you get a see-through overlay with a red **MUTED** or amber **BRB** badge, a meter for your mic and the name of the sound that just played. It works while Sleekmeeter is in the tray. If your mic isn't the first channel, add `&mic=1` (second channel), `&mic=2` and so on to the address, and use `&show=badge,meter` to pick which parts appear. It uses the same secret key as the phone remote, so keep the address private.
+Under **Settings → Controls & remote → Phone remote** there is a second address for OBS. Add a **Browser** source in OBS, paste the address and you get a see-through overlay with a red **MUTED** or amber **BRB** badge, a meter for your mic and the name of the sound that just played. It works while Sleekmeeter is in the tray. If your mic isn't the first channel, add `&mic=1` (second channel), `&mic=2` and so on to the address, and use `&show=badge,meter` to pick which parts appear. It uses the same secret key as the phone remote, so keep the address private.
 
 ### Twitch chat commands
 
-Let chat, or just your mods, run things while you stream. In **Settings → Twitch chat commands**, enter your channel name and add commands such as `!brb` (Be right back), `!scene` (load a scene) or `!sound` (play a sound). Leave the last box empty and the command uses what's typed after it, so `!sound airhorn` plays *airhorn* and `!scene Gaming` loads *Gaming*. Other actions include muting a channel, switching output profiles, ducking and recording.
+Let chat, or just your mods, run things while you stream. In **Settings → Streaming → Twitch chat commands**, enter your channel name and add commands such as `!brb` (Be right back), `!scene` (load a scene) or `!sound` (play a sound). Leave the last box empty and the command uses what's typed after it, so `!sound airhorn` plays *airhorn* and `!scene Gaming` loads *Gaming*. Other actions include muting a channel, switching output profiles, ducking and recording.
 
 Sleekmeeter joins your chat as a silent, anonymous viewer: **no sign-in, nothing is ever posted**, and it only reacts to the exact commands you add. Choose who may use them: only you, you and your mods (the default), or everyone. A wait time stops a command from being spammed.
 
+**Channel point rewards** can play a sound or run any other action too. Press **Add a reward…**, then redeem the reward once in your chat, and Sleekmeeter adds it to the list. Twitch only shows a redemption in chat when the reward asks the viewer to type something, so tick **Require viewer to enter text** for it on Twitch. What the viewer types can pick the sound. Anyone who redeems a reward can run it, with the same wait time as commands.
+
 ### Phone remote
 
-Turn on **Settings → Phone remote** and open the address it shows on a phone or tablet on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles. The long code in the address is the password, so don't share it, and **Make a new key** signs every phone out. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
+Turn on **Settings → Controls & remote → Phone remote** and open the address it shows on a phone or tablet on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles, and **Music off stream** and **Save replay** once they're set up. The long code in the address is the password, so don't share it, and **Make a new key** signs every phone out. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
 
 ### Stream Deck
 
 ![Four Stream Deck + dials: Now Playing with a channel level, Now Playing with track controls, a channel level and an app's volume](docs/screenshots/streamdeck-dials.png)
 
-There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels, load scenes, play sounds, and turn Be right back, recording and ducking on or off, with the keys lighting up to match. If Sleekmeeter finds the Stream Deck app it offers to install the plugin (also in Settings → Stream Deck), or double-click `Sleekmeeter-Studio.streamDeckPlugin` yourself. Then paste the phone-remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
+There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels (or mute an input on some outputs only, like right-clicking Mute), load scenes, play sounds, and turn Be right back, recording, ducking and mic clean-up on or off, with the keys lighting up to match. If Sleekmeeter finds the Stream Deck app it offers to install the plugin (also in Settings → Controls & remote → Stream Deck), or double-click `Sleekmeeter-Studio.streamDeckPlugin` yourself. Then paste the phone-remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
 
 The dials also show what's playing, with album art, and can control one app's volume. For your other keys, the [icon pack](streamdeck/Sleekmeeter-Studio-Icons.streamDeckIconPack) adds 486 icons in the same style to the Stream Deck icon library.
+
+**Settings → Controls & remote → Stream Deck → Save Stream Deck + profile** gives you an editable starting layout with mic, game, chat and music dials, four mute keys and keys for scenes, BRB and output switching. Import it in the Stream Deck app after installing the Sleekmeeter plugin and confirm the channels and scenes in the action settings.
 
 <img src="docs/screenshots/streamdeck-icons.png" alt="A sample of the Studio icon pack: Discord, Spotify, Twitch, OBS and Philips Hue keys" width="480">
 
@@ -252,11 +332,11 @@ The dials also show what's playing, with album art, and can control one app's vo
 
 Double-click the tray icon to open a small volume panel: one fader and mute button per visible channel. By default it is **docked**: it snaps to the corner of the screen where the taskbar and clock are, flush against both, and opens in exactly the same place every time (it works with the taskbar on any edge). Click the pin button in its header, or untick **Snap the panel to the corner** in Settings, to undock it; an undocked panel can be dragged by its header and remembers where you left it. Double-click the tray icon again or click **×** to close it, or **Open mixer** for the full window. A single click on the tray icon still shows or hides the mixer, and the tray menu has **Open volume panel** too.
 
-**Settings → Tray volume panel** changes how it looks: **Rows** (sliders across) or **Columns** (sliders up and down, like the mixer), a size from 60% to 100% (handy on a small second screen), an opacity, and whether it shows channel icons, level meters and mute buttons. To leave a channel out of the panel but keep it in the mixer, untick **Show in the tray volume panel** in that channel's settings (click its icon). The panel follows a new theme straight away, even while it's open.
+**Settings → Appearance & layout → Tray volume panel** changes how it looks: **Rows** (sliders across) or **Columns** (sliders up and down, like the mixer), a size from 60% to 100% (handy on a small second screen), an opacity, and whether it shows channel icons, level meters and mute buttons. To leave a channel out of the panel but keep it in the mixer, untick **Show in the tray volume panel** in that channel's settings (click its icon). The panel follows a new theme straight away, even while it's open.
 
 ### Shortcuts and the volume overlay
 
-Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings, including hold-to-talk, switching output profiles, talk-over ducking and recording. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level. Choose which screen it appears on in **Settings → Volume overlay**, and untick **Show in the volume overlay** in a channel's settings to leave that channel out.
+Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings, including hold-to-talk, switching output profiles, talk-over ducking and recording. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level. Choose which screen it appears on in **Settings → Appearance & layout → Volume overlay**, and untick **Show in the volume overlay** in a channel's settings to leave that channel out.
 
 ### Switching scenes automatically
 
@@ -268,9 +348,9 @@ In **Scenes → Switch automatically**, add a rule such as: when `obs64.exe` sta
 
 When Sleekmeeter starts it checks this repository's latest release. If there's a newer version, an **Update to …** button appears in the header. Choose **Update now and restart** and Sleekmeeter downloads the new version, checks it against GitHub's checksum, installs it and opens again by itself, with progress shown on the button.
 
-After an update, Sleekmeeter shows **What's new** once: the changes since the version you had, from this changelog (built in, so nothing is downloaded). **Settings → Updates → What's new** shows them again.
+After an update, Sleekmeeter shows **What's new** once: the changes since the version you had, from this changelog (built in, so nothing is downloaded). **Settings → System & backup → Updates → What's new** shows them again.
 
-Ticking **Settings → Updates → Also offer test versions** also offers test versions from the [beta page](https://github.com/minimalhandle/SleekMeeter-beta/releases); nobody else is offered them. **Check for updates** in the same place looks straight away.
+Ticking **Settings → System & backup → Updates → Also offer test versions** also offers test versions from the [beta page](https://github.com/minimalhandle/SleekMeeter-beta/releases); nobody else is offered them. **Check for updates** in the same place looks straight away.
 
 - **Installed with the installer:** installs silently in the background with no Windows prompt.
 - **Installed with the MSI:** Windows asks once for permission (the usual yes/no prompt) while it installs.
@@ -282,13 +362,13 @@ You can also skip a version or turn the check off in Settings. Versions before 0
 
 In Settings you can start Sleekmeeter with Windows (optionally straight to the tray), start Voicemeeter automatically, and hide Voicemeeter's own window when it starts. **⋯ → Show Voicemeeter window** always brings it back.
 
-For a cleaner mixer, **Settings → Channel buttons** leaves just Mute under each input and hides the Mono and EQ buttons on outputs. They're still in each channel's settings (click its icon), and one that's switched on keeps showing so you can turn it off. New installs start with them hidden. **⋯ → Simple mode** goes further: it also hides every device name and the A4/A5 buttons, and turning it off puts back what you had.
+**⋯ → Focused mixer** puts faders, meters, Mute, and active sends up front. **All routes** on an input opens its full A/B grid, including A4 and A5 on Potato. The strip’s **Routing** tab also has the full grid. Turn Focused mixer off to restore your previous layout. **Settings → Appearance & layout → Channel buttons** controls whether inactive Solo, Mono and EQ buttons appear in the full mixer.
 
 All of this is saved in `settings.json` next to the exe.
 
 ## Reporting a problem
 
-**Settings → About** shows which version of Sleekmeeter you're running. Sleekmeeter also keeps a log of what it does and anything that goes wrong (events only, never audio): click **Open log file** there and attach `sleekmeeter.log` to your [issue](https://github.com/minimalhandle/SleekMeeter/issues). The log lives in a `logs` folder next to the exe (or in `%LOCALAPPDATA%\Sleekmeeter\logs` if that folder can't be written to) and never grows past about 2 MB.
+**Settings → System & backup → About** shows which version of Sleekmeeter you're running. Sleekmeeter also keeps a log of what it does and anything that goes wrong (events only, never audio): click **Open log file** there and attach `sleekmeeter.log` to your [issue](https://github.com/minimalhandle/SleekMeeter/issues). The log lives in a `logs` folder next to the exe (or in `%LOCALAPPDATA%\Sleekmeeter\logs` if that folder can't be written to) and never grows past about 2 MB.
 
 ## Build it
 

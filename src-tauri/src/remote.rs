@@ -28,6 +28,10 @@ const ALLOWED: &[&str] = &[
     "mute",
     "route",
     "routeswap",
+    "replay",
+    "musicguard",
+    "partmute",
+    "micfx",
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
@@ -224,6 +228,8 @@ fn state_json(app: &AppHandle) -> Value {
                     // Potato: an input's level on each output, and the output the faders set.
                     "layers": c["layers"].clone(),
                     "sel": c["sel"].clone(),
+                    // Inputs: the outputs it's muted on by Mute on one output ("B1" …).
+                    "partMute": c["partMute"].clone(),
                 })
             })
             .collect()
@@ -257,15 +263,28 @@ fn state_json(app: &AppHandle) -> Value {
                 .unwrap_or(false);
         (sounds, profiles, brb_set)
     };
-    let duck = app.state::<Settings>().0.lock().unwrap()["ducking"]["on"]
-        .as_bool()
-        .unwrap_or(false);
+    let (duck, guard_set, replay_on) = {
+        let state = app.state::<Settings>();
+        let s = state.0.lock().unwrap();
+        let g = &s["musicGuard"];
+        (
+            s["ducking"]["on"].as_bool().unwrap_or(false),
+            g["on"].as_bool().unwrap_or(false)
+                && g["strip"].as_str().map(|x| !x.is_empty()).unwrap_or(false),
+            s["replay"]["on"].as_bool().unwrap_or(false),
+        )
+    };
     json!({
         "connected": snap["connected"].as_bool().unwrap_or(false),
         "recording": snap["recorder"]["recording"].as_bool().unwrap_or(false),
         "duck": duck,
         "brb": snap["brb"].as_bool().unwrap_or(false),
         "brbSet": brb_set,
+        "musicGuard": snap["musicGuard"].as_bool().unwrap_or(false),
+        "musicGuardSet": guard_set,
+        "replay": replay_on,
+        // Mics with clean-up or plugins set up, and whether each is on: { "Strip[0]": { "on" } }.
+        "micFx": crate::micfx::api_state(app),
         "strips": list("strips", "Strip", "Input"),
         "buses": list("buses", "Bus", "Output"),
         "scenes": crate::scene_list().unwrap_or_default(),

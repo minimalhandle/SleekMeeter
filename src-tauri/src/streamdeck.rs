@@ -8,6 +8,7 @@ const PLUGIN: &[u8] = include_bytes!("../../streamdeck/Sleekmeeter-Studio.stream
 const MANIFEST: &str =
     include_str!("../../streamdeck/com.minimalhandle.sleekmeeter.sdPlugin/manifest.json");
 const APP_PAGE: &str = "https://www.elgato.com/downloads";
+const PLUS_PROFILE: &[u8] = include_bytes!("../../streamdeck/com.minimalhandle.sleekmeeter.sdPlugin/profiles/Sleekmeeter Studio Plus.streamDeckProfile");
 #[cfg(windows)]
 const PLUGIN_FOLDER: &str = "com.minimalhandle.sleekmeeter.sdPlugin";
 /// USB product IDs of Elgato's Stream Decks. Other Elgato hardware shares the vendor ID 0FD9.
@@ -160,6 +161,15 @@ pub fn install() -> Result<(), String> {
     let file = std::env::temp_dir().join("Sleekmeeter-Studio.streamDeckPlugin");
     std::fs::write(&file, PLUGIN).map_err(|e| format!("Couldn't prepare the plugin: {e}"))?;
     shell_open(file.as_os_str())
+}
+
+pub fn save_plus_profile() -> Result<bool, String> {
+    let Some(path) = crate::files::stream_deck_profile_dialog() else {
+        return Ok(false);
+    };
+    std::fs::write(path, PLUS_PROFILE)
+        .map_err(|e| format!("Could not save the Stream Deck profile: {e}"))?;
+    Ok(true)
 }
 
 pub fn open_app_page() -> Result<(), String> {

@@ -18,7 +18,7 @@ function fixture(extra = {}) {
 test('every manifest action produces a live key or dial', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(plugin, 'manifest.json')));
   assert.equal(manifest.UUID, uuid);
-  assert.equal(manifest.Actions.length, 19);
+  assert.equal(manifest.Actions.length, 21);
   for (const action of manifest.Actions) {
     const c = { action: action.UUID.slice(uuid.length + 1), settings: { channel: 'Strip[0]', scene: 'Gaming', sound: 'Air horn', output: 'Headphones' } };
     const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : ['channel', 'mixdial'].includes(c.action) ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));
@@ -177,4 +177,49 @@ test('existing handlers still send the expected API actions and gain payloads', 
   for(const t of timers.filter(t=>t.ms===70))t.fn();
   assert.equal(calls.at(-1).url,'http://127.0.0.1:8787/api/gain');assert.equal(calls.at(-1).body.key,'Strip[0]');
   assert.equal(p.levelOf({key:'Bus[0]'}),-5);assert.equal(p.levelOf({key:'Strip[9]'}),null);
+});
+test('Mute on outputs shows its outputs and state, and needs a Sleekmeeter that reports it', () => {
+  const e = fixture(), ch = e.st.strips[0];
+  ch.b = [1, 1, 1]; ch.partMute = [];
+  const c = { action: 'partmute', settings: { channel: 'Strip[0]' } };
+  const on = decode(studio.renderKey(c, e));
+  assert.match(on, /ON B1–B3/); assert.doesNotMatch(on, /#ff7b83/);
+  ch.partMute = ['B2'];
+  const muted = decode(studio.renderKey(c, e));
+  assert.match(muted, /MUTED B1–B3/); assert.match(muted, /#ff7b83/);
+  // Only the outputs this Voicemeeter has, in A-then-B order.
+  ch.b = [1, 1];
+  assert.deepEqual(studio.partOutputs({ outs: ['B3', 'A1', 'B1'] }, ch, e), ['A1', 'B1']);
+  assert.equal(studio.outputsLabel(['A1', 'B2']), 'A1 B2');
+  assert.match(decode(studio.renderKey({ action: 'partmute', settings: { channel: 'Strip[0]', outs: ['B3'] } }, e)), /Choose outputs/);
+  delete ch.partMute;
+  assert.match(decode(studio.renderKey(c, e)), /Update Sleekmeeter/);
+});
+test('Mute on outputs sends the input and its outputs, and unmutes when muted', async () => {
+  const calls = [];
+  const localRequire = createRequire(path.join(plugin, 'bin/plugin.js'));
+  const sandbox = {
+    require: name => name === './media-session' ? { MediaSession: class { start() {} stop() {} snapshot() { return { available: false }; } command() { return true; } } } : localRequire(name),
+    process: { argv: ['node', 'plugin.js'], exit() {} }, console: { error() {} }, URL, AbortController,
+    setTimeout: () => 1, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
+    fetch: async (url, options) => { calls.push({ url, body: options.body && JSON.parse(options.body) }); return { ok: true, json: async () => ({}) }; },
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(source + '\nthis.testPlugin = { onKeyDown, setState(s) { st=s; status="ok"; }, setSocket(s) { ws=s; } };', sandbox);
+  const p = sandbox.testPlugin, events = [];
+  p.setSocket({ open: true, send: v => events.push(JSON.parse(v)) });
+  const mic = { key: 'Strip[0]', name: 'Mic', gain: 0, mute: false, a: [1], b: [1, 1, 0], partMute: [] };
+  p.setState({ connected: true, strips: [mic], buses: [] });
+  await p.onKeyDown('k', { action: 'partmute', settings: { channel: 'Strip[0]' } });
+  assert.deepEqual(calls.at(-1).body, { action: 'partmute', target: 'Strip[0]:B1,B2,B3' });
+  // Already muted on one of them (from the mixer): the press unmutes.
+  p.setState({ connected: true, strips: [{ ...mic, key: 'Strip[1]', b: [0, 0, 0], partMute: ['B1', 'B2'] }], buses: [] });
+  await p.onKeyDown('k', { action: 'partmute', settings: { channel: 'Strip[1]', outs: ['B1', 'B2'] } });
+  assert.deepEqual(calls.at(-1).body, { action: 'partmute', target: 'Strip[1]:B1,B2' });
+  // Not sent to any of them and not muted: nothing to do, the key shows an alert.
+  const before = calls.length;
+  p.setState({ connected: true, strips: [{ ...mic, key: 'Strip[2]', b: [0, 0, 0], partMute: [] }], buses: [] });
+  await p.onKeyDown('k2', { action: 'partmute', settings: { channel: 'Strip[2]' } });
+  assert.equal(calls.length, before);
+  assert.ok(events.some(e => e.event === 'showAlert' && e.context === 'k2'));
 });

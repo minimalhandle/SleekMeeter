@@ -81,6 +81,7 @@ const showOk = (context) => send({ event: 'showOk', context });
 
 /* ------------------------------------------------------------------ live Studio artwork */
 const studio = require('./studio');
+const profileSettings = (c) => studio.profileSettings(c.settings, st);
 const { MediaSession } = require('./media-session');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const MIC_DEFAULT = 'Strip[0]';
@@ -101,7 +102,14 @@ function levelOf(ch) {
   const reading = pair && pair[Number(m[2])];
   return Array.isArray(reading) ? Math.round(Math.max(...reading)) : null;
 }
-const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf });
+// Mute on outputs: is this input muted on any of these outputs (Sleekmeeter's list, or a press
+// we just made, until Sleekmeeter catches up).
+function partMuteOf(ch, outs) {
+  const l = local[`${ch.key}#part:${outs.join(',')}`];
+  if (l && Date.now() < l.until) return l.v;
+  return outs.some((o) => (ch.partMute || []).includes(o));
+}
+const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf, partMuteOf });
 const MEDIA_ACTIONS = ['nowplaying', 'nowplayingkey', 'trackdial'];
 const media = new MediaSession(() => { for (const [context, c] of contexts) if (MEDIA_ACTIONS.includes(c.action)) render(context); });
 // Changing page or opening a folder hides every action for a moment, so the worker outlives that.
@@ -127,8 +135,9 @@ const renderDial = (c) => {
 
 const lastDrawn = new Map();
 function render(context) {
-  const c = contexts.get(context);
-  if (!c) return;
+  const saved = contexts.get(context);
+  if (!saved) return;
+  const c = { ...saved, settings: profileSettings(saved) };
   if (c.controller === 'Encoder') {
     const img = renderDial(c);
     if (lastDrawn.get(context) !== img) { lastDrawn.set(context, img); setFeedback(context, { canvas: img }); }
@@ -280,8 +289,23 @@ function toggleRoute(context, key, bus) {
   act(context, 'route', `${key}.${bus}`);
 }
 
+// Mute on outputs: mute the input on the chosen outputs only, or unmute it there. Sleekmeeter
+// remembers which outputs it switched off, like right-clicking Mute in the mixer.
+function togglePartMute(context, s) {
+  const ch = chan(s.channel || MIC_DEFAULT);
+  if (!ch || !Array.isArray(ch.partMute)) { showAlert(context); return; }
+  const outs = studio.partOutputs(s, ch, { routeOf });
+  if (!outs.length) { showAlert(context); return; }
+  const muted = partMuteOf(ch, outs);
+  // Muting only works on outputs the input is sent to.
+  if (!muted && !outs.some((o) => routeOf(ch, o))) { showAlert(context); return; }
+  local[`${ch.key}#part:${outs.join(',')}`] = { v: !muted, until: Date.now() + 1500 };
+  renderAll();
+  act(context, 'partmute', `${ch.key}:${outs.join(',')}`);
+}
+
 function rotate(c, ticks) {
-  const ch = chan((c.settings || {}).channel);
+  const ch = chan(profileSettings(c).channel);
   if (!ch) return;
   const step = Number((c.settings || {}).step) || 1;
   // A quick spin moves further per click.
@@ -419,12 +443,13 @@ function stepLevel(context, c) {
 }
 
 function onKeyDown(context, c) {
-  const s = c.settings || {};
+  const s = profileSettings(c);
   switch (c.action) {
     case 'mute': return toggleMute(context, s.channel);
     case 'route': return toggleRoute(context, s.channel || MIC_DEFAULT, s.bus || 'B1');
     case 'mixfor': return pickMixFor(context, c);
     case 'swap': return swapRoute(context, s);
+    case 'partmute': return togglePartMute(context, s);
     case 'mic': {
       const key = s.channel || MIC_DEFAULT;
       const ch = chan(key);
@@ -450,6 +475,7 @@ function onKeyDown(context, c) {
     case 'sound': return s.sound ? act(context, 'sound', s.sound) : showAlert(context);
     case 'soundstop': return act(context, 'soundstop');
     case 'brb': return act(context, 'brb');
+    case 'micfx': return act(context, 'micfx', s.channel || '');
     case 'record': return act(context, 'record');
     case 'duck': return act(context, 'duck');
     case 'output': return s.output ? act(context, 'output', s.output) : act(context, 'outputnext');
@@ -550,8 +576,9 @@ function onMessage(raw) {
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.press || (c.action === 'trackdial' ? 'playpause' : 'mute');
-      if (what === 'mute') toggleMute(ctx, s.channel);
-      else if (what === 'zero') { const ch = chan(s.channel); if (ch) setLevel(ch.key, 0); }
+      const channel = profileSettings(c).channel;
+      if (what === 'mute') toggleMute(ctx, channel);
+      else if (what === 'zero') { const ch = chan(channel); if (ch) setLevel(ch.key, 0); }
       else if (['playpause', 'next', 'previous'].includes(what)) { if (!media.command(what, s.mediaSource)) showAlert(ctx); }
       break;
     }
@@ -562,7 +589,7 @@ function onMessage(raw) {
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.tap || (c.action === 'channel' ? 'mute' : 'playpause');
-      if (what === 'mute') toggleMute(ctx, s.channel);
+      if (what === 'mute') toggleMute(ctx, profileSettings(c).channel);
       else if (['playpause', 'next', 'previous'].includes(what)) { if (!media.command(what, s.mediaSource)) showAlert(ctx); }
       break;
     }

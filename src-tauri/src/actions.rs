@@ -1,7 +1,10 @@
 //! Things Sleekmeeter can do on request, shared by shortcuts, Twitch chat commands and the
 //! phone remote: "mute the mic", "be right back", "load a scene", "play a sound".
 
-use crate::{brb, fades, outputs, recorder, settings, show_osd_text, sounds, Settings, Vm};
+use crate::{
+    brb, fades, outputs, partmute, recorder, replay, settings, show_osd_text, sounds, watch,
+    Settings, Vm,
+};
 use serde_json::json;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -68,11 +71,31 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
             let api = need_api()?;
             let (first, second) = swap_pair(target)?;
             let to_second = api.get_bool(first) && !api.get_bool(second);
-            let (on, off) = if to_second { (second, first) } else { (first, second) };
+            let (on, off) = if to_second {
+                (second, first)
+            } else {
+                (first, second)
+            };
             // Off first: never both on for a moment (no doubled mic or echo).
             fades::set_float(app, &api, off, 0.0)?;
             fades::set_float(app, &api, on, 1.0)?;
             log_info!("Command: route swap to {on}");
+        }
+        "partmute" => {
+            // target looks like "Strip[0]:B1,B2,B3": mute that input on those outputs only,
+            // or unmute it there if it's muted on any of them.
+            let api = need_api()?;
+            let (i, outs) =
+                partmute::parse_target(target).ok_or("Choose an input and its outputs")?;
+            partmute::toggle(app, &api, i, &outs)?;
+        }
+        "chatgame" | "chatchat" | "chatcentre" => {
+            let (amount, relative) = match kind {
+                "chatgame" => (-10, true),
+                "chatchat" => (10, true),
+                _ => (0, false),
+            };
+            crate::chat_balance::change(app, None, amount, relative, false)?;
         }
         "window" => crate::toggle_main(app),
         "output" if !target.is_empty() => outputs::switch_with_osd(app, target, "shortcut"),
@@ -117,6 +140,28 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
                 let text = if rec { "Recording" } else { "Stopped" };
                 show_osd_text(app, "Recorder", text, rec, "record");
             }
+        }
+        // Save the last seconds of the stream output (instant replay).
+        "replay" => {
+            if !replay::status()["running"].as_bool().unwrap_or(false) {
+                show_osd_text(app, "Instant replay", "Not on", false, "record");
+                return Err("Instant replay isn't running (Settings → Instant replay)".into());
+            }
+            let app = app.clone();
+            // Writing a minute of audio takes a moment: don't hold up the shortcut or chat.
+            std::thread::spawn(move || {
+                if let Err(e) = replay::save(&app) {
+                    log_warn!("Instant replay: {e}");
+                }
+            });
+        }
+        // Music off stream, now, until OBS next starts or stops.
+        "musicguard" => {
+            watch::toggle_guard(app)?;
+        }
+        // A mic's clean-up and plugins off or back on ("Strip[0]"; "" = every mic).
+        "micfx" => {
+            crate::micfx::toggle(app, target)?;
         }
         _ => return Err(format!("Unknown action {kind:?}")),
     }

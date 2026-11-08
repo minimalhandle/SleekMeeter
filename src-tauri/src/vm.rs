@@ -21,6 +21,25 @@ type FnSetFloat = unsafe extern "system" fn(*const c_char, f32) -> i32;
 type FnSetStringW = unsafe extern "system" fn(*const c_char, *const u16) -> i32;
 type FnDevDescW = unsafe extern "system" fn(i32, *mut i32, *mut u16, *mut u16) -> i32;
 type FnScript = unsafe extern "system" fn(*const c_char) -> i32;
+/// Called by Voicemeeter on its audio thread: (user, command, data, unused).
+pub type AudioCallback =
+    unsafe extern "system" fn(*mut std::ffi::c_void, i32, *mut std::ffi::c_void, i32) -> i32;
+type FnCbRegister =
+    unsafe extern "system" fn(i32, AudioCallback, *mut std::ffi::c_void, *mut c_char) -> i32;
+
+/// The audio callback functions (mic clean-up). Missing from very old Voicemeeter versions.
+#[derive(Clone, Copy)]
+struct CbFns {
+    register: FnCbRegister,
+    start: FnVoid,
+    stop: FnVoid,
+    unregister: FnVoid,
+}
+
+/// Process input inserts (VBVMR_AUDIOCALLBACK_IN).
+pub const AUDIOCALLBACK_IN: i32 = 1;
+/// Process output inserts (VBVMR_AUDIOCALLBACK_OUT).
+pub const AUDIOCALLBACK_OUT: i32 = 2;
 
 /// Bus modes Voicemeeter Banana offers (Bus[i].mode.<name>).
 pub const BUS_MODES: &[&str] = &[
@@ -56,6 +75,7 @@ pub struct Api {
     in_dev_desc: FnDevDescW,
     out_dev_count: FnVoid,
     out_dev_desc: FnDevDescW,
+    cb: Option<CbFns>,
     /// Potato inputs whose gain layers differ (see layers.rs).
     layer_state: std::sync::Mutex<
         std::collections::HashMap<usize, (crate::layers::Strip, std::time::Instant)>,
@@ -179,7 +199,25 @@ impl Api {
             let in_dev_desc = sym!("VBVMR_Input_GetDeviceDescW", FnDevDescW);
             let out_dev_count = sym!("VBVMR_Output_GetDeviceNumber", FnVoid);
             let out_dev_desc = sym!("VBVMR_Output_GetDeviceDescW", FnDevDescW);
+            let void = |name: &[u8]| lib.get::<FnVoid>(name).ok().map(|f| *f);
+            let cb = match (
+                lib.get::<FnCbRegister>(b"VBVMR_AudioCallbackRegister\0")
+                    .ok()
+                    .map(|f| *f),
+                void(b"VBVMR_AudioCallbackStart\0"),
+                void(b"VBVMR_AudioCallbackStop\0"),
+                void(b"VBVMR_AudioCallbackUnregister\0"),
+            ) {
+                (Some(register), Some(start), Some(stop), Some(unregister)) => Some(CbFns {
+                    register,
+                    start,
+                    stop,
+                    unregister,
+                }),
+                _ => None,
+            };
             Ok(Api {
+                cb,
                 in_dev_count,
                 in_dev_desc,
                 out_dev_count,
@@ -200,6 +238,44 @@ impl Api {
                 layer_state: Default::default(),
             })
         }
+    }
+
+    /// Register `f` for Voicemeeter's audio callback (`mode`: AUDIOCALLBACK_IN, …).
+    /// Err(Some(name)) means another app already has it; Err(None) is any other failure.
+    pub fn audio_register(&self, mode: i32, f: AudioCallback) -> Result<(), Option<String>> {
+        let Some(cb) = self.cb else {
+            return Err(None);
+        };
+        let mut name = [0u8; 64];
+        name[..11].copy_from_slice(b"Sleekmeeter");
+        let r = unsafe {
+            (cb.register)(
+                mode,
+                f,
+                std::ptr::null_mut(),
+                name.as_mut_ptr() as *mut c_char,
+            )
+        };
+        match r {
+            0 => Ok(()),
+            1 => {
+                let end = name.iter().position(|&b| b == 0).unwrap_or(64);
+                Err(Some(String::from_utf8_lossy(&name[..end]).into_owned()))
+            }
+            _ => Err(None),
+        }
+    }
+    pub fn has_audio_callback(&self) -> bool {
+        self.cb.is_some()
+    }
+    pub fn audio_start(&self) -> i32 {
+        self.cb.map_or(-1, |c| unsafe { (c.start)() })
+    }
+    pub fn audio_stop(&self) -> i32 {
+        self.cb.map_or(-1, |c| unsafe { (c.stop)() })
+    }
+    pub fn audio_unregister(&self) -> i32 {
+        self.cb.map_or(-1, |c| unsafe { (c.unregister)() })
     }
 
     /// Call once at startup. Works whether or not Voicemeeter is running.
@@ -412,7 +488,8 @@ impl Api {
         })
     }
 
-    /// Linear level → dBFS. kind: 1 = post-fader input, 3 = output.
+    /// Linear level → dBFS. kind: 0 = pre-fader input, 1 = post-fader input, 2 = post-mute
+    /// input, 3 = output.
     fn level_db(&self, kind: i32, channel: usize) -> f32 {
         let mut v = 0f32;
         if unsafe { (self.get_level)(kind, channel as i32, &mut v) } != 0 || v <= 1e-6 {
@@ -443,6 +520,24 @@ impl Api {
             (layout.hw_strips * 2 + (strip - layout.hw_strips) * 8, 8)
         };
         let [l, r] = self.pair(2, base, count);
+        l.max(r)
+    }
+
+    /// Loudest channel of one input strip before its fader and mute (dBFS), so a muted mic
+    /// still shows that someone is talking into it. Poll thread only.
+    pub fn strip_level_pre(&self, layout: &Layout, strip: usize) -> f32 {
+        let (base, count) = if strip < layout.hw_strips {
+            (strip * 2, 2)
+        } else {
+            (layout.hw_strips * 2 + (strip - layout.hw_strips) * 8, 8)
+        };
+        let [l, r] = self.pair(0, base, count);
+        l.max(r)
+    }
+
+    /// Loudest channel of one output bus (dBFS), what that output sends out. Poll thread only.
+    pub fn bus_level(&self, bus: usize) -> f32 {
+        let [l, r] = self.pair(3, bus * 8, 8);
         l.max(r)
     }
 

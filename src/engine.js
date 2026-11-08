@@ -26,7 +26,7 @@
  *   appVolumes() -> [{exe, name, volume, mute, active}] / appVolumeSet(exe, volume, mute)   per-app volume
  *   selftestInputs() -> {devices} / selftestRun(input, output, secs)   hear-yourself test
  *   soundDevices() -> {devices, auto} / soundPick() -> [paths] / soundPickFolder() -> [paths] / soundPickPack() -> {folder,count}|null (copied into the data folder) / soundImport(paths) -> [copied paths] / soundPlay(name) / soundStop()   soundboard
- *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last} of the Twitch chat link
+ *   twitchStatus() / onTwitchStatus(cb)   {connected, message, last, reward: {id, user, text, at}|null} of the Twitch chat link
  *   remoteStatus() -> {running, message, urls}   the phone remote
  *   historyGet(minutes) -> {keys, series, stats, ...} / historyClear()   level history
  *   appRouteDevices() -> [{id, name}] / appRouteSet(pids, deviceId)   send an app to another output
@@ -34,6 +34,14 @@
  *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
  *   healthCheck() -> [{state: ok|warn|bad, label, detail, action?}]   "Check my setup"
+ *   goLiveCheck() -> same shape (action "set" adds {button, param, value}) / onGoLive(cb) cb({items}) when OBS went live and something's wrong
+ *   onAlert(cb)   cb({kind: mutedTalk|silent|clip, name, text}): talking while muted, a silent or clipping stream
+ *   musicGuardToggle() -> bool   Music off stream on or off by hand (state.musicGuard tells which)
+ *   replaySave() -> path / replayStatus() -> {running, message, device} / replayDevices() -> [names] / replayOpenFolder()   instant replay
+ *   micFxStatus() -> {available, message, chains: {id: {running, off, message, latencyMs, underruns}}, plugins: {id: {loaded, error, editor}}}   mic clean-up
+ *   vstScan() / vstBrowse() -> [{name, vendor, path, cid}] / vstEditor(id)   VST3 plugins on the mic
+ *   micFxToggle(target) -> on / micFxCompare(id, on) / micFxListen(id, on) -> on   switch, compare, hear a mic
+ *   vstPresetSave(id, name) / vstPresetDelete(cid, name) -> presets / vstPresetApply(id, name)   plugin presets
  *   screens() -> [{name, label}]   for Settings → Volume overlay
  *   backupsList() -> [{file, label}] / backupRestore(file) / backupBefore(why)   Voicemeeter backups
  *   windowsOutput() -> {state: ok|wrong|unknown, output, calls, target} / fixAudio() -> {moved, restarted} / onWindowsOutput(cb)
@@ -75,7 +83,7 @@
       { keys: "Ctrl+Alt+Down", action: "voldown", target: "Bus[0]" },
       { keys: "Ctrl+Alt+S", action: "window", target: "" },
     ],
-    startWithWindows: false, startInTray: true, launchVoicemeeter: true, hideVoicemeeter: false,
+    startWithWindows: false, startInTray: false, launchVoicemeeter: false, hideVoicemeeter: false,
     overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true, lockArrangement: false,
     sceneRules: [], checkUpdates: true, betaUpdates: false, skippedVersion: "", streamDeckOffered: "", usagePing: null, oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
@@ -83,15 +91,25 @@
     autoRestart: true, keepWindowsOutput: false, overlayScreen: "",
     panelLayout: "rows", panelScale: 100, panelOpacity: 100, panelIcons: true, panelMute: true, panelMeters: true,
     outputProfiles: [],
+    outputFallbacks: {}, outputFallbackLinks: {}, themeMotion: "subtle",
+    faderGroups: [],
     panelDocked: true, panelPos: null,
     hold: { releaseMs: 250 },
     brb: { mute: [], lower: [], amount: 30, play: "", playDb: -8, overlay: true },
     obs: { on: false, host: "127.0.0.1", port: 4455, password: "", rules: [], liveDo: "", liveScene: "", offDo: "", offScene: "" },
     clipWarn: { on: false, target: "Strip[0]" },
     soundboard: { device: "", volume: 100, sounds: [] },
-    twitch: { on: false, channel: "", who: "mods", cooldown: 3, commands: [] },
+    twitch: { on: false, channel: "", who: "mods", cooldown: 3, commands: [], rewards: [] },
     remote: { on: false, port: 8787, key: "" },
-    history: { on: true },
+    history: { on: false },
+    streamBus: "",
+    mutedTalk: { on: false, target: "Strip[0]", threshold: -35, ptt: false },
+    streamWatch: { on: false, silentSecs: 15, clip: true, onlyLive: true },
+    goLive: { onLive: true },
+    musicGuard: { on: false, strip: "", when: "either" },
+    replay: { on: false, device: "", secs: 60 },
+    micFx: { aecRef: "Bus[0]", chains: [{ id: "c1", target: "Strip[0]", on: false, effect: "denoiser", strength: 100, aec: false, plugins: [] }] },
+    vstPresets: [],
     appRoutes: {},
   };
 
@@ -111,12 +129,20 @@
     setFloat(name, value) { return this.invoke("vm_set_float", { name, value }); }
     setString(name, value) { return this.invoke("vm_set_string", { name, value }); }
     getFloats(names) { return this.invoke("vm_get_floats", { names }); }
+    audioEvents() { return this.invoke("audio_events_list"); }
+    clearAudioEvents() { return this.invoke("audio_events_clear"); }
+    onAudioEventsChanged(cb) { return this.listen("audio-events-changed", cb); }
+    micTuneMeter(strip) { return this.invoke("mic_tune_meter", { strip }); }
+    micTuneChange(strip, expected, next, preview) { return this.invoke("mic_tune_change", { strip, expected, next, preview }); }
+    micTuneFinish(keep) { return this.invoke("mic_tune_finish", { keep }); }
+    onMicTuneEnded(cb) { return this.listen("mic-tune-ended", (e) => cb(e.payload)); }
     launch() { return this.invoke("vm_launch"); }
     showWindow() { return this.invoke("vm_show_window"); }
     devices() { return this.invoke("vm_devices"); }
     listScenes() { return this.invoke("scene_list"); }
     saveScene(name) { return this.invoke("scene_save", { name }); }
     loadScene(name) { return this.invoke("scene_load", { name }); }
+    scenePreview(name) { return this.invoke("scene_preview", { name }); }
     deleteScene(name) { return this.invoke("scene_delete", { name }); }
     getSettings() { return this.invoke("settings_get"); }
     saveSettings(value) { return this.invoke("settings_set", { value }); }
@@ -131,12 +157,14 @@
     openRelease(url) { return this.invoke("open_release", { url }); }
     streamDeckStatus() { return this.invoke("streamdeck_status"); }
     streamDeckInstall() { return this.invoke("streamdeck_install"); }
+    streamDeckProfileSave() { return this.invoke("streamdeck_profile_save"); }
     streamDeckGetApp() { return this.invoke("streamdeck_get_app"); }
     updateInstall() { return this.invoke("update_install"); }
     onUpdateProgress(cb) { return this.listen("update-progress", (e) => cb(e.payload)); }
     runningApps() { return this.invoke("running_apps"); }
     onSceneAuto(cb) { return this.listen("scene-auto", (e) => cb(e.payload)); }
     glide(key, value) { return this.invoke("vm_glide", { key, value }); }
+    routeMute(strip, out, mute) { return this.invoke("vm_route_mute", { strip, out, mute }); }
     appInfo() { return this.invoke("app_info"); }
     whatsNew(all) { return this.invoke("whats_new", { all: !!all }); }
     openLogs() { return this.invoke("open_logs"); }
@@ -156,6 +184,20 @@
     soundPickPack() { return this.invoke("sound_pick_pack"); }
     soundImport(paths) { return this.invoke("sound_import", { paths }); }
     selftestInputs() { return this.invoke("selftest_inputs"); }
+    mixMonitorStart(input, output, cue = null) { return this.invoke("mix_monitor_start", { input, output, cue }); }
+    mixMonitorStop() { return this.invoke("mix_monitor_stop"); }
+    onMixMonitorEnded(cb) { return this.listen("mix-monitor-ended", (e) => cb(e.payload)); }
+    onAppRouteReset(cb) { return this.listen("app-route-reset", (e) => cb(e.payload)); }
+    fallbackStatus(bus) { return this.invoke("output_fallback_status", { bus }); }
+    mixPreferenceSet(key, value) { return this.invoke("mix_preference_set", { key, value }); }
+    guidedTest(source, stream, monitor, kind) { return this.invoke("guided_audio_test", { source, stream, monitor, kind }); }
+    micTakeRecord(id) { return this.invoke("mic_take_record", { id }); }
+    micTakePlay(output, processed) { return this.invoke("mic_take_play", { output, processed }); }
+    micTakeClear() { return this.invoke("mic_take_clear"); }
+    micPresetExport(id) { return this.invoke("mic_preset_export", { id }); }
+    micPresetPreview(id) { return this.invoke("mic_preset_preview", { id }); }
+    micPresetApply(id) { return this.invoke("mic_preset_apply", { id }); }
+    micPresetClear() { return this.invoke("mic_preset_clear"); }
     selftestRun(input, output, secs) { return this.invoke("selftest_run", { input, output, secs }); }
     soundPlay(name) { return this.invoke("sound_play", { name }); }
     soundStop() { return this.invoke("sound_stop"); }
@@ -165,12 +207,36 @@
     historyGet(minutes) { return this.invoke("history_get", { minutes }); }
     historyClear() { return this.invoke("history_clear"); }
     appRouteDevices() { return this.invoke("app_route_devices"); }
+    appRouteDefaults() { return this.invoke("app_route_defaults"); }
     appRouteSet(pids, device) { return this.invoke("app_route_set", { pids, device }); }
     brbToggle() { return this.invoke("brb_toggle"); }
     obsStatus() { return this.invoke("obs_status"); }
+    obsAudioCheck() { return this.invoke("obs_audio_check"); }
+    chatBalanceSet(selection, position, useMain = false) { return this.invoke("chat_balance_set", { selection, position, useMain }); }
+    chatBalanceStatus() { return this.invoke("chat_balance_status"); }
+    onChatBalance(cb) { return this.listen("chat-balance", (e) => cb(e.payload)); }
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
     onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
     healthCheck() { return this.invoke("health_check"); }
+    goLiveCheck() { return this.invoke("golive_check"); }
+    onGoLive(cb) { return this.listen("golive", (e) => cb(e.payload)); }
+    onAlert(cb) { return this.listen("watch-alert", (e) => cb(e.payload)); }
+    musicGuardToggle() { return this.invoke("music_guard_toggle"); }
+    replaySave() { return this.invoke("replay_save"); }
+    replayStatus() { return this.invoke("replay_status"); }
+    micFxStatus() { return this.invoke("micfx_status"); }
+    vstScan() { return this.invoke("vst_scan"); }
+    vstBrowse() { return this.invoke("vst_browse"); }
+    vstEditor(id) { return this.invoke("vst_editor", { id }); }
+    vstRecover(id, bypass) { return this.invoke("vst_recover", { id, bypass }); }
+    micFxToggle(target) { return this.invoke("micfx_toggle", { target }); }
+    micFxCompare(id, on) { return this.invoke("micfx_compare", { id, on }); }
+    micFxListen(id, on) { return this.invoke("micfx_listen", { id, on }); }
+    vstPresetSave(id, name) { return this.invoke("vst_preset_save", { id, name }); }
+    vstPresetApply(id, name) { return this.invoke("vst_preset_apply", { id, name }); }
+    vstPresetDelete(cid, name) { return this.invoke("vst_preset_delete", { cid, name }); }
+    replayDevices() { return this.invoke("replay_devices"); }
+    replayOpenFolder() { return this.invoke("replay_open_folder"); }
     screens() { return this.invoke("screens"); }
     backupsList() { return this.invoke("backups_list"); }
     backupRestore(file) { return this.invoke("backup_restore", { file }); }
@@ -182,6 +248,7 @@
     settingsImport() { return this.invoke("settings_import"); }
     resetLayout() { return this.invoke("reset_layout"); }
     onEngineRestart(cb) { return this.listen("engine-restarted", (e) => cb(e.payload)); }
+    onOutputFallback(cb) { return this.listen("output-fallback", (e) => cb(e.payload)); }
     onSettingsChanged(cb) { return this.listen("settings-changed", (e) => cb(e.payload)); }
     // Files dropped on the window (Tauri hands over their paths).
     onFileDrop(cb) { return this.listen("tauri://drag-drop", (e) => cb((e.payload && e.payload.paths) || [])); }
@@ -248,6 +315,7 @@
         { exe: "system sounds", name: "System sounds", volume: 100, mute: true, active: false, pids: [] },
       ];
       this.scenes = ["Streaming", "Gaming", "Late night"];
+      this.sceneMixes = new Map();
       this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
       this.settings.appearance = {
         "strip-0": { color: "amber", icon: "mic" },
@@ -263,7 +331,10 @@
       };
       try {
         const saved = localStorage.getItem("sleekmeeter-preview-settings");
-        if (saved) this.settings = Object.assign(this.settings, JSON.parse(saved));
+        if (saved) this.settings = Object.assign(this.settings, {
+          startInTray: true, launchVoicemeeter: true, themeMotion: "full", history: { on: true },
+          mutedTalk: { ...DEFAULT_SETTINGS.mutedTalk, on: true },
+        }, JSON.parse(saved));
       } catch (e) { /* storage unavailable: keep the defaults */ }
       this.t0 = performance.now();
     }
@@ -296,7 +367,12 @@
           return n in (this._opts || {}) ? this._opts[n] : OPT[n];
         }
         const m = /^Strip\[(\d)\]\.(.+)$/.exec(n);
-        if (!m || +m[1] > 1) return null;
+        const strip = m && this.state.strips[+m[1]];
+        if (!strip) return null;
+        if (m[2] === "Gain") return strip.gain;
+        const layer = /^GainLayer\[(\d+)\]$/.exec(m[2]);
+        if (layer) return strip.layers?.[+layer[1]] ?? null;
+        if (+m[1] > 1) return null;
         if (n in this._chain) return this._chain[n];
         const d = { Comp: 0, Gate: 0, Denoiser: 0, "Comp.Threshold": -30, "Comp.Ratio": 2, "Gate.Threshold": -60 };
         if (!(m[2] in d)) return null;
@@ -305,6 +381,45 @@
         return d[m[2]];
       }));
     }
+    audioEvents() {
+      const now = Date.now();
+      this._audioEvents ??= [
+        { at: now - 40_000, kind: "fallback", title: "Preview · A1 switched by fallback policy", detail: "Realtek Audio", target: "0" },
+        { at: now - 70_000, kind: "device", title: "Preview · Audio engine restarted after reconnect", detail: "Headphones", target: "" },
+      ];
+      return Promise.resolve(this._audioEvents);
+    }
+    clearAudioEvents() { this._audioEvents = []; this._audioEventsChanged?.(); return Promise.resolve(); }
+    onAudioEventsChanged(cb) { this._audioEventsChanged = cb; return Promise.resolve(); }
+    micTuneMeter(strip, phase) { this._micTuneMeter = strip == null ? null : { strip, phase }; return Promise.resolve(); }
+    async micTuneChange(strip, expected, next, preview) {
+      if (this._micTunePreview) throw new Error("Stop the current preview first.");
+      const names = { gain: "Gain", gate: "Gate", threshold: "Gate.Threshold" };
+      const changes = Object.entries(next).filter(([, v]) => Number.isFinite(v)).map(([key, after]) => ({
+        name: `Strip[${strip}].${names[key]}`, before: expected[key], after,
+      }));
+      const values = await this.getFloats(changes.map((c) => c.name));
+      if (values.some((v, i) => !Number.isFinite(v) || Math.abs(v - changes[i].before) > 0.15)) throw new Error("Input settings changed after measurement. Run the tune-up again.");
+      for (const c of changes) await this.setFloat(c.name, c.after);
+      if (preview) this._micTunePreview = { changes, timer: setTimeout(async () => {
+        await this.micTuneFinish(false);
+        this._micTuneEnded?.(null);
+      }, 8000) };
+    }
+    async micTuneFinish(keep) {
+      const p = this._micTunePreview;
+      if (!p) return false;
+      this._micTunePreview = null;
+      clearTimeout(p.timer);
+      const values = await this.getFloats(p.changes.map((c) => c.name));
+      const owns = (i) => Number.isFinite(values[i]) && Math.abs(values[i] - p.changes[i].after) <= .15;
+      if (keep && p.changes.every((_, i) => owns(i))) return true;
+      for (const [i, c] of p.changes.entries()) if (owns(i)) await this.setFloat(c.name, c.before);
+      return false;
+    }
+    onMicTuneEnded(cb) { this._micTuneEnded = cb; return Promise.resolve(); }
+    // No fades in the simulator: the send just switches.
+    routeMute(strip, out, mute) { return this.setFloat(`Strip[${strip}].${out}`, mute ? 0 : 1); }
     setFloat(name, value) {
       if (/^Strip\[\d\]\.(Comp|Gate|Denoiser)/.test(name)) { (this._chain = this._chain || {})[name] = value; }
       const rec = this.state.recorder;
@@ -323,7 +438,7 @@
       if (rec && name === "Recorder.mode.MultiTrack") rec.multiTrack = !!value;
       if (rec && name === "Recorder.mode.PlayOnLoad") rec.playOnLoad = !!value;
       if (/^Option\./.test(name)) (this._opts = this._opts || {})[name] = value;
-      const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+)$/.exec(name);
+      const m = /^(Strip|Bus)\[(\d)\]\.([\w.]+(?:\[\d\])?)$/.exec(name);
       if (m) {
         const obj = (m[1] === "Strip" ? this.state.strips : this.state.buses)[+m[2]];
         const key = m[3];
@@ -376,9 +491,38 @@
       });
     }
     listScenes() { return Promise.resolve([...this.scenes]); }
-    saveScene(name) { if (!this.scenes.includes(name)) this.scenes.push(name); return Promise.resolve(); }
-    loadScene() { return Promise.resolve(); }
-    deleteScene(name) { this.scenes = this.scenes.filter((s) => s !== name); return Promise.resolve(); }
+    sceneMics() {
+      return Object.fromEntries((this.settings.micFx?.chains || []).map((c) => [
+        c.target, { off: !!this._micLive?.[c.id]?.off, strength: this._micLive?.[c.id]?.strength ?? c.strength }
+      ]));
+    }
+    saveScene(name) {
+      if (!this.scenes.includes(name)) this.scenes.push(name);
+      const channels = {};
+      for (const [list, prefix] of [["strips", "Strip"], ["buses", "Bus"]]) {
+        this.state[list].forEach((ch, i) => {
+          channels[`${prefix}[${i}]`] = structuredClone({ gain: ch.gain, mute: ch.mute, a: ch.a, b: ch.b, layers: ch.layers });
+        });
+      }
+      this.sceneMixes.set(name, { channels, mics: this.sceneMics() });
+      return Promise.resolve();
+    }
+    loadScene(name) {
+      const { channels, mics } = this.sceneMixes.get(name) || {};
+      if (channels) {
+        for (const [list, prefix] of [["strips", "Strip"], ["buses", "Bus"]]) {
+          this.state[list].forEach((ch, i) => Object.assign(ch, structuredClone(channels[`${prefix}[${i}]`])));
+        }
+        this._micLive ||= {};
+        for (const c of this.settings.micFx?.chains || []) if (mics[c.target]) this._micLive[c.id] = { ...mics[c.target] };
+        this.emit();
+      }
+      return Promise.resolve();
+    }
+    scenePreview(name) {
+      return Promise.resolve({ ...structuredClone(this.sceneMixes.get(name)), currentMics: this.sceneMics() });
+    }
+    deleteScene(name) { this.sceneMixes.delete(name); this.scenes = this.scenes.filter((s) => s !== name); return Promise.resolve(); }
     getSettings() { return Promise.resolve(JSON.parse(JSON.stringify(this.settings))); }
     saveSettings(value) {
       this.settings = JSON.parse(JSON.stringify(value));
@@ -410,9 +554,10 @@
     streamDeckStatus() {
       const offer = (location.search.match(/[?&]streamdeck=(\w+)/) || [])[1] || "";
       return Promise.resolve({ app: offer !== "getApp" && offer !== "", device: offer !== "",
-        installedVersion: offer === "update" ? "0.15.0.0" : null, bundledVersion: "0.16.0.0", offer });
+        installedVersion: offer === "update" ? "0.19.0.0" : null, bundledVersion: "0.19.0.1", offer });
     }
     streamDeckInstall() { return Promise.resolve(); }
+    streamDeckProfileSave() { return Promise.resolve(false); }
     streamDeckGetApp() { return Promise.resolve(); }
     updateInstall() {
       return new Promise((resolve) => {
@@ -497,17 +642,108 @@
     }
     // Be right back: the simulator does what the real app does, on its own state.
     soundDevices() {
-      return Promise.resolve({ devices: ["Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
+      return Promise.resolve({ devices: ["Realtek Audio", "Speakers (Realtek USB Audio)", "Voicemeeter Input (VB-Audio Voicemeeter VAIO)", "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)"], auto: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" });
     }
     soundPick() { this._n = (this._n || 0) + 1; return Promise.resolve([["C:\\Sounds\\airhorn.mp3", "C:\\Sounds\\sad-trombone.wav", "C:\\Sounds\\vine-boom.ogg", "C:\\Sounds\\bruh.mp3"][(this._n - 1) % 4]]); }
-    selftestInputs() { return Promise.resolve({ devices: ["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter VAIO)"] }); }
+    selftestInputs() { return Promise.resolve({ devices: this.layout.buses.map((b) => `Voicemeeter Out ${b.param} (VB-Audio Voicemeeter VAIO)`) }); }
+    mixMonitorStart(input, output, cue = null) { this.monitor = { input, output, cue }; return Promise.resolve(); }
+    mixMonitorStop() { this.monitor = null; return Promise.resolve(); }
+    onMixMonitorEnded() { return Promise.resolve(); }
+    chatBalanceStatus() { return Promise.resolve(this.balance || { position: 0 }); }
+    onChatBalance(cb) { this.balanceListener = cb; return Promise.resolve(); }
+    async chatBalanceSet(selection, position, useMain = false) {
+      const suffix = this.layout.edition === 3 ? `GainLayer[${selection.bus.slice(4, -1)}]` : "Gain";
+      const names = [selection.game, selection.chat].map((ch) => `${ch}.${suffix}`);
+      const current = await this.getFloats(names);
+      if (!current.every(Number.isFinite)) throw new Error("Voicemeeter did not report both input levels.");
+      const centre = current.map((v, i) => this.balance?.position && Math.abs(v - this.balance.levels[i]) <= .15 ? this.balance.centre[i] : v);
+      const levels = useMain ? await this.getFloats([selection.game, selection.chat].map((ch) => `${ch}.Gain`)) : centre.map((v, i) => {
+        const amount = Math.max(0, i === 0 ? position : -position);
+        return amount === 100 ? -60 : Math.max(-60, v - amount * .3);
+      });
+      await Promise.all(names.map((name, i) => this.setFloat(name, levels[i])));
+      this.balance = { position, levels, centre };
+      this.balanceListener?.(this.balance);
+      return this.balance;
+    }
+    onAppRouteReset() { return Promise.resolve(); }
+    fallbackStatus(bus) {
+      const key = this.settings.outputFallbackLinks?.[bus] ?? bus;
+      const chain = this.settings.outputFallbacks?.[key] || [];
+      const device = this.state.buses[bus]?.device;
+      const index = chain.findIndex((item) => item.name === device);
+      return Promise.resolve(!chain.length ? "No fallback policy is configured for this output." : index < 0
+        ? "Preview: the current device is outside this policy."
+        : `Preview: ${device} is in use (priority ${index + 1}).`);
+    }
+    mixPreferenceSet(key, value) { return this.saveSettings({ ...this.settings, [key]: value }); }
+    guidedTest(source, stream, monitor, kind) {
+      return Promise.resolve(`Preview: ${kind} test selected ${source}${stream ? ` → ${stream}` : ""}. Audio plays in the Windows app.`);
+    }
+    micTakeRecord() { return Promise.resolve(); }
+    micTakePlay() { return Promise.resolve(); }
+    micTakeClear() { return Promise.resolve(); }
+    async micPresetExport(id) {
+      const chain = this.settings.micFx?.chains?.find((c) => c.id === id);
+      if (!chain) throw new Error("That mic chain no longer exists.");
+      const { on, aec, effect, strength, stereo } = chain;
+      const plugins = (chain.plugins || []).map((p) => ({ cid: p.cid, name: p.name, on: p.on !== false, c: "", e: "" }));
+      const url = URL.createObjectURL(new Blob([JSON.stringify({ format: "sleekmeeter-mic-chain", version: 1, on, aec, effect, strength, stereo, plugins }, null, 2)], { type: "application/json" }));
+      Object.assign(document.createElement("a"), { href: url, download: "Sleekmeeter-mic-chain.json" }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
+    }
+    async micPresetPreview(id) {
+      const file = await new Promise((resolve) => {
+        const input = Object.assign(document.createElement("input"), { type: "file", accept: ".json,application/json" });
+        input.addEventListener("change", () => resolve(input.files[0]), { once: true });
+        input.addEventListener("cancel", () => resolve(null), { once: true });
+        input.click();
+      });
+      if (!file) return null;
+      if (file.size > 16 * 1024 * 1024) throw new Error("This mic preset exceeds the 16 MB limit.");
+      const data = JSON.parse(await file.text());
+      const effects = { denoiser: "Noise removal", dereverb: "Room echo removal", dereverb_denoiser: "Noise and room echo removal" };
+      if (data.format !== "sleekmeeter-mic-chain" || data.version !== 1 || !Object.hasOwn(effects, data.effect) ||
+          !(Number.isFinite(data.strength) && data.strength >= 0 && data.strength <= 100) || !Array.isArray(data.plugins) || data.plugins.length > 32) {
+        throw new Error("Choose a valid version 1 Sleekmeeter mic-chain preset.");
+      }
+      const installed = await this.vstScan(), chain = this.settings.micFx?.chains?.find((c) => c.id === id);
+      if (!chain) throw new Error("That mic chain no longer exists.");
+      const replacement = { ...chain, on: data.on === true, aec: data.aec === true, stereo: data.stereo === true, effect: data.effect, strength: data.strength, plugins: [] };
+      const plugins = data.plugins.map((p) => {
+        const found = installed.find((f) => f.cid === p.cid);
+        if (!found) return { name: p.name || "Unnamed VST3", status: "Missing · skipped" };
+        replacement.plugins.push({ ...found, id: "p" + crypto.randomUUID(), on: p.on !== false });
+        return { name: found.name, status: p.on !== false ? "Installed · enabled" : "Installed · disabled" };
+      });
+      this._micPreset = { id, replacement };
+      return { effect: effects[data.effect], on: replacement.on, aec: replacement.aec, stereo: replacement.stereo, strength: data.strength, plugins, notes: ["Preview uses simulated NVIDIA and VST3 availability."] };
+    }
+    async micPresetApply(id) {
+      const pending = this._micPreset;
+      if (pending?.id !== id) throw new Error("Preview a preset first.");
+      const micFx = this.settings.micFx;
+      micFx.chains = micFx.chains.map((c) => c.id === id ? pending.replacement : c);
+      await this.saveSettings(this.settings);
+      this._micPreset = null;
+      return JSON.parse(JSON.stringify(micFx));
+    }
+    micPresetClear() { this._micPreset = null; return Promise.resolve(); }
     selftestRun(input, output, secs) { return new Promise((r) => setTimeout(r, Math.min(secs, 2) * 1000)); }
     soundImport(paths) { return Promise.resolve(paths); }
     soundPickPack() { return Promise.resolve({ folder: "C:\\Sounds\\Cheers", count: 6 }); }
     soundPickFolder() { return Promise.resolve(["rimshot.wav", "wilhelm-scream.mp3", "oof.ogg", "bell_ding.flac", "applause.wav"].map((f) => "C:\\Sounds\\Memes\\" + f)); }
     soundPlay(name) { this.played = name; return Promise.resolve(); }
     soundStop() { return Promise.resolve(); }
-    twitchStatus() { return Promise.resolve(this._twitch || { connected: false, message: "Off", last: "" }); }
+    // With chat on, a viewer seems to redeem a channel point reward every few seconds (for adding rewards).
+    twitchStatus() {
+      const t = this.settings.twitch || {};
+      if (!t.on) return Promise.resolve({ connected: false, message: "Off", last: "", reward: null });
+      if (!t.channel) return Promise.resolve({ connected: false, message: "Enter your channel name", last: "", reward: null });
+      const at = Math.floor(Date.now() / 3000) * 3000;
+      return Promise.resolve({ connected: true, message: `In #${t.channel} chat`, last: "", reward: { id: "27c8e486-a386-40cc-9a4b-dbb5cf01e439", user: "Viewer", text: "airhorn", at } });
+    }
     onTwitchStatus(cb) { this._twitchCb = cb; return Promise.resolve(); }
     remoteStatus() {
       const r = this.settings && this.settings.remote;
@@ -529,10 +765,20 @@
       return Promise.resolve({ from: now - minutes * 60, now, bucket, keys, series, stats });
     }
     historyClear() { return Promise.resolve(); }
+    appRouteDefaults() { return Promise.resolve(["{0.0.0.00000000}.{aaaa}", "{0.0.0.00000000}.{bbbb}"]); }
     appRouteDevices() {
-      return Promise.resolve([{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" }, { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" }, { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" }, { id: "{0.0.0.00000000}.{dddd}", name: "CABLE-A Input (VB-Audio Cable A)" }]);
+      const endpoints = [{ id: "{0.0.0.00000000}.{aaaa}", name: "Voicemeeter Input (VB-Audio Voicemeeter VAIO)" },
+        { id: "{0.0.0.00000000}.{bbbb}", name: "Voicemeeter Aux Input (VB-Audio Voicemeeter AUX)" },
+        { id: "{0.0.0.00000000}.{cccc}", name: "Speakers (Realtek USB Audio)" },
+        { id: "{0.0.0.00000000}.{dddd}", name: "CABLE-A Input (VB-Audio Cable A)" }];
+      if (this.layout.edition === 3) endpoints.push({ id: "{0.0.0.00000000}.{eeee}", name: "Voicemeeter VAIO3 Input (VB-Audio Voicemeeter VAIO3)" });
+      return Promise.resolve(endpoints);
     }
-    appRouteSet(pids, device) { this.routed = { pids, device }; return Promise.resolve(); }
+    appRouteSet(pids, device) {
+      this.routed = { pids, device };
+      for (const app of this.apps) if (app.pids.some((pid) => pids.includes(pid))) app.endpoints = device ? [device] : [];
+      return Promise.resolve();
+    }
     brbToggle() {
       const st = this.state, cfg = Object.assign({ mute: [], lower: [], amount: 30, play: "", playDb: -8 }, this.settings.brb);
       const pick = (key) => {
@@ -557,6 +803,14 @@
     obsStatus() {
       const live = /[?&]live\b/.test(location.search);
       return Promise.resolve({ connected: true, live, scene: "Gameplay", scenes: ["Starting soon", "Gameplay", "Just chatting", "BRB", "Ending"], message: "Connected to OBS" });
+    }
+    obsAudioCheck() {
+      return Promise.resolve({live: 1, vod: 2, recording: [1, 3, 4], sources: [
+        {name: "Stream Mix", kind: "wasapi_input_capture", deviceName: "Voicemeeter Out B2", device: "b2", tracks: [1, 2], mute: false, active: true},
+        {name: "Desktop Audio", kind: "wasapi_output_capture", deviceName: "Headphones", device: "desktop", tracks: [1], mute: false, active: true},
+        {name: "Microphone", kind: "wasapi_input_capture", deviceName: "Shure MV7", device: "mic", tracks: [3], mute: false, active: true},
+        {name: "Game", kind: "wasapi_process_output_capture", tracks: [4], mute: false, active: true},
+      ]});
     }
     onObsStatus() { return Promise.resolve(); }
     onThemeAuto() { return Promise.resolve(); }
@@ -589,6 +843,181 @@
       ]), 500);
       });
     }
+    /* Going live, simulated the way watch.rs and golive.rs do it in the app. */
+    streamBus() {
+      const L = this.layout, hb = L.buses.filter((x) => x.kind === "hw").length, vb = L.buses.length - hb;
+      const m = /^Bus\[(\d)\]$/.exec(this.settings.streamBus || "");
+      if (m && +m[1] < L.buses.length) return +m[1];
+      const j = hb + (vb >= 2 ? 1 : 0);
+      return j < L.buses.length ? j : -1;
+    }
+    // The route from strip i to bus j: ["b", 1] for B2.
+    routeOf(j) {
+      const hb = this.layout.buses.filter((x) => x.kind === "hw").length;
+      return j < hb ? ["a", j] : ["b", j - hb];
+    }
+    goLiveCheck() {
+      const st = this.state, s = this.settings, out = [];
+      const item = (state, label, detail, extra) => out.push(Object.assign({ state, label, detail }, extra || {}));
+      if (!st.connected) { item("bad", "Voicemeeter", "Voicemeeter isn't running, so nothing reaches your stream."); return Promise.resolve(out); }
+      const mm = /^Strip\[(\d)\]$/.exec((s.mutedTalk || {}).target || "");
+      const mi = mm && +mm[1] < st.strips.length ? +mm[1] : 0;
+      const mic = st.strips[mi], micName = mic.label || "Your mic";
+      const j = this.streamBus(), bus = st.buses[j], p = this.layout.buses[j] ? this.layout.buses[j].param : "";
+      const busName = bus ? (bus.label ? `${bus.label} (${p})` : p) : "the stream output";
+      if (st.brb) item("warn", "Mic", "Be right back is on, so your mic is muted. Press Back live when you're ready.");
+      else if (mic.mute) item("bad", "Mic", `${micName} is muted.`, { action: "set", button: "Unmute", param: `Strip[${mi}].Mute`, value: 0 });
+      else item("ok", "Mic", `${micName} is on.`);
+      if (bus) {
+        const [k, n] = this.routeOf(j);
+        if (mic[k][n]) item("ok", "Mic on stream", `${micName} goes to ${busName}.`);
+        else item("bad", "Mic on stream", `${micName} isn't sent to ${busName}, so viewers won't hear you.`, { action: "set", button: `Send it to ${p}`, param: `Strip[${mi}].${p}`, value: 1 });
+        if (bus.mute) item("bad", "Stream output", `${busName} is muted, so your stream gets no sound.`, { action: "set", button: "Unmute", param: `Bus[${j}].Mute`, value: 0 });
+        else if (bus.gain <= -20) item("warn", "Stream output", `${busName} is turned down to ${Math.round(bus.gain)} dB, so your stream will be quiet.`);
+        else item("ok", "Stream output", `${busName} is on.`);
+        const ago = this._soundAt ? (performance.now() - this._soundAt) / 1000 : null;
+        if (ago !== null && ago < 10) item("ok", "Sound on stream", `Sound is reaching ${busName}.`);
+        else item("warn", "Sound on stream", ago === null ? `${busName} hasn't had any sound since Sleekmeeter started.` : `${busName} has been silent for ${Math.round(ago)} seconds. Say something, or check that your game and music are sent to ${p}.`);
+      }
+      const g = s.musicGuard || {};
+      if (g.on) {
+        const gm = /^Strip\[(\d)\]$/.exec(g.strip || "");
+        const when = { recording: "while OBS records", live: "while you're live", manual: "when you press its key" }[g.when] || "while you're live or recording";
+        if (gm && st.strips[+gm[1]]) item("ok", "Music off stream", `${st.strips[+gm[1]].label || "Music"} is kept off the stream ${when}.${st.musicGuard ? " It's off the stream now." : ""}`);
+        else item("warn", "Music off stream", "Choose your music channel in Settings → Going live.");
+      }
+      if ((s.obs || {}).on) item("ok", "OBS", /[?&]live\b/.test(location.search) ? "Connected, and you're live." : "Connected.");
+      else item("warn", "OBS", "Not linked, so Sleekmeeter can't tell when you go live. Turn it on in Settings → OBS Studio.");
+      if (/[?&]audio=wrong\b/.test(location.search) && !this._audioFixed) item("bad", "Windows sound output", "Windows sends sound to Headphones (Arctis Nova Pro Wireless), not Voicemeeter, so those apps skip the mixer.", { action: "fixAudio" });
+      else item("ok", "Windows sound output", "Windows plays through Voicemeeter.");
+      if ((s.twitch || {}).on) item((s.twitch.channel ? "ok" : "warn"), "Twitch chat", s.twitch.channel ? `In #${s.twitch.channel} chat` : "Not connected: enter your channel name. Chat commands and channel point sounds won't work.");
+      if ((s.replay || {}).on) item("ok", "Instant replay", `Keeping the last ${s.replay.secs || 60} seconds of Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO).`);
+      return new Promise((r) => setTimeout(() => r(out), 400));
+    }
+    onGoLive() { return Promise.resolve(); }
+    onAlert(cb) { this._alert = cb; return Promise.resolve(); }
+    // Music off stream: switch the music channel's route to the stream output off, or back on.
+    guard(on) {
+      const st = this.state;
+      if (on && !this._guardRoute) {
+        const gm = /^Strip\[(\d)\]$/.exec((this.settings.musicGuard || {}).strip || ""), j = this.streamBus();
+        if (!gm || j < 0 || !st.strips[+gm[1]]) return;
+        const [k, n] = this.routeOf(j), strip = st.strips[+gm[1]];
+        if (!strip[k][n]) return;
+        strip[k][n] = 0; this._guardRoute = [strip, k, n]; st.musicGuard = true;
+      } else if (!on && this._guardRoute) {
+        const [strip, k, n] = this._guardRoute;
+        strip[k][n] = 1; this._guardRoute = null; st.musicGuard = false;
+      } else return;
+      this.emit();
+    }
+    musicGuardToggle() {
+      const g = this.settings.musicGuard || {};
+      if (!g.on || !/^Strip\[\d\]$/.test(g.strip || "")) return Promise.reject(new Error("Choose your music channel in Settings → Going live first"));
+      this._guardManual = !this.state.musicGuard;
+      this.guard(this._guardManual);
+      return Promise.resolve(!!this.state.musicGuard);
+    }
+    // Called with every meter reading: talking while muted, a silent or clipping stream, Music off stream.
+    watch(t, raw, outputs) {
+      const s = this.settings, st = this.state, now = performance.now();
+      const say = (kind, name, text) => { if (this._alert) this._alert({ kind, name, text }); };
+      const mt = s.mutedTalk || {}, mm = /^Strip\[(\d)\]$/.exec(mt.target || "");
+      const ptt = (s.hotkeys || []).some((h) => h.action === "ptt" && h.target === mt.target) && !mt.ptt;
+      const mic = mm ? st.strips[+mm[1]] : null;
+      this._talk = this._talk || [];
+      if (mt.on !== false && mic && mic.mute && !st.brb && !ptt) {
+        this._talk.push(raw[+mm[1]] > (mt.threshold ?? -35));
+        if (this._talk.length > 36) this._talk.shift();
+        if (this._talk.filter(Boolean).length >= 21 && !(now - (this._talkAt || -1e9) < 8000)) { this._talkAt = now; say("mutedTalk", mic.label || "Your mic", "You're muted"); }
+      } else this._talk = [];
+      const j = this.streamBus(), live = /[?&]live\b/.test(location.search);
+      if (j >= 0) {
+        const lv = Math.max(...outputs[j]);
+        if (lv > -60) { this._soundAt = now; this._quietAt = null; this._silentAt = null; } else if (!this._quietAt) this._quietAt = now;
+        const w = s.streamWatch || {};
+        if (w.on && (!w.onlyLive || live)) {
+          const bus = st.buses[j], name = bus.label || this.layout.buses[j].param;
+          if (this._quietAt && now - this._quietAt >= (w.silentSecs || 15) * 1000 && !(now - (this._silentAt || -1e9) < 60000)) { this._silentAt = now; say("silent", name, "Your stream is silent"); }
+          this._clipRun = w.clip !== false && lv >= -0.3 ? (this._clipRun || 0) + 1 : 0;
+          if (this._clipRun >= 6 && !(now - (this._clipAt || -1e9) < 15000)) { this._clipAt = now; say("clip", name, "Your stream is clipping"); }
+        }
+      }
+      const g = s.musicGuard || {};
+      const auto = g.when === "manual" ? false : live && g.when !== "recording";
+      if (this._guardAuto !== auto) { this._guardAuto = auto; this._guardManual = undefined; }
+      const want = !!g.on && (this._guardManual ?? auto);
+      if (want !== !!st.musicGuard) this.guard(want);
+    }
+    micFxStatus() {
+      const m = this.settings.micFx || {};
+      const names = { denoiser: "noise removal", dereverb: "room echo removal", dereverb_denoiser: "noise and room echo removal" };
+      const live = this._micLive || {};
+      const chains = {}, plugins = {};
+      for (const c of Array.isArray(m.chains) ? m.chains : []) {
+        const i = +((/\d+/.exec(c.target || "") || [0])[0]);
+        const ps = Array.isArray(c.plugins) ? c.plugins : [];
+        for (const p of ps) plugins[p.id] = { loaded: true, error: "", editor: true };
+        const on = ps.filter((p) => p.on !== false).length;
+        const nv = [];
+        if (c.aec) nv.push("speaker echo removal");
+        if (c.on) nv.push(names[c.effect] || names.denoiser);
+        const what = [];
+        if (nv.length) what.push(`${nv.join(" and ")} on your NVIDIA GPU`);
+        if (on) what.push(on === 1 ? "1 plugin" : `${on} plugins`);
+        const label = ["Mic", "Line in", "Hardware input 3"][i] || "Input " + (i + 1);
+        const off = !!(live[c.id] || {}).off;
+        chains[c.id] = what.length && !off
+          ? { running: true, off, latencyMs: 26.7, underruns: 0, message: `Cleaning up ${label}: ${what.join(" and ")}.` }
+          : { running: false, off, latencyMs: 0, underruns: 0, message: off ? "Switched off." : "" };
+      }
+      return Promise.resolve({ available: true, message: "", chains, plugins });
+    }
+    micFxToggle(target) {
+      const m = this.settings.micFx || {};
+      this._micLive = this._micLive || {};
+      const hit = (m.chains || []).filter((c) => !target || c.target === target);
+      const turnOn = hit.every((c) => (this._micLive[c.id] || {}).off);
+      for (const c of hit) this._micLive[c.id] = { off: !turnOn };
+      return Promise.resolve(turnOn);
+    }
+    micFxCompare() { return Promise.resolve(); }
+    micFxListen(id, on) { return Promise.resolve(!!on); }
+    vstPresetSave(id, name) {
+      const m = this.settings.micFx || {};
+      const p = (m.chains || []).flatMap((c) => c.plugins || []).find((x) => x.id === id);
+      const list = (this.settings.vstPresets || []).filter((x) => !(x.cid === p.cid && x.name === name));
+      list.push({ name, cid: p.cid, c: "", e: "" });
+      this.settings.vstPresets = list;
+      return Promise.resolve(list);
+    }
+    vstPresetApply() { return Promise.resolve(); }
+    vstPresetDelete(cid, name) {
+      this.settings.vstPresets = (this.settings.vstPresets || []).filter((x) => !(x.cid === cid && x.name === name));
+      return Promise.resolve(this.settings.vstPresets);
+    }
+    vstScan() {
+      return new Promise((r) => setTimeout(() => r([
+        { name: "Pro-Q 3", vendor: "FabFilter", path: "C:\\Program Files\\Common Files\\VST3\\FabFilter Pro-Q 3.vst3", cid: "72C4DB717A4D459AB97E51745D84B39D" },
+        { name: "ReaComp", vendor: "Cockos", path: "C:\\Program Files\\Common Files\\VST3\\reacomp.vst3", cid: "565354726A6370726561636F6D700000" },
+        { name: "TDR Nova", vendor: "Tokyo Dawn Labs", path: "C:\\Program Files\\Common Files\\VST3\\TDR Nova.vst3", cid: "56535454644E6F746472206E6F766100" },
+      ]), 400));
+    }
+    vstBrowse() { return Promise.resolve([]); }
+    vstEditor() { return Promise.reject(new Error("Plugin windows open in the Sleekmeeter app, not the browser preview")); }
+    vstRecover() { return Promise.resolve(); }
+    replayStatus() {
+      const r = this.settings.replay || {};
+      return Promise.resolve(r.on ? { running: true, device: "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", message: `Keeping the last ${r.secs || 60} seconds of Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO).` } : { running: false, device: "", message: "Off" });
+    }
+    replayDevices() { return Promise.resolve(["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", "Voicemeeter Out B3 (VB-Audio Voicemeeter VAIO3)"]); }
+    replaySave() {
+      const r = this.settings.replay || {};
+      if (!r.on) return Promise.reject(new Error("Turn on Instant replay in Settings → Instant replay first"));
+      const d = new Date(), p = (n) => String(n).padStart(2, "0");
+      return Promise.resolve(`C:\\Users\\you\\Music\\Sleekmeeter replays\\Replay ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}.wav`);
+    }
+    replayOpenFolder() { return Promise.resolve(); }
     settingsExport() { return Promise.resolve("Sleekmeeter settings.json"); }
     settingsImport() { return Promise.resolve(null); }
     resetLayout() { return Promise.resolve(); }
@@ -611,6 +1040,7 @@
     log(level, message) { (level === "error" ? console.error : console.log)("[log]", message); return Promise.resolve(); }
     recorderLoad(path) { return Promise.resolve(path.split(/[\\/]/).pop()); }
     onEngineRestart() { return Promise.resolve(); }
+    onOutputFallback() { return Promise.resolve(); }
     onSettingsChanged() { return Promise.resolve(); }
     onFileDrop() { return Promise.resolve(); }
 
@@ -660,13 +1090,20 @@
         let pw = 0;
         st.strips.forEach((s, i) => {
           if (s.mute) return;
-          if (isA ? s.a[k] : s.b[k]) pw += Math.pow(10, post[i] / 10);
+          if (isA ? s.a[k] : s.b[k]) {
+            const layerOffset = (s.layers?.[j] ?? s.gain) - s.gain;
+            pw += Math.pow(10, (post[i] + layerOffset) / 10);
+          }
         });
         if (bus.mute || pw === 0) return [-200, -200];
         const db = 10 * Math.log10(pw) + bus.gain;
         return [db + 0.6 * Math.sin(t * 7 + j), db - 0.6 * Math.sin(t * 7 + j)];
       });
-      return { inputs, outputs };
+      this.watch(t, raw, outputs);
+      const m = this._micTuneMeter;
+      const pre = m ? [-57, -27, -15][m.phase] + Math.sin(t * 12) * 3 : undefined;
+      const micTune = m ? { strip: m.strip, pre, post: pre + st.strips[m.strip].gain } : undefined;
+      return { inputs, outputs, micTune };
     }
   }
 
