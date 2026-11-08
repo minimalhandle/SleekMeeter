@@ -1,5 +1,64 @@
 # Changelog
 
+## 0.19.0
+Everything since 0.18.1. The Stream Deck plugin moves to 0.19.0.1 with a Mic clean-up key and an editable Stream Deck + profile.
+
+- **Glass refresh:** Glass is the theme’s name again. The refreshed design brings translucent panels with brighter edges, pearl faders, and a drifting aurora. Choose Off, Subtle, or Full under **Theme motion**. Windows reduced-motion settings take priority. Translucent gradients reduce the rendering cost of the mixer strips, and meter updates are limited to the visible mixer view.
+- **Quick Actions:** press **Ctrl+K** to search for channels, scenes, output profiles, tools and settings. Use the arrow keys and Enter to open a result.
+- **Audio Event History:** see when Windows changed its playback device, a hardware output switched to a fallback, an app route was reapplied, or a VST3 plugin was quarantined. Open an event to jump to its controls. Sleekmeeter keeps up to 200 entries locally.
+- **Mic Chain and guided tune-up:** use Mic Chain for manual processing or measure room tone, normal speech and a loud phrase to get a fader suggestion and, where appropriate, a gentle noise gate. Preview selected changes for eight seconds on the input’s existing routes or apply them directly.
+- **Mixer appearance:** the top buttons sit directly on the toolbar across themes. Channel Look offers eight more icons and eight more colours. The **⋯** menu groups tools by purpose.
+- **Glass polish:** brighter aurora colours, a sweeping reflection in Full motion, and glossy mute buttons with a pink glow while muted.
+- **Stream toolbar** groups streaming tools and lets you pin individual controls. Live, recording, and BRB indicators provide shortcuts to their controls.
+- **Apps workspace** has Volumes, Saved assignments, and Audio Flow tabs. Audio Flow includes the route inspector and guided tests.
+- **Focused mixer** shows active sends and expands the full routing grid per input.
+- **Channel drawer** groups Routing, Sound, Apps, and Appearance, with a shortcut to the selected hardware input’s effects chain.
+- **Status shortcuts** open setup checks from the header, affected plugin chains from their inputs, and fallback policies from the current devices list in Outputs.
+
+- **Live Audio Flow** maps Windows apps, Voicemeeter inputs and outputs. Select a node to highlight its signal paths.
+- **Listen to a mix** plays a virtual Voicemeeter output live on a selected physical playback device without changing the mixer routes.
+- **Saved app assignments** let you set up routes before an app has a Windows audio session.
+- **Stream Deck + profile** provides four dials and eight keys. Save the profile from Settings and import it into Stream Deck.
+- **Stereo VST3** preserves left and right on hardware inputs when you select Stereo hardware input for a chain.
+
+- **Settings** now has six searchable categories. Fresh installs open in the foreground, start Voicemeeter on request, use Subtle theme motion, and leave level history and talking-while-muted alerts off. Existing users keep their settings.
+- Settings category labels wrap inside their buttons across themes. Compact Settings uses a grid for navigation and keeps long fader-group names inside their cards.
+- **Game / Chat balance** lets you choose two input strips, favour either side and restore the original levels. On Potato it adjusts only the chosen listening output.
+- **Personal / Stream mix** shows listening and audience routes and faders side by side in Potato's Output Mix.
+- **Guided audio tests** send test tones down the game, chat and stream paths. Record a four-second mic take once, then listen to it raw and processed at matched levels.
+- **Shared fallback policies** can be copied or linked across hardware outputs. Outputs explains the active device, the preferred available device, or why automatic switching is paused.
+- **Portable mic-chain presets** move NVIDIA settings and VST3 state between PCs. Preview plugin and runtime compatibility before applying a preset to the selected mic.
+
+- The Apps tray and App Volumes share a recent Windows audio session scan. The route inspector updates while open and highlights the first likely blockage.
+- **Theme motion** also offers Off, Subtle, and Full for Kokiri Forest. Compact layouts have clearer labels, active routing indicators, and keyboard focus outlines.
+- Hold **Alt** while moving a linked fader to adjust only that channel.
+
+- **Apps on channels:** a small stack icon shows which inputs have routed apps. Hover anywhere on an input to see its apps beside the strip, or click the icon to keep the list open. Kokiri Forest uses a green rupee and a sapphire inventory panel.
+- Fixed the app list opening away from its channel on Glass and other themes with filtered or transformed panels.
+- **Audio route inspector:** in **Apps → Volumes…**, trace an app's Windows playback sessions into Voicemeeter and through its enabled outputs. The inspector flags common blocks such as a muted input or missing output device.
+- **Scene preview:** select a scene to review its level, mute, routing, and mic-chain changes before applying it. Scenes saved with this version include routing in the preview.
+- **VST3 crash recovery:** when the helper stops during a tracked plugin load or audio call, Sleekmeeter bypasses the plugin involved and can restart the rest of the chain. **Settings → Mic clean-up and plugins** lets you bypass or retry individual plugins.
+- **Theme polish:** Kokiri Forest has darker forest panels with drifting fairy lights and supports reduced motion.
+- **Mixer undo and linked faders:** use the undo button or Ctrl+Z for a mixer fader, mute, or route change. Link main faders in Settings to move them together while keeping their dB offsets.
+- **Device fallback chains:** in Outputs, rank devices for each hardware output. Sleekmeeter switches to the first available device and returns to a preferred device when it reconnects.
+- **Persistent plugin quarantine:** bypassed VST3 plugins stay isolated across app restarts until you retry them.
+- Kokiri Forest’s mini faders use a smaller shield with a clear face.
+
+- Retired Titanium, Afterburner, and Opal. Saved selections and scene rules using them fall back to Console.
+- **Two new mixer themes:** Kokiri Forest pairs forest green, gold, and sapphire with Hylian Shield faders, Triforce emblems, Cinzel headings, and “Hey!” / “Listen!” mute controls. After Hours pairs blackberry lacquer with soft pink lighting.
+
+- **Speaker echo removal:** for people who use speakers instead of headphones. In **Settings → Mic clean-up and plugins**, tick **Remove my speakers from this mic** and NVIDIA's AI takes what your speakers play (A1, or the output you pick) out of the mic, so your game and friends don't echo onto your stream or Discord. Needs an NVIDIA RTX card, like the noise removal
+- **More than one mic:** **+ Add a mic** gives another hardware input, like a guest mic, its own clean-up and plugins. Each mic has a tab with a green dot while it's running
+- **Hear the difference:** **Listen to this mic** sends the mic to A1 while you set it up (and switches A1 back off after), and **Hold to hear it without** plays the raw mic, at the same delay, for as long as you hold it
+- **Switch clean-up from anywhere:** a shortcut, the new **Mic clean-up** Stream Deck key, the phone remote and Twitch commands can switch one mic's clean-up and plugins off and back on, or every mic at once. Settings shows when a mic was switched off this way, with a button to switch it back on
+- **Scenes remember mic clean-up:** saving a scene keeps which mics have clean-up on and how strong NVIDIA's clean-up is, and loading it puts that back, so a podcast scene can use a lighter touch than a loud game. Scenes saved before keep the mic as it is
+- **Plugin presets:** each plugin's **Presets** menu saves its current settings under a name, and loads them again on any mic with the same plugin
+- **Crash-safe plugins:** VST3 plugins now run in a separate helper process. A plugin that crashes no longer closes Sleekmeeter: your mic carries on without plugins, Settings says what happened, and they start again (they stay off for a while after three crashes in two minutes). A plugin that stops answering is skipped instead of holding up your mic
+
+## 0.18.1
+- **VST3 plugins on your mic:** **Settings → Mic clean-up and plugins** can put your own VST3 effects on the mic, like an EQ, a de-esser or a compressor. **Add a plugin…** lists the effects installed in the usual VST3 folders, and **Browse for a .vst3 file…** picks one from anywhere. They run in the order listed, after NVIDIA's clean-up if that's on. **Edit** opens the plugin's own window, and its settings are saved and come back after a restart. Each one can be switched off, moved up or down, or removed. Like the NVIDIA clean-up, they work inside Voicemeeter before its fader, so every output hears them, and only while Sleekmeeter is open. VST3 only (not the older VST2 .dll plugins); a plugin that crashes can close Sleekmeeter
+- **Mic clean-up with NVIDIA's AI:** on a PC with an NVIDIA RTX graphics card, **Settings → Mic clean-up and plugins** removes background noise (keyboard, fans, the dog), room echo, or both from your mic, using NVIDIA's free Audio Effects SDK on the graphics card. Pick the mic and how strong it should be. It works inside Voicemeeter before the fader, gate and compressor, so every output gets the clean voice, and adds about 25 ms of delay. It runs while Sleekmeeter is open (your mic carries on without it if Sleekmeeter closes), and needs NVIDIA's Audio Effects SDK runtime installed and Voicemeeter at 48 kHz. Sleekmeeter doesn't include or download NVIDIA's files
+
 ## 0.18.0
 Everything since 0.17.1. The Stream Deck plugin moves to 0.18.0.0 with it.
 

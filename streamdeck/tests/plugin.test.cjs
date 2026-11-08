@@ -18,7 +18,7 @@ function fixture(extra = {}) {
 test('every manifest action produces a live key or dial', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(plugin, 'manifest.json')));
   assert.equal(manifest.UUID, uuid);
-  assert.equal(manifest.Actions.length, 20);
+  assert.equal(manifest.Actions.length, 21);
   for (const action of manifest.Actions) {
     const c = { action: action.UUID.slice(uuid.length + 1), settings: { channel: 'Strip[0]', scene: 'Gaming', sound: 'Air horn', output: 'Headphones' } };
     const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : ['channel', 'mixdial'].includes(c.action) ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));

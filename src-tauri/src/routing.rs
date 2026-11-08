@@ -128,6 +128,8 @@ Write-Output 'OK'
 #[cfg(windows)]
 pub fn set(pids: &[u32], device: &str) -> Result<(), String> {
     use std::os::windows::process::CommandExt;
+    static ROUTE_HELPER: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _guard = ROUTE_HELPER.lock().unwrap();
     if pids.is_empty() {
         return Err("That app isn't playing sound right now".into());
     }
@@ -173,7 +175,7 @@ pub fn set(_pids: &[u32], _device: &str) -> Result<(), String> {
 /// itself; this covers the times it doesn't.
 pub fn spawn(app: tauri::AppHandle) {
     use std::collections::{HashMap, HashSet};
-    use tauri::Manager;
+    use tauri::{Emitter, Manager};
     std::thread::spawn(move || {
         // program → (device it was sent to, processes already sent there)
         let mut done: HashMap<String, (String, HashSet<u32>)> = HashMap::new();
@@ -198,7 +200,7 @@ pub fn spawn(app: tauri::AppHandle) {
                 let Some(device) = routes.get(&exe).and_then(|d| d.as_str()) else {
                     continue;
                 };
-                if !devices.iter().any(|d| d == device) {
+                if !device.is_empty() && !devices.iter().any(|d| d == device) {
                     continue; // that device isn't here right now
                 }
                 let pids: Vec<u32> = a["pids"]
@@ -211,13 +213,41 @@ pub fn spawn(app: tauri::AppHandle) {
                 if entry.0 != device {
                     *entry = (device.to_string(), HashSet::new());
                 }
+                entry.1.retain(|p| pids.contains(p));
                 let fresh: Vec<u32> = pids.into_iter().filter(|p| !entry.1.contains(p)).collect();
                 if fresh.is_empty() {
                     continue;
                 }
-                entry.1.extend(fresh.iter().copied());
                 if let Err(e) = set(&fresh, device) {
                     log_warn!("Couldn't put {exe} back on its output: {e}");
+                    continue;
+                }
+                entry.1.extend(fresh);
+                let label = if device.is_empty() {
+                    "Windows default"
+                } else {
+                    // The app's route can be opened from its executable even after it exits.
+                    "Saved playback device"
+                };
+                crate::audio_events::record(
+                    &app,
+                    "routing",
+                    "App route applied",
+                    &format!("{exe} → {label}"),
+                    &exe,
+                );
+                if device.is_empty() {
+                    let state = app.state::<crate::Settings>();
+                    let mut settings = state.0.lock().unwrap();
+                    if settings["appRoutes"][&exe] == "" {
+                        if let Some(routes) = settings["appRoutes"].as_object_mut() {
+                            routes.remove(&exe);
+                            app.state::<crate::SettingsDirty>()
+                                .0
+                                .store(true, std::sync::atomic::Ordering::SeqCst);
+                            let _ = app.emit("app-route-reset", &exe);
+                        }
+                    }
                 }
             }
         }

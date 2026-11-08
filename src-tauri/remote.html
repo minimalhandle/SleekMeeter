@@ -37,7 +37,7 @@
 <h1>Sleekmeeter <small id="status">connecting…</small></h1>
 <div id="app" hidden>
   <button class="brb" id="brb" type="button" aria-pressed="false">Be right back</button>
-  <div class="live-row"><button id="music" type="button" aria-pressed="false" hidden>Music off stream</button><button id="replay" type="button" hidden>Save replay</button></div>
+  <div class="live-row"><button id="music" type="button" aria-pressed="false" hidden>Music off stream</button><button id="replay" type="button" hidden>Save replay</button><button id="micfx" type="button" aria-pressed="false" hidden>Mic clean-up</button></div>
   <div id="blocks"></div>
 </div>
 <p class="msg" id="msg" hidden></p>
@@ -112,6 +112,11 @@
     $("music").setAttribute("aria-pressed", String(!!s.musicGuard));
     $("music").textContent = s.musicGuard ? "Music is off stream" : "Music off stream";
     $("replay").hidden = !s.replay;
+    // Mic clean-up: one button for every mic that has it set up.
+    const mics = Object.values(s.micFx || {}), micOn = mics.some((m) => m.on);
+    $("micfx").hidden = !mics.length;
+    $("micfx").setAttribute("aria-pressed", String(micOn));
+    $("micfx").textContent = micOn ? "Mic clean-up on" : "Mic clean-up off";
     document.querySelectorAll("#blocks [data-name]").forEach((b) => { if (s.outputs.includes(b.dataset.name)) b.setAttribute("aria-pressed", String(b.dataset.name === s.outputNow)); });
     [...s.strips, ...s.buses].forEach((c) => {
       const r = rows.get(c.key); if (!r) return;
@@ -125,6 +130,7 @@
   }
   $("brb").addEventListener("click", () => act("brb"));
   $("music").addEventListener("click", () => act("musicguard"));
+  $("micfx").addEventListener("click", () => act("micfx"));
   $("replay").addEventListener("click", () => api("/api/action", { action: "replay", target: "" }).then(() => flash("replay saved")).catch((e) => flash(e.message)));
   let failures = 0;
   async function refresh() {

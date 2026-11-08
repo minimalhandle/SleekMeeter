@@ -1,6 +1,6 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.18.0.0",
+  "Version": "0.19.0.1",
   "Author": "minimalhandle",
   "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
@@ -130,6 +130,23 @@
       "States": [
         {
           "Image": "imgs/keys/mute",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Mic clean-up",
+      "UUID": "com.minimalhandle.sleekmeeter.micfx",
+      "Icon": "imgs/actions/mic",
+      "Tooltip": "Switch a mic's clean-up and plugins off or back on.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/mic",
           "ShowTitle": false
         }
       ]

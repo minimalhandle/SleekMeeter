@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 const BASE = (process.argv[2] || "http://localhost:8000").replace(/\/$/, "");
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "site", "img");
 const EDGE = process.env.EDGE || "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
-const THEMES = ["console", "oled", "afterburner", "lunar", "onyx", "opal", "glass", "neon", "terminal", "bubblegum", "blueprint", "block", "arcade", "peach", "sticker"];
+const THEMES = ["console", "oled", "lunar", "onyx", "glass", "neon", "terminal", "bubblegum", "blueprint", "block", "arcade", "peach", "sticker", "hyrule", "afterhours"];
 const W = 1440, H = 812;
 
 const profile = join(tmpdir(), "sleekmeeter-capture-" + process.pid);

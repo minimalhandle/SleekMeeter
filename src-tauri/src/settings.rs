@@ -56,8 +56,8 @@ pub fn defaults() -> Value {
             { "keys": "Ctrl+Alt+S", "action": "window", "target": "" }
         ],
         "startWithWindows": false,
-        "startInTray": true,
-        "launchVoicemeeter": true,
+        "startInTray": false,
+        "launchVoicemeeter": false,
         "hideVoicemeeter": false,
         "overlay": true,
         "alwaysOnTop": false,
@@ -96,6 +96,11 @@ pub fn defaults() -> Value {
         // Saved sets of output devices: [{ "name": "Headphones", "auto": false,
         //   "buses": [{ "bus": 0, "type": "wdm", "name": "Headphones (Arctis)" }] }]
         "outputProfiles": [],
+        "outputFallbacks": {},
+        "outputFallbackLinks": {},
+        "themeMotion": "subtle",
+        "faderGroups": [],
+        "vstQuarantine": [],
         // The tray panel snaps to the screen corner by the clock. Undocked, it can be moved and
         // remembers where you left it: "panelPos": { "x": 1500, "y": 700 } (physical pixels).
         "panelDocked": true,
@@ -126,12 +131,12 @@ pub fn defaults() -> Value {
         // Control from a phone on the same network. `key` is the secret in the address.
         "remote": { "on": false, "port": 8787, "key": "" },
         // Record how loud each channel is, for the level history.
-        "history": { "on": true },
+        "history": { "on": false },
         // The output your stream gets, like "Bus[4]". "" = B2 (B on Voicemeeter Standard).
         "streamBus": "",
         // Warn when someone talks into `target` while it's muted (louder than `threshold` dB
         // before the fader). `ptt`: also while a push-to-talk key isn't held.
-        "mutedTalk": { "on": true, "target": "Strip[0]", "threshold": -35, "ptt": false },
+        "mutedTalk": { "on": false, "target": "Strip[0]", "threshold": -35, "ptt": false },
         // Warn when the stream output is silent for `silentSecs`, or clips (`clip`).
         // `onlyLive`: only while OBS says you're live.
         "streamWatch": { "on": false, "silentSecs": 15, "clip": true, "onlyLive": true },
@@ -142,7 +147,20 @@ pub fn defaults() -> Value {
         "musicGuard": { "on": false, "strip": "", "when": "either" },
         // Instant replay: keep the last `secs` seconds of `device` (a Voicemeeter output as
         // Windows lists it, "" = the stream output) ready to save as a WAV file.
-        "replay": { "on": false, "device": "", "secs": 60 }
+        "replay": { "on": false, "device": "", "secs": 60 },
+        // Mic clean-up, one chain per mic (micfx.rs). On hardware input `target`: NVIDIA's speaker
+        // echo removal (`aec`, using what bus `aecRef` plays), NVIDIA's `effect` when `on`
+        // ("denoiser", "dereverb", "dereverb_denoiser") at `strength` %, then VST3 `plugins` in
+        // order: [{ "id", "name", "vendor", "path", "cid", "on" }] (vst.rs, pluginhost.rs).
+        // Older copies kept one chain's fields in micFx itself; micfx::chains_json reads both.
+        // Rust keeps plugin settings in "vstState" { id: { "c", "e" } } (base64), presets in
+        // "vstPresets" [{ "name", "cid", "c", "e" }], and what shortcuts and scenes switched in
+        // "micFxLive" { chain id: { "off", "strength" } }.
+        "micFx": {
+            "aecRef": "Bus[0]",
+            "chains": [{ "id": "c1", "target": "Strip[0]", "on": false, "effect": "denoiser",
+                         "strength": 100, "aec": false, "plugins": [] }]
+        }
     })
 }
 
@@ -157,6 +175,12 @@ pub fn load() -> Value {
                     if !saved.contains_key("hideSoloMono") {
                         base.insert("hideSoloMono".into(), Value::Bool(false));
                     }
+                    // These onboarding defaults only apply when there is no settings file.
+                    base.extend(json!({
+                        "startInTray": true, "launchVoicemeeter": true, "themeMotion": "full",
+                        "history": { "on": true },
+                        "mutedTalk": { "on": true, "target": "Strip[0]", "threshold": -35, "ptt": false }
+                    }).as_object().unwrap().clone());
                     for (k, v) in saved {
                         base.insert(k, v);
                     }
@@ -182,9 +206,8 @@ pub fn theme(s: &Value) -> String {
     match s["theme"].as_str() {
         // Retired themes show as their closest remaining one.
         Some("midnight") | Some("minimal") | Some("analog") | Some("clean") | Some("studio")
-        | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") | Some("rack") => {
-            "console".into()
-        }
+        | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") | Some("rack")
+        | Some("titanium") | Some("afterburner") | Some("opal") => "console".into(),
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
         _ => "console".into(),

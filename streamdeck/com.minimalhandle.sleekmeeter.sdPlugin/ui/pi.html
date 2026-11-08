@@ -150,6 +150,10 @@ function buildFields() {
     h += row("Channel", channelSelect("Strip[0]"));
     h += row("When pressed", `<select data-k="mode">${opts([{ v: "toggle", t: "Mute or unmute" }, { v: "ptt", t: "Hold to talk" }], settings.mode || "toggle")}</select>`);
     h += `<p class="hint">Green mic means active; red with a slash means muted. It starts on your first input; pick a different channel if your mic is elsewhere. "Hold to talk" opens the mic only while you hold the key.</p>`;
+  } else if (action === "micfx") {
+    const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
+    h += row("Mic", `<select data-k="channel">${opts(strips, settings.channel || "", "Every mic")}</select>`);
+    h += `<p class="hint">Switches the mic's clean-up (NVIDIA's noise and echo removal, and its plugins) off, and on again with the next press. Green means on. Set it up first in Sleekmeeter: Settings → Mic clean-up and plugins.</p>`;
   } else if (action === "mute") {
     h += row("Channel", channelSelect());
   } else if (action === "level") {

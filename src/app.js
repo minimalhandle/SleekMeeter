@@ -6,6 +6,34 @@
   const $ = (s, el = document) => el.querySelector(s);
   const clone = (o) => JSON.parse(JSON.stringify(o));
 
+  function bindTabs(root, change) {
+    const tabs = [...root.querySelectorAll("[role=tab]")];
+    function select(id, focus = false) {
+      const active = tabs.find((b) => !b.hidden && b.dataset.tab === id) || tabs.find((b) => !b.hidden);
+      for (const b of tabs) {
+        b.tabIndex = b === active ? 0 : -1;
+        b.setAttribute("aria-selected", String(b === active));
+        document.getElementById(b.getAttribute("aria-controls")).hidden = b !== active;
+      }
+      if (focus) active.focus();
+      change(active.dataset.tab);
+    }
+    root.addEventListener("click", (e) => {
+      const tab = e.target.closest("[role=tab]");
+      if (tab) select(tab.dataset.tab);
+    });
+    root.addEventListener("keydown", (e) => {
+      const visible = tabs.filter((b) => !b.hidden), i = visible.indexOf(e.target);
+      if (i < 0) return;
+      const next = { ArrowLeft: (i - 1 + visible.length) % visible.length, ArrowRight: (i + 1) % visible.length,
+        Home: 0, End: visible.length - 1 }[e.key];
+      if (next == null) return;
+      e.preventDefault();
+      select(visible[next].dataset.tab, true);
+    });
+    return select;
+  }
+
   // The tray volume panel loads this same page with SLEEK_FLYOUT set (or ?panel in a browser).
   const PANEL = !!window.SLEEK_FLYOUT || /[?&]panel\b/.test(location.search);
   // The Output mix popped out into its own window (?mixwin in the browser preview).
@@ -88,7 +116,8 @@
     try {
       const res = await engine.saveSettings(settings);
       showProblems((res && res.problems) || []);
-    } catch (e) { fail(e); }
+      return true;
+    } catch (e) { fail(e); return false; }
   }
   function showProblems(list) {
     const el = $("#hotkeyProblems");
@@ -203,7 +232,43 @@
   }
 
   /* ---------- fader component (vertical in the mixer, horizontal in mini mode) ---------- */
-  function setGain(ch, v) {
+  const mixerUndo = [];
+  let gainGesture = null;
+  const gainScope = (ch) => ch.kind === "strip" ? (lastState?.buses || []).findIndex((b) => b.sel) : -1;
+  function recordMixerChange(changes) {
+    const changed = changes.filter((c) => c.before !== c.after);
+    if (!changed.length) return;
+    mixerUndo.push(changed);
+    if (mixerUndo.length > 40) mixerUndo.shift();
+    $("#undoMixer").disabled = false;
+  }
+  function gainMembers(ch) {
+    if (gainScope(ch) >= 0) return [ch];
+    const group = faderGroups().find((g) => Array.isArray(g.members) && g.members.includes(ch.prefix));
+    const members = group ? chans.filter((c) => group.members.includes(c.prefix)) : [ch];
+    return members.some((c) => gainScope(c) >= 0) ? [ch] : members;
+  }
+  function gainSnapshot(ch, unlinked = false) {
+    return (unlinked ? [ch] : gainMembers(ch)).map((c) => ({ ch: c, before: c.gain, scope: gainScope(c) }));
+  }
+  function recordGains(snapshot) {
+    recordMixerChange(snapshot.map(({ ch, before, scope }) => ({ ch, param: "Gain", before, after: ch.gain, scope })));
+  }
+  function moveGain(ch, v, glide, unlinked) {
+    const dragging = gainGesture?.leader === ch;
+    const snapshot = dragging ? gainGesture.snapshot : gainSnapshot(ch, unlinked);
+    const leader = snapshot.find((entry) => entry.ch === ch);
+    const minDelta = Math.max(...snapshot.map(({ before }) => MIN_DB - before));
+    const maxDelta = Math.min(...snapshot.map(({ before }) => MAX_DB - before));
+    const delta = Math.max(minDelta, Math.min(maxDelta, v - leader.before));
+    for (const entry of snapshot) {
+      if (glide && fadesOn()) writeGlide(entry.ch, entry.before + delta);
+      else writeGain(entry.ch, entry.before + delta);
+    }
+    if (!dragging) recordGains(snapshot);
+  }
+  function setGain(ch, v, unlinked) { moveGain(ch, v, false, unlinked); }
+  function writeGain(ch, v) {
     v = Math.round(Math.max(MIN_DB, Math.min(MAX_DB, v)) * 10) / 10;
     ch.lockUntil = performance.now() + 500;
     if (v === ch.gain) return;
@@ -230,8 +295,8 @@
   }
   // Typed levels and double-click to 0 dB glide there (Voicemeeter fades; the cap follows).
   const fadesOn = () => !settings.fades || settings.fades.on !== false;
-  function glideGain(ch, v) {
-    if (!fadesOn()) return setGain(ch, v);
+  function glideGain(ch, v, unlinked) { moveGain(ch, v, true, unlinked); }
+  function writeGlide(ch, v) {
     v = Math.round(Math.max(MIN_DB, Math.min(MAX_DB, v)) * 10) / 10;
     ch.lockUntil = performance.now() + 450;
     if (v === ch.gain) return;
@@ -250,7 +315,7 @@
     ch.faders.push(el);
     ch.carriers.push({ el: $(".carrier", el), h: horizontal });
     const meters = [$(".meter.l", el), $(".meter.r", el)];
-    ch.meterEls.push({ lit: meters.map((m) => $(".lit", m)), led: meters.map((m) => $(".lit b", m)), pk: meters.map((m) => $(".pk", m)), h: horizontal });
+    ch.meterEls.push({ lit: meters.map((m) => $(".lit", m)), led: meters.map((m) => $(".lit b", m)), pk: meters.map((m) => $(".pk", m)), h: horizontal, mini: !!el.closest(".mini-row") });
 
     let start = 0, startPos = 0, span = 1;
     const posAt = (e, r) => horizontal ? (e.clientX - r.left) / span : (r.bottom - e.clientY) / span;
@@ -260,6 +325,7 @@
       const r = travel.getBoundingClientRect();
       span = Math.max(1, horizontal ? r.width : r.height);
       const onThumb = !!e.target.closest(".thumb");
+      gainGesture = { leader: ch, snapshot: gainSnapshot(ch, e.altKey) };
       startPos = onThumb ? dbToPos(ch.gain) : posAt(e, r);
       start = coord(e);
       if (!onThumb) setGain(ch, posToDb(startPos));
@@ -273,14 +339,22 @@
       setGain(ch, posToDb(startPos + ((coord(e) - start) / span) * fine));
       if (e.shiftKey) { startPos = dbToPos(ch.gain); start = coord(e); }
     });
-    const end = () => { ch.dragging = false; el.classList.remove("dragging"); ch.lockUntil = performance.now() + 500; };
+    const end = () => {
+      if (!el.classList.contains("dragging")) return;
+      ch.dragging = false; el.classList.remove("dragging"); ch.lockUntil = performance.now() + 500;
+      if (gainGesture?.leader === ch) {
+        recordGains(gainGesture.snapshot);
+        gainGesture = null;
+      }
+    };
     track.addEventListener("pointerup", end);
     track.addEventListener("pointercancel", end);
-    track.addEventListener("dblclick", () => glideGain(ch, 0));
+    track.addEventListener("lostpointercapture", end);
+    track.addEventListener("dblclick", (e) => glideGain(ch, 0, e.altKey));
     el.addEventListener("wheel", (e) => {
       e.preventDefault();
       const dir = (horizontal ? (e.deltaY || e.deltaX) : e.deltaY) < 0 ? 1 : -1;
-      setGain(ch, ch.gain + dir * (e.altKey ? 0.1 : 1));
+      setGain(ch, ch.gain + dir * (e.altKey ? 0.1 : 1), e.altKey);
     }, { passive: false });
     el.addEventListener("keydown", (e) => {
       const step = e.shiftKey ? 0.1 : 0.5;
@@ -298,7 +372,7 @@
         const r = el.getBoundingClientRect();
         return openGainEdit(ch, r.left + r.width / 2, r.top + r.height / 2, el);
       }
-      if (v !== null) { e.preventDefault(); setGain(ch, v); }
+      if (v !== null) { e.preventDefault(); setGain(ch, v, e.altKey); }
     });
     el.addEventListener("contextmenu", (e) => {
       e.preventDefault();
@@ -307,16 +381,57 @@
     el.setAttribute("aria-label", `${displayName(ch)} level`);
   }
 
+  function writeMixerToggle(ch, param, on) {
+    for (const t of ch.toggles) if (t.param === param) t.btn.setAttribute("aria-pressed", String(on));
+    if (param === "Mute") markMuted(ch, on);
+    if (on && ROUTE.test(param) && partMuted(ch).includes(param)) setPartMuted(ch, partMuted(ch).filter((p) => p !== param));
+    sendFloat(`${ch.prefix}.${param}`, on ? 1 : 0);
+  }
+  function undoMixer() {
+    if (gainGesture) return;
+    const changes = mixerUndo.pop();
+    $("#undoMixer").disabled = !mixerUndo.length;
+    if (!changes) return;
+    const stillMatches = ({ ch, param, after, scope }) => {
+      if (!chans.includes(ch)) return false;
+      if (param === "Gain" && scope !== gainScope(ch)) return false;
+      const current = param === "Gain" ? ch.gain : ch.toggles.find((t) => t.param === param)?.btn.getAttribute("aria-pressed") === "true";
+      return current === after;
+    };
+    if (!changes.every(stillMatches)) {
+      toast("The mixer has changed since that action");
+      return;
+    }
+    for (const { ch, param, before, wasPartMuted } of changes) {
+      if (param === "Gain") {
+        if (fadesOn()) writeGlide(ch, before);
+        else writeGain(ch, before);
+      } else if (wasPartMuted) {
+        pending.delete(`${ch.prefix}.${param}`);
+        partMuteOutput(ch, param, true);
+      } else writeMixerToggle(ch, param, before);
+    }
+    toast("Mixer change undone");
+  }
+  $("#undoMixer").addEventListener("click", undoMixer);
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "z"
+      && !e.target.closest?.("input, textarea, select, [contenteditable]") && !document.querySelector("dialog[open]")
+      && mixerUndo.length) {
+      e.preventDefault();
+      undoMixer();
+    }
+  });
   function makeToggle(btn, ch, param) {
     btn.setAttribute("aria-pressed", "false");
     ch.toggles.push({ btn, param });
     btn.addEventListener("click", () => {
       const on = btn.getAttribute("aria-pressed") !== "true";
-      for (const t of ch.toggles) if (t.param === param) t.btn.setAttribute("aria-pressed", String(on));
-      if (param === "Mute") markMuted(ch, on);
-      // Sending to an output again by hand ends a mute on that output.
-      if (on && ROUTE.test(param) && partMuted(ch).includes(param)) setPartMuted(ch, partMuted(ch).filter((p) => p !== param));
-      sendFloat(`${ch.prefix}.${param}`, on ? 1 : 0);
+      const returnFocus = !on && settings.simpleMode && ROUTE.test(param) && document.activeElement === btn
+        && ch.routeExpand && !ch.routeExpand.parentElement.classList.contains("expanded");
+      recordMixerChange([{ ch, param, before: !on, after: on, wasPartMuted: on && ROUTE.test(param) && partMuted(ch).includes(param) }]);
+      writeMixerToggle(ch, param, on);
+      if (returnFocus) ch.routeExpand.focus();
     });
     if (param === "Mute" && ch.kind === "strip") {
       btn.addEventListener("contextmenu", (e) => { e.preventDefault(); openMuteMenu(ch, btn, e); });
@@ -514,15 +629,37 @@
     }
   }
 
+  function positionAppList(strip, box) {
+    const { left, right, top } = strip.getBoundingClientRect();
+    const roomRight = innerWidth - right;
+    const width = Math.min(200, Math.max(120, Math.max(left, roomRight) - 8), innerWidth - 16);
+    const x = roomRight >= width + 8 || roomRight >= left ? right : left - width;
+    box.style.width = `${width}px`;
+    box.style.left = `${Math.max(8, Math.min(x, innerWidth - width - 8))}px`;
+    const height = box.getBoundingClientRect().height;
+    box.style.top = `${Math.max(8, Math.min(top + 8, innerHeight - height - 8))}px`;
+  }
+
+  function syncAppList(strip, box, stack) {
+    const open = !stack.hidden && (strip.classList.contains("app-list-open") || strip.classList.contains("apps-hover"));
+    if (open) {
+      if (!box.matches(":popover-open")) box.showPopover();
+      positionAppList(strip, box);
+    } else if (box.matches(":popover-open")) {
+      box.hidePopover();
+    }
+    stack.setAttribute("aria-expanded", String(open));
+  }
+
   function closeAppLists(except = null, restoreFocus = false) {
     let closed = false, focus = null;
     document.querySelectorAll(".strip").forEach((strip) => {
       const box = $(".app-chips", strip);
-      if (strip === except || !box || (!strip.classList.contains("app-list-open") && getComputedStyle(box).display === "none")) return;
+      if (strip === except || !box?.matches(":popover-open")) return;
       if (box.contains(document.activeElement) || !focus) focus = $(".app-stack", strip);
       strip.classList.remove("app-list-open");
-      strip.classList.add("apps-dismissed");
-      $(".app-stack", strip).setAttribute("aria-expanded", "false");
+      strip.classList.remove("apps-hover");
+      syncAppList(strip, box, $(".app-stack", strip));
       closed = true;
     });
     if (restoreFocus && focus && !focus.hidden) focus.focus();
@@ -535,6 +672,10 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !document.querySelector("dialog[open]") && closeAppLists(null, true)) e.preventDefault();
   });
+  window.addEventListener("resize", () => closeAppLists());
+  document.addEventListener("scroll", (e) => {
+    if (e.target === $("#desk")) closeAppLists();
+  }, true);
 
   function buildMixerStrip(ch) {
     const tpl = ch.kind === "strip" ? "#inputTpl" : "#outputTpl";
@@ -547,8 +688,15 @@
     $(".head", el).addEventListener("pointerdown", (e) => startReorder(e, ch));
     chip.addEventListener("click", () => openDrawer(ch));
     if (ch.kind === "strip") {
+      if (isHw(ch)) {
+        const warning = Object.assign(document.createElement("button"), { type: "button", className: "input-fx-warning", textContent: "!", hidden: true });
+        warning.addEventListener("click", () => openInputEffects(ch, warning.dataset.chain));
+        el.append(warning);
+        ch.fxWarning = warning;
+      }
       const stack = Object.assign(document.createElement("button"), { type: "button", className: "app-stack", hidden: true });
       const box = Object.assign(document.createElement("div"), { className: "app-chips", id: `apps-${ch.key}` });
+      box.setAttribute("popover", "manual");
       stack.setAttribute("aria-expanded", "false");
       stack.setAttribute("aria-controls", box.id);
       box.setAttribute("role", "group");
@@ -556,11 +704,25 @@
         const open = !el.classList.contains("app-list-open");
         closeAppLists(el);
         el.classList.toggle("app-list-open", open);
-        el.classList.toggle("apps-dismissed", !open);
-        stack.setAttribute("aria-expanded", String(open));
+        el.classList.remove("apps-hover");
+        syncAppList(el, box, stack);
       });
-      el.addEventListener("pointerleave", () => el.classList.remove("apps-dismissed"));
-      el.addEventListener("pointerenter", () => el.classList.remove("apps-dismissed"));
+      el.addEventListener("pointerleave", () => {
+        if (box.contains(document.activeElement)) return;
+        el.classList.remove("apps-hover");
+        syncAppList(el, box, stack);
+      });
+      el.addEventListener("pointerenter", (e) => {
+        if (e.pointerType === "touch" || e.buttons || stack.hidden || el.classList.contains("app-list-open")) return;
+        closeAppLists(el);
+        el.classList.add("apps-hover");
+        syncAppList(el, box, stack);
+      });
+      box.addEventListener("focusout", (e) => {
+        if (el.matches(":hover") || box.contains(e.relatedTarget) || el.classList.contains("app-list-open")) return;
+        el.classList.remove("apps-hover");
+        syncAppList(el, box, stack);
+      });
       $(".head", el).append(stack);
       $(".head", el).after(box);
     }
@@ -578,6 +740,8 @@
     makeToggle($(".mute", el), ch, "Mute");
     if (ch.kind === "strip") {
       const routes = $(".routes", el);
+      routes.classList.add("strip-routes");
+      routes.id = `routes-${ch.key}`;
       let firstB = true;
       for (const bus of layout.buses) {
         const b = document.createElement("button");
@@ -590,6 +754,16 @@
         routes.appendChild(b);
         makeToggle(b, ch, bus.param);
       }
+      const expand = Object.assign(document.createElement("button"), { type: "button", className: "btn route-expand", textContent: "All routes" });
+      expand.setAttribute("aria-controls", routes.id);
+      expand.setAttribute("aria-expanded", "false");
+      expand.addEventListener("click", () => {
+        const open = routes.classList.toggle("expanded");
+        expand.setAttribute("aria-expanded", String(open));
+        expand.textContent = open ? "Active routes" : "All routes";
+      });
+      routes.prepend(expand);
+      ch.routeExpand = expand;
       makeToggle($(".solo", el), ch, "Solo");
       const mono = $(".mono", el);
       if (!isHw(ch)) { mono.textContent = "M.C."; mono.title = "Mute center channel"; }
@@ -639,9 +813,19 @@
       const ed = EDITIONS[st.edition] || "Voicemeeter";
       text.textContent = engine.simulated ? `Preview with a simulated ${ed}` : `${ed} ${st.version || ""}`.trim();
     }
+    const statusLabel = `${text.textContent}. Check my setup`;
+    if (status.title !== statusLabel) {
+      status.title = statusLabel;
+      status.setAttribute("aria-label", statusLabel);
+    }
     showOffline(!st.installed ? "missing" : !st.connected ? "stopped" : null);
+    const wasConnected = connected;
     connected = !!st.connected;
-    if (!st.connected || !st.strips) return;
+    if (!st.connected || !st.strips) {
+      scheduleRouteTrace();
+      if (outputsDlg.open) paintOutputDevices();
+      return;
+    }
     if (st.edition && st.edition !== layout.edition) buildChannels(st.edition);
 
     for (const ch of chans) {
@@ -667,15 +851,19 @@
         else on = { Mute: d.mute, Solo: d.solo, Mono: d.mono, MC: d.mc, "EQ.on": d.eq }[t.param];
         t.btn.setAttribute("aria-pressed", String(!!on));
       }
+      if (settings.simpleMode && ch.routeExpand && ch.routeExpand.parentElement.contains(document.activeElement)
+          && document.activeElement.matches('.route[aria-pressed="false"]') && !ch.routeExpand.parentElement.classList.contains("expanded")) ch.routeExpand.focus();
       markMuted(ch, !!d.mute);
       if (ch.kind === "strip") reconcilePartMute(ch);
       for (const r of ch.rows) r.classList.toggle("ducked", !!d.ducked);
     }
+    scheduleRouteTrace();
     applyMixFor(st);
     applyRecorder(st.recorder);
     applyOutputs(st);
     applyBrb(st);
     applyStreamButtons(st);
+    if (!wasConnected && !SIDE) pollInputEffects();
     sizeToNames();
     if (drawerCh) renderDrawerValues();
     if (!fitted) { fitted = true; requestAnimationFrame(fitWindowToMixer); }
@@ -811,19 +999,23 @@
     if (recDlg.open) paintRecLevel(lv);
     checkClip(lv);
     if (micDlg.open) micLevels(lv);
+    if (tuneDlg.open) micTuneLevels(lv);
     if (chainDlg.open) chainLevels(lv);
   }
   // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
   // are composited on the GPU without repainting. The loop stops when every meter is at rest
   // and starts again when new levels arrive.
   let lastT = performance.now(), running = false, lastLevels = 0;
-  const writeMeter = (ch, c, p, pk) => {
+  let lastMeterView = "";
+  const writeMeter = (ch, c, p, pk, mini) => {
+    const off = ((1 - p) * 100).toFixed(2);
+    const opacity = pk > 0.01 ? "1" : "0";
     for (const v of ch.meterEls) {
-      const off = ((1 - p) * 100).toFixed(2);
+      if (v.mini !== mini) continue;
       v.lit[c].style.transform = v.h ? `translateX(-${off}%)` : `translateY(${off}%)`;
       v.led[c].style.transform = v.h ? `translateX(${off}%)` : `translateY(-${off}%)`;
       v.pk[c].style.transform = v.h ? `translateX(${(pk * 100).toFixed(2)}%)` : `translateY(${((1 - pk) * 100).toFixed(2)}%)`;
-      v.pk[c].style.opacity = pk > 0.01 ? "1" : "0";
+      if (v.pk[c].style.opacity !== opacity) v.pk[c].style.opacity = opacity;
     }
   };
   function wakeMeters() {
@@ -832,6 +1024,11 @@
   }
   function frame(t) {
     const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+    const mini = document.body.classList.contains("is-mini");
+    const show = !MIXWIN && !(PANEL && document.body.classList.contains("panel-no-meters"));
+    const view = show ? (mini ? "mini" : "full") : "hidden";
+    const viewChanged = view !== lastMeterView;
+    lastMeterView = view;
     let busy = false;
     for (const ch of chans) {
       const M = ch.meter;
@@ -843,13 +1040,13 @@
         if (next !== cur) { M.shown[c] = next; changed = true; }
         if (next > M.peak[c]) { M.peak[c] = next; M.peakAt[c] = t; changed = true; }
         else if (t - M.peakAt[c] > 1500 && M.peak[c] > next) { M.peak[c] = Math.max(next, M.peak[c] - 20 * dt); changed = true; }
-        if (changed) {
-          busy = true;
+        busy ||= changed;
+        if (show && (changed || viewChanged)) {
           const p = dbToPos(M.shown[c]), pk = dbToPos(M.peak[c]);
-          if (Math.abs(p - (M.drawn ? M.drawn[c] : -1)) > 0.0015 || Math.abs(pk - (M.drawnPk ? M.drawnPk[c] : -1)) > 0.0015) {
+          if (viewChanged || Math.abs(p - (M.drawn ? M.drawn[c] : -1)) > 0.0015 || Math.abs(pk - (M.drawnPk ? M.drawnPk[c] : -1)) > 0.0015) {
             M.drawn = M.drawn || [0, 0]; M.drawnPk = M.drawnPk || [0, 0];
             M.drawn[c] = p; M.drawnPk[c] = pk;
-            writeMeter(ch, c, p, pk);
+            writeMeter(ch, c, p, pk, mini);
           }
         }
       }
@@ -920,13 +1117,21 @@
   let drawerCh = null;
   let deviceCache = null;
   const drawer = $("#drawer"), drawerBody = $("#drawerBody");
+  const drawerPanels = { routing: $("#drawerRouting"), sound: $("#drawerSound"), apps: $("#drawerApps"), look: $("#drawerLook") };
+  let drawerTab = "routing";
+  const selectDrawerTab = bindTabs($("#drawerTabs"), (tab) => {
+    drawerTab = tab;
+    drawerBody.scrollTop = 0;
+    if (tab === "apps") paintDrawerApps();
+  });
 
-  function openDrawer(ch) {
+  function openDrawer(ch, tab = "routing") {
     drawerCh = ch;
+    drawerTab = tab;
     drawer.hidden = false;
     renderDrawerHead();
     buildDrawerBody();
-    $("#drawerClose").focus();
+    selectDrawerTab(drawerTab, true);
     engine.devices().then((d) => { deviceCache = d; if (drawerCh === ch) fillDevices(); }).catch(() => {});
   }
   function closeDrawer() {
@@ -960,10 +1165,10 @@
     if (inMix) inMix.checked = lk.mix;
   }
 
-  function section(title) {
+  function section(title, tab = "sound") {
     const s = document.createElement("section");
     if (title) s.appendChild(Object.assign(document.createElement("h3"), { textContent: title }));
-    drawerBody.appendChild(s);
+    drawerPanels[tab].appendChild(s);
     return s;
   }
 
@@ -992,9 +1197,10 @@
 
   function buildDrawerBody() {
     const ch = drawerCh;
-    drawerBody.textContent = "";
+    for (const panel of Object.values(drawerPanels)) panel.replaceChildren();
+    $("#drawerAppsTab").hidden = ch.kind !== "strip";
 
-    const lookSec = section("Look");
+    const lookSec = section("Look", "look");
     const sw = document.createElement("div");
     sw.className = "swatches"; sw.setAttribute("role", "group"); sw.setAttribute("aria-label", "Color");
     for (const [key, label] of Object.entries(COLORS)) {
@@ -1037,7 +1243,7 @@
     }
 
     if (isHw(ch)) {
-      const devSec = section(ch.kind === "strip" ? "Input device" : "Output device");
+      const devSec = section(ch.kind === "strip" ? "Input device" : "Output device", "routing");
       const sel = document.createElement("select");
       sel.id = "deviceSelect";
       sel.setAttribute("aria-label", "Device");
@@ -1050,10 +1256,33 @@
           .catch(fail);
       });
       devSec.appendChild(sel);
+      if (ch.kind === "bus") {
+        const fallback = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Open output fallbacks…" });
+        fallback.addEventListener("click", () => { closeDrawer(); openOutputFallback(ch.i); });
+        devSec.append(fallback);
+      }
       if (deviceCache) fillDevices();
     }
 
     if (ch.kind === "strip") {
+      const sends = section("Send to", "routing");
+      const routeRow = Object.assign(document.createElement("div"), { className: "routes drawer-routes" });
+      routeRow.setAttribute("role", "group");
+      routeRow.setAttribute("aria-label", "Send to");
+      for (const t of ch.toggles.filter(({ param }) => /^[AB]\d$/.test(param))) {
+        const b = t.btn.cloneNode(true);
+        b.removeAttribute("id");
+        b.dataset.param = t.param;
+        b.addEventListener("click", () => { t.btn.click(); renderDrawerValues(); });
+        routeRow.appendChild(b);
+      }
+      sends.appendChild(routeRow);
+      if (isHw(ch)) {
+        const effects = section("Input effects");
+        const open = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Open this input’s effects chain…" });
+        open.addEventListener("click", () => openInputEffects(ch));
+        effects.append(open);
+      }
       const pos = section("Position");
       rangeField(pos, { id: "fPan", label: "Pan", param: "Pan_x", min: -0.5, max: 0.5, step: 0.01, center: 0, reset: 0,
         format: (v) => (Math.abs(v) < 0.005 ? "C" : (v < 0 ? "L " : "R ") + Math.round(Math.abs(v) * 200)) });
@@ -1067,7 +1296,7 @@
       }
       // Potato's gain layers: this input's own level on each output.
       if (ch.data && (ch.data.layers || []).length) {
-        const lay = section("Level on each output");
+        const lay = section("Level on each output", "routing");
         const note = document.createElement("p");
         note.className = "hint";
         note.textContent = "Give one output its own level, like less game on your stream than in your headphones. The main fader moves them all together and keeps the differences.";
@@ -1086,6 +1315,19 @@
         rangeField(eq, { id: "fEq3", label: "Treble", param: "EQGain3", min: -12, max: 12, step: 0.5, center: 0, reset: 0, format: f });
       }
     } else {
+      const sources = section("Inputs sent to this output", "routing");
+      const list = Object.assign(document.createElement("div"), { className: "drawer-sources" });
+      list.setAttribute("role", "group");
+      list.setAttribute("aria-label", `Inputs sent to ${ch.info.id}`);
+      for (const input of chans.filter((c) => c.kind === "strip")) {
+        const send = input.toggles.find((t) => t.param === ch.info.param);
+        if (!send) continue;
+        const b = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: displayName(input) });
+        b.dataset.source = input.prefix;
+        b.addEventListener("click", () => { send.btn.click(); renderDrawerValues(); });
+        list.append(b);
+      }
+      sources.append(list);
       const modeSec = section("Bus mode");
       const sel = document.createElement("select");
       sel.id = "busMode"; sel.setAttribute("aria-label", "Bus mode");
@@ -1094,7 +1336,7 @@
       modeSec.appendChild(sel);
     }
     // With Solo, Mono and EQ hidden from the mixer, they're still here.
-    if (settings.hideSoloMono) {
+    if (settings.hideSoloMono || settings.simpleMode) {
       const btnSec = section("Buttons");
       const row = document.createElement("div");
       row.className = "routes modes drawer-togs";
@@ -1114,6 +1356,7 @@
     }
     renderDrawerHead();
     renderDrawerValues();
+    selectDrawerTab(drawerTab);
   }
 
   function fillDevices() {
@@ -1160,7 +1403,16 @@
     });
     const mode = $("#busMode");
     if (mode && document.activeElement !== mode) mode.value = d.mode || "normal";
-    drawerBody.querySelectorAll(".drawer-togs .tog").forEach((b) => {
+    drawerBody.querySelectorAll(".drawer-sources [data-source]").forEach((b) => {
+      const input = chans.find((c) => c.prefix === b.dataset.source);
+      const send = input?.toggles.find((t) => t.param === ch.info.param);
+      if (!send) return;
+      const name = displayName(input);
+      if (b.textContent !== name) b.textContent = name;
+      b.setAttribute("aria-label", `Send ${name} to ${ch.info.id}`);
+      b.setAttribute("aria-pressed", send.btn.getAttribute("aria-pressed"));
+    });
+    drawerBody.querySelectorAll(".drawer-togs .tog, .drawer-routes .route").forEach((b) => {
       const t = ch.toggles.find((x) => x.param === b.dataset.param);
       if (t) b.setAttribute("aria-pressed", t.btn.getAttribute("aria-pressed"));
     });
@@ -1169,7 +1421,7 @@
   /* ---------- Output mix: every input's level on every output (Potato gain layers) ---------- */
   const mixViewDlg = $("#mixViewDlg"), mixViewBtn = $("#mixViewBtn"), mixViewEl = $("#mixView");
   let mixSliders = [];
-  function mixSlider(ch, bus) {
+  function mixSlider(ch, bus, role) {
     const el = document.createElement("div");
     el.className = "mx-sl"; el.tabIndex = 0; el.setAttribute("role", "slider");
     el.setAttribute("aria-valuemin", String(MIN_DB)); el.setAttribute("aria-valuemax", String(MAX_DB));
@@ -1178,6 +1430,7 @@
     el.innerHTML = `<span class="mx-val"></span><div class="mx-track"><div class="mx-unity"></div><div class="mx-fill"></div><div class="mx-thumb"></div></div><button type="button" class="route ${id[0] === "A" ? "a" : "b"}"></button>`;
     const track = $(".mx-track", el), route = $(".route", el);
     route.textContent = id;
+    if (role) el.prepend(Object.assign(document.createElement("span"), { className: "mx-role", textContent: role }));
     route.title = `Send ${displayName(ch)} to ${id} ${displayName(bus)}`;
     $(".mx-unity", el).style.bottom = `${dbToPos(0) * 100}%`;
     const s = { ch, bus, el, v: 0, lockUntil: 0, routeLock: 0 };
@@ -1218,13 +1471,36 @@
     mixSliders.push(s);
     return el;
   }
-  const mixSig = () => chans.map((c) => { const l = look(c); return `${c.kind}${c.i}:${displayName(c)}:${l.hidden ? 1 : 0}${l.mix ? 1 : 0}:${l.color}:${l.icon}`; }).join("|");
+  const mixMode = $("#mixViewMode");
+  const busOptions = (list) => list.map((b) => new Option(`${b.info.id} · ${displayName(b)}`, b.prefix));
+  const streamBus = () => chans.find((b) => b.prefix === settings.streamBus && b.info.kind === "virt")
+    || chans.find((b) => b.prefix === `Bus[${defaultStreamBus()}]`);
+  function captureForBus(bus, devices) {
+    const number = bus.info.id.slice(1) || "1";
+    const legacy = { 1: /voicemeeter output/i, 2: /voicemeeter aux output/i, 3: /vaio3 output/i }[number];
+    return devices.find((d) => new RegExp(`voicemeeter out b${number}\\b`, "i").test(d)) || devices.find((d) => legacy?.test(d)) || "";
+  }
+  const physicalPlayback = (devices) => [...new Set(devices)].filter((d) => !/voicemeeter|vb-audio|virtual cable|cable input|cable-[abcd]/i.test(d));
+  const mixSig = () => [settings.mixViewMode, settings.personalBus, settings.audienceBus, settings.streamBus, ...chans.map((c) => { const l = look(c); return `${c.kind}${c.i}:${displayName(c)}:${l.hidden ? 1 : 0}${l.mix ? 1 : 0}:${l.color}:${l.icon}`; })].join("|");
   function buildMixView() {
     mixViewEl.textContent = "";
     mixSliders = [];
     mixViewDlg.dataset.built = mixSig();
     // Outputs hidden from the mixer, or just from Mix (output settings), stay out.
-    const buses = chans.filter((c) => c.kind === "bus" && !look(c).hidden && look(c).mix);
+    const outputs = chans.filter((c) => c.kind === "bus");
+    const personal = outputs.filter((c) => c.info.kind === "hw"), audience = outputs.filter((c) => c.info.kind !== "hw");
+    mixMode.value = settings.mixViewMode === "pair" ? "pair" : "all";
+    const pair = mixMode.value === "pair";
+    mixViewEl.classList.toggle("mix-paired", pair);
+    const audienceBus = audience.some((b) => b.prefix === settings.audienceBus) ? settings.audienceBus : streamBus()?.prefix;
+    for (const [selector, list, value] of [["#mixPersonal", personal, settings.personalBus], ["#mixStream", audience, audienceBus]]) {
+      const select = $(selector);
+      select.replaceChildren(...busOptions(list));
+      if (list.some((b) => b.prefix === value)) select.value = value;
+      select.parentElement.hidden = !pair;
+    }
+    const buses = pair ? [$("#mixPersonal").value, $("#mixStream").value].map((p) => outputs.find((b) => b.prefix === p)).filter(Boolean)
+      : outputs.filter((c) => !look(c).hidden && look(c).mix);
     for (const ch of chans.filter((c) => c.kind === "strip" && !look(c).hidden)) {
       const col = document.createElement("div");
       col.className = "mx-col";
@@ -1236,7 +1512,7 @@
       head.append(chip, Object.assign(document.createElement("span"), { textContent: displayName(ch), title: displayName(ch) }));
       const row = document.createElement("div");
       row.className = "mx-row";
-      for (const b of buses) row.appendChild(mixSlider(ch, b));
+      for (const b of buses) row.appendChild(mixSlider(ch, b, pair ? (b.info.kind === "hw" ? "Personal" : "Stream") : ""));
       col.append(head, row);
       mixViewEl.appendChild(col);
     }
@@ -1266,6 +1542,21 @@
     if (settings.mixWinOpen) { engine.mixWindow(true).catch(() => {}); return; }
     mixViewDlg.showModal(); buildMixView();
   });
+  async function setMixPreference(key, value) {
+    const previous = settings[key];
+    settings[key] = value;
+    if (mixViewDlg.open) buildMixView();
+    try { await engine.mixPreferenceSet(key, value); return true; }
+    catch (err) {
+      if (settings[key] === value) settings[key] = previous;
+      if (mixViewDlg.open) buildMixView();
+      fail(err);
+      return false;
+    }
+  }
+  for (const [id, key] of [["mixViewMode", "mixViewMode"], ["mixPersonal", "personalBus"], ["mixStream", "audienceBus"]]) {
+    $(`#${id}`).addEventListener("change", (e) => setMixPreference(key, e.target.value));
+  }
   mixViewDlg.addEventListener("click", (e) => { if (e.target === mixViewDlg) mixViewDlg.close(); });
   $("#mixPopBtn").addEventListener("click", () => {
     mixViewDlg.close();
@@ -1290,6 +1581,66 @@
     buildMixView();
   }
 
+  /* ---------- live monitor of a virtual output ---------- */
+  const monitorDlg = $("#mixMonitorDlg"), monitorIn = $("#mixMonitorInput"), monitorOut = $("#mixMonitorOutput");
+  const monitorStart = $("#mixMonitorStart"), monitorStop = $("#mixMonitorStop"), monitorStatus = $("#mixMonitorStatus");
+  let monitorBusy = false, monitoring = false, monitorGeneration = 0;
+  function paintMonitor() {
+    monitorStart.disabled = monitorBusy || monitoring || !monitorIn.value || !monitorOut.value;
+    monitorStop.disabled = monitorBusy || !monitoring;
+    monitorIn.disabled = monitorOut.disabled = monitorBusy || monitoring;
+  }
+  async function openMonitor() {
+    if (!connected) return toast("Start Voicemeeter to listen to a mix");
+    const generation = ++monitorGeneration, previous = monitorOut.value;
+    monitorIn.replaceChildren();
+    monitorOut.replaceChildren();
+    monitorStatus.textContent = "Reading audio devices…";
+    paintMonitor();
+    monitorDlg.showModal();
+    try {
+      const [capture, playback] = await Promise.all([engine.selftestInputs(), engine.soundDevices()]);
+      if (generation !== monitorGeneration) return;
+      const available = chans.filter((c) => c.kind === "bus" && !isHw(c)).map((c) => [c, captureForBus(c, capture.devices || [])])
+        .filter(([, endpoint]) => endpoint);
+      monitorIn.replaceChildren(...available.map(([c, endpoint]) => new Option(`${c.info.id} · ${displayName(c)}`, endpoint)));
+      const desired = available.find(([c]) => c.prefix === settings.audienceBus) || available.find(([c]) => c === streamBus());
+      if (desired) monitorIn.value = desired[1];
+      const outputs = physicalPlayback(playback.devices || []);
+      monitorOut.replaceChildren(new Option("Choose a playback device", ""), ...outputs.map((name) => new Option(name, name)));
+      if (outputs.includes(previous)) monitorOut.value = previous;
+      monitorStatus.textContent = !available.length ? "No Voicemeeter virtual recording outputs are available." : !outputs.length ? "No headphones or speakers are available." : "";
+    } catch (e) { if (generation === monitorGeneration) monitorStatus.textContent = String(e); }
+    finally { paintMonitor(); }
+  }
+  async function stopMonitor() {
+    monitoring = false;
+    monitorBusy = true;
+    paintMonitor();
+    try { await engine.mixMonitorStop(); }
+    catch (e) { fail(e); }
+    finally { monitorBusy = false; paintMonitor(); }
+  }
+  $("#mixMonitorOpen").addEventListener("click", openMonitor);
+  $("#outputsMonitorOpen").addEventListener("click", openMonitor);
+  monitorIn.addEventListener("change", paintMonitor);
+  monitorOut.addEventListener("change", paintMonitor);
+  monitorStart.addEventListener("click", async () => {
+    const generation = monitorGeneration;
+    monitorBusy = true;
+    paintMonitor();
+    try {
+      await engine.mixMonitorStart(monitorIn.value, monitorOut.value);
+      if (generation !== monitorGeneration || !monitorDlg.open) { await engine.mixMonitorStop(); return; }
+      monitoring = true;
+      monitorStatus.textContent = `Listening to ${monitorIn.selectedOptions[0].textContent}`;
+    } catch (e) { if (generation === monitorGeneration) monitorStatus.textContent = String(e); }
+    finally { monitorBusy = false; paintMonitor(); }
+  });
+  monitorStop.addEventListener("click", async () => { await stopMonitor(); monitorStatus.textContent = "Stopped"; });
+  monitorDlg.addEventListener("close", () => { monitorGeneration++; if (monitoring || monitorBusy) stopMonitor(); });
+  engine.onMixMonitorEnded((message) => { monitoring = false; monitorStatus.textContent = message; paintMonitor(); }).catch(() => {});
+
   /* ---------- Potato output select: the faders set one output's mix ---------- */
   const mixFor = $("#mixFor");
   function applyMixFor(st) {
@@ -1299,6 +1650,7 @@
     if (MIXWIN) {
       $("#mixViewNote").hidden = on;
       $("#mixView").hidden = !on;
+      $("#mixViewControls").hidden = !on;
     } else if (!on && mixViewDlg.open) mixViewDlg.close();
     // Channels and outputs can change (renamed, hidden, recoloured) while Mix is open: rebuild when they do.
     if (!on) mixViewDlg.dataset.built = "";
@@ -1323,6 +1675,76 @@
     chans.filter((c) => c.kind === "bus").forEach((b) => sendFloat(`Bus[${b.i}].Sel`, b.i === pick ? 1 : 0));
     toast(pick < 0 ? "Faders set every output again" : `Input faders now set ${mixFor.selectedOptions[0].textContent}'s mix`);
   });
+
+  /* ---------- Game / Chat balance ---------- */
+  const balanceDlg = $("#balanceDlg"), balanceSlider = $("#balanceValue");
+  const balanceGame = $("#balanceGame"), balanceChat = $("#balanceChat"), balanceBus = $("#balanceBus");
+  const balancePickers = [balanceGame, balanceChat, balanceBus];
+  let balanceSession = null, balanceBusy = false;
+  function openBalance() {
+    if (!connected || !layout) { toast("Start Voicemeeter to balance game and chat"); return; }
+    const inputs = chans.filter((c) => c.kind === "strip");
+    const hardware = chans.filter((c) => c.kind === "bus" && c.info.kind === "hw");
+    if (balanceSession?.edition !== layout.edition) balanceSession = null;
+    const prefs = balanceSession?.prefs || settings.chatBalance || {};
+    for (const [el, list, value, pattern] of [
+      [balanceGame, inputs, prefs.game, /game/i], [balanceChat, inputs, prefs.chat, /chat|discord/i],
+      [balanceBus, hardware, prefs.bus || settings.personalBus, /headphone/i],
+    ]) {
+      el.replaceChildren(...list.map((c) => new Option(displayName(c), c.prefix)));
+      el.value = list.find((c) => c.prefix === value)?.prefix || list.find((c) => pattern.test(displayName(c)))?.prefix || list[0]?.prefix || "";
+    }
+    if (balanceGame.value === balanceChat.value && !balanceSession) balanceChat.value = inputs.find((c) => c.prefix !== balanceGame.value)?.prefix || "";
+    $("#balanceBusRow").hidden = layout.edition !== 3;
+    $("#balanceScope").textContent = layout.edition === 3
+      ? "Only the selected listening output changes. Set the two input levels first, then apply a balance."
+      : "Standard and Banana use the main input faders, so balance affects every route from those inputs.";
+    balanceSlider.value = balanceSession?.position || 0;
+    paintBalance();
+    balanceDlg.showModal();
+  }
+  function paintBalance() {
+    const v = +balanceSlider.value;
+    $("#balanceStatus").textContent = !v ? "Centred" : `${v < 0 ? "Chat" : "Game"} −${(Math.abs(v) * .24).toFixed(1)} dB when applied`;
+    balancePickers.forEach((el) => { el.disabled = !!balanceSession || balanceBusy; });
+    $("#balanceApply").disabled = balanceBusy || balanceGame.value === balanceChat.value;
+    $("#balanceReset").disabled = balanceBusy || (!balanceSession && !v);
+  }
+  async function applyBalance(position) {
+    if (balanceBusy || !connected || balanceGame.value === balanceChat.value) return;
+    balanceBusy = true;
+    paintBalance();
+    try {
+      const prefs = { game: balanceGame.value, chat: balanceChat.value, bus: balanceBus.value };
+      const layer = /\[(\d+)\]$/.exec(prefs.bus)?.[1];
+      const suffix = layout.edition === 3 ? `GainLayer[${layer}]` : "Gain";
+      const names = [prefs.game, prefs.chat].map((input) => `${input}.${suffix}`);
+      const current = await engine.getFloats(names);
+      if (!current.every(Number.isFinite)) throw new Error("Could not read both input levels.");
+      if (balanceSession && current.some((v, i) => Math.abs(v - balanceSession.last[i]) > .15)) {
+        balanceSession = null;
+        balanceSlider.value = 0;
+        toast("Input levels changed elsewhere. The current levels are your new centre.");
+        return;
+      }
+      const base = balanceSession?.base || current;
+      const levels = base.map((v, i) => Math.max(MIN_DB, v - (i === 0 ? Math.max(0, position) : Math.max(0, -position)) * .24));
+      const writes = await Promise.allSettled(names.map((name, i) => engine.setFloat(name, levels[i])));
+      if (writes.some((r) => r.status === "rejected")) {
+        await Promise.allSettled(names.map((name, i) => writes[i].status === "fulfilled" ? engine.setFloat(name, current[i]) : Promise.resolve()));
+        throw new Error("Could not set both input levels. Check that Voicemeeter is still running.");
+      }
+      balanceSession = position ? { base, last: levels, position, prefs, edition: layout.edition } : null;
+      balanceSlider.value = position;
+      settings.chatBalance = prefs;
+      saveSettings();
+      toast(position ? "Game / Chat balance applied" : "Game and chat restored to centre");
+    } catch (e) { fail(e); } finally { balanceBusy = false; paintBalance(); }
+  }
+  balancePickers.forEach((el) => el.addEventListener("change", paintBalance));
+  balanceSlider.addEventListener("input", paintBalance);
+  $("#balanceApply").addEventListener("click", () => applyBalance(+balanceSlider.value));
+  $("#balanceReset").addEventListener("click", () => balanceSession ? applyBalance(0) : (balanceSlider.value = 0, paintBalance()));
 
   /* ---------- offline overlay ---------- */
   const launchBtn = $("#launchBtn");
@@ -1358,6 +1780,7 @@
     document.body.classList.toggle("is-mini", on);
     $("#desk").hidden = on;
     $("#miniView").hidden = !on;
+    wakeMeters();
     miniBtn.setAttribute("aria-pressed", String(on));
     miniBtn.title = miniBtn.ariaLabel = on ? "Full mixer" : "Mini mode";
     if (on && drawerCh) closeDrawer();
@@ -1396,10 +1819,13 @@
     if (!a) return;
     setMenu(false);
     moreBtn.focus();
+    if (a === "quick") openQuickActions();
+    if (a === "events") openAudioEvents();
     if (a === "show") engine.showWindow().catch(fail);
     if (a === "restart") engine.setFloat("Command.Restart", 1).then(() => toast("Restarting audio engine")).catch(fail);
     if (a === "options") openOptions();
     if (a === "setup") openSetup();
+    if (a === "balance") openBalance();
     if (a === "hear") openHear();
     if (a === "chain") openChain();
     if (a === "history") openHistory();
@@ -1418,7 +1844,127 @@
   });
 
   /* ---------- settings dialog ---------- */
+  const streamBtn = $("#streamBtn"), streamMenu = $("#streamMenu"), streamWrap = $("#streamWrap");
+  let obsRecording = false;
+  const mixerRecording = () => $("#recBtn").dataset.state === "recording" && !$("#recBtn").hidden;
+  const streamTools = [
+    ["goLiveBtn", "Go-live check"], ["brbBtn", "Be right back"], ["recBtn", "Recorder"], ["soundsBtn", "Soundboard"],
+    ["musicBtn", "Music off stream"], ["replayBtn", "Save a replay"],
+  ].map(([id, title]) => {
+    const original = $(`#${id}`);
+    const row = Object.assign(document.createElement("div"), { className: "stream-item" });
+    const action = Object.assign(document.createElement("button"), { type: "button", textContent: title });
+    const label = document.createElement("label"), pin = Object.assign(document.createElement("input"), { type: "checkbox" });
+    pin.setAttribute("aria-label", `Pin ${title} to the toolbar`);
+    label.append(pin, "Pin");
+    row.append(action, label);
+    streamMenu.append(row);
+    action.addEventListener("click", () => { setStreamMenu(false, true); original.click(); });
+    pin.addEventListener("change", () => {
+      const pins = new Set(Array.isArray(settings.streamPins) ? settings.streamPins : []);
+      if (pin.checked) pins.add(id); else pins.delete(id);
+      settings.streamPins = [...pins];
+      saveSettings();
+      paintStreamToolbar();
+    });
+    return { id, title, original, row, action, pin };
+  });
+  function paintStreamToolbar() {
+    const pins = Array.isArray(settings.streamPins) ? settings.streamPins : [];
+    const recording = mixerRecording();
+    const away = $("#brbBtn").getAttribute("aria-pressed") === "true";
+    for (const { id, title, original, row, action, pin } of streamTools) {
+      const pinned = pins.includes(id);
+      original.toggleAttribute("data-unpinned", !pinned);
+      row.hidden = original.hidden;
+      action.disabled = original.disabled;
+      pin.checked = pinned;
+      const text = id === "brbBtn" && away ? "Back live" : id === "recBtn" && recording ? "Recorder · recording" : title;
+      if (action.textContent !== text) action.textContent = text;
+    }
+    const badge = $("#recordingBadge");
+    badge.hidden = !obsRecording && (!recording || (pins.includes("recBtn") && settings.streamerMode !== false));
+    badge.textContent = obsRecording ? "OBS Rec" : "Recording";
+    badge.title = recording ? "Open Recorder" : "Open OBS Studio settings";
+    $("#awayBadge").hidden = !away || (pins.includes("brbBtn") && settings.streamerMode !== false);
+  }
+  function setStreamMenu(open, focus = false) {
+    if (open) paintStreamToolbar();
+    streamMenu.hidden = !open;
+    streamBtn.setAttribute("aria-expanded", String(open));
+    if (focus) (open ? streamMenu.querySelector(".stream-item:not([hidden]) > button:not(:disabled)") || streamBtn : streamBtn).focus();
+  }
+  streamBtn.addEventListener("click", () => setStreamMenu(streamMenu.hidden, streamMenu.hidden));
+  streamWrap.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || streamMenu.hidden) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setStreamMenu(false, true);
+  });
+  streamWrap.addEventListener("focusout", (e) => {
+    if (e.relatedTarget && !streamWrap.contains(e.relatedTarget)) setStreamMenu(false);
+  });
+  document.addEventListener("click", (e) => { if (!streamWrap.contains(e.target)) setStreamMenu(false); });
+  $("#liveTag").addEventListener("click", () => $("#goLiveBtn").click());
+  $("#recordingBadge").addEventListener("click", () => {
+    if (mixerRecording()) $("#recBtn").click();
+    else {
+      openSettings("streaming");
+      const fold = $("#obsFold");
+      fold.open = true;
+      $("summary", fold).focus();
+      fold.scrollIntoView({ block: "nearest" });
+    }
+  });
+  $("#awayBadge").addEventListener("click", () => $("#brbBtn").click());
+  paintStreamToolbar();
+
   const settingsDlg = $("#settingsDlg");
+  function faderGroups() {
+    return Array.isArray(settings.faderGroups) ? settings.faderGroups : (settings.faderGroups = []);
+  }
+  function renderFaderGroups() {
+    const root = $("#faderGroupList");
+    root.replaceChildren();
+    for (const group of faderGroups()) {
+      const field = document.createElement("fieldset");
+      field.className = "inspect-panel";
+      field.append(Object.assign(document.createElement("legend"), { textContent: group.name }));
+      const members = Array.isArray(group.members) ? group.members : (group.members = []);
+      for (const ch of chans) {
+        const label = document.createElement("label");
+        label.className = "check";
+        const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: members.includes(ch.prefix) });
+        box.disabled = faderGroups().some((g) => g !== group && g.members?.includes(ch.prefix));
+        box.addEventListener("change", () => {
+          group.members = box.checked ? [...members, ch.prefix] : members.filter((p) => p !== ch.prefix);
+          saveSettings();
+          renderFaderGroups();
+          [...root.querySelectorAll("fieldset")][faderGroups().indexOf(group)]?.querySelectorAll("input")[chans.indexOf(ch)]?.focus();
+        });
+        label.append(box, document.createTextNode(displayName(ch)));
+        field.append(label);
+      }
+      const remove = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Remove group" });
+      remove.addEventListener("click", () => {
+        settings.faderGroups = faderGroups().filter((g) => g !== group);
+        saveSettings();
+        renderFaderGroups();
+        $("#faderGroupName").focus();
+      });
+      field.append(remove);
+      root.append(field);
+    }
+  }
+  $("#faderGroupAdd").addEventListener("click", () => {
+    const input = $("#faderGroupName");
+    const name = input.value.trim();
+    if (!name || faderGroups().some((g) => g.name.toLowerCase() === name.toLowerCase())) return;
+    faderGroups().push({ name, members: [] });
+    input.value = "";
+    saveSettings();
+    renderFaderGroups();
+  });
   // Overlay screen and tray panel choices (selects, not checkboxes).
   async function syncDisplayOptions() {
     const screen = $("#setOverlayScreen");
@@ -1473,6 +2019,8 @@
   // Streamer mode off hides Be right back, Rec and Sounds from the header.
   function applyStreamer() {
     document.body.classList.toggle("no-streamer", settings.streamerMode === false);
+    if (settings.streamerMode === false) setStreamMenu(false);
+    paintStreamToolbar();
   }
   function applyArrangementLock() {
     document.body.classList.toggle("arrangement-locked", !!settings.lockArrangement);
@@ -1483,6 +2031,7 @@
   }
   function applySoloMono() {
     document.body.classList.toggle("hide-solo-mono", !!settings.hideSoloMono);
+    document.body.classList.toggle("focused-mixer", !!settings.simpleMode);
     $('#moreMenu [data-action="simple"]').setAttribute("aria-checked", String(!!settings.simpleMode));
     if (drawerCh) buildDrawerBody();
   }
@@ -1508,9 +2057,67 @@
     }
     settings.simpleMode = on;
     saveSettings(); chans.forEach(paintLook); applyExtraBuses(); applySoloMono();
-    toast(on ? "Simple mode on: just faders, routing and Mute" : "Simple mode off");
+    toast(on ? "Focused mixer on" : "Full mixer restored");
   }
-  $("#settingsBtn").addEventListener("click", () => {
+  const settingsCategories = [
+    ["appearance", "Appearance & layout", "Themes, animation, channel visibility and the volume overlay."],
+    ["mixer", "Mixer & devices", "Mixing tools, fader behaviour, audio devices and output recovery."],
+    ["microphone", "Microphone", "Mic levels, noise clean-up and VST3 processing."],
+    ["streaming", "Streaming", "Go-live checks, replay, OBS and Twitch."],
+    ["controls", "Controls & remote", "Shortcuts, Stream Deck and phone control."],
+    ["system", "System & backup", "Startup, privacy, updates, backups and diagnostics."],
+  ];
+  const settingsSearch = $("#settingsSearch"), settingsContent = $("#settingsContent");
+  const settingsCards = [...settingsContent.querySelectorAll("[data-settings-category]")].map((el) => ({
+    el, detail: el.querySelector(":scope > details"),
+    text: `${el.dataset.settingsKeywords || ""} ${el.textContent}`.toLowerCase().replace(/\s+/g, " "),
+  }));
+  const settingsOpenFolds = new Map();
+  let settingsCategory = "appearance";
+  function renderSettingsCategory() {
+    const query = settingsSearch.value.trim().toLowerCase();
+    const words = query.split(/\s+/);
+    const [, label, description] = settingsCategories.find(([id]) => id === settingsCategory);
+    let matches = 0;
+    for (const { el, text, detail } of settingsCards) {
+      const category = settingsCategories.find(([id]) => id === el.dataset.settingsCategory);
+      const show = query ? words.every((word) => (text + " " + category[1].toLowerCase()).includes(word)) : category[0] === settingsCategory;
+      el.classList.toggle("settings-filtered", !show);
+      if (show && !el.hidden) matches++;
+      if (detail && query && show && !settingsOpenFolds.has(detail)) {
+        settingsOpenFolds.set(detail, detail.open);
+        detail.open = true;
+      } else if (detail && (!query || !show) && settingsOpenFolds.has(detail)) {
+        detail.open = settingsOpenFolds.get(detail);
+        settingsOpenFolds.delete(detail);
+      }
+    }
+    $("#settingsCategory").textContent = query ? "Search results" : label;
+    $("#settingsDescription").textContent = query ? (matches ? `${matches} matching ${matches === 1 ? "section" : "sections"}` : "No matching settings. Try a shorter search.") : description;
+    $("#settingsClear").hidden = !settingsSearch.value;
+    $("#settingsNav").querySelectorAll("button").forEach((b) => {
+      if (!query && b.dataset.category === settingsCategory) b.setAttribute("aria-current", "true");
+      else b.removeAttribute("aria-current");
+    });
+    settingsContent.scrollTop = 0;
+    if (!settingsShowing("micFxFold")) stopListening();
+  }
+  function settingsShowing(id) { return settingsDlg.open && !$(`#${id}`).closest("section")?.classList.contains("settings-filtered"); }
+  function selectSettingsCategory(id) {
+    settingsCategory = id;
+    settingsSearch.value = "";
+    renderSettingsCategory();
+  }
+  for (const [id, name] of settingsCategories) {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: name });
+    b.dataset.category = id;
+    b.addEventListener("click", () => selectSettingsCategory(id));
+    $("#settingsNav").append(b);
+  }
+  settingsSearch.addEventListener("input", renderSettingsCategory);
+  $("#settingsClear").addEventListener("click", () => { settingsSearch.value = ""; renderSettingsCategory(); settingsSearch.focus(); });
+  function openSettings(category = settingsCategory) {
+    renderFaderGroups();
     syncChecks();
     renderThemes();
     renderAbout();
@@ -1518,6 +2125,7 @@
     syncBrb();
     syncObs();
     syncClip();
+    syncMicFx();
     syncTwitch();
     syncLive();
     syncReplay();
@@ -1527,9 +2135,18 @@
     refreshStreamDeck();
     syncDisplayOptions();
     renderBackups();
-    settingsDlg.showModal();
-  });
+    selectSettingsCategory(category);
+    if (!settingsDlg.open) settingsDlg.showModal();
+  }
+  $("#settingsBtn").addEventListener("click", () => openSettings());
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
+  $("#settingsBalance").addEventListener("click", () => { settingsDlg.close(); openBalance(); });
+  $("#settingsMix").addEventListener("click", async () => {
+    if (!connected || layout.edition !== 3) { toast("Personal / Stream mix requires Voicemeeter Potato"); return; }
+    if (!await setMixPreference("mixViewMode", "pair")) return;
+    settingsDlg.close();
+    mixViewBtn.click();
+  });
 
   const H = () => (settings.hold = Object.assign({}, DEFAULT_SETTINGS.hold, settings.hold));
   const ACTIONS = [["mute", "Mute or unmute"], ["ptt", "Push to talk (hold)"], ["ptm", "Push to mute (hold)"],
@@ -1537,7 +2154,13 @@
     ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
     ["window", "Show or hide Sleekmeeter"], ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"],
     ["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"],
-    ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"]];
+    ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"],
+    ["micfx", "Mic clean-up on or off"]];
+  // Mic clean-up targets: every mic, or one hardware input. [label, target] pairs.
+  const micTargets = () => {
+    const hw = layout.strips.filter((s) => s.kind === "hw").length;
+    return [["Every mic", ""], ...chans.filter((ch) => { const m = /^Strip\[(\d+)\]$/.exec(ch.prefix); return m && +m[1] < hw; }).map((ch) => [displayName(ch), ch.prefix])];
+  };
   // Actions that aren't about one channel.
   const NO_TARGET = new Set(["window", "duck", "record", "outputnext", "brb", "soundstop", "replay", "musicguard"]);
   // Actions whose second box is a list of names, not channels.
@@ -1555,6 +2178,13 @@
       for (const n of names) tgt.appendChild(new Option(n, n));
       if (!names.includes(h.target)) h.target = names[0];
       tgt.value = h.target;
+      return;
+    }
+    if (h.action === "micfx") {
+      tgt.setAttribute("aria-label", "Mic");
+      for (const [l, v] of micTargets()) tgt.appendChild(new Option(l, v));
+      if (![...tgt.options].some((o) => o.value === (h.target || ""))) h.target = "";
+      tgt.value = h.target || "";
       return;
     }
     tgt.setAttribute("aria-label", "Channel");
@@ -1662,6 +2292,76 @@
 
   /* ---------- scenes ---------- */
   const dlg = $("#scenesDlg"), list = $("#sceneList");
+  let previewScene = "";
+  let previewGeneration = 0;
+  function closeScenePreview() {
+    previewGeneration++;
+    previewScene = "";
+    $("#scenePreview").hidden = true;
+  }
+  dlg.addEventListener("close", closeScenePreview);
+  $("#scenePreviewCancel").addEventListener("click", closeScenePreview);
+  $("#sceneApply").addEventListener("click", async () => {
+    const name = previewScene;
+    if (!name) return;
+    $("#sceneApply").disabled = true;
+    try { await engine.loadScene(name); setScene(name); toast(`Loaded “${name}”`); dlg.close(); }
+    catch (e) { fail(e); if (previewScene === name) $("#sceneApply").disabled = false; }
+  });
+  async function openScenePreview(name) {
+    const generation = ++previewGeneration;
+    const result = $("#sceneChanges");
+    const add = (text) => result.append(Object.assign(document.createElement("li"), { textContent: text }));
+    previewScene = "";
+    $("#scenePreviewTitle").textContent = `Preview “${name}”`;
+    $("#scenePreview").hidden = false;
+    $("#sceneApply").disabled = true;
+    result.textContent = "";
+    add("Reading saved mix…");
+    try {
+      const saved = await engine.scenePreview(name);
+      if (generation !== previewGeneration) return;
+      result.textContent = "";
+      let hasRoutes = false;
+      const differs = (a, b) => typeof a === "number" && typeof b === "number" ? Math.abs(a - b) >= 0.05 : a !== b;
+      const compare = (label, a, b, format) => {
+        if (a != null && b != null && differs(a, b)) add(`${label} · ${format(a)} → ${format(b)}`);
+      };
+      const db = (x) => `${Number(x).toFixed(1)} dB`;
+      const on = (x) => x ? "on" : "off";
+      for (const ch of chans) {
+        const target = saved.channels?.[ch.prefix], live = ch.data;
+        if (!target || !live) continue;
+        const label = displayName(ch);
+        compare(`${label} level`, live.gain, target.gain, db);
+        compare(`${label} mute`, live.mute, target.mute, on);
+        for (const bus of chans.filter((c) => c.kind === "bus")) {
+          const id = bus.info.id, kind = id[0].toLowerCase(), index = Number(id.slice(1) || "1") - 1;
+          hasRoutes ||= Array.isArray(target[kind]);
+          compare(`${label} → ${displayName(bus)} route`, live[kind]?.[index], target[kind]?.[index], on);
+          compare(`${label} → ${displayName(bus)} level`, live.layers?.[bus.i], target.layers?.[bus.i], db);
+        }
+      }
+      for (const [key, target] of Object.entries(saved.mics || {})) {
+        const live = saved.currentMics?.[key];
+        if (!live) continue;
+        const ch = chans.find((c) => c.prefix === key);
+        const label = ch ? displayName(ch) : key;
+        compare(`${label} mic chain bypass`, live.off, target.off, on);
+        compare(`${label} mic strength`, live.strength, target.strength, (x) => `${x}%`);
+      }
+      if (!result.childElementCount) add(saved.channels ? "No differences found in the available preview data." : "This scene has no saved preview data.");
+      if (!hasRoutes) add("Routing preview is unavailable for this scene. Save it again to capture routes.");
+      add("Applying also restores the Voicemeeter settings stored in the scene file.");
+      previewScene = name;
+      $("#sceneApply").disabled = false;
+      $("#sceneApply").focus();
+    } catch (e) {
+      if (generation !== previewGeneration) return;
+      result.textContent = "";
+      add(String(e));
+    }
+  }
   async function renderScenes() {
     const names = await engine.listScenes().catch((e) => { fail(e); return []; });
     list.textContent = "";
@@ -1672,9 +2372,7 @@
     for (const n of names) {
       const li = document.createElement("li");
       const load = Object.assign(document.createElement("button"), { type: "button", className: "load", textContent: n });
-      load.addEventListener("click", async () => {
-        try { await engine.loadScene(n); setScene(n); toast(`Loaded “${n}”`); dlg.close(); } catch (e) { fail(e); }
-      });
+      load.addEventListener("click", () => openScenePreview(n));
       const del = Object.assign(document.createElement("button"), { type: "button", className: "btn del", textContent: "Delete" });
       del.setAttribute("aria-label", `Delete ${n}`);
       let armed = false;
@@ -1869,11 +2567,11 @@
     } catch (err) { fail(err); }
   }
   function paintStreamDeck() {
-    const s = streamDeck, section = $("#streamDeckSection"), action = $("#streamDeckAction");
-    section.hidden = !s || !(s.app || s.device);
-    if (section.hidden) return;
-    const copy = streamDeckCopy[s.offer];
-    $("#streamDeckNote").textContent = copy ? copy.text(s) : `Plugin ${s.installedVersion} is installed. Connect it with the address from Phone remote.`;
+    const s = streamDeck, action = $("#streamDeckAction");
+    const copy = streamDeckCopy[s?.offer];
+    $("#streamDeckNote").textContent = copy ? copy.text(s) : s?.installedVersion
+      ? `Plugin ${s.installedVersion} is installed. Connect it with the address from Phone remote.`
+      : "Use Sleekmeeter actions on a Stream Deck with the Studio plugin.";
     action.hidden = !copy;
     if (copy) action.textContent = copy.go;
   }
@@ -1958,6 +2656,10 @@
   $("#streamDeckGo").addEventListener("click", () => { streamDeckDlg.close(); runStreamDeckOffer(); });
   $("#streamDeckLater").addEventListener("click", () => streamDeckDlg.close());
   $("#streamDeckAction").addEventListener("click", runStreamDeckOffer);
+  $("#streamDeckProfile").addEventListener("click", async () => {
+    try { if (await engine.streamDeckProfileSave()) toast("Stream Deck + profile saved"); }
+    catch (e) { fail(e); }
+  });
   $("#sceneSave").addEventListener("submit", async (e) => {
     e.preventDefault();
     const n = $("#sceneName").value.trim().replace(/[\\/:*?"<>|]/g, "");
@@ -1974,6 +2676,158 @@
   const outputsDlg = $("#outputsDlg"), outputsBtn = $("#outputsBtn"), profileUl = $("#profileList");
   let activeProfile = null;
   const profiles = () => (settings.outputProfiles || (settings.outputProfiles = []));
+  function fallbackChains() {
+    if (!settings.outputFallbacks || typeof settings.outputFallbacks !== "object" || Array.isArray(settings.outputFallbacks)) settings.outputFallbacks = {};
+    return settings.outputFallbacks;
+  }
+  function fallbackLinks() {
+    if (!settings.outputFallbackLinks || typeof settings.outputFallbackLinks !== "object" || Array.isArray(settings.outputFallbackLinks)) settings.outputFallbackLinks = {};
+    return settings.outputFallbackLinks;
+  }
+  let fallbackDevices = [], fallbackStatusRequest = 0;
+  const outputReasons = new Map(), outputDeviceRows = new Map(), fallbackRequests = new Map();
+  const hasFallback = (i) => !!fallbackChains()[fallbackLinks()[i] ?? i]?.length;
+  function readFallbackReason(i) {
+    if (!hasFallback(i)) return Promise.resolve("No fallback policy configured");
+    if (fallbackRequests.has(i)) return fallbackRequests.get(i);
+    const request = engine.fallbackStatus(i).catch((e) => String(e)).finally(() => fallbackRequests.delete(i));
+    fallbackRequests.set(i, request);
+    return request;
+  }
+  function paintOutputDevices() {
+    if (!outputsDlg.open) return;
+    const list = $("#outputDevices"), hardware = chans.filter((c) => c.kind === "bus" && isHw(c));
+    for (const [i, row] of outputDeviceRows) if (!hardware.some((c) => c.i === i)) { row.el.remove(); outputDeviceRows.delete(i); }
+    for (const bus of hardware) {
+      if (!outputDeviceRows.has(bus.i)) {
+        const el = document.createElement("li"), content = document.createElement("div");
+        const device = document.createElement("strong"), reason = document.createElement("span");
+        const edit = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Fallbacks…" });
+        edit.setAttribute("aria-label", `Manage fallbacks for ${bus.info.id}`);
+        edit.addEventListener("click", () => openOutputFallback(bus.i));
+        content.append(device, reason);
+        el.append(content, edit);
+        list.append(el);
+        outputDeviceRows.set(bus.i, { el, device, reason });
+      }
+      const row = outputDeviceRows.get(bus.i);
+      const device = `${bus.info.id} · ${!connected ? "Voicemeeter disconnected" : bus.data?.device || "No playback device"}`;
+      const reason = !connected ? "" : hasFallback(bus.i) ? outputReasons.get(bus.i) || "Checking fallback policy…" : "No fallback policy configured";
+      if (row.device.textContent !== device) row.device.textContent = device;
+      if (row.reason.textContent !== reason) row.reason.textContent = reason;
+    }
+  }
+  async function refreshOutputReasons() {
+    if (!outputsDlg.open || !connected) return;
+    const current = chans.filter((c) => c.kind === "bus" && isHw(c) && hasFallback(c.i));
+    await Promise.all(current.map(async (c) => outputReasons.set(c.i, await readFallbackReason(c.i))));
+    paintOutputDevices();
+  }
+  async function refreshFallbackStatus() {
+    const bus = $("#fallbackBus").value;
+    if (!outputsDlg.open || !$("#fallbackFold").open || bus === "") return;
+    const request = ++fallbackStatusRequest;
+    const result = await readFallbackReason(+bus);
+    if (request === fallbackStatusRequest) $("#fallbackStatus").textContent = result;
+  }
+  function renderFallbackList() {
+    const bus = $("#fallbackBus").value;
+    const links = fallbackLinks(), linked = links[bus];
+    const entries = fallbackChains()[linked ?? bus] || [];
+    const source = $("#fallbackSource"), previous = source.value;
+    const sources = [...$("#fallbackBus").options].filter((o) => o.value !== bus && links[o.value] == null && fallbackChains()[o.value]?.length);
+    source.replaceChildren(new Option(linked == null ? "Use a policy from…" : `Linked to ${$("#fallbackBus").options[+linked]?.textContent || `A${+linked + 1}`}`, ""),
+      ...sources.map((o) => new Option(o.textContent, o.value)));
+    if (sources.some((o) => o.value === previous) && linked == null) source.value = previous;
+    source.disabled = linked != null || !sources.length;
+    $("#fallbackDevice").disabled = linked != null;
+    $("#fallbackAdd").disabled = linked != null || bus === "" || !fallbackDevices.length;
+    $("#fallbackUnlink").hidden = linked == null;
+    paintFallbackActions();
+    const list = $("#fallbackList");
+    list.replaceChildren();
+    entries.forEach((device, i) => {
+      const item = Object.assign(document.createElement("li"), { textContent: `${device.name} (${device.type.toUpperCase()}) ` });
+      const action = (label, disabled, change) => {
+        const b = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: label, disabled });
+        b.setAttribute("aria-label", `${label} ${device.name}`);
+        b.addEventListener("click", () => { change(); saveFallback(); });
+        return b;
+      };
+      const move = (j) => { [entries[i], entries[j]] = [entries[j], entries[i]]; };
+      if (linked == null) item.append(action("↑", !i, () => move(i - 1)), action("↓", i === entries.length - 1, () => move(i + 1)), action("Remove", false, () => {
+        entries.splice(i, 1);
+        if (!entries.length) delete fallbackChains()[bus];
+      }));
+      list.append(item);
+    });
+  }
+  function paintFallbackActions() {
+    const bus = $("#fallbackBus").value, source = $("#fallbackSource").value;
+    const blocked = bus === "" || source === "" || fallbackLinks()[bus] != null;
+    $("#fallbackCopy").disabled = blocked;
+    const hasDependants = Object.values(fallbackLinks()).includes(bus);
+    $("#fallbackLink").disabled = blocked || hasDependants;
+    $("#fallbackLink").title = hasDependants ? "Other outputs already share this output’s policy" : "";
+  }
+  async function saveFallback() {
+    renderFallbackList();
+    await saveNow();
+    outputReasons.clear();
+    paintOutputDevices();
+    refreshOutputReasons();
+    refreshFallbackStatus();
+  }
+  async function loadFallbackEditor() {
+    const bus = $("#fallbackBus"), device = $("#fallbackDevice");
+    const previous = bus.value;
+    bus.replaceChildren(...chans.filter((c) => c.kind === "bus" && c.info.kind === "hw")
+      .map((c) => new Option(`${c.info.id} · ${displayName(c)}`, String(c.i))));
+    if ([...bus.options].some((o) => o.value === previous)) bus.value = previous;
+    fallbackDevices = [];
+    renderFallbackList();
+    refreshFallbackStatus();
+    $("#fallbackAdd").disabled = true;
+    device.replaceChildren(new Option("Loading playback devices…", ""));
+    try {
+      const found = await engine.devices();
+      fallbackDevices = (found.outputs || []).filter((d) => ["wdm", "ks", "mme"].includes(d.type));
+      device.replaceChildren(new Option("Choose a playback device", ""), ...fallbackDevices.map((d, i) => new Option(`${d.name} (${d.type.toUpperCase()})`, String(i))));
+      renderFallbackList();
+    } catch (e) { device.replaceChildren(new Option("Playback devices unavailable", "")); fail(e); }
+  }
+  $("#fallbackBus").addEventListener("change", () => { renderFallbackList(); refreshFallbackStatus(); });
+  $("#fallbackSource").addEventListener("change", paintFallbackActions);
+  $("#fallbackFold").addEventListener("toggle", refreshFallbackStatus);
+  for (const [id, link] of [["fallbackCopy", false], ["fallbackLink", true]]) {
+    $(`#${id}`).addEventListener("click", () => {
+      const bus = $("#fallbackBus").value, source = $("#fallbackSource").value;
+      if (bus === "" || !fallbackChains()[source]?.length || fallbackLinks()[bus] != null) return;
+      if (fallbackChains()[bus]?.length && !window.confirm("Replace this output’s current fallback policy?")) return;
+      if (link) {
+        if (Object.values(fallbackLinks()).includes(bus)) return;
+        fallbackLinks()[bus] = source;
+        delete fallbackChains()[bus];
+      } else fallbackChains()[bus] = clone(fallbackChains()[source]);
+      saveFallback();
+    });
+  }
+  $("#fallbackUnlink").addEventListener("click", () => {
+    const bus = $("#fallbackBus").value, source = fallbackLinks()[bus];
+    if (source == null) return;
+    fallbackChains()[bus] = clone(fallbackChains()[source] || []);
+    delete fallbackLinks()[bus];
+    saveFallback();
+  });
+  $("#fallbackAdd").addEventListener("click", () => {
+    const bus = $("#fallbackBus").value, selected = $("#fallbackDevice").value;
+    const device = selected === "" ? null : fallbackDevices[Number(selected)];
+    if (bus === "" || !device || fallbackLinks()[bus] != null) return;
+    const entries = fallbackChains()[bus] || (fallbackChains()[bus] = []);
+    if (entries.some((d) => d.name === device.name)) return;
+    entries.push({ name: device.name, type: device.type });
+    saveFallback();
+  });
   function profileSummary(p) {
     return p.buses.map((e) => {
       const b = layout && layout.buses[e.bus];
@@ -1984,7 +2838,7 @@
     activeProfile = st.outputProfile || null;
     outputsBtn.dataset.live = activeProfile ? "1" : "";
     outputsBtn.title = activeProfile ? `Outputs: ${activeProfile}` : "Switch between saved output devices";
-    if (outputsDlg.open) markProfiles();
+    if (outputsDlg.open) { markProfiles(); paintOutputDevices(); }
   }
   function markProfiles() {
     profileUl.querySelectorAll("li[data-name]").forEach((li) => li.classList.toggle("live", li.dataset.name === activeProfile));
@@ -2058,12 +2912,42 @@
       toast(at >= 0 ? `Updated “${entry.name}”` : `Saved “${entry.name}”`);
     } catch (err) { fail(err); }
   });
-  outputsBtn.addEventListener("click", () => { renderProfiles(); outputsDlg.showModal(); });
+  let fallbackTimer;
+  outputsBtn.addEventListener("click", () => {
+    renderProfiles(); outputsDlg.showModal(); loadFallbackEditor();
+    paintOutputDevices(); refreshOutputReasons();
+    clearInterval(fallbackTimer);
+    fallbackTimer = setInterval(() => { refreshOutputReasons(); refreshFallbackStatus(); }, 3000);
+  });
+  outputsDlg.addEventListener("close", () => clearInterval(fallbackTimer));
+  function openOutputFallback(i) {
+    if (!outputsDlg.open) outputsBtn.click();
+    const select = $("#fallbackBus");
+    if (i != null && [...select.options].some((o) => o.value === String(i))) select.value = String(i);
+    const fold = $("#fallbackFold");
+    fold.open = true;
+    renderFallbackList();
+    refreshFallbackStatus();
+    $("summary", fold).focus();
+    fold.scrollIntoView({ block: "nearest" });
+  }
+  $("#settingsFallback").addEventListener("click", () => {
+    settingsDlg.close(); openOutputFallback();
+  });
   outputsDlg.addEventListener("click", (e) => { if (e.target === outputsDlg) outputsDlg.close(); });
 
   /* ---------- volume per app ---------- */
   // Windows' own per-app volume (the volume mixer), read once a second while this window is open.
   const appsDlg = $("#appsDlg"), appsBtn = $("#appsBtn"), appListEl = $("#appVolList");
+  const appsFlowVisible = () => appsDlg.open && !$("#appsFlow").hidden;
+  const selectAppsTab = bindTabs($("#appsTabs"), (tab) => {
+    if (!appsDlg.open) return;
+    if (tab === "assignments") paintAppAssignments();
+    if (tab === "flow") {
+      paintAudioFlow();
+      refreshRouteTrace();
+    } else if ($("#guidedAudio").open) $("#guidedAudio").open = false;
+  });
   const appRows = new Map(); // exe → { el, slider, out, mute, name, live, lockUntil }
   let appsTimer = null, appsBusy = false, appsFailed = false;
   function paintAppSlider(slider) {
@@ -2080,6 +2964,128 @@
     setTimeout(() => { const val = appPending.get(exe); appPending.delete(exe); sendApp(exe, val, null); }, 60);
   }
   let routeDevices = [];
+  let routeTraceGeneration = 0, routeInspectTarget = "";
+  function syncRouteInspector(apps) {
+    const select = $("#routeInspectApp");
+    const selected = routeInspectTarget || select.value;
+    const choices = apps.map(({ exe, name }) => [exe, name]);
+    if (routeInspectTarget && !apps.some((a) => a.exe === routeInspectTarget)) {
+      choices.push([routeInspectTarget, exeName(routeInspectTarget) + " (no active session)"]);
+    }
+    const signature = JSON.stringify(choices);
+    if (select.dataset.apps === signature && selected === select.value) return;
+    select.dataset.apps = signature;
+    select.replaceChildren(new Option("Choose an app", ""), ...choices.map(([exe, name]) => new Option(name, exe)));
+    select.value = choices.some(([exe]) => exe === selected) ? selected : "";
+    if (apps.some((a) => a.exe === routeInspectTarget)) routeInspectTarget = "";
+    if (!select.value) {
+      routeTraceGeneration++;
+      showRouteTrace([]);
+    }
+  }
+
+  let routeTraceDefaults = null;
+  let routeTraceAt = 0;
+  let routeTraceRequest = null;
+  let routeTracePaint = 0;
+  function showRouteTrace(rows) {
+    const result = $("#routeInspectResult");
+    const signature = JSON.stringify(rows);
+    if (result.dataset.trace === signature) return;
+    result.dataset.trace = signature;
+    const firstWarning = rows.findIndex((row) => row.warning);
+    result.replaceChildren(...rows.map(({ text, warning }, index) => Object.assign(document.createElement("li"), {
+      textContent: index === firstWarning ? "Check first · " + text : text,
+      className: index === firstWarning ? "route-warning" : warning ? "route-issue" : "",
+    })));
+  }
+  function paintRouteTrace() {
+    const exe = $("#routeInspectApp").value;
+    if (!appsFlowVisible() || !exe) return;
+    const app = appRows.get(exe)?.session;
+    if (!app) { showRouteTrace([{ text: "This app has no Windows audio session." }]); return; }
+    if (!routeTraceAt) { showRouteTrace([{ text: "Reading playback devices…" }]); return; }
+    const defaults = routeTraceDefaults;
+    const rows = [];
+    const add = (text, warning = false) => rows.push({ text, warning });
+    add(`${app.name} · ${app.volume}%${app.mute ? " · muted in Windows" : app.volume === 0 ? " · volume is zero" : ""}`, app.mute || app.volume === 0);
+    const chosen = (settings.appRoutes || {})[app.exe];
+    const observed = app.endpoints || [];
+    const ids = [...new Set(observed.length ? observed : chosen ? [chosen] : defaults?.filter(Boolean) || [])];
+    if (!ids.length) add("Windows playback device could not be determined.", true);
+    const outputs = chans.filter((c) => c.kind === "bus");
+    const anySolo = chans.some((c) => c.kind === "strip" && c.data?.solo);
+    for (const id of ids) {
+      const device = routeDevices.find((d) => d.id.toLowerCase() === id.toLowerCase());
+      const source = observed.length ? "Windows audio session" : chosen ? "Saved app route" : "Possible Windows default";
+      add(`${source} → ${device?.name || "device unavailable"}`, !device);
+      if (!device) continue;
+      const input = channelForDevice(device.id);
+      if (!connected) { add("Voicemeeter is disconnected.", true); continue; }
+      if (!input?.data) { add("No matching Voicemeeter input. This device may play outside the mixer."); continue; }
+      const d = input.data;
+      const blocked = d.mute ? "muted" : anySolo && !d.solo ? "another input is soloed" : d.gain <= -60 ? "fader at minimum" : "";
+      add(`Voicemeeter input → ${displayName(input)}${blocked ? " · " + blocked : ""}`, !!blocked);
+      let routed = 0;
+      for (const bus of outputs) {
+        const name = bus.info.id;
+        const on = d[name[0].toLowerCase()]?.[Number(name.slice(1) || "1") - 1];
+        if (!on) continue;
+        routed++;
+        const out = bus.data || {};
+        const problem = out.mute ? "muted" : out.gain <= -60 || d.layers?.[bus.i] <= -60 ? "fader at minimum" :
+          bus.info.kind === "hw" && !out.device ? "no playback device selected" : "";
+        add(`${name} → ${displayName(bus)}${out.device ? " · " + out.device : ""}${problem ? " · " + problem : ""}`, !!problem);
+      }
+      if (!routed) add("No output routes enabled on this input.", true);
+    }
+
+    showRouteTrace(rows);
+  }
+  function scheduleRouteTrace() {
+    if (!appsFlowVisible() || routeTracePaint) return;
+    routeTracePaint = setTimeout(() => { routeTracePaint = 0; paintRouteTrace(); paintAudioFlow(); }, 120);
+  }
+  async function refreshRouteTrace(force = false) {
+    if (!appsFlowVisible()) return;
+    if (!force && Date.now() - routeTraceAt < 3000) { scheduleRouteTrace(); return; }
+    if (routeTraceRequest) return routeTraceRequest;
+    const generation = routeTraceGeneration;
+    routeTraceRequest = Promise.all([engine.appRouteDevices(), engine.appRouteDefaults()])
+      .then(([devices, defaults]) => {
+        if (generation !== routeTraceGeneration || !appsDlg.open) return;
+        if (JSON.stringify(devices || []) !== JSON.stringify(routeDevices)) {
+          routeDevices = devices || [];
+          for (const row of appRows.values()) fillRoute(row, row.session);
+        }
+        routeTraceDefaults = defaults;
+        routeTraceAt = Date.now();
+        paintRouteTrace();
+        paintAudioFlow();
+        paintAppAssignments();
+      })
+      .catch((e) => {
+        if (generation === routeTraceGeneration && appsDlg.open && !routeTraceAt) showRouteTrace([{ text: String(e), warning: true }]);
+      })
+      .finally(() => { routeTraceRequest = null; });
+    return routeTraceRequest;
+  }
+  $("#routeInspectApp").addEventListener("change", () => {
+    if (!$("#routeInspectApp").value) { showRouteTrace([]); return; }
+    paintRouteTrace();
+    refreshRouteTrace();
+  });
+  $("#routeInspectRefresh").addEventListener("click", async () => {
+    await refreshApps();
+    await refreshRouteTrace(true);
+  });
+  appsDlg.addEventListener("close", () => {
+    routeTraceGeneration++;
+    routeInspectTarget = "";
+    routeTraceAt = 0;
+    clearTimeout(routeTracePaint);
+    routeTracePaint = 0;
+  });
   function fillRoute(row, a) {
     const sel = row.route, saved = (settings.appRoutes || {})[a.exe] || "";
     sel.textContent = "";
@@ -2129,6 +3135,7 @@
     return row;
   }
   function updateAppRow(row, a) {
+    row.session = a;
     row.name.textContent = a.name;
     row.name.title = a.exe;
     row.pids = a.pids || [];
@@ -2148,6 +3155,7 @@
     appsBusy = true;
     try {
       const list = await engine.appVolumes();
+      syncRouteInspector(list);
       const seen = new Set();
       for (const a of list) {
         seen.add(a.exe);
@@ -2158,19 +3166,29 @@
       for (const [exe, row] of appRows) if (!seen.has(exe)) { row.el.remove(); appRows.delete(exe); }
       $("#appVolEmpty").hidden = appRows.size > 0;
       appsFailed = false;
+      refreshRouteTrace();
+      paintAppAssignments();
     } catch (e) {
       if (!appsFailed) fail(e);
       appsFailed = true;
     } finally { appsBusy = false; }
   }
-  function openAppVolumes() {
+  function openAppVolumes(tab = "volumes", destination = "") {
     appRows.clear();
     appListEl.textContent = "";
+    syncRouteInspector([]);
     $("#appVolEmpty").hidden = true;
     appsFailed = false;
-    appsDlg.showModal();
+    assignmentSignature = "";
+    assignmentDestination = destination;
+    if (!appsDlg.open) appsDlg.showModal();
+    selectAppsTab(tab, true);
     refreshApps();
-    engine.appRouteDevices().then((d) => { routeDevices = d || []; for (const [, row] of appRows) fillRoute(row, { exe: row.name.title, pids: row.pids }); }).catch(() => {});
+    engine.appRouteDevices().then((d) => {
+      routeDevices = d || [];
+      for (const [, row] of appRows) fillRoute(row, row.session);
+      paintAppAssignments();
+    }).catch(() => {});
     clearInterval(appsTimer);
     appsTimer = setInterval(refreshApps, 1000);
   }
@@ -2212,6 +3230,288 @@
       || null;
   }
   const channelForDevice = (id) => chans.find((c) => { const d = deviceForChannel(c); return d && d.id === id; }) || null;
+
+  /* ---------- saved app assignments ---------- */
+  const appAssignments = $("#appAssignments");
+  let assignmentSignature = "", assignmentDestination = "";
+  function paintAppAssignments() {
+    if (!appsDlg.open || appAssignments.hidden) return;
+    const destinations = chans.filter((c) => deviceForChannel(c));
+    const routes = Object.entries(settings.appRoutes || {});
+    const signature = JSON.stringify([destinations.map((c) => [c.prefix, displayName(c)]), routes.map(([exe, id]) =>
+      [exe, id, displayNameSafe(channelForDevice(id)), appRows.get(exe)?.session?.endpoints, !!appRows.get(exe)?.pids.length])]);
+    if (signature === assignmentSignature) return;
+    assignmentSignature = signature;
+    const select = $("#appAssignChannel"), previous = assignmentDestination || select.value;
+    select.replaceChildren(new Option("Choose an input", ""), ...destinations.map((c) => new Option(displayName(c), c.prefix)));
+    if (destinations.some((c) => c.prefix === previous)) {
+      select.value = previous;
+      assignmentDestination = "";
+    }
+    $("#appAssignList").replaceChildren(...routes.map(([exe, id]) => {
+      const row = appRows.get(exe), dest = channelForDevice(id);
+      const state = !id ? "Waiting to reset to Windows default" : !dest ? "Destination unavailable" : !row?.pids.length ? "Waiting for audio session"
+        : row.session.endpoints?.some((ep) => ep.toLowerCase() === id.toLowerCase()) ? "Routed" : "Saved · awaiting confirmation";
+      const item = document.createElement("li");
+      item.append(document.createTextNode(`${exe} → ${dest ? displayName(dest) : id ? "saved device" : "Windows default"} · ${state}`));
+      const remove = Object.assign(document.createElement("button"), { className: "btn", type: "button", textContent: "Remove" });
+      remove.setAttribute("aria-label", `Remove assignment for ${exe}`);
+      remove.addEventListener("click", () => saveAssignment(exe, null));
+      if (id) item.append(remove);
+      return item;
+    }));
+  }
+  const displayNameSafe = (ch) => ch ? displayName(ch) : "";
+  async function saveAssignment(exe, destination) {
+    const row = appRows.get(exe);
+    const device = destination && deviceForChannel(destination);
+    if (destination && !device) return toast("This input has no available Windows playback device");
+    try {
+      const pids = appsDlg.open ? row?.pids || [] : (await engine.appVolumes()).find((app) => app.exe === exe)?.pids || [];
+      if (pids.length) await engine.appRouteSet(pids, device?.id || "");
+      const routes = settings.appRoutes || (settings.appRoutes = {});
+      if (device) routes[exe] = device.id;
+      else if (pids.length || !window.__TAURI__) delete routes[exe];
+      else routes[exe] = "";
+      if (!await saveNow()) return;
+      if (row) fillRoute(row, row.session);
+      paintAppAssignments(); paintTray(); paintStripApps(); scheduleRouteTrace();
+      toast(device ? (pids.length ? "App assignment saved" : "App assignment saved. Waiting for an audio session.")
+        : routes[exe] === "" ? "Will restore the Windows default when the app plays audio" : "App assignment removed");
+    } catch (e) { fail(e); }
+  }
+  engine.onAppRouteReset((exe) => {
+    if (settings.appRoutes?.[exe] !== "") return;
+    delete settings.appRoutes[exe];
+    paintAppAssignments(); paintTray(); paintStripApps(); scheduleRouteTrace();
+  }).catch(() => {});
+  $("#appAssignBrowse").addEventListener("click", () => $("#appAssignFile").click());
+  $("#appAssignFile").addEventListener("change", (e) => {
+    if (e.target.files[0]) $("#appAssignName").value = e.target.files[0].name;
+    e.target.value = "";
+  });
+  $("#appAssignForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("#appAssignName"), exe = name.value.trim().toLowerCase();
+    if (!/^[^\\/:*?"<>|\u0000-\u001f]+\.exe$/i.test(exe)) { toast("Enter a Windows executable filename such as game.exe"); name.focus(); return; }
+    const dest = chans.find((c) => c.prefix === $("#appAssignChannel").value);
+    if (!dest) return;
+    const submit = $('button[type="submit"]', e.currentTarget);
+    submit.disabled = true;
+    try { await saveAssignment(exe, dest); } finally { submit.disabled = false; }
+  });
+
+  /* ---------- live signal paths ---------- */
+  const flowGraph = $("#audioFlowGraph"), flowPaths = $("#audioFlowPaths");
+  let flowSignature = "", flowFocus = "", flowEdges = [], flowNodes = new Map();
+  function drawFlowPaths() {
+    if (!appsFlowVisible()) return;
+    const kept = new Set(flowFocus ? [flowFocus] : flowNodes.keys());
+    for (const direction of [0, 1]) {
+      const walk = flowFocus ? [flowFocus] : [];
+      const seen = new Set(walk);
+      while (walk.length) {
+        const next = walk.pop();
+        for (const edge of flowEdges) {
+          if (edge[direction] !== next || seen.has(edge[1 - direction])) continue;
+          const node = edge[1 - direction];
+          kept.add(node); seen.add(node); walk.push(node);
+        }
+      }
+    }
+    for (const [id, node] of flowNodes) {
+      node.classList.toggle("dim", !kept.has(id));
+      node.setAttribute("aria-pressed", String(id === flowFocus));
+    }
+    const { left, top } = flowGraph.getBoundingClientRect();
+    flowPaths.replaceChildren(...flowEdges.flatMap(([from, to, issue]) => {
+      const a = flowNodes.get(from)?.getBoundingClientRect(), b = flowNodes.get(to)?.getBoundingClientRect();
+      if (!a || !b) return [];
+      const x = a.right - left, y = a.top + a.height / 2 - top;
+      const xx = b.left - left, yy = b.top + b.height / 2 - top;
+      const mid = (x + xx) / 2;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M${x} ${y} C${mid} ${y} ${mid} ${yy} ${xx} ${yy}`);
+      if (issue) path.classList.add("issue");
+      if (!kept.has(from) || !kept.has(to)) path.classList.add("dim");
+      return [path];
+    }));
+  }
+  function paintAudioFlow() {
+    if (!appsFlowVisible()) return;
+    $("#audioFlowStatus").textContent = routeTraceAt ? "" : "Reading Windows playback devices…";
+    const columns = [[], [], []], edges = [];
+    const strips = chans.filter((c) => c.kind === "strip"), outputs = chans.filter((c) => c.kind === "bus");
+    const solo = strips.some((c) => c.data?.solo);
+    const issues = new Map();
+    for (const input of strips) {
+      const d = input.data || {};
+      const issue = !connected ? "Voicemeeter disconnected" : d.mute ? "Muted" : solo && !d.solo ? "Other input soloed" :
+        d.gain <= MIN_DB ? "Fader at minimum" : isHw(input) && !d.device ? "No input device" : "";
+      issues.set(input.prefix, issue);
+      const sends = outputs.filter((b) => d[b.info.id[0].toLowerCase()]?.[+(b.info.id.slice(1) || 1) - 1]);
+      columns[1].push([input.prefix, displayName(input), issue || (!sends.length ? "No output routes" : d.device || "Virtual input"), !!issue || !sends.length]);
+      for (const bus of sends) edges.push([input.prefix, bus.prefix, !!issue || !!bus.data?.mute || bus.data?.gain <= MIN_DB ||
+        d.layers?.[bus.i] <= MIN_DB || (isHw(bus) && !bus.data?.device)]);
+    }
+    for (const bus of outputs) {
+      const d = bus.data || {};
+      const issue = !connected ? "Voicemeeter disconnected" : d.mute ? "Muted" : d.gain <= MIN_DB ? "Fader at minimum" : isHw(bus) && !d.device ? "No playback device" : "";
+      columns[2].push([bus.prefix, `${bus.info.id} · ${displayName(bus)}`, issue || d.device || "Virtual output", !!issue]);
+    }
+    const assigned = settings.appRoutes || {}, direct = new Set();
+    const programs = new Map([...appRows].map(([exe, row]) => [exe, row.session]));
+    for (const exe of Object.keys(assigned)) if (!programs.has(exe)) programs.set(exe, { name: exeName(exe), waiting: true });
+    for (const [exe, a] of programs) {
+      const observed = a.endpoints || [];
+      const ids = observed.length ? observed : assigned[exe] ? [assigned[exe]] : routeTraceDefaults?.filter(Boolean) || [];
+      const state = a.waiting ? "Waiting for audio session" : a.mute ? "Muted in Windows" : a.volume === 0 ? "Volume is zero" :
+        observed.length ? (a.active ? "Playing" : "Idle") : assigned[exe] ? "Saved route" : ids.length ? "Possible Windows default" : "Playback device unknown";
+      columns[0].push([exe, a.name, state, !!(a.waiting || a.mute || a.volume === 0 || !observed.length)]);
+      for (const id of new Set(ids)) {
+        const device = routeDevices.find((d) => d.id.toLowerCase() === id.toLowerCase());
+        const input = device && channelForDevice(device.id);
+        const target = input?.prefix || `endpoint:${id}`;
+        if (!input && !direct.has(target)) {
+          direct.add(target);
+          columns[2].push([target, device?.name || "Unavailable playback device", device ? "Direct Windows playback" : "Disconnected", !device]);
+        }
+        edges.push([exe, target, !observed.length || !!a.mute || a.volume === 0 || !device || !!issues.get(target)]);
+      }
+    }
+    const signature = JSON.stringify([columns, edges]);
+    if (signature === flowSignature) return;
+    flowSignature = signature;
+    flowEdges = edges;
+    const keyboard = [...flowNodes].find(([, node]) => node === document.activeElement)?.[0];
+    flowNodes = new Map();
+    columns.forEach((list, i) => {
+      const column = $([`#flowApps`, `#flowInputs`, `#flowOutputs`][i]);
+      column.replaceChildren(...list.map(([id, title, detail, issue]) => {
+        const button = Object.assign(document.createElement("button"), { className: `btn flow-node${issue ? " issue" : ""}`, type: "button", textContent: title });
+        button.append(Object.assign(document.createElement("span"), { textContent: detail }));
+        button.addEventListener("click", () => { flowFocus = flowFocus === id ? "" : id; drawFlowPaths(); });
+        flowNodes.set(id, button);
+        return button;
+      }));
+    });
+    if (!flowNodes.has(flowFocus)) flowFocus = "";
+    flowNodes.get(keyboard)?.focus({ preventScroll: true });
+    drawFlowPaths();
+  }
+  new ResizeObserver(drawFlowPaths).observe(flowGraph);
+  /* ---------- guided audio tests inside the route inspector ---------- */
+  const guided = $("#guidedAudio"), guidedMonitor = $("#guidedMonitor"), guidedMic = $("#guidedMic");
+  const guidedInputs = ["game", "chat", "stream"].map((kind) => $(`#guided${kind[0].toUpperCase() + kind.slice(1)}`));
+  const guidedStatus = $("#guidedStatus");
+  let guidedBusy = false, guidedTake = false, guidedEpoch = 0, guidedCapture = "";
+  function paintGuidedControls() {
+    for (const [i, id] of ["guidedGameRun", "guidedChatRun", "guidedStreamRun"].entries()) {
+      $(`#${id}`).disabled = guidedBusy || !guidedInputs[i].value || (i === 2 && (!guidedCapture || !guidedMonitor.value));
+    }
+    $("#guidedRecord").disabled = guidedBusy || !guidedMic.value;
+    for (const id of ["guidedRaw", "guidedProcessed"]) $(`#${id}`).disabled = guidedBusy || !guidedTake || !guidedMonitor.value;
+    guidedMic.disabled = guidedBusy || !guidedMic.options.length;
+    guidedMonitor.disabled = guidedBusy || !guidedMonitor.options.length;
+    guidedInputs.forEach((el) => { el.disabled = guidedBusy || !el.options.length; });
+  }
+  async function loadGuidedAudio() {
+    if (!guided.open || !appsDlg.open) return;
+    const epoch = ++guidedEpoch;
+    guidedCapture = "";
+    paintGuidedControls();
+    try {
+      const [routes, playback, capture] = await Promise.all([engine.appRouteDevices(), engine.soundDevices(), engine.selftestInputs()]);
+      if (epoch !== guidedEpoch) return;
+      routeDevices = routes || [];
+      const inputs = chans.filter((c) => c.kind === "strip").map((c) => ({ c, d: deviceForChannel(c) }))
+        .filter(({ d }) => d && playback.devices?.includes(d.name));
+      guidedInputs.forEach((el, i) => {
+        const saved = el.value, balance = settings.chatBalance || {};
+        const preferred = i === 0 ? balance.game : i === 1 ? balance.chat : "";
+        const pattern = i === 0 ? /game/i : /chat|discord/i;
+        const pick = inputs.find(({ d }) => d.id === saved) || inputs.find(({ c }) => c.prefix === preferred)
+          || (i < 2 && inputs.find(({ c }) => pattern.test(displayName(c)))) || inputs[i % Math.max(inputs.length, 1)] || inputs[0];
+        el.replaceChildren(...inputs.map(({ c, d }) => new Option(`${displayName(c)} · ${d.name}`, d.id)));
+        if (pick) el.value = pick.d.id;
+      });
+      const monitor = guidedMonitor.value;
+      const physical = physicalPlayback(playback.devices || []);
+      guidedMonitor.replaceChildren(new Option("Choose playback device", ""), ...physical.map((d) => new Option(d, d)));
+      if (physical.includes(monitor)) guidedMonitor.value = monitor;
+      const chosenMic = guidedMic.value;
+      guidedMic.replaceChildren(...MF().chains.map((chain) => new Option(
+        chans.find((c) => c.prefix === chain.target) ? displayName(chans.find((c) => c.prefix === chain.target)) : chain.target, chain.id)));
+      if ([...guidedMic.options].some((o) => o.value === chosenMic)) guidedMic.value = chosenMic;
+      const stream = streamBus();
+      guidedCapture = stream ? captureForBus(stream, capture.devices || []) : "";
+      $("#guidedStreamBus").textContent = stream
+        ? `Stream output: ${stream.info.id} · ${displayName(stream)}${guidedCapture ? "" : " (Windows recording endpoint unavailable)"}`
+        : "No stream output is available.";
+      if (!guidedBusy) guidedStatus.textContent = inputs.length ? "" : "No playback devices map to your mixer inputs. Connect Voicemeeter, then reopen this test.";
+    } catch (e) { if (epoch === guidedEpoch) guidedStatus.textContent = String(e); }
+    finally { paintGuidedControls(); }
+  }
+  async function runGuided(message, action) {
+    if (guidedBusy) return;
+    const epoch = guidedEpoch;
+    guidedBusy = true;
+    guidedStatus.textContent = message;
+    paintGuidedControls();
+    try {
+      const result = await action();
+      if (epoch === guidedEpoch) guidedStatus.textContent = result;
+    } catch (e) { if (epoch === guidedEpoch) guidedStatus.textContent = String(e); }
+    finally { guidedBusy = false; paintGuidedControls(); }
+  }
+  for (const [i, kind] of ["game", "chat", "stream"].entries()) {
+    $(`#guided${kind[0].toUpperCase() + kind.slice(1)}Run`).addEventListener("click", () => {
+      const device = routeDevices.find((d) => d.id === guidedInputs[i].value);
+      if (!device) return;
+      if (kind === "stream") {
+        const input = channelForDevice(device.id), stream = streamBus();
+        const send = +(stream?.info.id.slice(1) || 1) - 1;
+        if (!input?.data?.b?.[send]) {
+          guidedStatus.textContent = "Enable this input’s route to the stream output in the mixer, then try again.";
+          return;
+        }
+      }
+      runGuided(`Testing ${kind}…`, () => engine.guidedTest(device.name, kind === "stream" ? guidedCapture : "", guidedMonitor.value, kind));
+    });
+  }
+  $("#guidedRecord").addEventListener("click", () => {
+    const epoch = guidedEpoch;
+    guidedTake = false;
+    runGuided("Recording for four seconds. Speak now.", async () => {
+      if (!await saveNow()) throw new Error("Could not save the current mic settings.");
+      if (epoch !== guidedEpoch) return "";
+      await engine.micTakeRecord(guidedMic.value);
+      if (epoch === guidedEpoch) guidedTake = true;
+      return "Comparison ready. Choose a playback device and listen to both versions.";
+    });
+  });
+  for (const [id, processed] of [["guidedRaw", false], ["guidedProcessed", true]]) {
+    $(`#${id}`).addEventListener("click", () => runGuided("Playing mic comparison…", async () => {
+      await engine.micTakePlay(guidedMonitor.value, processed);
+      return processed ? "Played the processed recording." : "Played the raw recording.";
+    }));
+  }
+  function clearGuidedAudio() {
+    guidedEpoch++;
+    guidedTake = false;
+    guidedStatus.textContent = "";
+    engine.micTakeClear().catch(fail);
+    paintGuidedControls();
+  }
+  guided.addEventListener("toggle", () => guided.open ? loadGuidedAudio() : clearGuidedAudio());
+  guidedMonitor.addEventListener("change", paintGuidedControls);
+  guidedMic.addEventListener("change", clearGuidedAudio);
+  appsDlg.addEventListener("close", () => { if (guided.open) guided.open = false; clearGuidedAudio(); });
+  $("#settingsAudioTest").addEventListener("click", () => {
+    settingsDlg.close(); openAppVolumes("flow"); guided.open = true;
+    requestAnimationFrame(() => guided.scrollIntoView({ block: "nearest" }));
+  });
+  paintGuidedControls();
   function whyNot(ch) {
     if (!ch || ch.kind !== "strip") return "Outputs can't take apps. Drop it on an input channel";
     const dev = (ch.data && ch.data.device) || "";
@@ -2277,11 +3577,10 @@
     trayEmpty.hidden = list.length > 0;
   }
 
-  // Small chips on a channel strip for the apps that play through it.
-  // Apps on a channel take no room in the strip: a small tag in the corner says how many there
-  // are, and hovering the top of the channel opens the list with their names.
-  const APPS_GLYPH = `<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true" fill="currentColor"><rect x="0.5" y="0.5" width="4.5" height="4.5" rx="1.2"/><rect x="7" y="0.5" width="4.5" height="4.5" rx="1.2"/><rect x="0.5" y="7" width="4.5" height="4.5" rx="1.2"/><rect x="7" y="7" width="4.5" height="4.5" rx="1.2"/></svg>`;
+  // The glyph indicates a routed app list without putting a count on the strip.
+  const APPS_GLYPH = `<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4V3a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-1"/><rect x="2" y="5" width="8" height="9" rx="1.5"/></svg>`;
   function paintStripApps() {
+    if (drawerTab === "apps") paintDrawerApps();
     const routes = settings.appRoutes || {};
     const running = new Set(trayRunning.filter((a) => a.pids && a.pids.length).map((a) => a.exe));
     for (const ch of chans.filter((c) => c.kind === "strip")) {
@@ -2311,17 +3610,48 @@
       stack.hidden = !mine.length;
       stack.setAttribute("aria-label", `${mine.length} ${mine.length === 1 ? "app" : "apps"} on ${displayName(ch)}`);
       stack.title = "Click to keep the app list open";
-      if (mine.length) stack.innerHTML = `${APPS_GLYPH}<b>${mine.length}</b>`;
+      if (mine.length) stack.innerHTML = APPS_GLYPH;
       else {
-        ch.mixerEl.classList.remove("app-list-open");
-        stack.setAttribute("aria-expanded", "false");
+        ch.mixerEl.classList.remove("app-list-open", "apps-hover");
       }
+      syncAppList(ch.mixerEl, box, stack);
       if (focusedExe) {
         const next = [...box.querySelectorAll(".sa-remove")].find((b) => b.dataset.exe === focusedExe)
           || $(".sa-remove", box) || (!stack.hidden ? stack : $(".chip", ch.mixerEl));
         next.focus();
       }
     }
+  }
+
+  function paintDrawerApps() {
+    const ch = drawerCh;
+    if (!ch || ch.kind !== "strip" || drawerTab !== "apps") return;
+    const panel = drawerPanels.apps;
+    const routes = settings.appRoutes || {};
+    const apps = trayModel().filter((a) => routes[a.exe] && channelForDevice(routes[a.exe]) === ch);
+    const signature = JSON.stringify([ch.key, apps.map((a) => [a.exe, a.name, a.active, !!a.pids.length])]);
+    if (panel.dataset.list === signature && panel.childElementCount) return;
+    panel.dataset.list = signature;
+    const list = document.createElement("ul");
+    list.className = "drawer-apps";
+    const note = Object.assign(document.createElement("p"), { className: "hint", textContent: apps.length ? "Saved assignments for this input." : "No apps are assigned to this input." });
+    for (const a of apps) {
+      const item = document.createElement("li");
+      const name = Object.assign(document.createElement("span"), { textContent: `${a.name} · ${a.active ? "Playing" : a.pids.length ? "Idle" : "Waiting"}` });
+      const remove = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Remove" });
+      remove.setAttribute("aria-label", `Remove ${a.name} from this input`);
+      remove.addEventListener("click", () => saveAssignment(a.exe, null));
+      item.append(name, remove); list.append(item);
+    }
+    const manage = Object.assign(document.createElement("button"), { type: "button", className: "btn", textContent: "Manage app assignments…" });
+    manage.addEventListener("click", () => { closeDrawer(); openAppVolumes("assignments", ch.prefix); });
+    const content = document.createElement("section");
+    content.append(note);
+    if (apps.length) content.append(list);
+    content.append(manage);
+    const focused = panel.contains(document.activeElement);
+    panel.replaceChildren(content);
+    if (focused) manage.focus();
   }
 
   // Drag with the pointer (works the same in every theme, and doesn't depend on the webview's file-drop handling).
@@ -2401,15 +3731,23 @@
   function applyTray() {
     const on = !SIDE && !!settings.appTray;
     trayEl.hidden = !on;
-    appsBtn.setAttribute("aria-pressed", String(on));
+    const toggle = $("#appsTrayToggle");
+    toggle.setAttribute("aria-pressed", String(on));
+    toggle.textContent = on ? "Hide apps tray" : "Show apps tray";
     clearInterval(trayTimer); trayTimer = null;
     lastTraySig = "";
     startTray();
     if (on) paintTray();
   }
-  appsBtn.addEventListener("click", () => { settings.appTray = !settings.appTray; saveSettings(); applyTray(); });
+  appsBtn.addEventListener("click", () => openAppVolumes());
+  $("#appsTrayToggle").addEventListener("click", () => {
+    settings.appTray = !settings.appTray;
+    saveSettings();
+    applyTray();
+    if (settings.appTray) { appsDlg.close(); $("#trayVolumes").focus(); }
+  });
   $("#trayClose").addEventListener("click", () => { settings.appTray = false; saveSettings(); applyTray(); });
-  $("#trayVolumes").addEventListener("click", openAppVolumes);
+  $("#trayVolumes").addEventListener("click", () => openAppVolumes());
 
   /* ---------- settings: about and logs ---------- */
   let appInfo = null;
@@ -2560,6 +3898,7 @@
     if (!r) {
       rec = null;
       recBtn.hidden = true;
+      paintStreamToolbar();
       if (recDlg.open) recDlg.close();
       return;
     }
@@ -2577,6 +3916,7 @@
     recBtn.dataset.state = state;
     $("#recLabel").textContent = state === "stopped" ? "" : state === "paused" ? "Paused" : recClock();
     recBtn.title = state === "stopped" ? "Recorder" : `Recorder: ${REC_STATES[state].toLowerCase()}`;
+    paintStreamToolbar();
     clearInterval(recTimer);
     if (recRunning()) recTimer = setInterval(tickRecClock, 250);
     if (!recDlg.open) return;
@@ -2953,6 +4293,8 @@
     obsState = st || null;
     const connected = !!(st && st.connected);
     $("#liveTag").hidden = PANEL || !(connected && st.live);
+    obsRecording = connected && !!st.recording;
+    paintStreamToolbar();
     const note = $("#obsNote");
     note.textContent = !OB().on ? "" : connected ? "Connected" : "Not connected";
     note.dataset.ok = connected ? "1" : "";
@@ -3209,7 +4551,8 @@
   const TW_ACTIONS = [["brb", "Be right back on or off"], ["scene", "Load a scene"], ["sound", "Play a sound"], ["soundstop", "Stop all sounds"],
     ["mute", "Mute or unmute"], ["output", "Switch to an output profile"], ["outputnext", "Next output profile"],
     ["duck", "Talk-over ducking on or off"], ["record", "Start or stop recording"],
-    ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"]];
+    ["replay", "Save an instant replay"], ["musicguard", "Music off stream on or off"],
+    ["micfx", "Mic clean-up on or off"]];
   const TW_NO_TARGET = new Set(["brb", "soundstop", "outputnext", "duck", "record", "replay", "musicguard"]);
   let twitchState = null;
   function applyTwitch(st) {
@@ -3230,7 +4573,8 @@
     if (none) { cmd.target = ""; return; }
     sel.setAttribute("aria-label", "On");
     if (cmd.action === "scene" || cmd.action === "sound") sel.appendChild(new Option(typed, ""));
-    const names = cmd.action === "mute" ? chans.map((ch) => [displayName(ch), ch.prefix]) : namesFor(cmd.action).map((n) => [n, n]);
+    const names = cmd.action === "mute" ? chans.map((ch) => [displayName(ch), ch.prefix])
+      : cmd.action === "micfx" ? micTargets() : namesFor(cmd.action).map((n) => [n, n]);
     for (const [label, value] of names) sel.appendChild(new Option(label, value));
     if (cmd.action === "mute" && !/^(Strip|Bus)\[/.test(cmd.target || "")) cmd.target = "Strip[0]";
     if (cmd.target && ![...sel.options].some((o) => o.value === cmd.target)) sel.appendChild(new Option(`${cmd.target} (gone)`, cmd.target));
@@ -3419,6 +4763,7 @@
     mb.title = on ? "Your music is off the stream. Click to put it back on" : "Music off stream: click to keep your music out of the stream now";
     mb.setAttribute("aria-label", on ? "Music is off the stream" : "Music off stream");
     $("#replayBtn").hidden = SIDE || !RP().on;
+    paintStreamToolbar();
   }
   $("#musicBtn").addEventListener("click", () => engine.musicGuardToggle().catch(fail));
 
@@ -3474,6 +4819,7 @@
   $("#goLiveSettings").addEventListener("click", () => {
     goLiveDlg.close();
     $("#settingsBtn").click();
+    selectSettingsCategory("streaming");
     const fold = $("#liveFold");
     fold.open = true;
     requestAnimationFrame(() => fold.scrollIntoView({ block: "start" }));
@@ -3516,7 +4862,7 @@
     clearInterval(replayTimer);
     replayTimer = setInterval(() => {
       if (!settingsDlg.open) { clearInterval(replayTimer); replayTimer = null; return; }
-      refreshReplay();
+      if (settingsShowing("replayOn")) refreshReplay();
     }, 2000);
   }
   $("#replayOn").addEventListener("change", (e) => { RP().on = e.target.checked; saveSettings(); syncReplay(); applyStreamButtons(lastState); setTimeout(refreshReplay, 1200); });
@@ -3557,7 +4903,10 @@
     $("#remotePort").value = r.port || 8787;
     refreshRemote();
     clearInterval(remoteTimer);
-    remoteTimer = setInterval(() => { if (!settingsDlg.open) { clearInterval(remoteTimer); remoteTimer = null; } else refreshRemote(); }, 2000);
+    remoteTimer = setInterval(() => {
+      if (!settingsDlg.open) { clearInterval(remoteTimer); remoteTimer = null; }
+      else if (settingsShowing("remoteOn")) refreshRemote();
+    }, 2000);
   }
   const remoteSaved = async () => { await saveNow(); setTimeout(refreshRemote, 700); };
   $("#remoteOn").addEventListener("change", async (e) => {
@@ -3722,6 +5071,480 @@
   }
   $("#clipOn").addEventListener("change", (e) => { CW().on = e.target.checked; saveSettings(); syncClip(); });
   $("#clipTarget").addEventListener("change", (e) => { CW().target = e.target.value; saveSettings(); });
+
+  /* ---------- mic clean-up: NVIDIA's AI and VST3 plugins, one chain per mic (micfx.rs, pluginhost.rs) ---------- */
+  const MICFX_EFFECTS = [["denoiser", "Background noise"], ["dereverb", "Room echo"], ["dereverb_denoiser", "Noise and room echo"]];
+  const newChain = (target) => ({ id: "c" + Date.now().toString(36), target: target || "", on: false, effect: "denoiser", strength: 100, aec: false, plugins: [] });
+  // Before several mics, one chain's fields lived in micFx itself: that becomes the first chain.
+  const MF = () => {
+    const raw = settings.micFx || {};
+    if (!Array.isArray(raw.chains)) {
+      const flat = raw.target !== undefined || raw.on !== undefined || Array.isArray(raw.plugins);
+      raw.chains = [{ id: "c1", target: raw.target || "Strip[0]", on: flat ? !!raw.on : false, effect: raw.effect || "denoiser",
+        strength: raw.strength ?? 100, aec: false, plugins: Array.isArray(raw.plugins) ? raw.plugins : [] }];
+      for (const k of ["target", "on", "effect", "strength", "plugins"]) delete raw[k];
+      settings.micFx = raw;
+      setTimeout(saveSettings, 0);
+    }
+    if (!raw.chains.length) raw.chains.push(Object.assign(newChain("Strip[0]"), { id: "c1" }));
+    if (!raw.aecRef) raw.aecRef = "Bus[0]";
+    return (settings.micFx = raw);
+  };
+  let micSel = 0;
+  const CH = () => { const cs = MF().chains; if (micSel >= cs.length) micSel = 0; return cs[micSel]; };
+  const PLUGINS = () => (CH().plugins = Array.isArray(CH().plugins) ? CH().plugins : []);
+  const micFxRange = bindRange("micFxStrength", () => CH().strength ?? 100, (v) => { CH().strength = v; }, (v) => `${v}%`);
+  const hwInputs = () => {
+    const hw = layout.strips.filter((s) => s.kind === "hw").length;
+    return chans.filter((ch) => { const m = /^Strip\[(\d+)\]$/.exec(ch.prefix); return m && +m[1] < hw; });
+  };
+  const micName = (c, i) => { const ch = chans.find((x) => x.prefix === c.target); return ch ? displayName(ch) : `Mic ${i + 1}`; };
+  let micFxTimer = null;
+  let micFxLast = { chains: {}, plugins: {} };
+  let micFxRequest = null;
+  let vstFound = null; // last scan, for the Add list
+  let listening = false;
+  function openInputEffects(ch, preferred = "") {
+    const chains = MF().chains;
+    let i = chains.findIndex((c) => c.target === ch.prefix && (!preferred || c.id === preferred));
+    if (i < 0) i = chains.findIndex((c) => c.target === ch.prefix);
+    if (i < 0) {
+      if (chains.length >= 5) { toast("Remove an unused input chain before adding another"); return; }
+      chains.push(newChain(ch.prefix));
+      i = chains.length - 1;
+      saveSettings();
+    }
+    stopListening();
+    if (drawerCh) closeDrawer();
+    micSel = i;
+    openSettings("microphone");
+    const fold = $("#micFxFold");
+    fold.open = true;
+    const active = $("#micTabs [aria-selected=true]");
+    if (active) active.focus();
+    requestAnimationFrame(() => fold.scrollIntoView({ block: "start" }));
+  }
+  function paintInputWarnings(st) {
+    const chains = settings.micFx?.chains || [];
+    const warnings = new Map();
+    for (const c of chains) {
+      const chain = st.chains?.[c.id];
+      const plugin = (c.plugins || []).find((p) => st.plugins?.[p.id]?.bypassed || (p.on !== false && st.plugins?.[p.id]?.error));
+      if (plugin) warnings.set(c.target, { id: c.id, text: `${plugin.name} · ${st.plugins[plugin.id].error || "Bypassed for recovery"}` });
+      else if (chain && !chain.off && !chain.running && !c.stereo && (c.on || c.aec) && chain.message) {
+        warnings.set(c.target, { id: c.id, text: chain.message });
+      }
+    }
+    for (const ch of chans) {
+      const el = ch.fxWarning;
+      if (!el) continue;
+      const warning = warnings.get(ch.prefix);
+      el.hidden = !warning;
+      if (!warning) continue;
+      el.dataset.chain = warning.id;
+      el.title = warning.text;
+      el.setAttribute("aria-label", `${displayName(ch)} effects warning. ${warning.text} Open input effects`);
+    }
+  }
+  function fetchMicFxStatus() {
+    if (!micFxRequest) micFxRequest = engine.micFxStatus().then((st) => {
+      micFxLast = st;
+      paintInputWarnings(st);
+      return st;
+    }).catch(() => micFxLast).finally(() => { micFxRequest = null; });
+    return micFxRequest;
+  }
+  function pollInputEffects() {
+    const m = settings.micFx;
+    const configured = m?.on || m?.aec || m?.plugins?.length
+      || m?.chains?.some((c) => c.on || c.aec || c.plugins?.length);
+    if (configured && connected) {
+      if (!Array.isArray(m.chains)) MF();
+      fetchMicFxStatus();
+    }
+    else paintInputWarnings({});
+  }
+  async function recoverPlugin(bypass) {
+    const id = $("#vstRecoveryPlugin").value;
+    if (!id) return;
+    try {
+      await engine.vstRecover(id, bypass);
+      toast(bypass ? "Plugin bypassed for recovery" : "Retry requested");
+      setTimeout(refreshMicFx, 750);
+    } catch (e) { fail(e); }
+  }
+  $("#vstBypass").addEventListener("click", () => recoverPlugin(true));
+  $("#vstRetry").addEventListener("click", () => recoverPlugin(false));
+
+  async function refreshMicFx() {
+    const st = await fetchMicFxStatus();
+    if (!settingsDlg.open) return;
+    const c = CH(), cs = (st.chains || {})[c.id] || {};
+    const set = (x) => (!x.stereo && (x.on || x.aec)) || (x.plugins || []).some((p) => p.on !== false);
+    const runningCount = Object.values(st.chains || {}).filter((x) => x.running).length;
+    const wanted = MF().chains.some(set);
+    $("#micFxMissing").hidden = !!c.stereo || !!st.available || !(c.on || c.aec);
+    $("#micFxNote").textContent = !wanted ? "" : runningCount ? (MF().chains.length > 1 ? `On (${runningCount})` : "On") : "Not running";
+    $("#micFxNote").dataset.ok = runningCount ? "1" : "";
+    $("#micFxOffRow").hidden = !cs.off;
+    const text = $("#micFxStatusText");
+    const extra = cs.running && cs.latencyMs ? ` Adds about ${Math.round(cs.latencyMs)} ms of delay.` : "";
+    text.textContent = cs.off ? "" : set(c) ? (cs.message || st.message || "") + extra : "";
+    text.dataset.ok = cs.running ? "1" : "";
+    // Tabs: a green dot on mics that are running.
+    document.querySelectorAll("#micTabs [data-chain]").forEach((b) => {
+      const d = b.querySelector(".dot");
+      if (d) d.classList.toggle("on", !!((st.chains || {})[b.dataset.chain] || {}).running);
+    });
+    // Each plugin: why it didn't load, if it didn't.
+    const ps = st.plugins || {};
+    const recovery = $("#vstRecovery");
+    const recoverySelect = $("#vstRecoveryPlugin");
+    const choices = MF().chains.flatMap((c) => c.plugins || []);
+    recovery.hidden = !choices.length || !st.recovery?.message;
+    if (!recovery.hidden) {
+      const message = $("#vstRecoveryMessage");
+      if (message.textContent !== st.recovery.message) message.textContent = st.recovery.message;
+      const signature = JSON.stringify(choices.map((p) => [p.id, p.name, !!ps[p.id]?.bypassed]));
+      if (recoverySelect.dataset.choices !== signature) {
+        const selected = recoverySelect.value;
+        recoverySelect.dataset.choices = signature;
+        recoverySelect.replaceChildren(...choices.map((p) => new Option(p.name + (ps[p.id]?.bypassed ? " · bypassed" : ""), p.id)));
+        recoverySelect.value = choices.some((p) => p.id === selected) ? selected :
+          (choices.find((p) => ps[p.id]?.bypassed) || choices[0]).id;
+      }
+    }
+    for (const row of document.querySelectorAll("#vstList .vst-rule")) {
+      const p = PLUGINS().find((x) => x.id === row.dataset.id);
+      const s = ps[row.dataset.id];
+      const small = row.querySelector(".vst-name small");
+      const edit = row.querySelector(".vst-edit");
+      if (!p || !small) continue;
+      const err = s && s.error;
+      small.textContent = err ? err : s && s.loaded ? (p.vendor || "VST3") : "Loading…";
+      small.classList.toggle("err", !!err);
+      if (edit) edit.disabled = !(s && s.loaded && s.editor);
+    }
+  }
+
+  function renderMicTabs() {
+    const tabs = $("#micTabs");
+    tabs.textContent = "";
+    const cs = MF().chains;
+    if (micSel >= cs.length) micSel = 0;
+    cs.forEach((c, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn"; b.setAttribute("role", "tab");
+      b.dataset.chain = c.id;
+      b.setAttribute("aria-selected", i === micSel ? "true" : "false");
+      const dot = document.createElement("span"); dot.className = "dot";
+      b.append(dot, document.createTextNode(micName(c, i)));
+      b.addEventListener("click", () => { if (micSel !== i) { stopListening(); micSel = i; syncMicFx(); } });
+      tabs.appendChild(b);
+    });
+    const free = hwInputs().filter((ch) => !cs.some((c) => c.target === ch.prefix));
+    if (free.length && cs.length < 5) {
+      const add = document.createElement("button");
+      add.type = "button"; add.className = "btn";
+      add.textContent = "+ Add a mic";
+      add.title = "Clean up another of Voicemeeter's hardware inputs too, like a guest mic";
+      add.addEventListener("click", () => {
+        stopListening();
+        cs.push(newChain(free[0].prefix));
+        micSel = cs.length - 1;
+        saveSettings();
+        syncMicFx();
+      });
+      tabs.appendChild(add);
+    }
+    tabs.hidden = cs.length < 2 && !free.length;
+    $("#micFxRemoveMic").hidden = cs.length < 2;
+  }
+
+  const svgIcon = (d) => `<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const presetsFor = (cid) => (Array.isArray(settings.vstPresets) ? settings.vstPresets : []).filter((p) => p.cid === cid);
+  // The plugin whose settings the name box saves.
+  let presetFor = null;
+  async function savePreset() {
+    const name = $("#presetName").value.trim();
+    if (!presetFor) return;
+    if (!name) { $("#presetName").focus(); return; }
+    try {
+      settings.vstPresets = await engine.vstPresetSave(presetFor.id, name);
+      toast(`Saved preset “${name}” for ${presetFor.name}`);
+      $("#presetSave").hidden = true;
+      presetFor = null;
+      renderPlugins();
+    } catch (e) { fail(e); }
+  }
+  $("#presetSaveOk").addEventListener("click", savePreset);
+  $("#presetName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); savePreset(); }
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); $("#presetSave").hidden = true; presetFor = null; }
+  });
+  function presetMenu(p) {
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", `${p.name} presets`);
+    sel.title = "Save this plugin's settings as a preset, or load one";
+    sel.appendChild(new Option("Presets", ""));
+    const mine = presetsFor(p.cid);
+    for (const pr of mine) sel.appendChild(new Option(pr.name, "apply:" + pr.name));
+    sel.appendChild(new Option("Save as a preset…", "save"));
+    for (const pr of mine) sel.appendChild(new Option(`Delete “${pr.name}”`, "del:" + pr.name));
+    sel.addEventListener("change", async () => {
+      const v = sel.value;
+      sel.value = "";
+      try {
+        if (v === "save") {
+          // Ask for the name in the box under the list.
+          presetFor = p;
+          $("#presetSave").hidden = false;
+          $("#presetName").placeholder = `Name this preset for ${p.name}`;
+          $("#presetName").value = "";
+          $("#presetName").focus();
+        } else if (v.startsWith("apply:")) {
+          await engine.vstPresetApply(p.id, v.slice(6));
+          toast(`${p.name}: “${v.slice(6)}” loaded`);
+        } else if (v.startsWith("del:")) {
+          settings.vstPresets = await engine.vstPresetDelete(p.cid, v.slice(4));
+          toast(`Deleted preset “${v.slice(4)}”`);
+          renderPlugins();
+        }
+      } catch (e) { fail(e); }
+    });
+    return sel;
+  }
+
+  function renderPlugins() {
+    const list = $("#vstList");
+    list.textContent = "";
+    const ps = PLUGINS();
+    $("#vstEmpty").hidden = ps.length > 0;
+    ps.forEach((p, idx) => {
+      const row = document.createElement("div");
+      row.className = "rule vst-rule with-presets";
+      row.dataset.id = p.id;
+      const on = document.createElement("input");
+      on.type = "checkbox"; on.checked = p.on !== false; on.setAttribute("aria-label", `${p.name} on`);
+      on.addEventListener("change", () => { p.on = on.checked; saveSettings(); setTimeout(refreshMicFx, 800); });
+      const name = document.createElement("div");
+      name.className = "vst-name";
+      const b = document.createElement("b"); b.textContent = p.name; b.title = p.path;
+      const small = document.createElement("small"); small.textContent = p.vendor || "VST3";
+      name.append(b, small);
+      const edit = document.createElement("button");
+      edit.type = "button"; edit.className = "btn vst-edit"; edit.textContent = "Edit";
+      edit.title = `Open ${p.name}'s window`;
+      edit.addEventListener("click", () => engine.vstEditor(p.id).catch(fail));
+      const move = (d, label, path) => {
+        const btn = document.createElement("button");
+        btn.type = "button"; btn.className = "btn icon"; btn.setAttribute("aria-label", label); btn.title = label;
+        btn.innerHTML = svgIcon(path);
+        const to = idx + d;
+        btn.disabled = to < 0 || to >= ps.length;
+        btn.addEventListener("click", () => { ps.splice(to, 0, ps.splice(idx, 1)[0]); saveSettings(); renderPlugins(); });
+        return btn;
+      };
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn icon"; del.setAttribute("aria-label", `Remove ${p.name}`); del.title = "Remove";
+      del.innerHTML = svgIcon("M5 5l10 10M15 5L5 15");
+      del.addEventListener("click", () => { ps.splice(idx, 1); saveSettings(); renderPlugins(); refreshMicFx(); });
+      row.append(on, name, presetMenu(p), edit, move(-1, "Move up", "M10 15V5M5 10l5-5 5 5"), move(1, "Move down", "M10 5v10M5 10l5 5 5-5"), del);
+      list.appendChild(row);
+    });
+    refreshMicFx();
+  }
+  function addPlugin(f) {
+    const id = "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    PLUGINS().push({ id, name: f.name, vendor: f.vendor || "", path: f.path, cid: f.cid, on: true });
+    saveSettings();
+    renderPlugins();
+    toast(`${f.name} added to ${micName(CH(), micSel)}`);
+    setTimeout(refreshMicFx, 1500);
+  }
+  $("#vstAdd").addEventListener("click", async () => {
+    const pick = $("#vstPick"), sel = $("#vstChoice"), btn = $("#vstAdd");
+    if (!pick.hidden) { pick.hidden = true; return; }
+    btn.disabled = true; btn.textContent = "Looking for plugins…";
+    try { vstFound = await engine.vstScan(); } catch (e) { fail(e); vstFound = []; }
+    btn.disabled = false; btn.textContent = "Add a plugin…";
+    sel.textContent = "";
+    if (!vstFound.length) {
+      toast("No VST3 effects in the usual folders. Use Browse to pick one.");
+      return;
+    }
+    vstFound.forEach((f, i) => sel.appendChild(new Option(f.vendor ? `${f.name} (${f.vendor})` : f.name, String(i))));
+    pick.hidden = false;
+    sel.focus();
+  });
+  $("#vstAddOk").addEventListener("click", () => {
+    const f = (vstFound || [])[+$("#vstChoice").value];
+    if (!f) return;
+    $("#vstPick").hidden = true;
+    addPlugin(f);
+  });
+  $("#vstBrowse").addEventListener("click", async () => {
+    let found = [];
+    try { found = await engine.vstBrowse(); } catch (e) { fail(e); return; }
+    if (!found.length) return; // cancelled
+    if (found.length === 1) { addPlugin(found[0]); return; }
+    // A file with several effects: offer them in the Add list.
+    vstFound = found;
+    const sel = $("#vstChoice");
+    sel.textContent = "";
+    found.forEach((f, i) => sel.appendChild(new Option(f.name, String(i))));
+    $("#vstPick").hidden = false;
+  });
+
+  const micPresetDlg = $("#micPresetDlg");
+  const micPresetStatus = $("#micPresetStatus");
+  const micPresetButtons = [$("#micPresetImport"), $("#micPresetExport")];
+  let micPresetTarget = "";
+  for (const [index, button] of micPresetButtons.entries()) {
+    button.addEventListener("click", async () => {
+      const selected = CH(), id = selected.id, name = micName(selected, micSel);
+      micPresetButtons.forEach((b) => { b.disabled = true; });
+      try {
+        if (!await saveNow()) return;
+        if (index === 1) {
+          if (await engine.micPresetExport(id)) toast("Mic chain exported");
+          return;
+        }
+        const preview = await engine.micPresetPreview(id);
+        if (!preview || !settingsDlg.open) { await engine.micPresetClear(); return; }
+        micPresetTarget = id;
+        $("#micPresetDestination").textContent = `Destination: ${name}. Applying this preset replaces that mic’s effects and plugin list.`;
+        $("#micPresetEffects").textContent = preview.stereo ? "Stereo VST3 chain" :
+          `${preview.on ? `${preview.effect}, ${preview.strength}%` : "NVIDIA clean-up off"} · Speaker echo removal ${preview.aec ? "on" : "off"}`;
+        $("#micPresetReview").replaceChildren(...[
+          ...preview.notes, ...preview.plugins.map((p) => `${p.name} · ${p.status}`),
+          ...(!preview.plugins.length ? ["This preset has no VST3 plugins."] : []),
+        ].map((textContent) => Object.assign(document.createElement("li"), { textContent })));
+        micPresetStatus.textContent = "";
+        micPresetDlg.showModal();
+      } catch (e) { fail(e); }
+      finally { micPresetButtons.forEach((b) => { b.disabled = false; }); }
+    });
+  }
+  $("#micPresetApply").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    micPresetStatus.textContent = "Applying preset…";
+    try {
+      stopListening();
+      settings.micFx = await engine.micPresetApply(micPresetTarget);
+      syncMicFx();
+      micPresetDlg.close();
+      toast("Mic-chain preset applied");
+    } catch (err) { micPresetStatus.textContent = String(err); }
+    finally { btn.disabled = false; }
+  });
+  micPresetDlg.addEventListener("close", () => { micPresetTarget = ""; engine.micPresetClear().catch(fail); });
+
+  // Listen (A1 on while you set it up) and hold-to-compare.
+  function stopListening() {
+    if (!listening) return;
+    listening = false;
+    $("#micFxListen").setAttribute("aria-pressed", "false");
+    $("#micFxListen").textContent = "Listen to this mic";
+    engine.micFxListen("", false).catch(() => {});
+  }
+  $("#micFxListen").addEventListener("click", async () => {
+    try {
+      listening = await engine.micFxListen(CH().id, !listening);
+      $("#micFxListen").setAttribute("aria-pressed", listening ? "true" : "false");
+      $("#micFxListen").textContent = listening ? "Stop listening" : "Listen to this mic";
+    } catch (e) { fail(e); }
+  });
+  const compareBtn = $("#micFxCompare");
+  const compare = (on) => {
+    compareBtn.classList.toggle("held", on);
+    compareBtn.textContent = on ? "Without clean-up…" : "Hold to hear it without";
+    engine.micFxCompare(CH().id, on).catch(() => {});
+  };
+  compareBtn.addEventListener("pointerdown", (e) => { compareBtn.setPointerCapture(e.pointerId); compare(true); });
+  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) compareBtn.addEventListener(ev, () => { if (compareBtn.classList.contains("held")) compare(false); });
+  settingsDlg.addEventListener("close", stopListening);
+
+  $("#micFxBackOn").addEventListener("click", () => engine.micFxToggle(CH().target).then(() => setTimeout(refreshMicFx, 600)).catch(fail));
+  $("#micFxRemoveMic").addEventListener("click", () => {
+    const cs = MF().chains;
+    if (cs.length < 2) return;
+    const c = CH();
+    // A mic with plugins: click twice, so its plugins aren't lost by accident.
+    const btn = $("#micFxRemoveMic");
+    if (c.plugins.length && !btn.dataset.sure) {
+      btn.dataset.sure = "1";
+      btn.textContent = `Click again to remove it and its ${c.plugins.length === 1 ? "plugin" : "plugins"}`;
+      setTimeout(() => { delete btn.dataset.sure; btn.textContent = "Remove this mic"; }, 4000);
+      return;
+    }
+    delete btn.dataset.sure;
+    btn.textContent = "Remove this mic";
+    stopListening();
+    cs.splice(micSel, 1);
+    micSel = Math.max(0, micSel - 1);
+    saveSettings();
+    syncMicFx();
+  });
+
+  function syncMicFx() {
+    const m = MF(), c = CH();
+    renderMicTabs();
+    $("#micFxOn").checked = !!c.on;
+    $("#micFxMode").value = c.stereo ? "stereo" : "mic";
+    $("#micFxStereoHint").hidden = !c.stereo;
+    $("#micFxOn").closest("label").hidden = !!c.stereo;
+    $("#micFxAec").closest("label").hidden = !!c.stereo;
+    $('[data-needs="micfx"]').hidden = !!c.stereo || !c.on;
+    $("#micFxAec").checked = !!c.aec;
+    $('[data-needs="micaec"]').hidden = !!c.stereo || !c.aec;
+    // Only hardware inputs: those are where mics are, and where Voicemeeter's insert has them.
+    const sel = $("#micFxTarget");
+    sel.textContent = "";
+    for (const ch of hwInputs()) {
+      const taken = m.chains.some((x) => x !== c && x.target === ch.prefix);
+      const o = new Option(displayName(ch) + (taken ? " (another mic tab)" : ""), ch.prefix);
+      o.disabled = taken;
+      sel.appendChild(o);
+    }
+    sel.value = c.target;
+    if (sel.selectedIndex < 0 || sel.options[sel.selectedIndex].disabled) {
+      const first = [...sel.options].find((o) => !o.disabled);
+      if (first) { sel.value = first.value; c.target = first.value; }
+    }
+    const eff = $("#micFxEffect");
+    if (!eff.options.length) for (const [k, n] of MICFX_EFFECTS) eff.appendChild(new Option(n, k));
+    eff.value = c.effect || "denoiser";
+    if (eff.selectedIndex < 0) eff.value = "denoiser";
+    const ref = $("#micFxAecRef");
+    ref.textContent = "";
+    layout.buses.forEach((b, j) => ref.appendChild(new Option(busLabel(b.param), `Bus[${j}]`)));
+    ref.value = m.aecRef;
+    if (ref.selectedIndex < 0) ref.value = "Bus[0]";
+    micFxRange._sync();
+    $("#vstPick").hidden = true;
+    $("#presetSave").hidden = true;
+    presetFor = null;
+    renderPlugins();
+    clearInterval(micFxTimer);
+    micFxTimer = setInterval(() => {
+      if (!settingsDlg.open) { clearInterval(micFxTimer); micFxTimer = null; return; }
+      if (settingsShowing("micFxFold")) refreshMicFx();
+    }, 1500);
+  }
+  $("#micFxOn").addEventListener("change", (e) => { CH().on = e.target.checked; saveSettings(); syncMicFx(); });
+  $("#micFxMode").addEventListener("change", (e) => {
+    stopListening();
+    CH().stereo = e.target.value === "stereo";
+    saveSettings();
+    syncMicFx();
+  });
+  $("#micFxAec").addEventListener("change", (e) => { CH().aec = e.target.checked; saveSettings(); syncMicFx(); });
+  $("#micFxAecRef").addEventListener("change", (e) => { MF().aecRef = e.target.value; saveSettings(); });
+  $("#micFxTarget").addEventListener("change", (e) => { stopListening(); CH().target = e.target.value; saveSettings(); renderMicTabs(); setTimeout(refreshMicFx, 800); });
+  $("#micFxEffect").addEventListener("change", (e) => { CH().effect = e.target.value; saveSettings(); setTimeout(refreshMicFx, 800); });
+
   const levelOf = (lv, prefix) => {
     const m = /^(Strip|Bus)\[(\d)\]$/.exec(prefix || "");
     const pair = m ? ((m[1] === "Strip" ? lv.inputs : lv.outputs) || [])[+m[2]] : null;
@@ -3966,15 +5789,21 @@
     chainDlg.querySelector(".chain-presets").hidden = !any;
   }
   function openChain() {
+    if (chainDlg.open) return;
     const sel = $("#chainWhich");
     sel.textContent = "";
     for (const ch of chans) if (ch.kind === "strip") sel.appendChild(new Option(displayName(ch), ch.prefix));
     sel.value = (settings.ducking && settings.ducking.trigger) || "Strip[0]";
     if (sel.selectedIndex < 0) sel.selectedIndex = 0;
+    updateChainTune();
     buildChain();
     chainDlg.showModal();
   }
-  $("#chainWhich").addEventListener("change", buildChain);
+  function updateChainTune() {
+    $("#micTuneOpen").disabled = !connected || !hwInputs().some((ch) => ch.prefix === chainPrefix());
+  }
+  $("#chainWhich").addEventListener("change", () => { updateChainTune(); buildChain(); });
+  $("#settingsMicChain").addEventListener("click", openChain);
   chainDlg.addEventListener("click", (e) => {
     if (e.target === chainDlg) { chainDlg.close(); return; }
     const p = e.target.closest("[data-preset]");
@@ -4068,12 +5897,230 @@
     }
   }
 
+  /* ---------- mic tune-up wizard ---------- */
+  const tuneDlg = $("#micTuneDlg"), tuneInput = $("#micTuneInput"), tuneStatus = $("#micTuneStatus");
+  const tuneMeasure = $("#micTuneMeasure"), tuneApply = $("#micTuneApply"), tunePreview = $("#micTunePreview");
+  const tuneRestore = $("#micTuneRestore"), tuneGain = $("#micTuneGain"), tuneGate = $("#micTuneGate");
+  const tuneStages = [
+    { label: "room tone", prompt: "Stay quiet and leave the room as it normally sounds.", secs: 3 },
+    { label: "normal speech", prompt: "Speak at your normal distance and volume.", secs: 5 },
+    { label: "a loud phrase", prompt: "Say a phrase as loudly as you might during a stream.", secs: 3 },
+  ];
+  let tuning = null, tuneBusy = false, tunePreviewing = false, tuneGeneration = 0;
+  const tuneDb = (n) => n <= -100 ? "Below meter range" : `${n.toFixed(1)} dBFS`;
+  const percentile = (values, p) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor((sorted.length - 1) * p)];
+  };
+  function setTuneStatus(text) { if (tuneStatus.textContent !== text) tuneStatus.textContent = text; }
+  function paintMicTune() {
+    const step = tuning?.stages.length || 0, result = tuning?.result;
+    const selected = (result?.gain != null && tuneGain.checked) || (result?.gate != null && tuneGate.checked);
+    tuneInput.disabled = tuneBusy || tunePreviewing;
+    tuneMeasure.hidden = tunePreviewing;
+    tuneMeasure.disabled = tuneBusy || !tuneInput.value;
+    tuneMeasure.textContent = step >= 3 ? "Measure again" : `Measure ${tuneStages[step].label}`;
+    tunePreview.hidden = !result || tunePreviewing;
+    tunePreview.disabled = tuneBusy || !selected;
+    tuneRestore.hidden = !tunePreviewing;
+    tuneRestore.disabled = tuneBusy;
+    tuneApply.hidden = !result;
+    tuneApply.disabled = tuneBusy || !selected;
+    tuneApply.textContent = tunePreviewing ? "Keep preview settings" : "Apply selected settings";
+    tuneGain.disabled = tuneGate.disabled = tuneBusy || tunePreviewing;
+    document.querySelectorAll(".mic-tune-steps li").forEach((li, i) => {
+      if (step === i) li.setAttribute("aria-current", "step");
+      else li.removeAttribute("aria-current");
+    });
+  }
+  function resetMicTune() {
+    clearTimeout(tuning?.run?.timer);
+    tuning = null;
+    $("#micTuneReadings").hidden = true;
+    $("#micTuneOptions").hidden = true;
+    $("#micTuneFill").style.transform = "scaleX(0)";
+    setTuneStatus(tuneStages[0].prompt);
+    paintMicTune();
+  }
+  function openMicTune(preferred) {
+    if (!connected) return toast("Start Voicemeeter to tune a microphone");
+    if (tuneDlg.open) return;
+    const inputs = hwInputs();
+    tuneInput.replaceChildren(...inputs.map((ch) => new Option(displayName(ch), ch.prefix)));
+    const target = preferred || settings.ducking?.trigger;
+    if (inputs.some((ch) => ch.prefix === target)) tuneInput.value = target;
+    tuneDlg.showModal();
+    resetMicTune();
+    tuneInput.focus();
+  }
+  function completeTuneMeasurements() {
+    const { stages, baseline } = tuning;
+    const [room, speech, loud] = stages;
+    const roomDb = percentile(room.pre, .9), talking = speech.pre.filter((v) => v > Math.max(-85, roomDb + 4));
+    const loudSpeech = loud.pre.filter((v) => v > Math.max(-85, roomDb + 4));
+    const normal = percentile(speech.post.filter((_, i) => speech.pre[i] > Math.max(-85, roomDb + 4)), .9);
+    const loudest = Math.max(...loud.post), prePeak = Math.max(...loud.pre, ...speech.pre);
+    const readings = $("#micTuneReadings");
+    readings.replaceChildren(...[["Room tone before fader", roomDb], ["Speech after fader", normal], ["Loud peak after fader", loudest]].flatMap(([label, value]) => [
+      Object.assign(document.createElement("dt"), { textContent: label }),
+      Object.assign(document.createElement("dd"), { textContent: Number.isFinite(value) ? tuneDb(value) : "No usable speech" }),
+    ]));
+    readings.hidden = false;
+    if (talking.length < 10 || loudSpeech.length < 5) {
+      setTuneStatus("The speech did not stand out from the room tone. Check the input and measure again.");
+      return;
+    }
+    if (prePeak >= -.5) {
+      setTuneStatus("The input is reaching full scale. Lower the mic or interface gain, then measure again.");
+      return;
+    }
+    const loudPeak = Math.max(loudest, ...speech.post);
+    const correction = Math.max(-18, Math.min(18, -14 - normal, -3 - loudPeak));
+    const gain = Math.max(MIN_DB, Math.min(MAX_DB, Math.round((baseline.gain + correction) * 2) / 2));
+    const threshold = Math.max(-60, Math.min(-10, Math.ceil(roomDb + 6)));
+    const separation = percentile(talking, .25) - threshold;
+    const gate = Number.isFinite(baseline.gate) && baseline.gate < .1 && roomDb >= -62 && separation >= 8;
+    const result = { gain: Math.abs(gain - baseline.gain) >= .5 ? gain : null,
+      gate: gate ? 2 : null, threshold: gate && Number.isFinite(baseline.threshold) ? threshold : null };
+    if (result.gain == null && result.gate == null) {
+      setTuneStatus("The current level has useful headroom. No gate change is suggested for this take.");
+      return;
+    }
+    tuning.result = result;
+    tuneGain.checked = result.gain != null;
+    tuneGate.checked = result.gate != null;
+    $("#micTuneGainRow").hidden = !tuneGain.checked;
+    $("#micTuneGateRow").hidden = !tuneGate.checked;
+    $("#micTuneGainText").textContent = `Fader ${fmtDb(baseline.gain)} → ${fmtDb(gain)} dB`;
+    $("#micTuneGateText").textContent = result.threshold == null ? "Gentle noise gate · 2.0" :
+      `Gentle noise gate · 2.0 with a ${threshold} dB threshold`;
+    $("#micTuneNote").textContent = gate ? "Check that the preview keeps the starts and ends of quiet words." :
+      baseline.gate > .1 ? "This input already has a gate. The wizard is suggesting a fader change only." : "The take did not call for a gate change.";
+    $("#micTuneOptions").hidden = false;
+    setTuneStatus("Choose which changes to preview or apply.");
+  }
+  function micTuneLevels(lv) {
+    if (tunePreviewing && tuning) {
+      const level = levelOf(lv, tuning.ch.prefix);
+      $("#micTuneFill").style.transform = `scaleX(${Math.max(0, Math.min(1, (level + 60) / 60)).toFixed(3)})`;
+      return;
+    }
+    const sample = lv.micTune, run = tuning?.run;
+    if (!sample || !run || sample.strip !== tuning.ch.i || !Number.isFinite(sample.pre)) return;
+    const post = sample.post ?? levelOf(lv, tuning.ch.prefix);
+    if (!Number.isFinite(post)) return;
+    $("#micTuneFill").style.transform = `scaleX(${Math.max(0, Math.min(1, (sample.pre + 60) / 60)).toFixed(3)})`;
+    const now = performance.now();
+    if (now >= run.start + 300) { run.pre.push(sample.pre); run.post.push(post); }
+    const left = Math.max(1, Math.ceil((run.end - now) / 1000));
+    setTuneStatus(`${tuneStages[tuning.stages.length].prompt} · ${left}s`);
+  }
+  tuneMeasure.addEventListener("click", async () => {
+    if (tuneBusy || tunePreviewing) return;
+    if (tuning?.stages.length >= 3) resetMicTune();
+    const ch = chans.find((c) => c.prefix === tuneInput.value && isHw(c));
+    if (!ch || !connected) return setTuneStatus("Choose a connected hardware input.");
+    if (gainScope(ch) >= 0) return setTuneStatus("Set Faders set to All outputs before measuring.");
+    if (ch.data?.ducked) return setTuneStatus("Wait until talk-over ducking has released this input.");
+    const generation = tuneGeneration;
+    tuneBusy = true;
+    paintMicTune();
+    try {
+      if (!tuning) {
+        const [gain, gate, threshold] = await engine.getFloats(["Gain", "Gate", "Gate.Threshold"].map((f) => `${ch.prefix}.${f}`));
+        if (!Number.isFinite(gain)) throw new Error("Could not read this input’s fader.");
+        if (generation !== tuneGeneration) return;
+        tuning = { ch, baseline: { gain, gate, threshold }, stages: [] };
+      }
+      const step = tuning.stages.length, stage = tuneStages[step];
+      await engine.micTuneMeter(ch.i, step);
+      if (generation !== tuneGeneration) { await engine.micTuneMeter(null); return; }
+      const start = performance.now();
+      const run = { start, end: start + stage.secs * 1000, pre: [], post: [], timer: null };
+      tuning.run = run;
+      setTuneStatus(`${stage.prompt} · ${stage.secs}s`);
+      run.timer = setTimeout(async () => {
+        tuning.run = null;
+        await engine.micTuneMeter(null).catch(fail);
+        if (generation !== tuneGeneration) return;
+        tuneBusy = false;
+        if (!connected || !chans.includes(ch) || ch.data?.ducked || gainScope(ch) >= 0 || run.pre.length < 12) {
+          setTuneStatus("Meter readings were interrupted. Measure this step again.");
+        } else {
+          tuning.stages.push(run);
+          if (tuning.stages.length === 3) completeTuneMeasurements();
+          else setTuneStatus(tuneStages[tuning.stages.length].prompt);
+        }
+        paintMicTune();
+      }, stage.secs * 1000);
+    } catch (e) {
+      if (generation === tuneGeneration) { tuneBusy = false; setTuneStatus(String(e)); paintMicTune(); }
+    }
+  });
+  async function changeMicTune(preview) {
+    const result = tuning?.result;
+    if (!result || tuneBusy) return;
+    const generation = tuneGeneration;
+    tuneBusy = true;
+    paintMicTune();
+    try {
+      if (!chans.includes(tuning.ch) || !connected) throw new Error("The input changed. Run the tune-up again.");
+      if (tunePreviewing) {
+        if (!await engine.micTuneFinish(true)) {
+          tunePreviewing = false;
+          throw new Error("The preview ended or the input changed. Review the result before applying.");
+        }
+      } else {
+        const next = { gain: tuneGain.checked ? result.gain : null, gate: tuneGate.checked ? result.gate : null,
+          threshold: tuneGate.checked ? result.threshold : null };
+        await engine.micTuneChange(tuning.ch.i, tuning.baseline, next, preview);
+      }
+      if (generation !== tuneGeneration) {
+        if (preview) await engine.micTuneFinish(false);
+        return;
+      }
+      tunePreviewing = preview;
+      if (preview) setTuneStatus(tuning.ch.data?.mute
+        ? "Preview active for eight seconds. This input is muted in the mixer."
+        : "Preview active for eight seconds. Listen on your current monitor mix.");
+      else { tuneDlg.close(); toast("Mic tune-up applied"); }
+    } catch (e) { if (generation === tuneGeneration) setTuneStatus(String(e)); }
+    finally { if (generation === tuneGeneration) { tuneBusy = false; paintMicTune(); } }
+  }
+  tunePreview.addEventListener("click", () => changeMicTune(true));
+  tuneApply.addEventListener("click", () => changeMicTune(false));
+  tuneRestore.addEventListener("click", async () => {
+    tuneBusy = true; paintMicTune();
+    try { await engine.micTuneFinish(false); tunePreviewing = false; setTuneStatus("Preview ended. Previous settings restored."); }
+    catch (e) { setTuneStatus(String(e)); }
+    finally { tuneBusy = false; paintMicTune(); }
+  });
+  tuneGain.addEventListener("change", paintMicTune);
+  tuneGate.addEventListener("change", paintMicTune);
+  tuneInput.addEventListener("change", resetMicTune);
+  tuneDlg.addEventListener("close", () => {
+    tuneGeneration++;
+    if (tuning?.run || tuneBusy) engine.micTuneMeter(null).catch(fail);
+    if (tunePreviewing) engine.micTuneFinish(false).catch(fail);
+    tuneBusy = tunePreviewing = false;
+    resetMicTune();
+    if (chainDlg.open) buildChain();
+  });
+  if (!SIDE) engine.onMicTuneEnded((error) => {
+    if (!tuneDlg.open || !tunePreviewing) return;
+    tunePreviewing = false;
+    setTuneStatus(error || "Preview ended. Previous settings restored.");
+    paintMicTune();
+  }).catch(() => {});
+  $("#micTuneOpen").addEventListener("click", () => openMicTune(chainPrefix()));
+
   /* ---------- check my setup ---------- */
   /* ---------- Windows sound output ---------- */
   const fixAudioBtn = $("#fixAudioBtn");
   function paintWindowsOutput(s) {
     const wrong = !!s && s.state === "wrong";
     fixAudioBtn.hidden = !wrong;
+    $("#status").dataset.audioWarning = String(wrong);
     if (wrong) fixAudioBtn.title = `Windows is sending sound to ${s.output}, not Voicemeeter, so the mixer can't hear your apps`;
     if (s && s.fixed) toast(`Windows switched sound to ${s.from}, so Sleekmeeter put it back on ${s.target}`);
   }
@@ -4113,6 +6160,7 @@
   }
   const openHealth = () => { if (!healthDlg.open) healthDlg.showModal(); runHealth(); };
   $("#openHealth").addEventListener("click", openHealth);
+  $("#status").addEventListener("click", openHealth);
   $("#healthAgain").addEventListener("click", runHealth);
   $("#offlineHealth").addEventListener("click", openHealth);
   healthDlg.addEventListener("click", (e) => { if (e.target === healthDlg) healthDlg.close(); });
@@ -4162,18 +6210,198 @@
     } catch (e) { fail(e); }
   });
 
+  /* ---------- Quick Actions ---------- */
+  const quickDlg = $("#quickDlg"), quickSearch = $("#quickSearch"), quickList = $("#quickResults");
+  let quickItems = [], quickMatches = [], quickSelected = 0, quickGeneration = 0;
+  function focusSetting(card) {
+    openSettings(card.el.dataset.settingsCategory);
+    if (card.detail) card.detail.open = true;
+    const head = card.detail?.querySelector("summary") || card.el.querySelector("h3");
+    if (head && head.tagName !== "SUMMARY") head.tabIndex = -1;
+    head?.focus({ preventScroll: true });
+    requestAnimationFrame(() => card.el.scrollIntoView({ block: "start" }));
+  }
+  function quickActions() {
+    const button = (id) => () => $(`#${id}`).click();
+    const actions = [
+      ["Check my setup", "Tools", "health diagnostics fix audio", openHealth],
+      ["Audio Event History", "Tools", "timeline log fallback device plugin quarantine", openAudioEvents],
+      ["Mic Chain", "Tools", "microphone tune-up wizard calibration room tone gate gain compressor denoiser", openChain],
+      ["Apps · Volumes", "Tools", "windows application mixer per-app volume", () => openAppVolumes()],
+      ["Apps · Audio Flow", "Tools", "route inspector guided audio test", () => openAppVolumes("flow")],
+      ["Outputs", "Tools", "headphones speakers profiles", button("outputsBtn")],
+      ["Scenes", "Tools", "mix setup presets", button("scenesBtn")],
+      ["Settings", "Tools", "preferences options", () => { openSettings(); settingsSearch.focus(); }],
+      [settings.simpleMode ? "Restore full mixer" : "Turn on Focused mixer", "Tools", "simple mode layout routing", () => setSimple(!settings.simpleMode)],
+    ];
+    if (connected) {
+      actions.push(["Listen to a mix", "Tools", "monitor stream headphones audition", openMonitor]);
+      for (const ch of chans) actions.push([displayName(ch), "Channel", `${ch.info.id || ""} ${ch.kind === "strip" ? "input" : "output"} ${ch.data?.device || ""}`, () => {
+        if (settings.mini) setMini(false, true);
+        openDrawer(ch);
+      }]);
+      for (const p of profiles()) actions.push([`Switch outputs to ${p.name}`, "Output profile", p.name, () => applyProfile(p.name)]);
+    }
+    for (const card of settingsCards) {
+      if (card.el.hidden) continue;
+      const label = card.el.querySelector("h3")?.textContent;
+      if (label) actions.push([label, "Setting", card.text, () => focusSetting(card)]);
+    }
+    return actions;
+  }
+  function paintQuickSelection(scroll = false) {
+    const selected = quickList.children[quickSelected];
+    [...quickList.children].forEach((el, i) => el.setAttribute("aria-selected", String(i === quickSelected)));
+    if (selected) {
+      quickSearch.setAttribute("aria-activedescendant", selected.id);
+      if (scroll) selected.scrollIntoView({ block: "nearest" });
+    } else quickSearch.removeAttribute("aria-activedescendant");
+  }
+  function renderQuickActions() {
+    const query = quickSearch.value.trim().toLowerCase(), words = query.split(/\s+/);
+    const previous = quickMatches[quickSelected];
+    quickMatches = quickItems.map((entry) => {
+      const [name, group, terms] = entry, title = name.toLowerCase();
+      const haystack = `${title} ${group.toLowerCase()} ${terms.toLowerCase()}`;
+      const score = !query ? 0 : words.every((word) => haystack.includes(word))
+        ? title === query ? 4 : title.startsWith(query) ? 3 : title.includes(query) ? 2 : 1 : -1;
+      return { entry, score };
+    }).filter(({ score }) => score >= 0).sort((a, b) => b.score - a.score).slice(0, 20).map(({ entry }) => entry);
+    quickSelected = Math.max(0, quickMatches.indexOf(previous));
+    quickList.replaceChildren(...quickMatches.map(([name, group], i) => {
+      const el = Object.assign(document.createElement("li"), { id: `quick-result-${i}`, textContent: name });
+      el.setAttribute("role", "option");
+      el.append(Object.assign(document.createElement("small"), { textContent: group }));
+      el.addEventListener("mousedown", (e) => e.preventDefault());
+      el.addEventListener("click", () => runQuickAction(i));
+      return el;
+    }));
+    $("#quickEmpty").hidden = quickMatches.length > 0;
+    paintQuickSelection();
+  }
+  function runQuickAction(i) {
+    const action = quickMatches[i]?.[3];
+    if (!action) return;
+    quickDlg.close();
+    action();
+  }
+  function openQuickActions() {
+    if (SIDE || quickDlg.open || document.querySelector("dialog[open]")) return;
+    setMenu(false);
+    setStreamMenu(false);
+    const generation = ++quickGeneration;
+    quickItems = quickActions();
+    quickMatches = [];
+    quickSelected = 0;
+    quickSearch.value = "";
+    quickDlg.showModal();
+    renderQuickActions();
+    quickSearch.focus();
+    engine.listScenes().then((names) => {
+      if (!quickDlg.open || generation !== quickGeneration) return;
+      quickItems.splice(9, 0, ...names.map((name) => [name, "Scene", "load preview scene", () => {
+        $("#scenesBtn").click();
+        openScenePreview(name);
+      }]));
+      renderQuickActions();
+    }).catch(() => {});
+  }
+  quickSearch.addEventListener("input", () => { quickMatches = []; renderQuickActions(); });
+  quickSearch.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
+    if (e.key === "Enter") { e.preventDefault(); runQuickAction(quickSelected); }
+    if (!quickMatches.length || !["ArrowDown", "ArrowUp"].includes(e.key)) return;
+    e.preventDefault();
+    quickSelected = (quickSelected + (e.key === "ArrowDown" ? 1 : -1) + quickMatches.length) % quickMatches.length;
+    paintQuickSelection(true);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || !e.ctrlKey || e.altKey || e.shiftKey || e.metaKey || e.key.toLowerCase() !== "k") return;
+    if (SIDE || document.querySelector("dialog[open]") || settings.hotkeys?.some((h) => h.keys?.toLowerCase() === "ctrl+k")) return;
+    e.preventDefault();
+    openQuickActions();
+  });
+
+  /* ---------- Audio Event History ---------- */
+  const audioEventsDlg = $("#audioEventsDlg"), eventList = $("#audioEventList"), eventFilter = $("#audioEventFilter");
+  const eventConfirm = $("#audioEventConfirm"), eventStatus = $("#audioEventStatus");
+  const eventDates = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
+  let audioEvents = [], eventRequest = 0;
+  function showAudioEvent(e) {
+    audioEventsDlg.close();
+    if (e.kind === "fallback") openOutputFallback(Number(e.target));
+    else if (e.kind === "plugin") {
+      const ch = chans.find((c) => c.prefix === e.target && isHw(c));
+      if (ch && settings.micFx?.chains?.some((c) => c.target === ch.prefix)) openInputEffects(ch);
+      else openSettings("microphone");
+    } else if (e.kind === "routing") {
+      routeInspectTarget = e.target;
+      openAppVolumes("flow");
+      const inspector = $("#routeInspector");
+      inspector.open = true;
+      requestAnimationFrame(() => inspector.scrollIntoView({ block: "nearest" }));
+    } else openHealth();
+  }
+  function renderAudioEvents() {
+    const selected = eventFilter.value;
+    const shown = audioEvents.filter((e) => !selected || e.kind === selected);
+    eventList.replaceChildren(...shown.map((event) => {
+      const li = document.createElement("li"), b = Object.assign(document.createElement("button"), { type: "button", className: "audio-event" });
+      b.append(Object.assign(document.createElement("strong"), { textContent: event.title }),
+        Object.assign(document.createElement("small"), { textContent: event.detail }),
+        Object.assign(document.createElement("time"), { textContent: eventDates.format(new Date(event.at)) }));
+      b.addEventListener("click", () => showAudioEvent(event));
+      li.append(b);
+      return li;
+    }));
+    $("#audioEventClear").disabled = !audioEvents.length;
+    eventStatus.textContent = shown.length ? `${shown.length} ${shown.length === 1 ? "event" : "events"}` :
+      selected ? "No events in this category." : "No audio events recorded yet.";
+  }
+  async function refreshAudioEvents() {
+    if (!audioEventsDlg.open) return;
+    const request = ++eventRequest;
+    try {
+      const latest = await engine.audioEvents();
+      if (!audioEventsDlg.open || request !== eventRequest) return;
+      audioEvents = latest.filter((e) => Number.isFinite(e.at) && !Number.isNaN(new Date(e.at).getTime()));
+      renderAudioEvents();
+    } catch (e) { if (request === eventRequest) eventStatus.textContent = String(e); }
+  }
+  function openAudioEvents() {
+    if (audioEventsDlg.open) return;
+    eventList.replaceChildren();
+    eventStatus.textContent = "Reading audio events…";
+    $("#audioEventClear").disabled = true;
+    eventConfirm.hidden = true;
+    audioEventsDlg.showModal();
+    refreshAudioEvents();
+  }
+  $("#healthEvents").addEventListener("click", () => { healthDlg.close(); openAudioEvents(); });
+  eventFilter.addEventListener("change", renderAudioEvents);
+  $("#audioEventClear").addEventListener("click", () => { eventConfirm.hidden = false; $("#audioEventCancel").focus(); });
+  $("#audioEventCancel").addEventListener("click", () => { eventConfirm.hidden = true; $("#audioEventClear").focus(); });
+  $("#audioEventDelete").addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    b.disabled = true;
+    try { await engine.clearAudioEvents(); eventConfirm.hidden = true; eventFilter.focus(); refreshAudioEvents(); }
+    catch (err) { eventStatus.textContent = String(err); }
+    finally { b.disabled = false; }
+  });
+  if (!SIDE) engine.onAudioEventsChanged(refreshAudioEvents).catch(() => {});
+
   /* ---------- start ---------- */
   // Pure black for OLED screens (Settings → Appearance).
   /* ---------- themes (Settings → Appearance) ---------- */
   // Each theme is a set of colour and material tokens in styles.css, keyed by data-theme.
   const THEMES = [
     ["console", "Console", "Dark hardware desk with amber light"],
+    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders"],
+    ["afterhours", "After Hours", "Blackberry lacquer, plum panels and soft pink lights"],
     ["oled", "OLED black", "Pure black for OLED screens"],
-    ["afterburner", "Afterburner", "Graphite panels, orange LEDs and faceted metal faders"],
     ["lunar", "Lunar", "Satin aluminium, violet keys and circular fader pucks"],
     ["onyx", "Onyx", "Polished dark mix bays, electric blue and sculpted faders"],
-    ["opal", "Opal", "Pearlescent white, mist and lilac, satin slide controls"],
-    ["glass", "Glass", "Frosted cards over a soft glow, capsule faders"],
+    ["glass", "Glass", "Iridescent glass panels, pearl faders and a drifting aurora"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
     ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
@@ -4185,19 +6413,27 @@
   ];
   // Before themes there was only "Pure black for OLED" (settings.oled).
   // Themes that were retired map to their closest remaining one.
-  const RETIRED = { midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console", ink: "console", deco: "console", haunted: "console", cosmic: "console", rack: "console" };
+  const RETIRED = { midnight: "console", minimal: "console", clean: "console", analog: "console", studio: "console", ink: "console", deco: "console", haunted: "console", cosmic: "console", rack: "console", titanium: "console", afterburner: "console", opal: "console" };
   const currentTheme = () => {
     const t = RETIRED[settings.theme] || settings.theme;
     return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "console";
   };
   let autoTheme = "";
+  const themeMotion = () => ["off", "subtle", "full"].includes(settings.themeMotion) ? settings.themeMotion : "full";
+  $("#themeMotion").addEventListener("change", (e) => {
+    settings.themeMotion = e.target.value;
+    document.body.dataset.themeMotion = themeMotion();
+    saveSettings();
+  });
   function applyTheme() {
     document.body.dataset.theme = RETIRED[autoTheme] || autoTheme || currentTheme();
+    document.body.dataset.themeMotion = themeMotion();
     // Fonts and spacing change with the theme, so strips must be re-sized to their names.
     lastSizes = "";
     requestAnimationFrame(() => sizeToNames());
   }
   function renderThemes() {
+    $("#themeMotion").value = themeMotion();
     const grid = $("#themePicker");
     if (!grid.childElementCount) {
       for (const [id, name, about] of THEMES) {
@@ -4312,11 +6548,16 @@
     } else {
       setMini(!!settings.mini, false);
       // Know when the popped-out window opens or closes, so Mix brings it forward.
-      engine.onSettingsChanged((s) => { if (s && "mixWinOpen" in s) settings.mixWinOpen = s.mixWinOpen; }).catch(() => {});
+      engine.onSettingsChanged((s) => {
+        if (!s) return;
+        for (const key of ["mixWinOpen", "mixViewMode", "personalBus", "audienceBus"]) if (key in s) settings[key] = s[key];
+      }).catch(() => {});
     }
     wakeMeters();
     engine.onThemeAuto((e) => { autoTheme = (e && e.theme) || ""; applyTheme(); }).catch(() => {});
     if (!SIDE) {
+      pollInputEffects();
+      setInterval(pollInputEffects, 2500);
       engine.obsStatus().then(applyObs).catch(() => {});
       engine.onObsStatus(applyObs).catch(() => {});
       engine.twitchStatus().then(applyTwitch).catch(() => {});
@@ -4332,6 +6573,7 @@
       engine.windowsOutput().then(paintWindowsOutput).catch(() => {});
       engine.onWindowsOutput(paintWindowsOutput).catch(() => {});
       engine.onEngineRestart((e) => toast(`${e.device} is back, so Sleekmeeter restarted the audio engine`)).catch(() => {});
+      engine.onOutputFallback((e) => toast(`A${e.bus + 1} switched to ${e.name}`)).catch(() => {});
       // A shortcut turned ducking on or off.
       engine.onSettingsChanged((s) => {
         if (s && s.ducking) settings.ducking = s.ducking;

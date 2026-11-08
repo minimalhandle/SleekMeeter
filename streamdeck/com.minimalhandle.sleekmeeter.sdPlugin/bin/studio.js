@@ -99,6 +99,14 @@ function renderKey(c,e) {
     case 'scene':return draw({name:'SCENE',icon:'scene',caption:s.scene||'Choose scene'});
     case 'sound':return draw({name:'SOUNDBOARD',icon:'play',caption:s.sound||'Choose sound'});
     case 'soundstop':return draw({icon:'stop',caption:'STOP SOUNDS'});
+    case 'micfx':{
+      // Mic clean-up: one mic (or every mic set up) switched off or on by Sleekmeeter.
+      const mf=st.micFx;if(!mf)return tile({name:'MIC CLEAN-UP',icon:'mic',caption:'Update Sleekmeeter',color:C.muted});
+      const keys=s.channel?[s.channel]:Object.keys(mf);
+      if(!keys.length||!keys.every(k=>mf[k]))return tile({name:'MIC CLEAN-UP',icon:'settings',caption:'Set up in Sleekmeeter',color:C.amber});
+      const on=keys.some(k=>mf[k].on);
+      return draw({name:s.channel&&ch?ch.name:'ALL MICS',icon:'mic',caption:on?'CLEAN-UP ON':'CLEAN-UP OFF',color:on?C.green:C.muted,active:on});
+    }
     case 'brb':return draw({name:'STREAM MODE',icon:'coffee',caption:st.brb?'BACK LIVE':st.brbSet?'GO BRB':'Not set up',color:st.brb?C.amber:C.cyan,active:!!st.brb});
     case 'record':return draw({name:'RECORDER',icon:'record',caption:st.recording?'RECORDING':'START RECORD',color:st.recording?C.red:C.cyan,active:!!st.recording});
     case 'duck':return draw({name:'TALK OVER',icon:'duck',caption:st.duck?'DUCKING ON':'DUCKING OFF',color:st.duck?C.green:C.muted,active:!!st.duck});
@@ -179,4 +187,25 @@ function renderAppDial(c,a) {
 function renderNote(line1,line2){return base(200,100,text(line1,12,43,12,C.amber)+text(line2,12,64,11,C.subtle),C.amber);}
 /* Potato: an output's place in an input's gain layers. A1… come first, then B1…. */
 function busIndex(st,bus){if(!bus||bus==='all')return -1;const a=((st&&st.strips||[])[0]||{}).a||[],n=Number(bus.slice(1));if(!(n>=1))return -1;return bus[0]==='A'?n-1:a.length+n-1;}
-module.exports={busIndex,partOutputs,outputsLabel,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time};
+function profileSettings(settings, state) {
+  const s = settings || {};
+  const { strips = [], scenes = [] } = state || {};
+  const patterns = {
+    mic: /\b(mic(?:rophone)?|vocals?)\b/i,
+    game: /\b(games?|gaming)\b/i,
+    chat: /\b(chat|discord|teamspeak|comms)\b/i,
+    music: /\b(music|spotify)\b/i,
+  };
+  if (s.channelRole && !s.channel) {
+    const pattern = Object.hasOwn(patterns, s.channelRole) && patterns[s.channelRole];
+    const ch = strips.find((c) => pattern && pattern.test(c.name)) || (s.channelRole === "mic" ? strips[0] : null);
+    return ch ? { ...s, channel: ch.key } : s;
+  }
+  if (s.sceneRole && !s.scene) {
+    const pattern = s.sceneRole === "gaming" ? /gam(e|ing)/i : /stream/i;
+    const scene = scenes.find((name) => pattern.test(name));
+    return scene ? { ...s, scene } : s;
+  }
+  return s;
+}
+module.exports={busIndex,partOutputs,outputsLabel,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time,profileSettings};

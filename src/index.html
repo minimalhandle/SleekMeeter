@@ -8,15 +8,15 @@
   <link rel="stylesheet" href="themes.css">
 </head>
 <body>
+  <div class="glass-aurora" aria-hidden="true"></div>
   <header class="bar">
     <span class="brand">
       <svg class="brand-mark" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="var(--panel-hi)"/><rect x="6" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="6" y="12" width="2.2" height="7" rx="1.1" fill="var(--amber)"/><rect x="11" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="11" y="8" width="2.2" height="11" rx="1.1" fill="var(--amber)"/><rect x="16" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="16" y="10" width="2.2" height="9" rx="1.1" fill="var(--cyan)"/></svg>
       <span class="brand-name">Sleekmeeter</span>
     </span>
-    <span class="status" id="status" data-state="connecting">
+    <button class="status full-only" id="status" type="button" data-state="connecting" title="Check my setup">
       <span class="dot" aria-hidden="true"></span><span id="statusText">Looking for Voicemeeter…</span>
-    </span>
-    <span class="live-tag full-only" id="liveTag" hidden title="OBS says you're streaming">LIVE</span>
+    </button>
     <span class="spacer"></span>
     <span class="scene-now" id="sceneNow" hidden></span>
     <button class="btn fix-audio-btn full-only" id="fixAudioBtn" type="button" hidden>Fix my audio</button>
@@ -36,10 +36,21 @@
     <button class="btn icon panel-only" id="closePanelBtn" type="button" aria-label="Close volume panel" title="Close">
       <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
-    <button class="btn full-only" id="appsBtn" type="button" aria-pressed="false" title="Apps: drag an app onto a channel to play it through that channel">Apps</button>
+    <div class="bar-group full-only" role="group" aria-label="Mixer tools">
+    <button class="btn full-only" id="appsBtn" type="button" title="App volumes, saved assignments and audio flow">Apps</button>
     <button class="btn full-only" id="mixViewBtn" type="button" hidden title="Every input's level on every output at once, like Voicemeeter's Streamer View">Mix</button>
     <button class="btn full-only" id="outputsBtn" type="button" title="Switch between saved output devices">Outputs</button>
     <button class="btn full-only" id="scenesBtn" type="button">Scenes</button>
+    </div>
+    <button class="btn icon full-only" id="undoMixer" type="button" disabled title="Undo mixer change (Ctrl+Z)" aria-label="Undo mixer change">
+      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h9a4 4 0 0 1 0 8H8"/></svg>
+    </button>
+    <div class="bar-group full-only" id="streamGroup" role="group" aria-label="Streaming tools">
+    <div class="menu-wrap streamer" id="streamWrap">
+      <button class="btn" id="streamBtn" type="button" aria-controls="streamMenu" aria-expanded="false">Stream <span aria-hidden="true">▾</span></button>
+      <div class="menu" id="streamMenu" aria-label="Stream controls" hidden></div>
+    </div>
+    <div class="bar-pins streamer" id="streamPins">
     <button class="btn icon brb-btn full-only streamer" id="brbBtn" type="button" aria-pressed="false" aria-label="Be right back" title="Be right back: mutes your mic, turns the game down, plays music. Click again to go back live">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 9.5h12v4.5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z"/><path d="M16.5 11h1.5a2.5 2.5 0 0 1 0 5h-1.9"/><path d="M8.5 3.5v2.5M12 3.5v2.5"/></svg>
       <span class="brb-label">Back live</span>
@@ -60,6 +71,12 @@
     <button class="btn icon full-only streamer" id="soundsBtn" type="button" aria-label="Sounds" title="Sounds: play sounds into your mix">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>
     </button>
+    </div>
+    <button class="live-tag" id="liveTag" type="button" hidden title="OBS is streaming. Open the go-live check">Live</button>
+    <button class="stream-badge" id="recordingBadge" type="button" hidden title="Open Recorder">Recording</button>
+    <button class="stream-badge" id="awayBadge" type="button" hidden title="Go back live">BRB</button>
+    </div>
+    <div class="bar-utilities" role="group" aria-label="Window and settings controls">
     <button class="btn icon" id="pinBtn" type="button" aria-pressed="false" aria-label="Keep on top" title="Keep on top">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5h6l-1 6 3.5 3.5h-11L10 9.5zM12 13v7.5"/></svg>
     </button>
@@ -75,21 +92,30 @@
         <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><circle cx="16" cy="10" r="1.6" fill="currentColor"/></svg>
       </button>
       <div class="menu" id="moreMenu" role="menu" hidden>
-        <button role="menuitem" type="button" data-action="show">Show Voicemeeter window</button>
-        <button role="menuitem" type="button" data-action="restart">Restart audio engine</button>
-        <button role="menuitem" type="button" data-action="unsolo">Clear all solos</button>
-        <button role="menuitem" type="button" data-action="options">Voicemeeter options…</button>
+        <button role="menuitem" type="button" data-action="quick">Quick Actions… <kbd>Ctrl+K</kbd></button>
         <hr role="separator">
-        <button role="menuitem" type="button" data-action="setup">Setup assistant…</button>
+        <div class="menu-label" role="presentation">Microphone & mix</div>
+        <button role="menuitem" type="button" data-action="chain">Mic Chain…</button>
         <button role="menuitem" type="button" data-action="hear">Hear yourself…</button>
-        <button role="menuitem" type="button" data-action="chain">Mic chain…</button>
+        <button role="menuitem" type="button" data-action="balance">Game / Chat balance…</button>
+        <button role="menuitem" type="button" data-action="unsolo">Clear all solos</button>
+        <hr role="separator">
+        <div class="menu-label" role="presentation">Audio troubleshooting</div>
+        <button role="menuitem" type="button" data-action="setup">Setup assistant…</button>
+        <button role="menuitem" type="button" data-action="events">Audio Event History…</button>
         <button role="menuitem" type="button" data-action="history">Level history</button>
+        <button role="menuitem" type="button" data-action="restart">Restart audio engine</button>
         <hr role="separator">
+        <div class="menu-label" role="presentation">Mixer layout</div>
         <button role="menuitem" type="button" data-action="subs">Show / hide all device names</button>
-        <button role="menuitemcheckbox" aria-checked="false" type="button" data-action="simple">Simple mode</button>
-        <hr role="separator">
+        <button role="menuitemcheckbox" aria-checked="false" type="button" data-action="simple">Focused mixer</button>
         <button role="menuitem" type="button" data-action="resetorder">Reset channel order</button>
+        <hr role="separator">
+        <div class="menu-label" role="presentation">Voicemeeter</div>
+        <button role="menuitem" type="button" data-action="show">Show Voicemeeter window</button>
+        <button role="menuitem" type="button" data-action="options">Voicemeeter options…</button>
       </div>
+    </div>
     </div>
     <div class="winctl" id="winctl" hidden>
       <button class="wc" id="wcMin" type="button" aria-label="Minimise" title="Minimise"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M2 6.5h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></button>
@@ -101,6 +127,7 @@
     </div>
   </header>
 
+  <div class="kokiri-fairies" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   <main class="desk" id="desk">
     <section class="group" aria-labelledby="inputsTitle">
       <div class="group-head">
@@ -145,7 +172,18 @@
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <div class="drawer-body" id="drawerBody"></div>
+    <div class="ui-tabs" id="drawerTabs" role="tablist" aria-label="Channel settings">
+      <button class="btn" id="drawerRoutingTab" data-tab="routing" type="button" role="tab" aria-controls="drawerRouting">Routing</button>
+      <button class="btn" id="drawerSoundTab" data-tab="sound" type="button" role="tab" aria-controls="drawerSound">Sound</button>
+      <button class="btn" id="drawerAppsTab" data-tab="apps" type="button" role="tab" aria-controls="drawerApps">Apps</button>
+      <button class="btn" id="drawerLookTab" data-tab="look" type="button" role="tab" aria-controls="drawerLook">Appearance</button>
+    </div>
+    <div class="drawer-body" id="drawerBody">
+      <div id="drawerRouting" role="tabpanel" aria-labelledby="drawerRoutingTab" tabindex="0"></div>
+      <div id="drawerSound" role="tabpanel" aria-labelledby="drawerSoundTab" tabindex="0" hidden></div>
+      <div id="drawerApps" role="tabpanel" aria-labelledby="drawerAppsTab" tabindex="0" hidden></div>
+      <div id="drawerLook" role="tabpanel" aria-labelledby="drawerLookTab" tabindex="0" hidden></div>
+    </div>
   </aside>
 
   <div class="offline" id="offline" hidden>
@@ -157,6 +195,69 @@
     </div>
   </div>
 
+  <dialog class="dlg quick-dlg" id="quickDlg" aria-labelledby="quickTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="quickTitle">Quick Actions</h2>
+      <button class="btn" value="close">Close</button>
+    </form>
+    <label for="quickSearch" class="sr-only">Search actions</label>
+    <input id="quickSearch" class="tool-search" type="text" role="combobox" aria-controls="quickResults" aria-expanded="true" aria-autocomplete="list"
+      placeholder="Find a channel, scene, output or setting…" autocomplete="off" spellcheck="false">
+    <ul id="quickResults" role="listbox" aria-label="Actions"></ul>
+    <p class="hint" id="quickEmpty" role="status" hidden>No matching actions.</p>
+    <p class="hint quick-keys"><kbd>↑</kbd> <kbd>↓</kbd> Move · <kbd>Enter</kbd> Open · <kbd>Esc</kbd> Close</p>
+  </dialog>
+
+  <dialog class="dlg events-dlg" id="audioEventsDlg" aria-labelledby="audioEventsTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="audioEventsTitle">Audio Event History</h2>
+      <button class="btn" value="close">Close</button>
+    </form>
+    <p class="hint">See recent device, routing and plugin changes. Select an event to open its controls.</p>
+    <div class="btn-row">
+      <label for="audioEventFilter" class="sr-only">Filter audio events</label>
+      <select id="audioEventFilter">
+        <option value="">All events</option><option value="device">Windows audio and reconnects</option>
+        <option value="fallback">Output fallbacks</option><option value="routing">App routing</option><option value="plugin">Plugin quarantine</option>
+      </select>
+      <button type="button" class="btn" id="audioEventClear">Clear history</button>
+    </div>
+    <div class="btn-row" id="audioEventConfirm" hidden>
+      <span>Clear all saved audio events?</span>
+      <button type="button" class="btn primary" id="audioEventDelete">Clear all</button>
+      <button type="button" class="btn" id="audioEventCancel">Cancel</button>
+    </div>
+    <p class="hint" id="audioEventStatus" role="status"></p>
+    <ul id="audioEventList"></ul>
+  </dialog>
+
+  <dialog class="dlg mic-dlg" id="micTuneDlg" aria-labelledby="micTuneTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="micTuneTitle">Mic tune-up</h2>
+      <button class="btn" value="close">Close</button>
+    </form>
+    <p class="hint">Measure the room, your speaking voice and a loud phrase. Sleekmeeter will suggest a fader level and a gate setting where the measurements support one.</p>
+    <div class="field wide"><label for="micTuneInput">Microphone</label><select id="micTuneInput"></select></div>
+    <ol class="mic-tune-steps" aria-label="Measurement steps">
+      <li>Room tone</li><li>Normal speech</li><li>Loud phrase</li>
+    </ol>
+    <div class="mic-meter" aria-hidden="true"><div class="mic-fill" id="micTuneFill"></div></div>
+    <p class="mic-result" id="micTuneStatus" role="status"></p>
+    <dl id="micTuneReadings" hidden></dl>
+    <div id="micTuneOptions" hidden>
+      <label class="check" id="micTuneGainRow"><input type="checkbox" id="micTuneGain"><span id="micTuneGainText"></span></label>
+      <label class="check" id="micTuneGateRow"><input type="checkbox" id="micTuneGate"><span id="micTuneGateText"></span></label>
+      <p class="hint" id="micTuneNote"></p>
+      <p class="hint">Preview plays through this input’s existing routes, including any stream sends. It restores the previous settings after eight seconds unless you apply the result.</p>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn primary" id="micTuneMeasure">Measure room tone</button>
+      <button type="button" class="btn" id="micTunePreview" hidden>Preview for 8 seconds</button>
+      <button type="button" class="btn" id="micTuneRestore" hidden>Restore previous settings</button>
+      <button type="button" class="btn primary" id="micTuneApply" hidden>Apply selected settings</button>
+    </div>
+  </dialog>
+
   <dialog class="dlg scenes" id="scenesDlg" aria-labelledby="scenesTitle">
     <form method="dialog" class="dlg-head">
       <h2 id="scenesTitle">Scenes</h2>
@@ -166,6 +267,14 @@
     </form>
     <p class="hint">A scene saves your whole Voicemeeter setup — faders, routing, devices — so you can switch setups in one click.</p>
     <ul class="scene-list" id="sceneList"></ul>
+    <section class="inspect-panel" id="scenePreview" hidden aria-labelledby="scenePreviewTitle">
+      <h3 id="scenePreviewTitle"></h3>
+      <ul id="sceneChanges" aria-live="polite"></ul>
+      <div class="btn-row">
+        <button class="btn primary" id="sceneApply" type="button" disabled>Apply scene</button>
+        <button class="btn" id="scenePreviewCancel" type="button">Cancel preview</button>
+      </div>
+    </section>
     <form class="scene-save" id="sceneSave">
       <label for="sceneName" class="sr-only">Scene name</label>
       <input id="sceneName" type="text" placeholder="Name this mix, e.g. Streaming" maxlength="48" autocomplete="off" required>
@@ -197,9 +306,53 @@
         </button>
       </span>
     </form>
-    <p class="hint" id="mixViewHint">Each input's own level on every output, like Voicemeeter's Streamer View: for example less game on your stream (B3) than in your headphones (A1). Drag or scroll a slider; double-click it to match the input's main fader. The button under it turns that output on or off for the input. To leave out an output you don't use, untick <b>Show in Mix</b> in its settings.</p>
+    <div class="route-inspect-controls" id="mixViewControls">
+      <label>View <select id="mixViewMode"><option value="all">All outputs</option><option value="pair">Personal / Stream</option></select></label>
+      <label class="mix-pair" hidden>Personal <select id="mixPersonal"></select></label>
+      <label class="mix-pair" hidden>Stream <select id="mixStream"></select></label>
+      <button class="btn" type="button" id="mixMonitorOpen">Listen to a mix…</button>
+    </div>
+    <p class="hint" id="mixViewHint">Drag or scroll to set the level for one output. Double-click a slider to match the main fader. The button below each slider turns its route on or off.</p>
     <p class="hint" id="mixViewNote" hidden>The output mix needs Voicemeeter Potato. It appears here once Potato is running.</p>
     <div class="mixview" id="mixView"></div>
+  </dialog>
+
+  <dialog class="dlg health-dlg" id="mixMonitorDlg" aria-labelledby="mixMonitorTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="mixMonitorTitle">Listen to a mix</h2>
+      <button class="btn" value="close">Close</button>
+    </form>
+    <p class="hint">Hear the virtual output live on your headphones. Playback uses a separate stream and leaves the mixer’s routes alone.</p>
+    <div class="route-inspect-controls">
+      <label>Virtual output <select id="mixMonitorInput"></select></label>
+      <label>Headphones or speakers <select id="mixMonitorOutput"></select></label>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="mixMonitorStart" type="button" disabled>Start listening</button>
+      <button class="btn" id="mixMonitorStop" type="button" disabled>Stop</button>
+    </div>
+    <p class="hint" id="mixMonitorStatus" role="status"></p>
+  </dialog>
+
+  <dialog class="dlg health-dlg" id="balanceDlg" aria-labelledby="balanceTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="balanceTitle">Game / Chat balance</h2>
+      <button class="btn" value="close">Close</button>
+    </form>
+    <p class="hint" id="balanceScope"></p>
+    <div class="route-inspect-controls">
+      <label>Game <select id="balanceGame"></select></label>
+      <label>Chat <select id="balanceChat"></select></label>
+      <label id="balanceBusRow">Listening output <select id="balanceBus"></select></label>
+    </div>
+    <div class="balance-scale">
+      <span>More game</span><input type="range" id="balanceValue" min="-100" max="100" value="0" aria-label="Game and chat balance"><span>More chat</span>
+    </div>
+    <p id="balanceStatus" class="hint" role="status">Centred</p>
+    <div class="btn-row">
+      <button class="btn primary" id="balanceApply" type="button">Apply balance</button>
+      <button class="btn" id="balanceReset" type="button">Restore centre</button>
+    </div>
   </dialog>
 
   <dialog class="dlg outputs-dlg" id="outputsDlg" aria-labelledby="outputsTitle">
@@ -209,7 +362,11 @@
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </form>
-    <p class="hint">Save the devices your outputs are using right now, like headphones, speakers or a headset, and switch between them in one click. You can also give each one a shortcut in Settings.</p>
+    <section class="inspect-panel" aria-labelledby="outputDevicesTitle">
+      <h3 id="outputDevicesTitle">Current devices</h3>
+      <ul id="outputDevices"></ul>
+    </section>
+    <p class="hint">Save the devices your outputs are using now and switch between them with a profile or shortcut.</p>
     <ul class="scene-list profile-list" id="profileList"></ul>
     <form class="scene-save" id="profileSave">
       <label for="profileName" class="sr-only">Name for these outputs</label>
@@ -217,6 +374,24 @@
       <button class="btn primary" type="submit">Save current outputs</button>
     </form>
     <p class="hint field-note" id="profileNote"></p>
+    <button class="btn" type="button" id="outputsMonitorOpen">Listen to a mix…</button>
+    <details class="inspect-panel" id="fallbackFold">
+      <summary>Device fallback chains</summary>
+      <p class="hint">List playback devices in priority order for one hardware output. Sleekmeeter switches to the first available device and returns to higher-priority devices when they reconnect. Selecting a device outside the chain suspends it.</p>
+      <div class="route-inspect-controls">
+        <select id="fallbackBus" aria-label="Hardware output"></select>
+        <select id="fallbackDevice" aria-label="Playback device"></select>
+        <button class="btn" type="button" id="fallbackAdd">Add device</button>
+      </div>
+      <div class="route-inspect-controls">
+        <select id="fallbackSource" aria-label="Fallback policy source"></select>
+        <button class="btn" type="button" id="fallbackCopy">Copy policy</button>
+        <button class="btn" type="button" id="fallbackLink">Link policy</button>
+        <button class="btn" type="button" id="fallbackUnlink" hidden>Unlink and keep a copy</button>
+      </div>
+      <p class="hint" id="fallbackStatus" role="status"></p>
+      <ol id="fallbackList"></ol>
+    </details>
   </dialog>
 
   <dialog class="dlg health-dlg" id="healthDlg" aria-labelledby="healthTitle">
@@ -227,7 +402,7 @@
       </button>
     </form>
     <ul class="health-list" id="healthList"></ul>
-    <div class="btn-row"><button class="btn" id="healthAgain" type="button">Check again</button></div>
+    <div class="btn-row"><button class="btn" id="healthAgain" type="button">Check again</button><button class="btn" id="healthEvents" type="button">Audio Event History…</button></div>
   </dialog>
 
   <dialog class="dlg health-dlg" id="goLiveDlg" aria-labelledby="goLiveTitle">
@@ -294,8 +469,9 @@
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </form>
-    <p class="hint">Clean up your voice: the gate silences background noise between words, the compressor evens out loud and quiet parts, the denoiser removes hiss.</p>
+    <p class="hint">Use Tune-up to measure your mic and get suggested starting levels. Adjust the gate, compressor, and denoiser below.</p>
     <div class="field wide"><label for="chainWhich">Microphone</label><select id="chainWhich"></select></div>
+    <div class="btn-row"><button class="btn" id="micTuneOpen" type="button">Guided tune-up…</button></div>
     <div class="btn-row chain-presets">
       <button class="btn primary" type="button" data-preset="streamer">Streamer voice</button>
       <button class="btn" type="button" data-preset="gentle">Gentle</button>
@@ -360,14 +536,80 @@
 
   <dialog class="dlg apps-dlg" id="appsDlg" aria-labelledby="appsTitle">
     <form method="dialog" class="dlg-head">
-      <h2 id="appsTitle">App volumes</h2>
+      <h2 id="appsTitle">Apps</h2>
       <button class="btn icon" value="close" aria-label="Close">
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </form>
-    <p class="hint">Turn one app up or down without touching the rest, or mute it. These are the same controls as Windows' volume mixer, so the app is lowered before Voicemeeter hears it. The box on the right chooses which output the app plays to, for example one of Voicemeeter's virtual inputs.</p>
-    <div class="app-vols" id="appVolList"></div>
-    <p class="hint empty-note" id="appVolEmpty" hidden>Nothing is playing sound right now. Apps show up here once they make a sound.</p>
+    <div class="ui-tabs" id="appsTabs" role="tablist" aria-label="Apps tools">
+      <button class="btn" id="appsVolumesTab" data-tab="volumes" type="button" role="tab" aria-controls="appsVolumes">Volumes</button>
+      <button class="btn" id="appsAssignmentsTab" data-tab="assignments" type="button" role="tab" aria-controls="appAssignments">Saved assignments</button>
+      <button class="btn" id="appsFlowTab" data-tab="flow" type="button" role="tab" aria-controls="appsFlow">Audio Flow</button>
+    </div>
+    <section id="appsVolumes" role="tabpanel" aria-labelledby="appsVolumesTab" tabindex="0">
+      <div class="apps-volume-head">
+        <p class="hint">Change an app’s Windows volume, mute it, or choose where it plays.</p>
+        <button class="btn" type="button" id="appsTrayToggle" aria-pressed="false">Show apps tray</button>
+      </div>
+      <div class="app-vols" id="appVolList"></div>
+      <p class="hint empty-note" id="appVolEmpty" hidden>Nothing is playing sound right now. Apps show up here once they make a sound.</p>
+    </section>
+    <section class="inspect-panel" id="appAssignments" role="tabpanel" aria-labelledby="appsAssignmentsTab" tabindex="0" hidden>
+      <p class="hint">Assign an app now and Sleekmeeter will route it when its Windows audio session appears.</p>
+      <form class="route-inspect-controls" id="appAssignForm">
+        <input id="appAssignName" type="text" maxlength="255" placeholder="e.g. game.exe" aria-label="Executable filename" required>
+        <input type="file" id="appAssignFile" accept=".exe" hidden>
+        <button class="btn" id="appAssignBrowse" type="button">Browse…</button>
+        <select id="appAssignChannel" aria-label="Destination input" required></select>
+        <button class="btn primary" type="submit">Save assignment</button>
+      </form>
+      <ul id="appAssignList"></ul>
+    </section>
+    <section id="appsFlow" role="tabpanel" aria-labelledby="appsFlowTab" tabindex="0" hidden>
+    <div class="inspect-panel" id="audioFlow">
+      <p class="hint">Select an app, input or output to highlight its path. Dotted paths indicate an estimated or interrupted route.</p>
+      <div id="audioFlowScroll">
+        <div id="audioFlowGraph">
+          <svg id="audioFlowPaths" aria-hidden="true"></svg>
+          <div class="flow-column"><h4>Windows apps</h4><div id="flowApps"></div></div>
+          <div class="flow-column"><h4>Voicemeeter inputs</h4><div id="flowInputs"></div></div>
+          <div class="flow-column"><h4>Outputs</h4><div id="flowOutputs"></div></div>
+        </div>
+      </div>
+      <p class="hint" id="audioFlowStatus" role="status"></p>
+    </div>
+    <details class="inspect-panel" id="routeInspector">
+      <summary>Audio route inspector</summary>
+      <p class="hint">The route updates while this dialog is open. Check the first highlighted step if you can’t hear the app.</p>
+      <div class="route-inspect-controls"><label for="routeInspectApp" class="sr-only">App to trace</label><select id="routeInspectApp"><option value="">Choose an app</option></select><button class="btn" id="routeInspectRefresh" type="button">Refresh route</button></div>
+      <ol id="routeInspectResult" aria-live="polite"></ol>
+    </details>
+      <details class="inspect-panel" id="guidedAudio">
+        <summary>Guided audio test</summary>
+        <p class="hint">Play short test tones through your existing inputs. The stream test sends an audible signal through any active routes from its selected input, then plays back the configured stream bus on your headphones.</p>
+        <div class="route-inspect-controls">
+          <label>Game input <select id="guidedGame"></select></label>
+          <button type="button" class="btn" id="guidedGameRun">Test game</button>
+          <label>Chat input <select id="guidedChat"></select></label>
+          <button type="button" class="btn" id="guidedChatRun">Test chat</button>
+        </div>
+        <div class="route-inspect-controls">
+          <label>Stream test input <select id="guidedStream"></select></label>
+          <label>Headphones or speakers <select id="guidedMonitor"></select></label>
+          <button type="button" class="btn" id="guidedStreamRun">Test stream</button>
+        </div>
+        <p class="hint" id="guidedStreamBus"></p>
+        <h4>Mic comparison</h4>
+        <p class="hint">Record four seconds from an active mic chain and replay the same take raw or processed at matched levels. This comparison stays in memory.</p>
+        <div class="route-inspect-controls">
+          <label>Mic chain <select id="guidedMic"></select></label>
+          <button type="button" class="btn" id="guidedRecord">Record comparison</button>
+          <button type="button" class="btn" id="guidedRaw">Play raw</button>
+          <button type="button" class="btn" id="guidedProcessed">Play processed</button>
+        </div>
+        <p class="hint" id="guidedStatus" role="status"></p>
+      </details>
+    </section>
   </dialog>
 
   <dialog class="dlg recorder" id="recDlg" aria-labelledby="recTitle">
@@ -519,13 +761,45 @@
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </form>
-    <div class="settings-body">
-      <section>
+    <div class="settings-search">
+      <label for="settingsSearch" class="sr-only">Search settings</label>
+      <input type="search" id="settingsSearch" placeholder="Search settings…" autocomplete="off">
+      <button type="button" class="btn" id="settingsClear" hidden>Clear</button>
+    </div>
+    <div class="settings-layout">
+    <nav class="settings-nav" id="settingsNav" aria-label="Settings categories"></nav>
+    <div class="settings-body" id="settingsContent">
+      <header class="settings-intro">
+        <h3 id="settingsCategory"></h3>
+        <p class="hint" id="settingsDescription" role="status"></p>
+      </header>
+      <section data-settings-category="appearance">
         <h3>Appearance</h3>
         <div class="theme-grid" id="themePicker" role="radiogroup" aria-label="Theme"></div>
+        <div class="field wide"><label for="themeMotion">Theme motion</label><select id="themeMotion"><option value="off">Off</option><option value="subtle">Subtle</option><option value="full">Full</option></select></div>
+        <p class="hint">Changes animation in Glass and Kokiri Forest. Windows reduced motion takes priority.</p>
         <button type="button" class="theme-more" id="themeMore" aria-expanded="false"><span id="themeMoreText"></span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </section>
-      <section>
+      <section data-settings-category="mixer">
+        <h3>Mixer tools</h3>
+        <p class="hint">Balance game and chat, compare your personal and stream mixes, or manage playback fallbacks.</p>
+        <div class="btn-row">
+          <button type="button" class="btn" id="settingsBalance">Game / Chat balance</button>
+          <button type="button" class="btn" id="settingsMix">Personal / Stream mix</button>
+          <button type="button" class="btn" id="settingsFallback">Device fallbacks</button>
+          <button type="button" class="btn" id="settingsAudioTest">Guided audio test</button>
+        </div>
+      </section>
+      <section data-settings-category="mixer">
+        <h3>Linked fader groups</h3>
+        <p class="hint">Moving a member’s main fader moves the whole group by the same dB. Hold Alt when you start dragging, scroll, or use the fader keys to move just that channel.</p>
+        <div class="route-inspect-controls">
+          <input id="faderGroupName" maxlength="40" placeholder="Group name" aria-label="New fader group name">
+          <button class="btn" type="button" id="faderGroupAdd">Add group</button>
+        </div>
+        <div id="faderGroupList"></div>
+      </section>
+      <section data-settings-category="mixer">
         <h3>Smooth fades</h3>
         <label class="check"><input type="checkbox" id="setFades"><span>Fade instead of jumping when you mute, type a level, use a shortcut or switch scenes</span></label>
         <div class="field wide" data-needs="fades">
@@ -539,7 +813,7 @@
           <output for="setSceneMs"></output>
         </div>
       </section>
-      <section>
+      <section data-settings-category="mixer">
         <h3>Talk-over ducking</h3>
         <label class="check"><input type="checkbox" id="setDuck"><span>Turn other audio down while you talk</span></label>
         <div class="duck-opts" data-needs="duck">
@@ -578,7 +852,7 @@
           </div>
         </div>
       </section>
-      <section class="fold">
+      <section data-settings-category="streaming" class="fold">
         <details id="brbFold">
           <summary><h3>Stream mode: Be right back</h3></summary>
           <div class="fold-body">
@@ -593,7 +867,7 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="streaming" class="fold">
         <details id="liveFold">
           <summary><h3>Going live</h3></summary>
           <div class="fold-body">
@@ -626,7 +900,7 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="streaming" class="fold">
         <details id="replayFold">
           <summary><h3>Instant replay</h3><span class="fold-note" id="replayNote"></span></summary>
           <div class="fold-body">
@@ -641,7 +915,7 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="streaming" class="fold">
         <details id="obsFold">
           <summary><h3>OBS Studio</h3><span class="fold-note" id="obsNote"></span></summary>
           <div class="fold-body">
@@ -661,7 +935,7 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="streaming" class="fold">
         <details id="twitchFold">
           <summary><h3>Twitch chat commands</h3><span class="fold-note" id="twitchNote"></span></summary>
           <div class="fold-body">
@@ -685,7 +959,7 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="controls" class="fold">
         <details id="remoteFold">
           <summary><h3>Phone remote</h3><span class="fold-note" id="remoteNote"></span></summary>
           <div class="fold-body">
@@ -703,7 +977,7 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="mixer" class="fold">
         <details id="historyFold">
           <summary><h3>Level history</h3></summary>
           <div class="fold-body">
@@ -712,30 +986,87 @@
           </div>
         </details>
       </section>
-      <section class="fold">
+      <section data-settings-category="microphone" class="fold">
         <details id="micFold">
-          <summary><h3>Mic level</h3></summary>
+          <summary><h3>Mic Chain & levels</h3></summary>
           <div class="fold-body">
             <label class="check"><input type="checkbox" id="clipOn"><span>Warn me when this channel goes over 0 dB, where it starts to distort</span></label>
             <div class="field wide" data-needs="clip"><label for="clipTarget">Watch</label><select id="clipTarget"></select></div>
             <button class="btn" id="micCheckBtn" type="button">Check my mic level…</button>
-            <p class="hint">Talk for a few seconds and Sleekmeeter tells you if your mic is too quiet or too loud, and can set the fader for you.</p>
+            <button class="btn" id="settingsMicChain" type="button">Open Mic Chain…</button>
+            <p class="hint">Check your level quickly, or open Mic Chain for guided tune-up and manual processing controls.</p>
           </div>
         </details>
       </section>
-      <section>
+      <section data-settings-category="microphone" data-settings-keywords="noise suppression denoiser room echo dereverb speaker echo AEC NVIDIA SDK VST3 equalizer preset import export quarantine" class="fold">
+        <details id="micFxFold">
+          <summary><h3>Mic clean-up and plugins</h3><span class="fold-note" id="micFxNote"></span></summary>
+          <div class="fold-body">
+            <div class="mic-tabs" id="micTabs" role="tablist" aria-label="Mics"></div>
+            <div class="mic-off" id="micFxOffRow" hidden>
+              <span id="micFxOffText">Switched off by a shortcut, the Stream Deck, the phone, chat or a scene.</span>
+              <button class="btn" id="micFxBackOn" type="button">Switch back on</button>
+            </div>
+            <div class="field wide"><label for="micFxTarget">Hardware input</label><select id="micFxTarget"></select></div>
+            <div class="field wide"><label for="micFxMode">Input format</label><select id="micFxMode"><option value="mic">Mono microphone</option><option value="stereo">Stereo hardware input</option></select></div>
+            <p class="hint" id="micFxStereoHint" hidden>Stereo mode keeps left and right separate for capture cards and other hardware sources. Use VST3 effects with stereo input and output. NVIDIA mic effects are available in mono mode.</p>
+            <label class="check"><input type="checkbox" id="micFxOn"><span>Remove background noise from this mic with NVIDIA's AI, running on the graphics card</span></label>
+            <p class="hint" id="micFxMissing" hidden>NVIDIA's clean-up needs an NVIDIA RTX graphics card and NVIDIA's free <b>Audio Effects SDK</b> runtime, which isn't installed. Get it from NVIDIA's Maxine Audio Effects page, then come back here.</p>
+            <div class="fold-body" data-needs="micfx">
+              <div class="field wide"><label for="micFxEffect">Remove</label><select id="micFxEffect"></select></div>
+              <div class="field wide"><label for="micFxStrength">Strength</label><input type="range" id="micFxStrength" min="0" max="100" step="5"><output for="micFxStrength"></output></div>
+            </div>
+            <label class="check"><input type="checkbox" id="micFxAec"><span>Remove my speakers from this mic, for when you don't wear headphones (NVIDIA)</span></label>
+            <div class="field wide" data-needs="micaec"><label for="micFxAecRef">Speakers on</label><select id="micFxAecRef"></select></div>
+            <h4 class="fold-sub">VST3 plugins</h4>
+            <div class="inspect-panel" id="vstRecovery" hidden>
+              <p class="hint" id="vstRecoveryMessage" role="status"></p>
+              <select id="vstRecoveryPlugin" aria-label="Plugin to recover"></select>
+              <div class="btn-row">
+                <button class="btn" id="vstBypass" type="button">Bypass plugin</button>
+                <button class="btn" id="vstRetry" type="button">Retry plugin</button>
+              </div>
+            </div>
+            <p class="hint" id="vstEmpty">Add effects such as an EQ or compressor. They run in the order shown, after any NVIDIA mic effects.</p>
+            <div class="rule-list" id="vstList"></div>
+            <div class="vst-pick" id="vstPick" hidden>
+              <select id="vstChoice" aria-label="Plugin to add"></select>
+              <button class="btn primary" id="vstAddOk" type="button">Add</button>
+            </div>
+            <div class="vst-pick" id="presetSave" hidden>
+              <input type="text" id="presetName" maxlength="60" placeholder="Name this preset" aria-label="Preset name">
+              <button class="btn primary" id="presetSaveOk" type="button">Save preset</button>
+            </div>
+            <div class="btn-row"><button class="btn" id="vstAdd" type="button">Add a plugin…</button><button class="btn" id="vstBrowse" type="button">Browse for a .vst3 file…</button></div>
+            <h4 class="fold-sub">Portable chain preset</h4>
+            <p class="hint">Move this mic’s NVIDIA effects, VST3 order and plugin settings to another PC. Import shows a compatibility preview before replacing the selected chain.</p>
+            <div class="btn-row">
+              <button class="btn" id="micPresetExport" type="button">Export chain…</button>
+              <button class="btn" id="micPresetImport" type="button">Import chain…</button>
+            </div>
+            <p class="hint obs-status" id="micFxStatusText" role="status"></p>
+            <div class="btn-row">
+              <button class="btn" id="micFxListen" type="button" aria-pressed="false" title="Send this mic to A1 (usually your headphones) so you can hear the clean-up">Listen to this mic</button>
+              <button class="btn" id="micFxCompare" type="button" title="Hold to hear this mic without clean-up or plugins, then let go to hear them again">Hold to hear it without</button>
+              <button class="btn" id="micFxRemoveMic" type="button" hidden>Remove this mic</button>
+            </div>
+            <p class="hint">All of this happens inside Voicemeeter before its fader, gate and compressor, so it reaches every output, and adds a little delay (shown above). It runs while Sleekmeeter is open; if Sleekmeeter closes, your mic carries on without it. NVIDIA's clean-up needs Voicemeeter at 48 kHz. Plugins run in a separate helper, so one that crashes doesn't take Sleekmeeter with it. Switch a mic's clean-up off and on with a shortcut, a Stream Deck key, the phone remote or a chat command, and scenes remember it.</p>
+          </div>
+        </details>
+      </section>
+      <section data-settings-category="mixer">
         <h3>Audio devices</h3>
         <label class="check"><input type="checkbox" id="setKeepWindowsOutput"><span>Keep Windows sound on Voicemeeter: if plugging in a device makes Windows play to it, switch Windows back to Voicemeeter's input</span></label>
         <label class="check"><input type="checkbox" id="setAutoRestart"><span>Restart the audio engine when a device Voicemeeter uses comes back, like headphones you unplugged or Bluetooth that reconnected</span></label>
       </section>
-      <section>
+      <section data-settings-category="system">
         <h3>Startup</h3>
         <label class="check"><input type="checkbox" id="setStartWithWindows"><span>Start Sleekmeeter with Windows</span></label>
         <label class="check indent"><input type="checkbox" id="setStartInTray"><span>Start in the tray instead of opening the window</span></label>
         <label class="check"><input type="checkbox" id="setLaunchVoicemeeter"><span>Start Voicemeeter if it isn't running</span></label>
         <label class="check"><input type="checkbox" id="setHideVoicemeeter"><span>Hide Voicemeeter's own window when it starts</span></label>
       </section>
-      <section>
+      <section data-settings-category="appearance">
         <h3>Tray volume panel</h3>
         <div class="field wide"><label for="setPanelLayout">Layout</label><select id="setPanelLayout"><option value="rows">Rows (sliders across)</option><option value="columns">Columns (sliders up and down)</option></select></div>
         <div class="field wide"><label for="setPanelScale">Size</label><select id="setPanelScale"><option value="100">100%</option><option value="90">90%</option><option value="80">80%</option><option value="70">70%</option><option value="60">60%</option></select></div>
@@ -746,43 +1077,44 @@
         <p class="hint">Choose which channels the panel shows in each channel's settings (click its icon).</p>
         <label class="check"><input type="checkbox" id="setPanelDocked"><span>Snap the panel to the corner next to the clock, flush with the taskbar. Turn this off to drag it wherever you like; it remembers where you leave it</span></label>
       </section>
-      <section>
+      <section data-settings-category="streaming">
         <h3>Streamer mode</h3>
-        <label class="check"><input type="checkbox" id="setStreamerMode"><span>Show the Be right back, Rec and Sounds buttons in the header. Turn this off if you don&#39;t stream; their shortcuts keep working</span></label>
+        <label class="check"><input type="checkbox" id="setStreamerMode"><span>Show the Stream menu and pinned streaming tools in the header</span></label>
       </section>
-      <section>
+      <section data-settings-category="appearance">
         <h3>Channel buttons</h3>
         <label class="check"><input type="checkbox" id="setHideSoloMono"><span>Hide the Solo and Mono buttons under each input and the Mono and EQ buttons on each output, for a cleaner mixer. They're still in each channel's settings (click its icon), and a button that's switched on keeps showing</span></label>
       </section>
-      <section>
+      <section data-settings-category="appearance">
         <h3>Channel arrangement</h3>
         <label class="check"><input type="checkbox" id="setLockArrangement"><span>Lock channel arrangement to prevent accidental reordering. Faders and buttons still work</span></label>
       </section>
-      <section id="extraBusesRow" hidden>
+      <section data-settings-category="mixer" id="extraBusesRow" hidden>
         <h3>Extra outputs</h3>
         <label class="check"><input type="checkbox" id="setExtraBuses"><span>Show the A4 and A5 buttons on each input (Potato only). Leave this off to keep the mixer tidy; a button always shows if that input already sends there</span></label>
       </section>
-      <section>
+      <section data-settings-category="appearance">
         <h3>Volume overlay</h3>
         <div class="field wide"><label for="setOverlayScreen">Show it on</label><select id="setOverlayScreen"></select></div>
         <label class="check"><input type="checkbox" id="setOverlay"><span>Show the level on screen when it changes while you're in another app, for example from a shortcut, a MIDI controller or a Stream Deck</span></label>
       </section>
-      <section id="streamDeckSection" hidden>
+      <section data-settings-category="controls" id="streamDeckSection">
         <h3>Stream Deck</h3>
         <p class="hint" id="streamDeckNote" role="status"></p>
-        <div class="btn-row"><button class="btn" id="streamDeckAction" type="button" hidden></button></div>
+        <div class="btn-row"><button class="btn" id="streamDeckAction" type="button" hidden></button><button class="btn" id="streamDeckProfile" type="button">Save Stream Deck + profile…</button></div>
+        <p class="hint">Import the editable profile in Stream Deck after installing the Sleekmeeter plugin. Check the dial and scene assignments in the action settings.</p>
       </section>
-      <section>
+      <section data-settings-category="system">
         <h3>Privacy</h3>
         <label class="check"><input type="checkbox" id="setUsagePing"><span>Count me as a Sleekmeeter user. Once a day, Sleekmeeter would send sleekmeeter.app a random ID, its version number and your Voicemeeter edition. Nothing else: no names, devices, settings or audio. Turning this off deletes the ID.</span></label>
       </section>
-      <section>
+      <section data-settings-category="system">
         <h3>Updates</h3>
         <label class="check"><input type="checkbox" id="setCheckUpdates"><span>Check for a new version when Sleekmeeter starts</span></label>
         <div class="btn-row"><button class="btn" id="checkUpdateNow" type="button">Check for updates</button><button class="btn" id="whatsNewBtn" type="button">What's new</button><span class="hint" id="updateStatus" role="status"></span></div>
         <label class="check"><input type="checkbox" id="setBetaUpdates"><span>Also offer test versions, to try new features before everyone else. They come from Sleekmeeter's beta page on GitHub and may have more bugs</span></label>
       </section>
-      <section>
+      <section data-settings-category="controls">
         <h3>Shortcuts</h3>
         <p class="hint">These work everywhere in Windows. Click a shortcut and press the keys you want. “Push to talk” and “Push to mute” only act while you hold the keys down.</p>
         <div class="hotkeys" id="hotkeyList"></div>
@@ -795,7 +1127,7 @@
         <p class="hint field-hint" id="holdHint" hidden>After you let go of a push-to-talk shortcut, so the end of a word isn't cut off.</p>
         <p class="problems" id="hotkeyProblems" role="alert" hidden></p>
       </section>
-      <section class="fold">
+      <section data-settings-category="system" class="fold">
         <details id="backupFold">
           <summary><h3>Backup and layout</h3></summary>
           <div class="fold-body">
@@ -812,7 +1144,7 @@
           </div>
         </details>
       </section>
-      <section class="about">
+      <section data-settings-category="system" class="about">
         <h3>About</h3>
         <div class="about-card">
           <div class="about-text">
@@ -824,6 +1156,19 @@
         <p class="hint" id="logsHint">Sleekmeeter keeps a log of what it does and anything that goes wrong (no audio, just events). If you report a problem, attach <b>sleekmeeter.log</b> from the logs folder.</p>
       </section>
     </div>
+    </div>
+  </dialog>
+
+  <dialog class="dlg health-dlg" id="micPresetDlg" aria-labelledby="micPresetTitle">
+    <form method="dialog" class="dlg-head">
+      <h2 id="micPresetTitle">Review mic-chain preset</h2>
+      <button class="btn" value="cancel">Cancel</button>
+    </form>
+    <p class="hint" id="micPresetDestination"></p>
+    <p class="hint" id="micPresetEffects"></p>
+    <ul id="micPresetReview"></ul>
+    <p class="hint" id="micPresetStatus" role="status"></p>
+    <div class="btn-row"><button class="btn primary" id="micPresetApply" type="button">Replace selected chain</button></div>
   </dialog>
 
   <form class="gain-edit" id="gainEdit" hidden>

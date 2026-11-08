@@ -7,6 +7,28 @@
 
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
+type Snapshot = (Instant, Vec<Value>);
+static SNAPSHOT: Mutex<Option<Snapshot>> = Mutex::new(None);
+
+/// UI readers share one recent scan, including requests that arrive while it runs.
+pub fn snapshot() -> Result<Vec<Value>, String> {
+    let mut cached = SNAPSHOT.lock().unwrap();
+    if let Some((at, rows)) = cached.as_ref() {
+        if at.elapsed() < Duration::from_millis(900) {
+            return Ok(rows.clone());
+        }
+    }
+    let rows = list()?;
+    *cached = Some((Instant::now(), rows.clone()));
+    Ok(rows)
+}
+
+pub fn invalidate_snapshot() {
+    *SNAPSHOT.lock().unwrap() = None;
+}
 
 /// Programs that are part of the audio setup itself; turning them down would only confuse.
 const HIDDEN: &[&str] = &[
@@ -39,6 +61,7 @@ struct Row {
     seen: bool,
     /// Process ids with a session, so the app's output device can be changed.
     pids: Vec<u32>,
+    endpoints: Vec<String>,
 }
 
 /// Fold one session into its program's row: loudest volume, muted only if all are, active if any is.
@@ -50,6 +73,7 @@ fn merge(row: &mut Row, volume: f32, muted: bool, active: bool) {
             active,
             seen: true,
             pids: std::mem::take(&mut row.pids),
+            endpoints: std::mem::take(&mut row.endpoints),
         };
         return;
     }
@@ -76,6 +100,7 @@ fn rows_to_json(rows: BTreeMap<String, Row>) -> Vec<Value> {
                 "mute": r.muted,
                 "active": r.active,
                 "pids": r.pids,
+                "endpoints": r.endpoints,
             })
         })
         .collect()
@@ -90,7 +115,8 @@ mod sessions {
         IMMDeviceEnumerator, ISimpleAudioVolume, MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
     };
     use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_MULTITHREADED,
+        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_ALL,
+        COINIT_MULTITHREADED,
     };
 
     /// Keeps COM initialised on this thread while it lives.
@@ -111,7 +137,7 @@ mod sessions {
 
     /// Calls `f(process id, volume control, playing)` for every audio session on every active
     /// playback device.
-    pub fn each(mut f: impl FnMut(u32, &ISimpleAudioVolume, bool)) -> Result<(), String> {
+    pub fn each(mut f: impl FnMut(u32, &ISimpleAudioVolume, bool, &str)) -> Result<(), String> {
         let _com = Com::start();
         let mut go = || -> windows::core::Result<()> {
             unsafe {
@@ -122,6 +148,14 @@ mod sessions {
                     let Ok(device) = devices.Item(d) else {
                         continue;
                     };
+                    let endpoint = device
+                        .GetId()
+                        .map(|raw| {
+                            let id = raw.to_string().unwrap_or_default();
+                            CoTaskMemFree(Some(raw.0.cast()));
+                            id
+                        })
+                        .unwrap_or_default();
                     let Ok(manager) = device.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None)
                     else {
                         continue;
@@ -144,7 +178,7 @@ mod sessions {
                             .GetState()
                             .map(|st| st == AudioSessionStateActive)
                             .unwrap_or(false);
-                        f(pid, &volume, active);
+                        f(pid, &volume, active, &endpoint);
                     }
                 }
                 Ok(())
@@ -180,7 +214,7 @@ mod sessions {
 pub fn list() -> Result<Vec<Value>, String> {
     let names = crate::apps::process_names();
     let mut rows: BTreeMap<String, Row> = BTreeMap::new();
-    sessions::each(|pid, volume, active| {
+    sessions::each(|pid, volume, active, endpoint| {
         let exe = if pid == 0 {
             "system sounds".to_string()
         } else {
@@ -197,6 +231,9 @@ pub fn list() -> Result<Vec<Value>, String> {
         if pid != 0 && !row.pids.contains(&pid) {
             row.pids.push(pid);
         }
+        if !endpoint.is_empty() && !row.endpoints.iter().any(|id| id == endpoint) {
+            row.endpoints.push(endpoint.to_owned());
+        }
         merge(row, level, muted, active);
     })?;
     Ok(rows_to_json(rows))
@@ -208,7 +245,7 @@ pub fn set(exe: &str, volume: Option<f32>, mute: Option<bool>) -> Result<(), Str
     let wanted = exe.to_lowercase();
     let names = crate::apps::process_names();
     let mut found = false;
-    sessions::each(|pid, control, _| {
+    sessions::each(|pid, control, _, _| {
         let name = if pid == 0 {
             "system sounds"
         } else {

@@ -392,12 +392,12 @@ footer a { color: var(--ink-2); }
         </div>
         <div class="tour-list" role="tablist" aria-label="Mixer features">
           <button class="tab" role="tab" type="button" data-src="media/fades.mp4" data-poster="media/fades.webp" data-label="Muting and unmuting with fades, dragging a fader and double-clicking it back">
-            <span class="t">Smooth fades</span><span class="where">Settings → Smooth fades</span>
+            <span class="t">Smooth fades</span><span class="where">Settings → Mixer &amp; devices → Smooth fades</span>
             <span class="d"><span>Mute fades out and unmute fades back in, so nothing clicks. Typed levels, double-click to 0 dB, shortcuts and scene changes glide too. Dragging stays direct.</span></span>
             <span class="bar" aria-hidden="true"><i></i></span>
           </button>
           <button class="tab" role="tab" type="button" data-src="media/ducking.mp4" data-poster="media/ducking.webp" data-label="Desktop and Discord channels ducking while the mic is talking">
-            <span class="t">Talk-over ducking</span><span class="where">Settings → Talk-over ducking</span>
+            <span class="t">Talk-over ducking</span><span class="where">Settings → Mixer &amp; devices → Talk-over ducking</span>
             <span class="d"><span>Music, game and desktop audio dip while you talk and come back when you stop. Add Discord so the game also dips when a friend speaks. Your faders stay where you set them.</span></span>
             <span class="bar" aria-hidden="true"><i></i></span>
           </button>
@@ -428,6 +428,8 @@ footer a { color: var(--ink-2); }
         <div class="window"><img src="img/mix.webp" alt="The Output mix window: a column of sliders for each input, one per output from A1 to B3. Desktop and Discord are lower on B1 to B3 than on A1." width="1440" height="812" loading="lazy" decoding="async"></div>
         <dl class="points">
           <div><dt>Every input, every output</dt><dd><b>Mix</b> in the header lays out each input's level on A1 to B3, with the output's on/off button under each slider. Drag, scroll, or double-click to match the main fader.</dd></div>
+          <div><dt>Personal / Stream</dt><dd>Put your listening and audience faders and routes side by side. Game / Chat balance can adjust just your listening output on Potato.</dd></div>
+          <div><dt>Listen to a mix</dt><dd>Audition a Voicemeeter virtual output live on headphones while your routes stay in place.</dd></div>
           <div><dt>Pop it out <span class="pill">New</span></dt><dd>Open the mix in a window of its own and keep it on a second screen. It remembers where you left it.</dd></div>
           <div><dt>Faders set one output</dt><dd>Pick an output above the inputs and the normal faders set that output's mix. <b>All outputs</b> goes back.</dd></div>
           <div><dt>Kept everywhere</dt><dd>Mute fades, ducking, Be right back and scenes keep the differences between outputs. Scenes even save them, which Voicemeeter's own scene file doesn't.</dd></div>
@@ -522,7 +524,7 @@ footer a { color: var(--ink-2); }
 
         <article class="tile b-phone">
           <div class="txt">
-            <span class="where">Settings → Phone remote</span>
+            <span class="where">Settings → Controls &amp; remote → Phone remote</span>
             <h3>The mixer in your pocket</h3>
             <p>Faders, mutes, Be right back, scenes, sounds and output profiles on any phone on your Wi-Fi. A secret key in the address keeps it yours, and nothing leaves your home network.</p>
           </div>
@@ -537,7 +539,7 @@ footer a { color: var(--ink-2); }
 
         <article class="tile b-overlay">
           <div class="txt">
-            <span class="where">Settings → Phone remote · OBS Studio</span>
+            <span class="where">Settings → Controls &amp; remote → Phone remote · OBS Studio</span>
             <h3>An overlay that tells chat what's going on</h3>
             <p>Add one browser source in OBS and your scene shows a <b>MUTED</b> or <b>BRB</b> badge, a mic meter and the sound that just played. Connect OBS and Sleekmeeter can follow your scenes and react when you go live.</p>
           </div>
@@ -547,7 +549,7 @@ footer a { color: var(--ink-2); }
         <article class="tile b-chat">
           <div class="chat-wrap">
             <div class="txt">
-              <span class="where">Settings → Twitch chat commands</span>
+              <span class="where">Settings → Streaming → Twitch chat commands</span>
               <h3>Let your mods run the board</h3>
               <p>Add <code>!brb</code>, <code>!scene</code> and <code>!sound</code>, then choose who may use them: just you, you and your mods, or everyone. A cooldown stops spam. Channel point rewards can play sounds too.</p>
               <p>Sleekmeeter joins chat as a silent, anonymous viewer. It never signs in and never posts.</p>
@@ -615,16 +617,31 @@ footer a { color: var(--ink-2); }
       </div>
 
       <dl class="specs" aria-label="More features">
-        <div class="spec"><dt>“You're muted”</dt><dd>Talk into a muted mic and the overlay tells you, even with Sleekmeeter in the tray. No more ten minutes of silent streaming.</dd></div>
+        <div class="spec"><dt>“You're muted”</dt><dd>Enable a talking-while-muted alert in Streaming settings. The overlay can tell you when you speak into a muted mic, even with Sleekmeeter in the tray.</dd></div>
         <div class="spec"><dt>Go-live check</dt><dd>Mic on and sent to the stream, stream output has sound, OBS linked. One button checks it all, and it runs by itself when you go live.</dd></div>
         <div class="spec"><dt>Silent stream warning</dt><dd>If your stream goes quiet for too long, or starts clipping, while you're live, Sleekmeeter says so.</dd></div>
         <div class="spec"><dt>Music off stream</dt><dd>Keep your music out of the stream and your VODs while you're live or recording, and still hear it yourself.</dd></div>
         <div class="spec"><dt>Instant replay</dt><dd>Keeps up to the last two minutes of your stream in memory. One key saves them as a WAV file for clipping a moment.</dd></div>
         <div class="spec"><dt>Push to talk</dt><dd>Hold a key to open the mic. It closes a moment after you let go, so the end of a word isn't cut off. Push to mute works the other way round.</dd></div>
         <div class="spec"><dt>Devices that come back</dt><dd>Unplug USB headphones or lose Bluetooth and the audio engine restarts by itself when the device returns.</dd></div>
+        <div class="spec"><dt>Shared device fallback policies</dt><dd>Copy or link an ordered playback list across hardware outputs and see which device is preferred or active.</dd></div>
+        <div class="spec"><dt>Audio Event History</dt><dd>See playback device changes, output fallbacks, app route recovery and plugin quarantine in a local timeline. Select an event to open its controls.</dd></div>
+        <div class="spec"><dt>Quick Actions</dt><dd>Press Ctrl+K to find a channel, scene, output profile, tool or setting from the mixer.</dd></div>
         <div class="spec"><dt>Global shortcuts</dt><dd>Mute, volume, scenes, sounds, recording, ducking and BRB from any app, with an on-screen level overlay.</dd></div>
         <div class="spec"><dt>Mic level check</dt><dd>Talk for eight seconds and it tells you if you're too quiet or too loud, then sets the fader for you.</dd></div>
+        <div class="spec"><dt>Mic Chain and guided tune-up</dt><dd>Adjust processing manually or measure room tone, speaking volume and a loud phrase for fader and gate suggestions. Preview the changes for eight seconds or keep them.</dd></div>
+        <div class="spec"><dt>NVIDIA mic clean-up</dt><dd>On an RTX card, NVIDIA's AI removes keyboard, fan and room noise from your mic, inside Voicemeeter, so every output hears the clean voice.</dd></div>
+        <div class="spec"><dt>VST3 plugins on your mic</dt><dd>Your own EQ, de-esser or compressor on the mic, right inside Voicemeeter, with presets. Plugins run in a separate helper, so one that crashes can't take your mic down.</dd></div>
+        <div class="spec"><dt>Speaker echo removal</dt><dd>No headphones? NVIDIA's AI takes your speakers out of your mic, so games and friends don't echo onto your stream.</dd></div>
+        <div class="spec"><dt>Every mic, any key</dt><dd>Clean up a guest mic too. Switch clean-up off and on from a shortcut, the Stream Deck, your phone or chat, and per scene.</dd></div>
         <div class="spec"><dt>Hear yourself</dt><dd>Records five seconds of your stream mix and plays it back, so you hear exactly what viewers hear.</dd></div>
+        <div class="spec"><dt>Guided audio tests</dt><dd>Send test tones through your game, chat and stream routes. Replay one mic take raw and processed at matched levels.</dd></div>
+        <div class="spec"><dt>Portable mic-chain presets</dt><dd>Move your NVIDIA settings and VST3 plugin states between PCs, with a compatibility preview before import.</dd></div>
+        <div class="spec"><dt>Live Audio Flow</dt><dd>Trace Windows apps through Voicemeeter inputs and outputs. Set up saved app assignments before a program starts making sound.</dd></div>
+        <div class="spec"><dt>Focused mixer and Stream menu</dt><dd>Keep active sends visible, expand the full routing grid when needed, and pin your most-used streaming controls to the toolbar.</dd></div>
+        <div class="spec"><dt>Stereo hardware effects</dt><dd>Keep the left and right channels of a capture card separate through a stereo VST3 chain.</dd></div>
+        <div class="spec"><dt>Stream Deck + starter profile</dt><dd>Import an editable layout for mic, game, chat and music dials, with scene and mute keys.</dd></div>
+        <div class="spec"><dt>Searchable Settings</dt><dd>Find a setting across six categories, from mixer and microphone controls to backups and updates.</dd></div>
         <div class="spec"><dt>Voicemeeter options</dt><dd>Sample rate, buffers, exclusive and swift modes and output delays without opening Voicemeeter.</dd></div>
         <div class="spec"><dt>Check my setup</dt><dd>Finds the usual problems: missing devices, shortcuts that couldn't register and a broken OBS link.</dd></div>
         <div class="spec"><dt>Fix my audio</dt><dd>If Windows starts playing sound straight to a device and skips Voicemeeter, one click puts it back. Or let Sleekmeeter keep it there by itself.</dd></div>
@@ -798,11 +815,11 @@ footer a { color: var(--ink-2); }
   const THEMES = [
     ["console", "Console", "The dark hardware desk with amber light. The default."],
     ["oled", "OLED black", "Everything that isn't information turns true black."],
-    ["afterburner", "Afterburner", "Graphite panels, orange LEDs and faceted metal faders."],
     ["lunar", "Lunar", "Satin aluminium, violet keys and circular fader pucks."],
     ["onyx", "Onyx", "Polished dark mix bays in electric blue, with sculpted faders."],
-    ["opal", "Opal", "Pearlescent white, mist and lilac, with satin slide controls."],
-    ["glass", "Glass", "Frosted translucent cards over a soft glow, with faders as capsules filled with each channel's colour."],
+    ["hyrule", "Kokiri Forest", "Dark forest panels, drifting fairies, and Hylian Shield faders."],
+    ["afterhours", "After Hours", "Blackberry lacquer, plum panels, and soft pink lights."],
+    ["glass", "Glass", "Iridescent glass panels, pearl faders, and a slowly drifting aurora."],
     ["neon", "Neon", "A dark synth night with glowing outlines and flat light-bar caps."],
     ["terminal", "Terminal", "Green phosphor, monospace type, square corners and [bracketed] keys."],
     ["bubblegum", "Bubblegum", "Pink and sparkly, with heart-capped candy faders and cute icons for each channel."],

@@ -31,7 +31,7 @@ fn is_voicemeeter(name: &str) -> bool {
 
 /// The ids of Windows' default playback device for everything and for calls.
 #[cfg(windows)]
-fn default_ids() -> Option<(String, String)> {
+pub fn default_ids() -> Option<(String, String)> {
     use windows::Win32::Media::Audio::{
         eCommunications, eConsole, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
     };
@@ -62,7 +62,7 @@ fn default_ids() -> Option<(String, String)> {
 }
 
 #[cfg(not(windows))]
-fn default_ids() -> Option<(String, String)> {
+pub fn default_ids() -> Option<(String, String)> {
     None
 }
 
@@ -242,6 +242,21 @@ pub fn spawn(app: AppHandle) {
             }
             let st = status(&app);
             let _ = app.emit("windows-output", &st);
+            if !first || st["state"] == "wrong" {
+                let output = st["output"].as_str().unwrap_or("Unknown");
+                let calls = st["calls"].as_str().unwrap_or("Unknown");
+                crate::audio_events::record(
+                    &app,
+                    "device",
+                    if st["state"] == "wrong" {
+                        "Windows playback bypassed Voicemeeter"
+                    } else {
+                        "Windows playback device changed"
+                    },
+                    &format!("Playback: {output} · Calls: {calls}"),
+                    "",
+                );
+            }
             if st["state"] != "wrong" {
                 continue;
             }
@@ -265,6 +280,13 @@ pub fn spawn(app: AppHandle) {
             fixes.push(Instant::now());
             match fix() {
                 Ok(Some(name)) => {
+                    crate::audio_events::record(
+                        &app,
+                        "device",
+                        "Windows playback restored to Voicemeeter",
+                        &name,
+                        "",
+                    );
                     let _ = app.emit(
                         "windows-output",
                         json!({ "state": "ok", "fixed": true, "from": st["output"], "target": name }),

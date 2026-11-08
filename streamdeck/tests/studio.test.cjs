@@ -3,6 +3,17 @@ const test=require('node:test'),assert=require('node:assert/strict'),{EventEmitt
 const {MediaSession}=require('../com.minimalhandle.sleekmeeter.sdPlugin/bin/media-session');
 const studio=require('../com.minimalhandle.sleekmeeter.sdPlugin/bin/studio');
 const decode=uri=>decodeURIComponent(uri.slice(uri.indexOf(',')+1));
+test('starter profile resolves named roles and respects explicit assignments', () => {
+  const state = {
+    strips: [{ key: 'Strip[0]', name: 'Shure' }, { key: 'Strip[4]', name: 'Discord' }, { key: 'Strip[6]', name: 'Music' }],
+    scenes: ['Recording', 'Streaming'],
+  };
+  assert.equal(studio.profileSettings({ channelRole: 'mic' }, state).channel, 'Strip[0]');
+  assert.equal(studio.profileSettings({ channelRole: 'chat' }, state).channel, 'Strip[4]');
+  assert.equal(studio.profileSettings({ channelRole: 'game' }, state).channel, undefined);
+  assert.equal(studio.profileSettings({ channelRole: 'chat', channel: 'Strip[6]' }, state).channel, 'Strip[6]');
+  assert.equal(studio.profileSettings({ sceneRole: 'streaming' }, state).scene, 'Streaming');
+});
 function environment(){const ch={key:'Strip[1]',name:'Music & games',gain:-14,mute:false,a:[true],b:[false]};return{st:{},status:'ok',chan:key=>key===ch.key?ch:null,gainOf:c=>c.gain,muteOf:c=>c.mute,routeOf:()=>true,breath:()=>.5,ch};}
 test('Now Playing composes cover, escaped metadata, timeline and independently selected channel gain',()=>{
  const e=environment(),settings={channel:'Strip[1]'},media={available:true,title:'Track <one>',artist:'A & B',position:45,duration:222,playing:true,art:'data:image/png;base64,aGVsbG8='};
@@ -117,4 +128,14 @@ test('the media worker starts on PCs with Windows\' default script policy', () =
   const text = (svg) => decodeURIComponent(svg.slice(svg.indexOf(',') + 1));
   assert.match(text(studio.renderNowPlayingKey({ settings: { mediaSource: 'auto' } }, { available: false, reason: 'Waiting for media' })), /Media unavailable/);
   assert.match(text(studio.renderNowPlayingKey({ settings: { mediaSource: 'auto' } }, { available: false, reason: 'No media session' })), /Nothing playing/);
+});
+test('Mic clean-up key shows on, off, every mic and setup states',()=>{
+ const e=environment(),one={action:'micfx',settings:{channel:'Strip[1]'}},all={action:'micfx',settings:{}};
+ assert.match(decode(studio.renderKey(one,e)),/Update Sleekmeeter/);
+ e.st.micFx={};assert.match(decode(studio.renderKey(all,e)),/Set up in/);
+ e.st.micFx={'Strip[1]':{on:true}};
+ const on=decode(studio.renderKey(one,e));assert.match(on,/CLEAN-UP ON/);assert.match(on,/MUSIC &amp; GAMES/);
+ assert.match(decode(studio.renderKey(all,e)),/ALL MICS/);
+ e.st.micFx['Strip[1]'].on=false;assert.match(decode(studio.renderKey(one,e)),/CLEAN-UP OFF/);
+ assert.match(decode(studio.renderKey({action:'micfx',settings:{channel:'Strip[0]'}},e)),/Set up in/);
 });

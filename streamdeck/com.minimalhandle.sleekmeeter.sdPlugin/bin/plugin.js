@@ -81,6 +81,7 @@ const showOk = (context) => send({ event: 'showOk', context });
 
 /* ------------------------------------------------------------------ live Studio artwork */
 const studio = require('./studio');
+const profileSettings = (c) => studio.profileSettings(c.settings, st);
 const { MediaSession } = require('./media-session');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const MIC_DEFAULT = 'Strip[0]';
@@ -134,8 +135,9 @@ const renderDial = (c) => {
 
 const lastDrawn = new Map();
 function render(context) {
-  const c = contexts.get(context);
-  if (!c) return;
+  const saved = contexts.get(context);
+  if (!saved) return;
+  const c = { ...saved, settings: profileSettings(saved) };
   if (c.controller === 'Encoder') {
     const img = renderDial(c);
     if (lastDrawn.get(context) !== img) { lastDrawn.set(context, img); setFeedback(context, { canvas: img }); }
@@ -303,7 +305,7 @@ function togglePartMute(context, s) {
 }
 
 function rotate(c, ticks) {
-  const ch = chan((c.settings || {}).channel);
+  const ch = chan(profileSettings(c).channel);
   if (!ch) return;
   const step = Number((c.settings || {}).step) || 1;
   // A quick spin moves further per click.
@@ -441,7 +443,7 @@ function stepLevel(context, c) {
 }
 
 function onKeyDown(context, c) {
-  const s = c.settings || {};
+  const s = profileSettings(c);
   switch (c.action) {
     case 'mute': return toggleMute(context, s.channel);
     case 'route': return toggleRoute(context, s.channel || MIC_DEFAULT, s.bus || 'B1');
@@ -473,6 +475,7 @@ function onKeyDown(context, c) {
     case 'sound': return s.sound ? act(context, 'sound', s.sound) : showAlert(context);
     case 'soundstop': return act(context, 'soundstop');
     case 'brb': return act(context, 'brb');
+    case 'micfx': return act(context, 'micfx', s.channel || '');
     case 'record': return act(context, 'record');
     case 'duck': return act(context, 'duck');
     case 'output': return s.output ? act(context, 'output', s.output) : act(context, 'outputnext');
@@ -573,8 +576,9 @@ function onMessage(raw) {
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.press || (c.action === 'trackdial' ? 'playpause' : 'mute');
-      if (what === 'mute') toggleMute(ctx, s.channel);
-      else if (what === 'zero') { const ch = chan(s.channel); if (ch) setLevel(ch.key, 0); }
+      const channel = profileSettings(c).channel;
+      if (what === 'mute') toggleMute(ctx, channel);
+      else if (what === 'zero') { const ch = chan(channel); if (ch) setLevel(ch.key, 0); }
       else if (['playpause', 'next', 'previous'].includes(what)) { if (!media.command(what, s.mediaSource)) showAlert(ctx); }
       break;
     }
@@ -585,7 +589,7 @@ function onMessage(raw) {
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.tap || (c.action === 'channel' ? 'mute' : 'playpause');
-      if (what === 'mute') toggleMute(ctx, s.channel);
+      if (what === 'mute') toggleMute(ctx, profileSettings(c).channel);
       else if (['playpause', 'next', 'previous'].includes(what)) { if (!media.command(what, s.mediaSource)) showAlert(ctx); }
       break;
     }

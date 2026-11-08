@@ -66,6 +66,45 @@ pub fn pick_open() -> Option<String> {
     )
 }
 
+pub fn mic_preset_dialog(save: bool) -> Option<String> {
+    dialog(
+        save,
+        if save {
+            "Export Sleekmeeter mic chain"
+        } else {
+            "Import Sleekmeeter mic chain"
+        },
+        if save {
+            "Sleekmeeter-mic-chain.json"
+        } else {
+            ""
+        },
+        "Sleekmeeter mic presets (*.json)\0*.json\0\0",
+        "json",
+    )
+}
+
+pub fn stream_deck_profile_dialog() -> Option<String> {
+    dialog(
+        true,
+        "Save the Sleekmeeter Stream Deck + profile",
+        "Sleekmeeter Studio Plus.streamDeckProfile",
+        "Stream Deck profiles (*.streamDeckProfile)\0*.streamDeckProfile\0\0",
+        "streamDeckProfile",
+    )
+}
+
+/// Ask for a VST3 plugin that isn't in the usual folders.
+pub fn pick_vst3() -> Option<String> {
+    dialog(
+        false,
+        "Pick a VST3 plugin",
+        "",
+        "VST3 plugins (*.vst3)\0*.vst3\0\0",
+        "vst3",
+    )
+}
+
 /// Ask for one or more sound files for the soundboard (Ctrl or Shift to pick several).
 pub fn pick_audio_many() -> Vec<String> {
     open_many("Choose sounds", AUDIO)

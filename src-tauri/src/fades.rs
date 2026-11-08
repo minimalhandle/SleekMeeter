@@ -197,6 +197,27 @@ pub fn glide(app: &AppHandle, api: &Api, key: &str, target: f32) -> Result<(), S
     glide_ms(app, api, key, target, GLIDE_MS)
 }
 
+/// Glide explicit Potato layers, independently of the output currently selected.
+pub fn glide_layers(
+    app: &AppHandle,
+    api: &Api,
+    strip: usize,
+    targets: &[f32; crate::layers::LAYERS],
+    touched: &[bool; crate::layers::LAYERS],
+    immediate: bool,
+) -> Result<(), String> {
+    let fade = (!immediate && current_fades(app).on).then_some(GLIDE_MS);
+    let lines = crate::layers::lines(strip, targets, fade)
+        .into_iter()
+        .zip(touched)
+        .filter_map(|(line, changed)| changed.then_some(line))
+        .collect::<Vec<_>>();
+    if lines.is_empty() {
+        return Ok(());
+    }
+    api.script(&lines)
+}
+
 fn glide_ms(app: &AppHandle, api: &Api, key: &str, target: f32, ms: u64) -> Result<(), String> {
     let target = target.clamp(FLOOR, CEIL);
     if !current_fades(app).on {
@@ -396,7 +417,7 @@ pub fn release(app: &AppHandle, api: Option<&Api>) {
 /* ---------------- scenes ---------------- */
 
 /// Each scene gets a small file with its levels next to the XML, so loading it can fade.
-fn levels_path(xml: &Path) -> PathBuf {
+pub fn levels_path(xml: &Path) -> PathBuf {
     xml.with_extension("levels.json")
 }
 
@@ -409,7 +430,8 @@ pub fn save_levels(app: &AppHandle, xml: &Path) {
             map.insert(
                 format!("{prefix}[{i}]"),
                 // Potato's gain layers: Voicemeeter's scene file only keeps one level per input.
-                json!({ "gain": ch["gain"], "mute": ch["mute"], "layers": ch["layers"] }),
+                json!({ "gain": ch["gain"], "mute": ch["mute"], "layers": ch["layers"],
+                    "a": ch["a"], "b": ch["b"] }),
             );
         }
     }
@@ -464,6 +486,7 @@ fn restore_layers(api: &Api, levels: &Map<String, Value>) -> Vec<String> {
 
 pub fn delete_levels(xml: &Path) {
     let _ = std::fs::remove_file(levels_path(xml));
+    let _ = std::fs::remove_file(xml.with_extension("micfx.json"));
 }
 
 /// Load a scene. With fades on, levels fade to the scene's first, then the scene loads.
@@ -474,6 +497,13 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
         .api
         .clone()
         .ok_or("Voicemeeter isn't installed")?;
+    // Each mic's clean-up on or off and its strength, if the scene saved them (main.rs).
+    if let Some(v) = std::fs::read_to_string(xml.with_extension("micfx.json"))
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+    {
+        crate::micfx::scene_apply(app, &v);
+    }
     let f = current_fades(app);
     let levels: Option<Map<String, Value>> = std::fs::read_to_string(levels_path(&xml))
         .ok()

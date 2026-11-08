@@ -147,6 +147,10 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
         "musicguard" => {
             watch::toggle_guard(app)?;
         }
+        // A mic's clean-up and plugins off or back on ("Strip[0]"; "" = every mic).
+        "micfx" => {
+            crate::micfx::toggle(app, target)?;
+        }
         _ => return Err(format!("Unknown action {kind:?}")),
     }
     Ok(())

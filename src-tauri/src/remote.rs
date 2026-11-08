@@ -31,6 +31,7 @@ const ALLOWED: &[&str] = &[
     "replay",
     "musicguard",
     "partmute",
+    "micfx",
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
@@ -282,6 +283,8 @@ fn state_json(app: &AppHandle) -> Value {
         "musicGuard": snap["musicGuard"].as_bool().unwrap_or(false),
         "musicGuardSet": guard_set,
         "replay": replay_on,
+        // Mics with clean-up or plugins set up, and whether each is on: { "Strip[0]": { "on" } }.
+        "micFx": crate::micfx::api_state(app),
         "strips": list("strips", "Strip", "Input"),
         "buses": list("buses", "Bus", "Output"),
         "scenes": crate::scene_list().unwrap_or_default(),
