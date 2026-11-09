@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.1
+
+- **Fixed a black window after starting Windows.** WebView2, the part of Windows that draws Sleekmeeter, sometimes crashes while the PC is still starting up, and the window then stayed black for good. Sleekmeeter now notices and restarts itself in a second, with your window back as it was. A window whose page crashes or hangs reloads on its own.
+
 ## 0.20.0
 
 - **Game / Chat** can assign and verify separate Windows app routes, pin a live slider to the mixer, and move or centre from global shortcuts. Potato verifies the listening gain layers after every change and shows the resulting levels. It warns about Composite outputs and keeps the other mixes intact.

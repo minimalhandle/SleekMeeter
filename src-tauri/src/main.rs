@@ -32,6 +32,7 @@ mod outputs;
 mod partmute;
 mod pluginhost;
 mod recorder;
+mod recover;
 mod remote;
 mod replay;
 mod routing;
@@ -1100,6 +1101,7 @@ fn show_main(app: &AppHandle) {
         let _ = w.show();
         let _ = w.unminimize();
         let _ = w.set_focus();
+        recover::check_main_draws(app);
     }
 }
 
@@ -1286,6 +1288,7 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         .visible(false)
         .build();
     if let Ok(w) = built {
+        recover::watch(&w);
         place_flyout(app, &w, anchor);
         let _ = w.show();
         let _ = w.set_focus();
@@ -1337,6 +1340,7 @@ fn open_mix_window(app: &AppHandle) {
         .build();
     match built {
         Ok(w) => {
+            recover::watch(&w);
             restore_geometry(&w, &saved, MIXWIN_MIN);
             let _ = w.show();
             let _ = w.set_focus();
@@ -1449,6 +1453,9 @@ fn panel_fit(
 /// The page has drawn: show the main window now unless Sleekmeeter started in the tray.
 #[tauri::command]
 fn ui_ready(window: WebviewWindow, show: State<'_, ShowOnReady>) {
+    if window.label() == "main" {
+        recover::MAIN_DREW.store(true, Ordering::SeqCst);
+    }
     if window.label() == "main" && show.0.swap(false, Ordering::SeqCst) {
         let _ = window.show();
     }
@@ -2394,6 +2401,7 @@ fn main() {
         let parent = args.get(i + 1).and_then(|p| p.parse().ok()).unwrap_or(0);
         pluginhost::child_main(parent);
     }
+    recover::wait_for_previous();
     log_info!(
         "Sleekmeeter {} starting ({}){}",
         env!("CARGO_PKG_VERSION"),
@@ -2657,14 +2665,21 @@ fn main() {
             for p in apply_hotkeys(&handle, &settings["hotkeys"]) {
                 log_warn!("Shortcut: {p}");
             }
+            if let Some(w) = app.get_webview_window("osd") {
+                recover::watch(&w);
+            }
             if let Some(w) = app.get_webview_window("main") {
+                recover::watch(&w);
                 let _ = w.set_always_on_top(settings::flag(&settings, "alwaysOnTop"));
                 if !settings::flag(&settings, "mini") {
                     restore_window(&w, &settings);
                 }
                 // Started with Windows and asked to stay in the tray: don't show the window.
                 // Otherwise show it once the page has drawn (ui_ready), or after 3 s at the latest.
-                if !(autostarted && settings::flag(&settings, "startInTray")) {
+                // A restart after a display crash keeps the window where it was (recover.rs).
+                if !(autostarted && settings::flag(&settings, "startInTray"))
+                    && !recover::start_hidden()
+                {
                     app.state::<ShowOnReady>().0.store(true, Ordering::SeqCst);
                     let late = handle.clone();
                     std::thread::spawn(move || {
@@ -2672,6 +2687,7 @@ fn main() {
                         if late.state::<ShowOnReady>().0.swap(false, Ordering::SeqCst) {
                             if let Some(w) = late.get_webview_window("main") {
                                 let _ = w.show();
+                                recover::check_main_draws(&late);
                             }
                         }
                     });

@@ -1,6 +1,6 @@
 [package]
 name = "sleekmeeter"
-version = "0.20.0"
+version = "0.20.1"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
 license = "MIT"
@@ -23,6 +23,8 @@ base64 = "0.22"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
+# Hear about WebView2 crashes (recover.rs); the same version Tauri itself uses.
+webview2-com = "0.39"
 # VST3 plugins on the mic (vst.rs): generated bindings only, one tiny dependency.
 vst3 = "0.3"
 # Soundboard: decode clips (wav, mp3, ogg, flac) and play them to a chosen output device.

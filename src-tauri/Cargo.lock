@@ -3567,7 +3567,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 
 [[package]]
 name = "sleekmeeter"
-version = "0.20.0"
+version = "0.20.1"
 dependencies = [
  "base64 0.22.1",
  "libloading 0.8.9",
@@ -3582,6 +3582,7 @@ dependencies = [
  "tungstenite",
  "ureq",
  "vst3",
+ "webview2-com",
  "windows 0.58.0",
  "windows-sys 0.59.0",
  "winreg 0.52.0",
