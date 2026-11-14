@@ -33,6 +33,6 @@ Write-Output "Packaged Sleekmeeter-Studio.streamDeckPlugin (version $($manifest.
 $iconDirectory = Join-Path $PSScriptRoot 'icons\com.minimalhandle.studio.apps.sdIconPack'
 $iconManifest = Get-Content -Raw -LiteralPath (Join-Path $iconDirectory 'manifest.json') | ConvertFrom-Json
 $iconCount = (Get-ChildItem -LiteralPath (Join-Path $iconDirectory 'icons') -File).Count
-if ($iconCount -ne 486) { throw "Expected 486 icons, found $iconCount; refusing to package." }
+if ($iconCount -ne 425) { throw "Expected 425 icons, found $iconCount; refusing to package." }
 New-Package $iconDirectory (Join-Path $PSScriptRoot 'Sleekmeeter-Studio-Icons.streamDeckIconPack')
 Write-Output "Packaged Sleekmeeter-Studio-Icons.streamDeckIconPack (version $($iconManifest.Version), $iconCount icons)"

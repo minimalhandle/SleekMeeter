@@ -370,7 +370,7 @@ Sleekmeeter joins your chat as a silent, anonymous viewer: **no sign-in, nothing
 
 There's a plugin for the Elgato Stream Deck in the [`streamdeck`](streamdeck) folder, built for the **Stream Deck +**: each of the four dials becomes the level control for a channel (turn to change the level, press or tap to mute), and the keys can mute channels (or mute an input on some outputs only, like right-clicking Mute), load scenes, play sounds, and turn Be right back, recording, ducking and mic clean-up on or off, with the keys lighting up to match. If Sleekmeeter finds the Stream Deck app it offers to install the plugin (also in Settings → Controls & remote → Stream Deck), or double-click `Sleekmeeter-Studio.streamDeckPlugin` yourself. Then paste the Sleekmeeter Remote address once. The [plugin's readme](streamdeck/README.md) has the steps.
 
-The dials also show what's playing, with album art, and can control one app's volume. For your other keys, the [icon pack](streamdeck/Sleekmeeter-Studio-Icons.streamDeckIconPack) adds 486 icons in the same style to the Stream Deck icon library.
+The dials also show what's playing, with album art, and can control one app's volume. For your other keys, the [icon pack](streamdeck/Sleekmeeter-Studio-Icons.streamDeckIconPack) adds 425 icons in the same style to the Stream Deck icon library.
 
 **Settings → Controls & remote → Stream Deck → Save Stream Deck + profile** gives you an editable starting layout with mic, game, chat and music dials, four mute keys and keys for scenes, BRB and output switching. Import it in the Stream Deck app after installing the Sleekmeeter plugin and confirm the channels and scenes in the action settings.
 

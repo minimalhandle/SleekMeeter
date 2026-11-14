@@ -202,7 +202,7 @@ Everything since 0.15.3. The Stream Deck plugin is now numbered with the app: pl
 - **Faster media controls:** play, pause and track changes reach the player right after the press, and play or pause shows on the key or dial at once
 - **Clearer route keys:** coloured bus, checkmark and ON when a route is on, dim bus, cross and OFF when it's off. A missing bus says which ones exist ("Only B1–B2"), and an outdated app says "Update Sleekmeeter"
 - **Show text option:** each Stream Deck action can hide its names and captions for a cleaner symbol. Live states stay visible
-- **Studio icon pack:** 486 matching icons for Sleekmeeter, Discord, Spotify, Twitch, OBS, Philips Hue, Revidi, Voicemod, system controls and navigation, as `Sleekmeeter-Studio-Icons.streamDeckIconPack`
+- **Studio icon pack:** 486 matching icons for Sleekmeeter, Discord, Spotify, Twitch, OBS, Philips Hue, Voicemod, system controls and navigation, as `Sleekmeeter-Studio-Icons.streamDeckIconPack`
 - **Remote API:** new `/api/levels`, `/api/apps` and `/api/appvolume`, protected by the same key as the rest
 - Fixed: Now Playing updates no longer wait for a dial press
 - Fixed: opening a Stream Deck folder or page no longer flashes "Open Spotify / Waiting for media" while the current track loads

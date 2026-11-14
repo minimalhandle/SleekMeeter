@@ -68,7 +68,7 @@ export const featureGroups = [
       ['Stream Deck Studio keys', 'Mute channels or specific outputs, swap a route, step levels, load scenes and profiles or trigger streaming actions.', 'Stream Deck 6.4+'],
       ['Stream Deck + dials', 'Turn or press a dial to adjust or mute an app or mixer channel. Target a specific output mix on Potato.', 'Stream Deck +'],
       ['Now Playing', 'See album art, progress and playback controls from Windows media sessions on a Stream Deck key or Stream Deck + dial.'],
-      ['Studio profile and icon pack', 'Start with an editable four-dial, eight-key Stream Deck + profile and use 486 matching icons.'],
+      ['Studio profile and icon pack', 'Start with an editable four-dial, eight-key Stream Deck + profile and use 425 matching icons.'],
       ['MIDI and remote sync', 'See mixer changes from Voicemeeter and connected MIDI or remote controls as they happen.'],
     ],
   },
