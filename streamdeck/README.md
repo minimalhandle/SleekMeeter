@@ -38,7 +38,7 @@ Keys show live microphone states, channel-level values, bus routing and output f
 
 **Output profiles:** the Next profile key displays the current profile's name and device symbol; pressing it still cycles profiles. A fixed-profile key shows its target and is dimmed when inactive. An active profile shows a coloured status dot. Speakers, headphones and wireless headphones are recognised from descriptive profile names. In the action settings, choose an explicit icon for each profile when using custom names. These overrides are stored per key, so each cycling key can be configured independently.
 
-Audio controls operate through **Sleekmeeter**; the new Now Playing action separately displays/controls a Windows media session. The loose Discord, Spotify, Twitch, Philips Hue, OBS and Revidi icons still belong on actions supplied by those apps' plugins or shortcuts.
+Audio controls operate through **Sleekmeeter**; the new Now Playing action separately displays/controls a Windows media session. The loose Discord, Spotify, Twitch, Philips Hue and OBS icons still belong on actions supplied by those apps' plugins or shortcuts.
 
 ## Install
 
@@ -86,13 +86,12 @@ If a button says **Sleekmeeter not found**, check Sleekmeeter is open and Sleekm
 
 ## Icons
 
-Double-click **[`Sleekmeeter-Studio-Icons.streamDeckIconPack`](Sleekmeeter-Studio-Icons.streamDeckIconPack)** to add **Studio — Complete** to the Stream Deck icon library: 486 premium 144 × 144 keys.
+Double-click **[`Sleekmeeter-Studio-Icons.streamDeckIconPack`](Sleekmeeter-Studio-Icons.streamDeckIconPack)** to add **Studio — Complete** to the Stream Deck icon library: 425 premium 144 × 144 keys.
 
 | Category | Icons |
 | --- | --- |
 | Sleekmeeter | 173 |
 | OBS | 64 |
-| Revidi | 61 |
 | Philips Hue | 44 |
 | Twitch | 39 |
 | Spotify | 32 |
