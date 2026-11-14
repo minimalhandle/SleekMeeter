@@ -1929,3 +1929,22 @@ body:not([data-theme="arcade"], [data-theme="greenhouse"], [data-theme="bubblegu
 @keyframes mk-rise { from { transform: translateY(0); } to { transform: translate(14px, -110vh); } }
 @keyframes mk-halftone { to { transform: translate(14px, 14px); } }
 @keyframes mk-drip { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(110vh); opacity: .5; } }
+
+/* ---------------------------------------------------------------- Mini mode and the tray panel
+ * The makeover's cap rules above were written for the upright fader. On the sideways fader the
+ * level is printed on the cap, so their index line and the old pale label chip struck it through.
+ * Keys that stay pressed (Keep on top, Docked) also lost their fill to the themed bar keys. */
+:root body[data-theme]:not([data-theme="peach"]) .fader.h .thumb::after { display: none; }
+:root body[data-theme] .fader.h .db { background: none; }
+:root body[data-theme="oled"] .fader.h .db { color: var(--ink); }
+/* Round caps stay round: the sideways track is 30px tall. */
+:root body[data-theme="darkroom"] .fader.h { --cap-w: 30px; }
+:root body[data-theme="darkroom"] .fader.h .thumb { top: 0; bottom: 0; }
+:root body[data-theme="darkroom"] .fader.h .db { color: var(--ink); font-size: 11px; padding: 0; }
+:root body[data-theme="transit"] .fader.h { --cap-w: 30px; }
+:root body[data-theme="transit"] .fader.h .thumb { top: 0; bottom: 0; }
+/* No headroom above a sideways pot for its seedling. */
+:root body[data-theme="greenhouse"] .fader.h .thumb::before { content: none; }
+:root body[data-theme] .bar :is(#pinBtn, #dockBtn)[aria-pressed="true"] { background: var(--amber); color: var(--on-ink); }
+/* Themes without a bay around the rows: leave room above the first row for its outline, scallops or glow. */
+:root body:is([data-theme="neon"], [data-theme="terminal"], [data-theme="arcade"], [data-theme="block"], [data-theme="bubblegum"], [data-theme="peach"]) .mini-view { padding-top: 6px; }
