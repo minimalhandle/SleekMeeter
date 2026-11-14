@@ -3,3 +3,4 @@ node_modules/
 preview/
 src-tauri/gen/
 src-tauri/target/
+site/dist/

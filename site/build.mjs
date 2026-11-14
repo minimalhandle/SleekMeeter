@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { themes } from './content.js';
 
 const source = path.dirname(fileURLToPath(import.meta.url));
-const currentSite = path.dirname(source);
-const repository = path.dirname(currentSite);
+const currentSite = source;
+const repository = path.dirname(source);
 const output = path.join(source, 'dist');
 
 async function copy(from, to) {

@@ -3,7 +3,7 @@
 //   1. Serve src/ (npm run preview, or any static server).
 //   2. node scripts/site-capture.mjs http://localhost:8000
 //      Put theme ids after the address (… http://localhost:8000 overclock) to shoot only those, without the output mix.
-// Writes site/img/themes/<id>.webp (1440x812) and <id>-sm.webp (360x203), and site/img/mix.webp.
+// Writes site/img/themes/<id>.webp (1440x812) and site/img/mix.webp.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -74,7 +74,7 @@ async function shot(file, sizes) {
 
 for (const t of ONLY.length ? ONLY : THEMES) {
   await open(`${BASE}/index.html?edition=2`, t);
-  await shot(`themes/${t}`, [["", W, H, 0.86], ["-sm", 360, 203, 0.8]]);
+  await shot(`themes/${t}`, [["", W, H, 0.86]]);
 }
 // The output mix, popped out into its own window (Potato).
 if (!ONLY.length) {
