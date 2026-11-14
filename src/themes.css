@@ -1287,8 +1287,9 @@ body:not([data-theme-motion="off"]) :is(.btn, .route, .tog):active { transform: 
 :root body[data-theme="glass"] :is(.strip .name, .strip .sub, .brand-name, .scale span, .strip .route:not([aria-pressed="true"]), .strip .tog:not([aria-pressed="true"]), .group-head h2, .bar .btn) { text-shadow: 0 1px 2px #0006; }
 :root body[data-theme="glass"] :is(.strip .name, .brand-name, .strip .readout) { letter-spacing: -.01em; }
 /* The toolbar pill, window buttons and dialogs. */
-/* The pill's blur makes it its own layer, so it is lifted above the strips or its menus would open behind them. */
-:root body[data-theme="glass"] .bar { position: relative; z-index: 30; }
+/* The pill's blur makes it its own layer, so it is lifted above the strips or its menus would open behind them,
+   but kept under the channel panel (25) and the offline cover (30), which open over the toolbar in every theme. */
+:root body[data-theme="glass"] .bar { position: relative; z-index: 24; }
 :root body[data-theme="glass"] .bar { margin: 8px 12px 4px; padding: 8px 14px; border-radius: 999px; background: rgba(255, 255, 255, .12); backdrop-filter: blur(18px) saturate(180%); box-shadow: inset 0 1px 0 #ffffffc0, inset 0 -1px 0 #ffffff30, 0 10px 26px #05061e66; }
 :root body[data-theme="glass"].custom-chrome:not(.is-mini, .is-panel) .bar { padding-right: 140px; }
 :root body[data-theme="glass"].custom-chrome:not(.is-mini, .is-panel) .winctl { top: 50%; right: 10px; transform: translateY(-50%); gap: 2px; margin: 0; }
