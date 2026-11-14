@@ -59,6 +59,9 @@ pub fn defaults() -> Value {
         "startInTray": false,
         "launchVoicemeeter": false,
         "hideVoicemeeter": false,
+        // The volume overlay at all: off hides levels, messages and warnings alike.
+        "osdOn": true,
+        // Levels on the overlay when they change while you're in another app.
         "overlay": true,
         "alwaysOnTop": false,
         "mini": false,
@@ -82,6 +85,8 @@ pub fn defaults() -> Value {
         },
         // Restart Voicemeeter's audio engine when a device it uses comes back.
         "autoRestart": true,
+        // Warn when an app opens a Bluetooth headset's mic, switching it to call quality (btwatch.rs).
+        "btWarn": true,
         // Put Windows' sound output back on Voicemeeter when plugging in a device moves it.
         "keepWindowsOutput": false,
         // Volume overlay screen: "" = the mixer's screen, "primary", or a screen's name.
@@ -146,8 +151,14 @@ pub fn defaults() -> Value {
         // records ("recording"), streams ("live"), either ("either"), or only by key ("manual").
         "musicGuard": { "on": false, "strip": "", "when": "either" },
         // Instant replay: keep the last `secs` seconds of `device` (a Voicemeeter output as
-        // Windows lists it, "" = the stream output) ready to save as a WAV file.
-        "replay": { "on": false, "device": "", "secs": 60 },
+        // Windows lists it, "" = the stream output) ready to save as a WAV file. `tracks`: up to four
+        // inputs ("Strip[0]") also saved as their own files (replay.rs).
+        "replay": { "on": false, "device": "", "secs": 60, "tracks": [] },
+        // Stream loudness in LUFS (loudness.rs), measured on the stream output, against `target`.
+        "loudness": { "on": false, "target": -14 },
+        // MIDI controllers (midi.rs): maps [{ "dev" ("" = any), "kind" ("cc", "note", "pb"), "ch",
+        // "num", "action" ("fader" or a shortcut action), "target" }].
+        "midi": { "on": false, "maps": [] },
         // Mic clean-up, one chain per mic (micfx.rs). On hardware input `target`: NVIDIA's speaker
         // echo removal (`aec`, using what bus `aecRef` plays), NVIDIA's `effect` when `on`
         // ("denoiser", "dereverb", "dereverb_denoiser") at `strength` %, then VST3 `plugins` in
@@ -209,7 +220,8 @@ pub fn theme(s: &Value) -> String {
         | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") | Some("rack")
         | Some("titanium") | Some("afterburner") | Some("opal") | Some("onyx")
         | Some("afterhours") | Some("caldera") | Some("blueprint") | Some("letterpress")
-        | Some("eventhorizon") | Some("lunar") => "console".into(),
+        | Some("eventhorizon") | Some("lunar") | Some("observatory") | Some("mission")
+        | Some("sumi") => "console".into(),
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
         _ => "console".into(),

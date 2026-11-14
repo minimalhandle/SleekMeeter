@@ -23,6 +23,9 @@ pub const EQ_PRESETS: &[(&str, &str)] = &[
     ("bright", "Brighter"),
     ("warm", "Warmer"),
     ("night", "Late night (less bass)"),
+    ("pops", "Mic: fewer pops"),
+    ("esses", "Mic: softer S"),
+    ("speech", "Mic: fewer pops, softer S"),
 ];
 /// Leveller settings: (id, name).
 pub const LEVELS: &[(&str, &str)] = &[
@@ -63,6 +66,14 @@ fn bands(preset: &str) -> &'static [Band] {
         "bright" => &[(HighShelf, 6000.0, 4.0, 0.7)],
         "warm" => &[(LowShelf, 220.0, 3.0, 0.7), (HighShelf, 7000.0, -3.0, 0.7)],
         "night" => &[(HighPass, 70.0, 0.0, 0.7), (LowShelf, 200.0, -6.0, 0.7)],
+        // For mics (the Mic coach suggests these): the rumble plosives leave, and harsh s's.
+        "pops" => &[(HighPass, 100.0, 0.0, 0.7), (LowShelf, 220.0, -3.0, 0.7)],
+        "esses" => &[(Peak, 6500.0, -5.0, 1.8), (HighShelf, 10000.0, -2.0, 0.7)],
+        "speech" => &[
+            (HighPass, 100.0, 0.0, 0.7),
+            (LowShelf, 220.0, -2.0, 0.7),
+            (Peak, 6500.0, -4.5, 1.8),
+        ],
         _ => &[],
     }
 }

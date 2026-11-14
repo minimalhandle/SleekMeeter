@@ -34,6 +34,10 @@
  *   obsStatus() / onObsStatus(cb)   {connected, live, scene, scenes, message} of the OBS link
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
  *   healthCheck() -> [{state: ok|warn|bad, label, detail, action?}]   "Check my setup"
+ *   crackleCheck() -> same shape as healthCheck (action "set" adds {button, param, value}; action "page" adds {button, page})   crackle doctor
+ *   openWindowsPage(page)   page: playback | recording | power | bluetooth
+ *   btStatus() -> {users: [{device, app}]} / onBtCallMode(cb) cb(same): Bluetooth headsets an app switched to call quality
+ *   coachStart(target) / coachStop() / coachStatus() -> {running, target, secs, speechSecs, enough, level, noise, message, tips: [{id, title, detail, fix}]}   Mic coach
  *   goLiveCheck() -> same shape (action "set" adds {button, param, value}) / onGoLive(cb) cb({items}) when OBS went live and something's wrong
  *   onAlert(cb)   cb({kind: mutedTalk|silent|clip, name, text}): talking while muted, a silent or clipping stream
  *   musicGuardToggle() -> bool   Music off stream on or off by hand (state.musicGuard tells which)
@@ -84,11 +88,11 @@
       { keys: "Ctrl+Alt+S", action: "window", target: "" },
     ],
     startWithWindows: false, startInTray: false, launchVoicemeeter: false, hideVoicemeeter: false,
-    overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true, lockArrangement: false,
+    osdOn: true, overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true, lockArrangement: false,
     sceneRules: [], checkUpdates: true, betaUpdates: false, skippedVersion: "", streamDeckOffered: "", usagePing: null, oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
     ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
-    autoRestart: true, keepWindowsOutput: false, overlayScreen: "",
+    autoRestart: true, btWarn: true, keepWindowsOutput: false, overlayScreen: "",
     panelLayout: "rows", panelScale: 100, panelOpacity: 100, panelIcons: true, panelMute: true, panelMeters: true,
     outputProfiles: [],
     outputFallbacks: {}, outputFallbackLinks: {}, themeMotion: "subtle",
@@ -107,7 +111,9 @@
     streamWatch: { on: false, silentSecs: 15, clip: true, onlyLive: true },
     goLive: { onLive: true },
     musicGuard: { on: false, strip: "", when: "either" },
-    replay: { on: false, device: "", secs: 60 },
+    replay: { on: false, device: "", secs: 60, tracks: [] },
+    loudness: { on: false, target: -14 },
+    midi: { on: false, maps: [] },
     micFx: { aecRef: "Bus[0]", chains: [{ id: "c1", target: "Strip[0]", on: false, effect: "denoiser", strength: 100, aec: false, plugins: [] }] },
     vstPresets: [],
     appRoutes: {},
@@ -218,12 +224,24 @@
     onObsStatus(cb) { return this.listen("obs-status", (e) => cb(e.payload)); }
     onThemeAuto(cb) { return this.listen("theme-auto", (e) => cb(e.payload)); }
     healthCheck() { return this.invoke("health_check"); }
+    crackleCheck() { return this.invoke("crackle_check"); }
+    openWindowsPage(page) { return this.invoke("open_windows_page", { page }); }
+    btStatus() { return this.invoke("bt_status"); }
+    onBtCallMode(cb) { return this.listen("bt-callmode", (e) => cb(e.payload)); }
+    coachStart(target) { return this.invoke("coach_start", { target }); }
+    coachStop() { return this.invoke("coach_stop"); }
+    coachStatus() { return this.invoke("coach_status"); }
     goLiveCheck() { return this.invoke("golive_check"); }
     onGoLive(cb) { return this.listen("golive", (e) => cb(e.payload)); }
     onAlert(cb) { return this.listen("watch-alert", (e) => cb(e.payload)); }
     musicGuardToggle() { return this.invoke("music_guard_toggle"); }
     replaySave() { return this.invoke("replay_save"); }
     replayStatus() { return this.invoke("replay_status"); }
+    loudnessStatus() { return this.invoke("loudness_status"); }
+    loudnessReset() { return this.invoke("loudness_reset"); }
+    midiStatus() { return this.invoke("midi_status"); }
+    midiLearn(on) { return this.invoke("midi_learn", { on: !!on }); }
+    onMidiLearned(cb) { return this.listen("midi-learned", (e) => cb(e.payload)); }
     micFxStatus() { return this.invoke("micfx_status"); }
     vstScan() { return this.invoke("vst_scan"); }
     vstBrowse() { return this.invoke("vst_browse"); }
@@ -838,6 +856,7 @@
           : { state: "ok", label: "Windows sound output", detail: `Windows sends sound to ${out.output}.` },
         { state: "ok", label: "Voicemeeter", detail: "Running and connected." },
         { state: "warn", label: "Audio devices", detail: "Windows doesn't list: Headphones (Arctis Nova Pro Wireless). Plug it in or switch it on; Sleekmeeter restarts the audio engine when it returns." },
+        { state: "warn", label: "Crackles and dropouts", detail: "2 things that can cause crackles or dropouts. The crackle doctor explains and fixes them.", action: "crackle" },
         { state: "ok", label: "Shortcuts", detail: "4 shortcuts working." },
         { state: "ok", label: "Saving settings", detail: "Settings, scenes and logs can be saved." },
       ]), 500);
@@ -895,6 +914,28 @@
       return new Promise((r) => setTimeout(() => r(out), 400));
     }
     onGoLive() { return Promise.resolve(); }
+    crackleCheck() {
+      return new Promise((r) => setTimeout(() => r([
+        { state: "warn", label: "Sample rates", detail: "Voicemeeter runs at 48 kHz, but Windows runs Speakers (Realtek USB Audio) (A2) at 44.1 kHz. Voicemeeter then converts that sound on the fly, a common cause of crackles. In Windows' Sound settings, open the device's Properties → Advanced and pick a 48 kHz format.", action: "page", button: "Open Sound settings", page: "playback" },
+        { state: "warn", label: "Audio buffer", detail: "Voicemeeter's WDM buffer is 128 samples (2.7 ms). That's quick, but the PC has to keep up every few milliseconds, and when it can't you hear a crackle. 512 samples adds about 8 ms of delay and is much safer. Voicemeeter restarts its audio when this changes.", action: "set", button: "Use 512 samples", param: "Option.buffer.wdm", value: 512 },
+        { state: "ok", label: "Power plan", detail: "Windows isn't on Power saver." },
+      ]), 400));
+    }
+    openWindowsPage() { return Promise.reject(new Error("Windows settings open in the Sleekmeeter app, not the browser preview")); }
+    btStatus() { return Promise.resolve({ users: [] }); }
+    onBtCallMode(cb) { this._btCallMode = cb; return Promise.resolve(); }
+    coachStart(target) { this._coach = { target, at: Date.now() }; return Promise.resolve(); }
+    coachStop() { this._coach = null; return Promise.resolve(); }
+    coachStatus() {
+      const c = this._coach;
+      if (!c) return Promise.resolve({ running: false });
+      const secs = (Date.now() - c.at) / 1000, speechSecs = Math.min(secs * 0.7, 42), enough = speechSecs >= 12;
+      return Promise.resolve({ running: secs < 60, target: c.target, secs, speechSecs, enough, level: -24, noise: -58, message: "",
+        tips: enough ? [
+          { id: "pops", title: "P's and B's pop", detail: "7 pops while you talked. Aim the mic slightly past your mouth instead of straight at it, or use a pop filter. The Fewer pops EQ takes out the rumble they leave.", fix: { eq: "pops" } },
+          { id: "noisy", title: "The room is loud next to your voice", detail: "Between phrases the mic hears the room at -50 dBFS, only 22 dB under your voice. Getting closer to the mic helps most; mic clean-up or a noise gate takes care of the rest.", fix: "cleanup" },
+        ] : [] });
+    }
     onAlert(cb) { this._alert = cb; return Promise.resolve(); }
     // Music off stream: switch the music channel's route to the stream output off, or back on.
     guard(on) {
@@ -1014,14 +1055,46 @@
     vstRecover() { return Promise.resolve(); }
     replayStatus() {
       const r = this.settings.replay || {};
-      return Promise.resolve(r.on ? { running: true, device: "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", message: `Keeping the last ${r.secs || 60} seconds of Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO).` } : { running: false, device: "", message: "Off" });
+      const tracks = (r.tracks || []).length;
+      return Promise.resolve(r.on ? { running: true, device: "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", tracks: "", message: `Keeping the last ${r.secs || 60} seconds of Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)${tracks ? `, plus ${tracks} separate track${tracks > 1 ? "s" : ""}` : ""}.` } : { running: false, device: "", message: "Off", tracks: "" });
     }
     replayDevices() { return Promise.resolve(["Voicemeeter Out B1 (VB-Audio Voicemeeter VAIO)", "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)", "Voicemeeter Out B3 (VB-Audio Voicemeeter VAIO3)"]); }
+    // A stream drifting a little under -14 LUFS, with speech-like movement.
+    loudnessStatus() {
+      if (!(this.settings.loudness || {}).on) return Promise.resolve({ running: false, device: "", message: "Off" });
+      const t = (performance.now() - this.t0) / 1000;
+      this._loudT0 = this._loudT0 ?? t;
+      const r1 = (n) => Math.round(n * 10) / 10;
+      return Promise.resolve({
+        running: true, receiving: true, device: "Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO)",
+        message: "Measuring Voicemeeter Out B2 (VB-Audio Voicemeeter AUX VAIO).",
+        momentary: r1(-16.5 + 3 * Math.sin(t * 1.7) + 1.5 * Math.sin(t * 5.3)),
+        shortTerm: r1(-16.2 + 1.2 * Math.sin(t * 0.25)), integrated: r1(-16.4 + 0.2 * Math.sin(t * 0.05)),
+        peak: r1(-4.5 + 1.5 * Math.sin(t * 2.1)), since: Math.floor(t - this._loudT0),
+      });
+    }
+    loudnessReset() { this._loudT0 = (performance.now() - this.t0) / 1000; return Promise.resolve(); }
+    // A pretend nanoKONTROL2: learning "hears" its next fader, then a button.
+    midiStatus() {
+      const on = !!(this.settings.midi || {}).on;
+      return Promise.resolve({ on, devices: [{ name: "nanoKONTROL2", open: on, error: "" }, { name: "Digital Piano", open: false, error: "" }] });
+    }
+    midiLearn(on) {
+      clearTimeout(this._learnTimer);
+      if (on) this._learnTimer = setTimeout(() => {
+        this._learnN = (this._learnN || 0) + 1;
+        const button = this._learnN % 2 === 0;
+        if (this._onLearned) this._onLearned({ dev: "nanoKONTROL2", kind: "cc", ch: 0, num: button ? 48 + this._learnN : this._learnN - 1 });
+      }, 1200);
+      return Promise.resolve();
+    }
+    onMidiLearned(cb) { this._onLearned = cb; return Promise.resolve(); }
     replaySave() {
       const r = this.settings.replay || {};
       if (!r.on) return Promise.reject(new Error("Turn on Instant replay in Settings → Instant replay first"));
       const d = new Date(), p = (n) => String(n).padStart(2, "0");
-      return Promise.resolve(`C:\\Users\\you\\Music\\Sleekmeeter replays\\Replay ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}.wav`);
+      const name = `Replay ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}`;
+      return Promise.resolve(`C:\\Users\\you\\Music\\Sleekmeeter replays\\${name}${(r.tracks || []).length ? "" : ".wav"}`);
     }
     replayOpenFolder() { return Promise.resolve(); }
     settingsExport() { return Promise.resolve("Sleekmeeter settings.json"); }

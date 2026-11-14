@@ -28,7 +28,7 @@
 <div class="row"><label for="address">Address</label><input type="text" id="address" placeholder="http://192.168.1.20:8787/?k=…" spellcheck="false"></div>
 <div class="row"><label></label><button id="save" type="button">Connect</button></div>
 <div class="status" id="status">Looking for Sleekmeeter…</div>
-<p class="hint">In Sleekmeeter, turn on the phone remote under Settings, then use Copy next to the address and paste it here. You only do this once for every button.</p>
+<p class="hint">In Sleekmeeter, open Settings → Controls &amp; remote → Sleekmeeter Remote, turn it on, then use Copy next to the address and paste it here. You only do this once for every button.</p>
 
 <script>
 "use strict";
@@ -153,7 +153,20 @@ function buildFields() {
   } else if (action === "micfx") {
     const strips = (lists ? lists.strips : []).map((c) => ({ v: c.key, t: c.name }));
     h += row("Mic", `<select data-k="channel">${opts(strips, settings.channel || "", "Every mic")}</select>`);
-    h += `<p class="hint">Switches the mic's clean-up (NVIDIA's noise and echo removal, and its plugins) off, and on again with the next press. Green means on. Set it up first in Sleekmeeter: Settings → Mic clean-up and plugins.</p>`;
+    h += `<p class="hint">Switches the mic's clean-up (NVIDIA's noise and echo removal, and its plugins) off, and on again with the next press. Green means on. Set it up first in Sleekmeeter: Settings → Microphone → Clean-up and plugins.</p>`;
+  } else if (action === "balance") {
+    h += row("When pressed", `<select data-k="mode">${opts([{ v: "game", t: "More game" }, { v: "chat", t: "More chat" }, { v: "centre", t: "Back to centre" }], settings.mode || "centre")}</select>`);
+    if ((settings.mode || "centre") !== "centre") h += row("Step", `<select data-k="step">${opts([{ v: "5", t: "5 per press" }, { v: "10", t: "10 per press" }, { v: "20", t: "20 per press" }], String(settings.step || "10"))}</select>`);
+    h += `<p class="hint">Moves Game / Chat like the slider in Sleekmeeter, from -100 (only game) to 100 (only chat). Choose your game and chat inputs first with the Game / Chat button above the inputs in Sleekmeeter.</p>`;
+  } else if (action === "balancedial") {
+    h += row("Dial step", `<select data-k="step">${opts([{ v: "2", t: "2 per click" }, { v: "5", t: "5 per click" }, { v: "10", t: "10 per click" }], String(settings.step || "5"))}</select>`);
+    h += row("Dial press", `<select data-k="press">${opts([{ v: "centre", t: "Back to centre" }, { v: "none", t: "Do nothing" }], settings.press || "centre")}</select>`);
+    h += row("Touch", `<select data-k="tap">${opts([{ v: "centre", t: "Tap to centre" }, { v: "none", t: "Do nothing" }], settings.tap || "centre")}</select>`);
+    h += `<p class="hint">Turn left for more game and right for more chat, the way the Game / Chat slider in Sleekmeeter works. Choose your game and chat inputs first with the Game / Chat button above the inputs in Sleekmeeter.</p>`;
+  } else if (action === "replay") {
+    h += `<p class="hint">Saves the last seconds of your stream to Music\\Sleekmeeter replays. Turn it on first in Sleekmeeter: Settings → Streaming → Instant replay. The key shows a tick when the replay is saved.</p>`;
+  } else if (action === "musicguard") {
+    h += `<p class="hint">Takes your music channel off the stream while you still hear it, and puts it back with the next press. Amber with a slash means it's off the stream. Set it up first in Sleekmeeter: Settings → Streaming → Going live → Music off stream.</p>`;
   } else if (action === "mute") {
     h += row("Channel", channelSelect());
   } else if (action === "level") {
@@ -181,6 +194,9 @@ function buildFields() {
   f.dataset.built = h;
   f.innerHTML = h;
   for (const el of f.querySelectorAll("[data-k]")) {
+    // Typed numbers save as you type: "change" only fires when the box loses focus, and closing
+    // the settings panel or pressing the key straight after typing never does that.
+    if (el.type === "number") el.addEventListener("input", () => { if (el.value !== "" && Number.isFinite(Number(el.value))) save(el.dataset.k, Number(el.value)); });
     el.addEventListener("change", () => {
       let v = el.value;
       if (el.type === "checkbox") v = el.checked;
@@ -208,7 +224,7 @@ function showStatus() {
     ok: ["Connected to Sleekmeeter.", "ok"],
     novm: ["Sleekmeeter is running, but Voicemeeter isn't.", "bad"],
     key: ["Sleekmeeter says the key is wrong. Paste the address again.", "bad"],
-    offline: ["Can't reach Sleekmeeter. Is it open, with the phone remote turned on?", "bad"],
+    offline: ["Can't reach Sleekmeeter. Is it open, with Sleekmeeter Remote turned on?", "bad"],
   }[lists.status] || ["", ""];
   s.textContent = t[0];
   s.className = "status " + t[1];

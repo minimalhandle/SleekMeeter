@@ -1,6 +1,6 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.20.0.0",
+  "Version": "0.21.0.0",
   "Author": "minimalhandle",
   "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
@@ -254,6 +254,40 @@
       ]
     },
     {
+      "Name": "Save replay",
+      "UUID": "com.minimalhandle.sleekmeeter.replay",
+      "Icon": "imgs/actions/record",
+      "Tooltip": "Save the last seconds of your stream (Instant replay).",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/record",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Music off stream",
+      "UUID": "com.minimalhandle.sleekmeeter.musicguard",
+      "Icon": "imgs/actions/nowplayingkey",
+      "Tooltip": "Keep your music out of the stream while you still hear it. Press again to put it back.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/nowplayingkey",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
       "Name": "Talk-over ducking",
       "UUID": "com.minimalhandle.sleekmeeter.duck",
       "Icon": "imgs/actions/duck",
@@ -421,6 +455,49 @@
       "States": [
         {
           "Image": "imgs/keys/route",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Game / Chat",
+      "UUID": "com.minimalhandle.sleekmeeter.balance",
+      "Icon": "imgs/actions/level",
+      "Tooltip": "Move Game / Chat toward the game or the chat, or back to the centre.",
+      "Controllers": [
+        "Keypad"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/keys/level",
+          "ShowTitle": false
+        }
+      ]
+    },
+    {
+      "Name": "Game / Chat dial",
+      "UUID": "com.minimalhandle.sleekmeeter.balancedial",
+      "Icon": "imgs/actions/channel",
+      "Tooltip": "Turn left for more game, right for more chat. Press or tap to centre.",
+      "Controllers": [
+        "Encoder"
+      ],
+      "PropertyInspectorPath": "ui/pi.html",
+      "UserTitleEnabled": false,
+      "Encoder": {
+        "layout": "layouts/channel.json",
+        "Icon": "imgs/keys/channel",
+        "TriggerDescription": {
+          "Rotate": "More game or more chat",
+          "Push": "Back to centre",
+          "Touch": "Back to centre"
+        }
+      },
+      "States": [
+        {
+          "Image": "imgs/keys/channel",
           "ShowTitle": false
         }
       ]

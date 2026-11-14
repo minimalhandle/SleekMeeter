@@ -1,0 +1,14 @@
+{
+  "name": "sleekmeeter-showcase-video",
+  "private": true,
+  "type": "module",
+  "description": "Renders the 3D Stream Deck showcase video for the website.",
+  "scripts": {
+    "still": "node render.mjs --still",
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^23.0.0",
+    "three": "^0.170.0"
+  }
+}

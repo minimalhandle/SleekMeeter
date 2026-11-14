@@ -1,0 +1,30 @@
+/* Theme fonts (theme makeover, 0.21). Latin WOFF2 files from Google Fonts, bundled so they work offline.
+ * Licences: SIL Open Font License 1.1 (OFL.txt), except Permanent Marker: Apache License 2.0 (Apache-2.0.txt). See THEME-FONTS.md. */
+@font-face { font-family: "Inter"; src: url("Inter-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("Inter-400.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("Inter-400.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("Inter-400.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Space Grotesk"; src: url("SpaceGrotesk-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Space Grotesk"; src: url("SpaceGrotesk-500.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Bebas Neue"; src: url("BebasNeue-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("CourierPrime-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Permanent Marker"; src: url("PermanentMarker-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Archivo Black"; src: url("ArchivoBlack-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "VT323"; src: url("VT323-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Orbitron"; src: url("Orbitron-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Orbitron"; src: url("Orbitron-600.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Rajdhani"; src: url("Rajdhani-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Rajdhani"; src: url("Rajdhani-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("IBMPlexMono-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("IBMPlexMono-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Press Start 2P"; src: url("PressStart2P-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Silkscreen"; src: url("Silkscreen-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0000-0025, U+0027-FFFF; }
+/* Silkscreen's own ampersand reads like a euro sign, so & comes from Press Start 2P, scaled to match. */
+@font-face { font-family: "Silkscreen"; src: url("PressStart2P-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+0026; size-adjust: 78%; }
+@font-face { font-family: "Caveat"; src: url("Caveat-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nunito"; src: url("Nunito-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nunito"; src: url("Nunito-700.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Young Serif"; src: url("YoungSerif-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("Fredoka-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("Fredoka-500.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("Fredoka-500.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }

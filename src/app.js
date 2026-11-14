@@ -42,6 +42,8 @@
   const SIDE = PANEL || MIXWIN;
   let settings = clone(DEFAULT_SETTINGS);
   let connected = null;
+  // False once Voicemeeter turns out not to be installed (for the setup guide).
+  let vmInstalled = true;
   const reveal = { strip: false, bus: false };
 
   /* ---------- fader taper (shared by faders, meters and the scale) ---------- */
@@ -843,6 +845,8 @@
     showOffline(!st.installed ? "missing" : !st.connected ? "stopped" : null);
     const wasConnected = connected;
     connected = !!st.connected;
+    vmInstalled = !!st.installed;
+    if (setupDlg.open && setup.step === 0) paintSetupStart();
     $("#balanceMixer").hidden = SIDE || !connected || !st.strips;
     $("#balancePin").hidden = SIDE || !connected || !settings.chatBalancePinned || !settings.chatBalance;
     if (!st.connected || !st.strips) {
@@ -1033,6 +1037,8 @@
     if (tuneDlg.open) micTuneLevels(lv);
     if (chainDlg.open) chainLevels(lv);
     if (balanceDlg.open) paintBalanceSignal(lv);
+    if (setupDlg.open) setupLevels(lv);
+    loudLevels(lv);
   }
   // Meters move with `transform` only (scale for the bar, translate for the peak line), so they
   // are composited on the GPU without repainting. The loop stops when every meter is at rest
@@ -1422,13 +1428,16 @@
 
   // Listening EQ presets and Steadier volume (soundfx.rs): inside Voicemeeter's audio, with no delay.
   const SOUND_EQ = [["off", "Off"], ["footsteps", "Footsteps"], ["bass", "Bass boost"], ["voice", "Voice clarity"],
-    ["bright", "Brighter"], ["warm", "Warmer"], ["night", "Late night (less bass)"]];
+    ["bright", "Brighter"], ["warm", "Warmer"], ["night", "Late night (less bass)"],
+    ["pops", "Mic: fewer pops"], ["esses", "Mic: softer S"], ["speech", "Mic: fewer pops, softer S"]];
   const SOUND_LEVEL = [["off", "Off"], ["gentle", "Gentle"], ["night", "Night mode"]];
   const SOUND_EQ_HINT = {
     footsteps: "Less rumble from explosions, more of the range footsteps and reloads are in.",
     bass: "More low end for music and films.", voice: "Clearer speech: less boom, more presence.",
     bright: "More sparkle in the top end.", warm: "A fuller, softer sound.",
     night: "Takes the bass out, so it doesn't carry through walls.",
+    pops: "Takes out the rumble popping p's and b's leave on a mic.",
+    esses: "Tames harsh s sounds on a mic.", speech: "Both: less popping and softer s sounds on a mic.",
   };
   const soundFxOf = (ch) => (settings.soundFx || {})[ch.prefix] || {};
   function soundFxSection(ch) {
@@ -2175,6 +2184,8 @@
     if (a === "balance") openBalance();
     if (a === "hear") openHear();
     if (a === "chain") openChain();
+    if (a === "coach") openCoach();
+    if (a === "crackle") openCrackle();
     if (a === "history") openHistory();
     if (a === "subs") {
       // One click: if any device line is showing, hide them all; otherwise show them all.
@@ -2231,7 +2242,10 @@
     }
     const badge = $("#recordingBadge");
     badge.hidden = !obsRecording && (!recording || (pins.includes("recBtn") && settings.streamerMode !== false));
-    badge.textContent = obsRecording ? "OBS Rec" : "Recording";
+    // Only the text: at narrow widths the badge folds to its dot, and the label still names it.
+    const recText = obsRecording ? "OBS Rec" : "Recording";
+    badge.querySelector(".badge-text").textContent = recText;
+    badge.setAttribute("aria-label", recText);
     badge.title = recording ? "Open Recorder" : "Open OBS Studio settings";
     $("#awayBadge").hidden = !away || (pins.includes("brbBtn") && settings.streamerMode !== false);
   }
@@ -2333,8 +2347,8 @@
   $("#setPanelOpacity").addEventListener("change", (e) => { settings.panelOpacity = +e.target.value; saveSettings(); });
   const CHECKS = {
     setStartWithWindows: "startWithWindows", setStartInTray: "startInTray",
-    setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOverlay: "overlay",
-    setCheckUpdates: "checkUpdates", setBetaUpdates: "betaUpdates", setAutoRestart: "autoRestart", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setPanelIcons: "panelIcons", setPanelMeters: "panelMeters", setPanelMute: "panelMute", setExtraBuses: "showExtraBuses",
+    setLaunchVoicemeeter: "launchVoicemeeter", setHideVoicemeeter: "hideVoicemeeter", setOsdOn: "osdOn", setOverlay: "overlay",
+    setCheckUpdates: "checkUpdates", setBetaUpdates: "betaUpdates", setAutoRestart: "autoRestart", setBtWarn: "btWarn", setKeepWindowsOutput: "keepWindowsOutput", setUsagePing: "usagePing", setPanelDocked: "panelDocked", setPanelIcons: "panelIcons", setPanelMeters: "panelMeters", setPanelMute: "panelMute", setExtraBuses: "showExtraBuses",
     setHideSoloMono: "hideSoloMono", setStreamerMode: "streamerMode", setLockArrangement: "lockArrangement",
     setRouteNames: "routeNames",
   };
@@ -2353,10 +2367,15 @@
     });
   }
   function syncChecks() {
-    for (const [id, key] of Object.entries(CHECKS)) $("#" + id).checked = !!settings[key];
+    for (const [id, key] of Object.entries(CHECKS)) $("#" + id).checked = key === "osdOn" ? settings[key] !== false : !!settings[key];
     const tray = $("#setStartInTray");
     tray.disabled = !settings.startWithWindows;
     tray.closest(".check").classList.toggle("disabled", tray.disabled);
+    // With the overlay off, where it shows and whether levels show don't apply.
+    const osdOff = settings.osdOn === false;
+    $("#setOverlayScreen").disabled = osdOff;
+    $("#setOverlay").disabled = osdOff;
+    $("#setOverlay").closest(".check").classList.toggle("disabled", osdOff);
     // Only Potato has the extra hardware buses (A4, A5) to show.
     $("#extraBusesRow").hidden = !hasExtraBuses();
   }
@@ -2450,11 +2469,11 @@
     toast(on ? "Focused mixer on" : "Full mixer restored");
   }
   const settingsCategories = [
-    ["appearance", "Appearance & layout", "Themes, animation, channel visibility and the volume overlay."],
+    ["appearance", "Appearance & layout", "Themes, animation, the tray panel, channel buttons and the volume overlay."],
     ["mixer", "Mixer & devices", "Mixing tools, fader behaviour, audio devices and output recovery."],
     ["microphone", "Microphone", "Mic levels, noise clean-up and VST3 processing."],
-    ["streaming", "Streaming", "Go-live checks, replay, OBS and Twitch."],
-    ["controls", "Controls & remote", "Shortcuts, Stream Deck and Sleekmeeter Remote."],
+    ["streaming", "Streaming", "Stream mode, going live and loudness, instant replay, OBS and Twitch."],
+    ["controls", "Controls & remote", "Shortcuts, MIDI controllers, Stream Deck and Sleekmeeter Remote."],
     ["system", "System & backup", "Startup, privacy, updates, backups and diagnostics."],
   ];
   const settingsSearch = $("#settingsSearch"), settingsContent = $("#settingsContent");
@@ -2527,6 +2546,7 @@
     renderBackups();
     selectSettingsCategory(category);
     if (!settingsDlg.open) settingsDlg.showModal();
+    syncMidi();
   }
   $("#settingsBtn").addEventListener("click", () => openSettings());
   settingsDlg.addEventListener("click", (e) => { if (e.target === settingsDlg) settingsDlg.close(); });
@@ -2680,6 +2700,112 @@
     btn.addEventListener("keydown", onKey, true);
     btn.addEventListener("blur", cancel);
   }
+
+  /* ---------- MIDI controller (midi.rs) ---------- */
+  // Learned controls, each with an action like a shortcut's. "fader" moves a level.
+  const MI = () => (settings.midi = Object.assign({}, DEFAULT_SETTINGS.midi, settings.midi, { maps: (settings.midi && settings.midi.maps) || [] }));
+  const MIDI_ACTIONS = [["fader", "Move the level"], ...ACTIONS.filter(([v]) => v !== "ptt" && v !== "ptm")];
+  let midiLearning = false, midiLearnTimer = null, midiStatusTimer = null;
+  const midiName = (m) => (m.kind === "pb" ? `Pitch bend · ch ${m.ch + 1}` : `${m.kind === "cc" ? "CC" : "Note"} ${m.num} · ch ${m.ch + 1}`);
+  function stopMidiLearn() {
+    if (!midiLearning) return;
+    midiLearning = false;
+    clearTimeout(midiLearnTimer);
+    engine.midiLearn(false).catch(() => {});
+    renderMidi();
+  }
+  function renderMidi() {
+    const list = $("#midiList");
+    list.textContent = "";
+    MI().maps.forEach((m, idx) => {
+      const row = document.createElement("div");
+      row.className = "hotkey";
+      const ctl = document.createElement("span");
+      ctl.className = "midi-control";
+      ctl.append(midiName(m));
+      if (m.dev) ctl.append(Object.assign(document.createElement("small"), { textContent: ` · ${m.dev}` }));
+      ctl.title = `${midiName(m)}${m.dev ? ` on ${m.dev}` : ""}`;
+      const act = document.createElement("select");
+      act.setAttribute("aria-label", `What ${midiName(m)} does`);
+      for (const [v, l] of MIDI_ACTIONS) act.appendChild(new Option(l, v));
+      act.value = m.action;
+      if (act.selectedIndex < 0) { m.action = "fader"; act.value = "fader"; }
+      const tgt = document.createElement("select");
+      fillTarget(tgt, m);
+      tgt.disabled = NO_TARGET.has(m.action);
+      act.addEventListener("change", () => {
+        m.action = act.value;
+        tgt.disabled = NO_TARGET.has(m.action);
+        if (tgt.disabled) m.target = "";
+        else { if (NAMED[m.action] || !/^(Strip|Bus)\[/.test(m.target || "")) m.target = ""; fillTarget(tgt, m); }
+        saveSettings();
+      });
+      tgt.addEventListener("change", () => { m.target = tgt.value; saveSettings(); });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "btn icon"; del.setAttribute("aria-label", `Remove ${midiName(m)}`);
+      del.innerHTML = `<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      del.addEventListener("click", () => { MI().maps.splice(idx, 1); saveSettings(); renderMidi(); });
+      row.append(ctl, act, tgt, del);
+      list.appendChild(row);
+    });
+    const add = $("#addMidi");
+    add.textContent = midiLearning ? "Cancel" : "Add a control";
+    if (midiLearning) {
+      const row = document.createElement("div");
+      row.className = "hotkey";
+      row.append(Object.assign(document.createElement("span"), { className: "midi-control learning", textContent: "Move a fader or knob, or press a button…" }));
+      list.appendChild(row);
+    }
+  }
+  async function refreshMidiStatus() {
+    const el = $("#midiStatus");
+    if (!MI().on) { el.textContent = ""; return; }
+    let st;
+    try { st = await engine.midiStatus(); } catch (_) { return; }
+    el.textContent = "";
+    const devices = st.devices || [];
+    if (!devices.length) { el.textContent = "No MIDI controllers found. Plug one in; Sleekmeeter finds it within a second."; return; }
+    const open = devices.filter((d) => d.open).map((d) => d.name);
+    const parts = [];
+    if (open.length) parts.push(`Listening to ${open.join(", ")}.`);
+    else if (!midiLearning && !MI().maps.length) parts.push(`Found ${devices.map((d) => d.name).join(", ")}. Add a control to start.`);
+    el.append(parts.join(" "));
+    for (const d of devices.filter((d) => d.error)) {
+      el.append(" ", Object.assign(document.createElement("span"), { className: "bad", textContent: `${d.name}: ${d.error}` }));
+    }
+  }
+  function syncMidi() {
+    const on = !!MI().on;
+    $("#midiOn").checked = on;
+    $('[data-needs="midi"]').hidden = !on;
+    if (!on) stopMidiLearn();
+    renderMidi();
+    refreshMidiStatus();
+    clearInterval(midiStatusTimer);
+    if (on && settingsDlg.open) midiStatusTimer = setInterval(() => { if (settingsDlg.open) refreshMidiStatus(); else clearInterval(midiStatusTimer); }, 2000);
+  }
+  $("#midiOn").addEventListener("change", (e) => { MI().on = e.target.checked; saveSettings(); syncMidi(); });
+  $("#addMidi").addEventListener("click", () => {
+    if (midiLearning) { stopMidiLearn(); return; }
+    midiLearning = true;
+    engine.midiLearn(true).catch(fail);
+    renderMidi();
+    clearTimeout(midiLearnTimer);
+    midiLearnTimer = setTimeout(() => { stopMidiLearn(); toast("Nothing heard from a MIDI controller. Is it plugged in?"); }, 20000);
+  });
+  function onMidiLearned(c) {
+    if (!midiLearning || !c) return;
+    midiLearning = false;
+    clearTimeout(midiLearnTimer);
+    // Pads and keys send notes, so they start as buttons; faders and knobs move a level.
+    const m = { dev: c.dev || "", kind: c.kind, ch: c.ch, num: c.num, action: c.kind === "note" ? "mute" : "fader", target: "Strip[0]" };
+    MI().maps.push(m);
+    saveSettings();
+    renderMidi();
+    refreshMidiStatus();
+    toast(`Learned ${midiName(m)}. Choose what it does.`);
+  }
+  settingsDlg.addEventListener("close", stopMidiLearn);
 
   /* ---------- scenes ---------- */
   const dlg = $("#scenesDlg"), list = $("#sceneList");
@@ -3038,7 +3164,7 @@
   // Asked once, after any other first-run question; until then nothing is sent.
   const usageDlg = $("#usageDlg");
   function offerUsage() {
-    if (SIDE || typeof settings.usagePing === "boolean" || document.querySelector("dialog[open]")) return;
+    if (engine.simulated || SIDE || typeof settings.usagePing === "boolean" || document.querySelector("dialog[open]")) return;
     usageDlg.showModal();
   }
   const answerUsage = (yes) => { settings.usagePing = yes; saveSettings(); usageDlg.close(); if (yes) toast("Thanks! You can turn this off in Settings → Privacy"); };
@@ -5129,7 +5255,13 @@
     $('[data-needs="guard"]').hidden = !g.on;
     g.strip = fillStrips($("#guardStrip"), g.strip, "Choose the channel");
     $("#guardWhen").value = g.when || "either";
+    const ld = LD();
+    $("#loudOn").checked = !!ld.on;
+    $('[data-needs="loud"]').hidden = !ld.on;
+    $("#loudTarget").value = String(ld.target);
+    if ($("#loudTarget").selectedIndex < 0) $("#loudTarget").value = "-14";
     for (const r of liveRanges) r._sync();
+    scheduleLoud();
   }
   const onCheck = (id, set) => $("#" + id).addEventListener("change", (e) => { set(e.target.checked); saveSettings(); syncLive(); applyStreamButtons(lastState); });
   onCheck("mutedTalkOn", (v) => { MT().on = v; });
@@ -5139,11 +5271,13 @@
   onCheck("watchLive", (v) => { SW().onlyLive = v; });
   onCheck("goLiveOnLive", (v) => { GL().onLive = v; });
   onCheck("guardOn", (v) => { MG().on = v; });
+  onCheck("loudOn", (v) => { LD().on = v; });
   const onPick = (id, set) => $("#" + id).addEventListener("change", (e) => { set(e.target.value); saveSettings(); syncLive(); applyStreamButtons(lastState); });
   onPick("streamBus", (v) => { settings.streamBus = v; });
   onPick("mutedTalkTarget", (v) => { MT().target = v; });
   onPick("guardStrip", (v) => { MG().strip = v; });
   onPick("guardWhen", (v) => { MG().when = v; });
+  onPick("loudTarget", (v) => { LD().target = +v; });
 
   // The header buttons for Music off stream and Instant replay show once they're set up.
   function applyStreamButtons(st) {
@@ -5224,6 +5358,178 @@
     if (!goLiveDlg.open) goLiveDlg.showModal();
   }
 
+  /* ---------- stream loudness (loudness.rs) ---------- */
+  // A LUFS badge next to the Live tag, and a dialog with the detail, a fix for the stream
+  // output's fader, and how your voice sits against the game.
+  const LD = () => (settings.loudness = Object.assign({}, DEFAULT_SETTINGS.loudness, settings.loudness));
+  const loudDlg = $("#loudDlg");
+  const LOUD_TARGETS = { "-14": "YouTube, Twitch and most streaming", "-16": "podcasts and quieter streams", "-18": "voice-only streams", "-23": "TV broadcast" };
+  let loudTimer = null, loudLast = null;
+  const fmtLufs = (v) => (v == null ? "–" : v.toFixed(1));
+  // Within 1.5 LU of the target is on target, within 4 is close.
+  function loudState(v) {
+    if (v == null) return "quiet";
+    const d = Math.abs(v - LD().target);
+    return d <= 1.5 ? "ok" : d <= 4 ? "warn" : "bad";
+  }
+  const loudStreamCh = () => {
+    const def = defaultStreamBus();
+    return chans.find((c) => c.prefix === settings.streamBus) || (def >= 0 ? chans.find((c) => c.prefix === `Bus[${def}]`) : null);
+  };
+
+  // Voice vs game: each input's level after its fader, averaged over the last few seconds it
+  // was making sound. Only inputs that go to the stream and aren't muted count.
+  const voiceGame = { mic: { db: null, secs: 0 }, game: { db: null, secs: 0 }, t: 0 };
+  function loudLevels(lv) {
+    if (SIDE || !LD().on) return;
+    const now = performance.now(), dt = voiceGame.t ? Math.min(0.5, (now - voiceGame.t) / 1000) : 0;
+    voiceGame.t = now;
+    const stream = loudStreamCh();
+    const track = (slot, prefix) => {
+      const ch = chans.find((c) => c.prefix === prefix);
+      const sends = ch && stream && ch.data && !ch.data.mute && (ch.data.b?.[stream.i - layout.buses.filter((b) => b.kind === "hw").length] || ch.data.a?.[stream.i]);
+      const pre = levelOf(lv, prefix);
+      if (!ch || !sends || pre < -50) return;
+      const post = pre + (ch.gain || 0);
+      const a = 1 - Math.exp(-dt / 6);
+      const s = voiceGame[slot];
+      s.db = s.db == null ? post : 10 * Math.log10((1 - a) * 10 ** (s.db / 10) + a * 10 ** (post / 10));
+      s.secs += dt;
+    };
+    track("mic", MT().target);
+    track("game", (settings.chatBalance || {}).game);
+  }
+  function voiceGameText() {
+    const game = (settings.chatBalance || {}).game;
+    if (!game) return "Choose your game input in Game / Chat balance to compare it with your voice.";
+    const { mic, game: g } = voiceGame;
+    if (mic.secs < 3 || g.secs < 3) return "Talk while the game plays for a few seconds to compare them.";
+    const d = Math.round(mic.db - g.db);
+    if (d < 0) return `The game is ${-d} dB louder than your voice. Viewers may not hear you.`;
+    if (d < 3) return `Your voice is only ${d} dB above the game. Most streamers keep it 3 to 10 dB above.`;
+    if (d <= 12) return `Good: your voice sits ${d} dB above the game.`;
+    return `Your voice is ${d} dB above the game, so the game may sound very quiet.`;
+  }
+
+  // Keep the header on one row: when it would wrap (narrow window, many pins and badges), compact
+  // it a step at a time (styles.css: .bar.tight-1, .tight-2). It still wraps if even that isn't enough.
+  function fitHeader() {
+    const bar = $(".bar");
+    if (!bar || typeof ResizeObserver !== "function") return;
+    // Wrapped when one item starts below another's bottom (items in a row are centred, so their tops differ).
+    const wraps = () => {
+      const boxes = [...bar.children].filter((el) => el.offsetParent).map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+      return boxes.length > 1 && Math.max(...boxes.map((r) => r.top)) >= Math.min(...boxes.map((r) => r.bottom)) - 1;
+    };
+    let queued = false;
+    const fit = () => {
+      queued = false;
+      bar.classList.remove("tight-1", "tight-2");
+      if (document.body.classList.contains("is-mini")) return;
+      for (const step of ["tight-1", "tight-2"]) { if (!wraps()) break; bar.classList.add(step); }
+    };
+    // A timer, not a frame: frames don't run while the window is hidden in the tray.
+    const later = () => { if (!queued) { queued = true; setTimeout(fit, 0); } };
+    let lastWidth = 0;
+    new ResizeObserver(() => { if (bar.clientWidth !== lastWidth) { lastWidth = bar.clientWidth; later(); } }).observe(bar);
+    window.addEventListener("resize", later);
+    // Badges and pins appear and disappear as you go live, record or pin tools.
+    new MutationObserver(later).observe(bar, { subtree: true, attributes: true, attributeFilter: ["hidden", "data-unpinned", "aria-pressed"], childList: true, characterData: true });
+    later();
+  }
+
+  function paintLoud(st) {
+    const badge = $("#loudBadge");
+    const short = st && st.running && st.receiving !== false ? st.shortTerm ?? null : null;
+    badge.hidden = SIDE || !LD().on || !(st && st.running);
+    if (!badge.hidden) {
+      $("#loudValue").textContent = fmtLufs(short);
+      badge.dataset.state = loudState(short);
+      badge.title = short == null ? "Stream loudness: no sound on the stream right now. Click for details"
+        : `Stream loudness over the last 3 seconds, aiming for ${LD().target} LUFS. Click for details`;
+    }
+    if (!loudDlg.open) return;
+    const target = LD().target, label = LOUD_TARGETS[String(target)] || "your target";
+    const big = $(".loud-big", loudDlg);
+    $("#loudBig").textContent = fmtLufs(short);
+    big.dataset.state = loudState(short);
+    const m = st && st.running ? st.momentary ?? null : null;
+    $("#loudBar").style.clipPath = `inset(0 ${m == null ? 100 : (100 - Math.max(0, Math.min(1, (m + 40) / 40)) * 100).toFixed(1)}% 0 0)`;
+    $("#loudTargetMark").style.left = `${((target + 40) / 40) * 100}%`;
+    $("#loudMomentary").textContent = m == null ? "–" : `${fmtLufs(m)} LUFS`;
+    $("#loudShort").textContent = short == null ? "–" : `${fmtLufs(short)} LUFS`;
+    const integ = st && st.running ? st.integrated ?? null : null;
+    $("#loudIntegrated").textContent = integ == null ? "–" : `${fmtLufs(integ)} LUFS`;
+    const since = st && st.since ? st.since : 0;
+    $("#loudSince").textContent = since >= 60 ? `(${Math.floor(since / 60)} min)` : since ? `(${since} s)` : "";
+    const peak = st && st.running ? st.peak ?? null : null;
+    $("#loudPeak").textContent = peak == null ? "–" : `${fmtLufs(peak)} dBFS${peak > -1 ? ": close to clipping" : ""}`;
+    $("#loudVoice").textContent = voiceGameText();
+
+    // The verdict and a one-click fix, judged on the whole stream once there's a minute of it.
+    const fix = $("#loudFix");
+    fix.hidden = true;
+    const verdict = $("#loudVerdict");
+    if (!st || !st.running) { verdict.textContent = (st && st.message && st.message !== "Off") ? st.message : "Turn on Stream loudness in Settings → Going live."; return; }
+    if (short == null) { verdict.textContent = "No sound on the stream output right now."; return; }
+    const judged = integ != null && since >= 60 ? integ : short;
+    const diff = judged - target;
+    if (Math.abs(diff) <= 1.5) { verdict.textContent = `On target for ${label} (${target} LUFS).`; return; }
+    const by = Math.round(Math.abs(diff));
+    verdict.textContent = diff < 0 ? `About ${by} dB too quiet for ${label} (${target} LUFS).` : `About ${by} dB too loud for ${label} (${target} LUFS).`;
+    const ch = loudStreamCh();
+    if (!ch || !connected) return;
+    // Raising it must not push the peaks past -1 dBFS.
+    let step = diff < 0 ? by : -by;
+    if (step > 0 && peak != null) step = Math.min(step, Math.floor(-1 - peak));
+    if (step === 0 || (step > 0 && step < 1)) {
+      if (diff < 0) verdict.textContent += " The peaks are already near 0 dB, so raising it would distort. Try Gentle on the stream output's Sound tab.";
+      return;
+    }
+    fix.hidden = false;
+    fix.textContent = `Turn ${ch.info.id} ${step > 0 ? "up" : "down"} ${Math.abs(step)} dB`;
+    fix.dataset.step = String(step);
+  }
+  async function pollLoud() {
+    let st = null;
+    if (!SIDE && LD().on) { try { st = await engine.loudnessStatus(); } catch (_) { st = null; } }
+    loudLast = st;
+    paintLoud(st);
+  }
+  function scheduleLoud() {
+    clearTimeout(loudTimer);
+    if (SIDE || !LD().on) { loudLast = null; paintLoud(null); return; }
+    const wait = loudDlg.open ? 250 : document.hidden ? 3000 : 1000;
+    loudTimer = setTimeout(async () => { await pollLoud(); scheduleLoud(); }, wait);
+  }
+  $("#loudBadge").addEventListener("click", async () => {
+    if (!loudDlg.open) loudDlg.showModal();
+    await pollLoud();
+    scheduleLoud();
+  });
+  $("#loudReset").addEventListener("click", async () => {
+    try { await engine.loudnessReset(); toast("Started measuring the whole stream again"); } catch (e) { fail(e); }
+    pollLoud();
+  });
+  $("#loudFix").addEventListener("click", () => {
+    const ch = loudStreamCh(), step = +$("#loudFix").dataset.step;
+    if (!ch || !step) return;
+    glideGain(ch, Math.max(MIN_DB, Math.min(MAX_DB, (ch.gain || 0) + step)));
+    toast(`${ch.info.id} ${step > 0 ? "up" : "down"} ${Math.abs(step)} dB`);
+    $("#loudFix").hidden = true;
+  });
+  $("#loudSettings").addEventListener("click", () => {
+    loudDlg.close();
+    $("#settingsBtn").click();
+    selectSettingsCategory("streaming");
+    const fold = $("#liveFold");
+    fold.open = true;
+    requestAnimationFrame(() => $("#loudOn").scrollIntoView({ block: "center" }));
+  });
+  loudDlg.addEventListener("click", (e) => { if (e.target === loudDlg) loudDlg.close(); });
+  loudDlg.addEventListener("close", scheduleLoud);
+  document.addEventListener("visibilitychange", scheduleLoud);
+
   // Instant replay.
   const replayRange = bindRange("replaySecs", () => RP().secs, (v) => { RP().secs = v; }, (v) => `${v} s`);
   let replayTimer = null;
@@ -5234,8 +5540,33 @@
     $("#replayNote").textContent = !RP().on ? "" : on ? "On" : "Not running";
     $("#replayNote").dataset.ok = on ? "1" : "";
     const text = $("#replayStatusText");
-    text.textContent = RP().on ? st.message || "" : "";
-    text.dataset.ok = on ? "1" : "";
+    text.textContent = RP().on ? [st.message || "", st.tracks || ""].filter(Boolean).join(" ") : "";
+    text.dataset.ok = on && !st.tracks ? "1" : "";
+  }
+  // Inputs to keep as their own tracks too (replay.rs), up to four.
+  function renderReplayTracks() {
+    const list = $("#replayTracks");
+    list.textContent = "";
+    const picked = RP().tracks || [];
+    for (const ch of chans) {
+      if (ch.kind !== "strip") continue;
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "tog arm", textContent: displayName(ch) });
+      b.title = displayName(ch);
+      b.dataset.color = look(ch).color;
+      b.setAttribute("aria-pressed", String(picked.includes(ch.prefix)));
+      b.addEventListener("click", () => {
+        const cur = RP();
+        const set = new Set(cur.tracks || []);
+        if (set.has(ch.prefix)) set.delete(ch.prefix);
+        else if (set.size >= 4) { toast("Up to four separate tracks"); return; }
+        else set.add(ch.prefix);
+        cur.tracks = chans.filter((c) => set.has(c.prefix)).map((c) => c.prefix);
+        saveSettings();
+        renderReplayTracks();
+        setTimeout(refreshReplay, 1500);
+      });
+      list.appendChild(b);
+    }
   }
   async function syncReplay() {
     const r = RP();
@@ -5250,6 +5581,7 @@
     for (const d of devs) sel.appendChild(new Option(d, d));
     if (r.device && !devs.includes(r.device)) sel.appendChild(new Option(`${r.device} (not connected)`, r.device));
     sel.value = r.device || "";
+    renderReplayTracks();
     refreshReplay();
     clearInterval(replayTimer);
     replayTimer = setInterval(() => {
@@ -6119,66 +6451,222 @@
     hearBusy = false; b.disabled = false; b.textContent = "Record again";
   });
 
-  /* ---------- setup assistant ---------- */
+  /* ---------- setup guide ---------- */
+  // Five short steps: start, headphones (A1's device), mic (a hardware input's device), how you
+  // use it (routing for chat or streaming), then a review. Nothing changes before Apply. It opens
+  // by itself once on a fresh install (settings.setupGuide is "pending") and from the ⋯ menu.
   const setupDlg = $("#setupDlg");
+  const SETUP_LAST = 4;
+  const setup = { step: 0, devices: { inputs: [], outputs: [] }, winWrong: false, applied: false };
   const setupKind = () => setupDlg.querySelector("input[name=setupKind]:checked").value;
   const strips = () => chans.filter((c) => c.kind === "strip");
+  const virtBuses = () => layout.buses.filter((b) => b.kind === "virt");
+  const busPrefix = (b) => `Bus[${layout.buses.indexOf(b)}]`;
+  const headphoneBus = () => chans.find((c) => c.kind === "bus" && isHw(c));
+  // The stream mix can't be B1 when B1 is what friends hear in chat.
+  const streamChoices = () => virtBuses().slice(1);
+  // The names Windows gives Voicemeeter's virtual inputs, in strip order.
+  const VIRT_INPUT_NAMES = ["Voicemeeter Input", "Voicemeeter AUX Input", "Voicemeeter VAIO3 Input"];
+  const virtInputName = (ch) => VIRT_INPUT_NAMES[strips().filter((c) => !isHw(c)).indexOf(ch)] || displayName(ch);
+
   // What each strip should send to, per scenario. A = headphones/speakers, B = virtual outputs.
-  function setupRoutes(kind, micI, discI) {
-    const virt = layout.buses.filter((b) => b.kind === "virt");
+  function setupRoutes(kind, micI, streamParam) {
+    const chat = virtBuses()[0];
+    const ears = layout.buses.find((b) => b.kind === "hw");
     const plan = [];
     for (const ch of strips()) {
       const on = {};
       for (const b of layout.buses) on[b.param] = false;
-      const isMic = ch.i === micI, isDisc = kind === "stream" && ch.i === discI;
-      if (virt[0]) on[virt[0].param] = isMic;                       // B1: what friends hear
-      if (!isMic) { const a = layout.buses.find((b) => b.kind === "hw"); if (a) on[a.param] = true; } // A1: your ears
-      if (kind === "stream" && virt[1]) on[virt[1].param] = true;   // B2: the stream mix
-      plan.push({ ch, on, isMic, isDisc });
+      const isMic = ch.i === micI;
+      if (chat) on[chat.param] = isMic;                       // B1: what friends hear
+      if (!isMic && ears) on[ears.param] = true;              // A1: your ears
+      if (kind === "stream" && streamParam) on[streamParam] = true; // the stream mix
+      plan.push({ ch, on, isMic });
     }
     return plan;
   }
-  function paintSetupPlan() {
-    const kind = setupKind(), mic = +$("#setupMic").value, disc = +$("#setupDiscord").value;
-    $("#setupDiscordRow").hidden = kind !== "stream";
-    const virt = layout.buses.filter((b) => b.kind === "virt");
-    const ul = $("#setupPlan");
-    ul.textContent = "";
-    for (const p of setupRoutes(kind, mic, disc)) {
-      const li = document.createElement("li");
+  // A device menu like the drawer's, with "keep what's there" first.
+  function fillSetupDevices(sel, list, current, skipVirtual) {
+    sel.textContent = "";
+    sel.appendChild(new Option(current ? `${current} (current)` : "No device (current)", ""));
+    for (const [type, label] of [["wdm", "WDM (recommended)"], ["ks", "Kernel streaming"], ["mme", "MME"]]) {
+      const items = list.filter((d) => d.type === type && !(skipVirtual && /voicemeeter|vb-audio/i.test(d.name)));
+      if (!items.length) continue;
+      const og = document.createElement("optgroup");
+      og.label = label;
+      for (const d of items) og.appendChild(new Option(d.name, `${type}|${d.name}`));
+      sel.appendChild(og);
+    }
+    sel.value = "";
+  }
+  const setupMicStrip = () => strips().find((c) => c.i === +$("#setupMic").value);
+  function fillSetupMic() {
+    const ch = setupMicStrip();
+    fillSetupDevices($("#setupMicDev"), setup.devices.inputs || [], (ch && ch.data && ch.data.device) || "", true);
+  }
+  const pickedDevice = (sel) => { const [type, ...rest] = sel.value.split("|"); return sel.value ? { type, name: rest.join("|") } : null; };
+
+  // Everything Apply will do, as [label, detail] pairs for the review list.
+  function setupChanges() {
+    const out = [];
+    const hp = pickedDevice($("#setupHp")), mic = pickedDevice($("#setupMicDev"));
+    const hpBus = headphoneBus(), micCh = setupMicStrip();
+    if (hp && hpBus) out.push([`${hpBus.info.id || "A1"} plays on`, hp.name]);
+    if (mic && micCh) out.push([`${displayName(micCh)} listens to`, mic.name]);
+    const kind = setupKind(), stream = kind === "stream" ? $("#setupStream").value : "";
+    for (const p of setupRoutes(kind, micCh ? micCh.i : 0, stream)) {
       const sends = layout.buses.filter((b) => p.on[b.param]).map((b) => b.id);
-      li.textContent = `${displayName(p.ch)}: ${sends.length ? sends.join(" ") : "nothing"}`;
-      ul.appendChild(li);
+      out.push([displayName(p.ch), sends.length ? `sends to ${sends.join(" ")}` : "sends to nothing"]);
     }
-    if (kind === "stream" && virt.length < 2) {
-      const li = document.createElement("li");
-      li.className = "warn";
-      li.textContent = "This Voicemeeter has only one virtual output (B1), so no separate stream mix can be made. Banana and Potato have more.";
-      ul.appendChild(li);
+    if (kind === "stream" && stream) out.push(["Stream output", `${stream}, for the go-live check, Music off stream and Instant replay`]);
+    if (setup.winWrong && $("#setupWin").checked) out.push(["Windows sound", "plays through Voicemeeter"]);
+    return out;
+  }
+  function paintSetupStart() {
+    const ok = !!connected;
+    $("#setupVmState").textContent = ok ? "Voicemeeter is running, so you're ready to start."
+      : vmInstalled ? "Voicemeeter isn't running yet. Start it to continue." : "Voicemeeter isn't installed. Install it from vb-audio.com, then start it.";
+    $("#setupVmRow").hidden = ok || !vmInstalled;
+    if (setup.step === 0) $("#setupNext").disabled = !ok;
+  }
+  function paintSetupStep() {
+    const s = setup.step;
+    setupDlg.querySelectorAll(".setup-page").forEach((p) => { p.hidden = +p.dataset.page !== s; });
+    setupDlg.querySelectorAll("#setupSteps li").forEach((li, i) => { li.className = i < s ? "done" : i === s ? "now" : ""; if (i === s) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current"); });
+    $("#setupBack").hidden = s === 0 || setup.applied;
+    $("#setupSkip").hidden = setup.applied;
+    const next = $("#setupNext");
+    next.disabled = false;
+    next.textContent = s === 0 ? "Start" : s < SETUP_LAST ? "Next" : setup.applied ? "Done" : "Apply";
+    if (s === 0) paintSetupStart();
+    if (s === 3) {
+      const stream = setupKind() === "stream";
+      $("#setupDiscordRow").hidden = !stream;
+      $("#setupStreamRow").hidden = !stream || !streamChoices().length;
+      $("#setupWinRow").hidden = !setup.winWrong;
     }
+    if (s === SETUP_LAST) {
+      $("#setupReview").hidden = setup.applied;
+      $("#setupDone").hidden = !setup.applied;
+      if (!setup.applied) {
+        const ul = $("#setupPlan");
+        ul.textContent = "";
+        for (const [label, detail] of setupChanges()) {
+          const li = document.createElement("li");
+          li.append(Object.assign(document.createElement("b"), { textContent: label }), ` ${detail}`);
+          ul.appendChild(li);
+        }
+        if (setupKind() === "stream" && !streamChoices().length) {
+          const li = Object.assign(document.createElement("li"), { className: "warn", textContent: "This Voicemeeter has only one virtual output (B1), so it can't make a separate stream mix. Banana and Potato have more." });
+          ul.appendChild(li);
+        }
+      }
+    }
+  }
+  function setupLevels(lv) {
+    if (setup.step !== 2) return;
+    const ch = setupMicStrip();
+    if (!ch) return;
+    const db = levelOf(lv, ch.prefix);
+    setup.shown = db > (setup.shown ?? -60) ? db : Math.max(db, (setup.shown ?? -60) - 2);
+    $("#setupMicFill").style.transform = `scaleX(${Math.max(0, Math.min(1, (setup.shown + 60) / 60)).toFixed(3)})`;
   }
   function openSetup() {
-    for (const id of ["#setupMic", "#setupDiscord"]) {
-      const sel = $(id); sel.textContent = "";
-      for (const ch of strips()) sel.appendChild(new Option(displayName(ch), ch.i));
-    }
-    // Hardware strips come first; virtual ones are usually Voicemeeter VAIO/AUX, which Discord plays on.
-    const virtStrips = strips().filter((c) => !isHw(c));
-    $("#setupMic").value = "0";
-    if (virtStrips[0]) $("#setupDiscord").value = String(virtStrips[0].i);
-    paintSetupPlan();
-    setupDlg.showModal();
+    setup.step = 0; setup.applied = false; setup.shown = -60;
+    paintSetupStep();
+    if (!setupDlg.open) setupDlg.showModal();
   }
-  setupDlg.addEventListener("change", paintSetupPlan);
-  setupDlg.addEventListener("click", (e) => { if (e.target === setupDlg) setupDlg.close(); });
-  $("#setupApply").addEventListener("click", async () => {
-    await engine.backupBefore("the setup assistant").catch(() => {});
-    for (const p of setupRoutes(setupKind(), +$("#setupMic").value, +$("#setupDiscord").value)) {
+  // Read devices and fill the menus once Voicemeeter is running (on Start).
+  async function prepareSetup() {
+    try { setup.devices = await engine.devices(); } catch (_) { setup.devices = { inputs: [], outputs: [] }; }
+    try { const w = await engine.windowsOutput(); setup.winWrong = !!w && w.state === "wrong"; } catch (_) { setup.winWrong = false; }
+    const hpBus = headphoneBus();
+    $("#setupHpBus").textContent = (hpBus && hpBus.info.id) || "A1";
+    fillSetupDevices($("#setupHp"), setup.devices.outputs || [], (hpBus && hpBus.data && hpBus.data.device) || "", true);
+    const mic = $("#setupMic");
+    mic.textContent = "";
+    for (const ch of strips().filter(isHw)) mic.appendChild(new Option(displayName(ch), ch.i));
+    mic.value = "0";
+    fillSetupMic();
+    const disc = $("#setupDiscord");
+    disc.textContent = "";
+    const virtIns = strips().filter((c) => !isHw(c));
+    for (const ch of virtIns) disc.appendChild(new Option(`${displayName(ch)} (${virtInputName(ch)})`, ch.i));
+    // A strip already named for chat, else the second virtual input (the first plays Windows sound).
+    const chatIn = virtIns.find((c) => /discord|chat|voice|teamspeak|skype/i.test(displayName(c))) || virtIns[1] || virtIns[0];
+    if (chatIn) disc.value = String(chatIn.i);
+    const st = $("#setupStream");
+    st.textContent = "";
+    for (const b of streamChoices()) st.appendChild(new Option(`${b.id} (Voicemeeter Out ${b.param})`, b.param));
+    const saved = layout.buses[+((/^Bus\[(\d+)\]$/.exec(settings.streamBus || "") || [])[1] ?? -1)];
+    st.value = saved && streamChoices().includes(saved) ? saved.param : (streamChoices()[0] || {}).param || "";
+    $("#setupWin").checked = true;
+  }
+  async function applySetup() {
+    const next = $("#setupNext");
+    next.disabled = true;
+    const kind = setupKind(), micCh = setupMicStrip(), hpBus = headphoneBus();
+    const stream = kind === "stream" ? $("#setupStream").value : "";
+    await engine.backupBefore("the setup guide").catch(() => {});
+    try {
+      const hp = pickedDevice($("#setupHp")), mic = pickedDevice($("#setupMicDev"));
+      if (hp && hpBus) await engine.setString(`${hpBus.prefix}.device.${hp.type || "wdm"}`, hp.name);
+      if (mic && micCh) await engine.setString(`${micCh.prefix}.device.${mic.type || "wdm"}`, mic.name);
+    } catch (e) { fail(e); next.disabled = false; return; }
+    for (const p of setupRoutes(kind, micCh ? micCh.i : 0, stream)) {
       for (const [param, v] of Object.entries(p.on)) sendFloat(`${p.ch.prefix}.${param}`, v ? 1 : 0);
     }
-    setupDlg.close();
-    toast("Routing set up");
+    const streamBusDef = layout.buses.find((b) => b.param === stream);
+    if (streamBusDef) settings.streamBus = busPrefix(streamBusDef);
+    settings.setupGuide = "done";
+    saveSettings();
+    if (setup.winWrong && $("#setupWin").checked) await fixAudio();
+    // What to change in the other apps.
+    const todo = $("#setupTodo");
+    todo.textContent = "";
+    const add = (html) => { const li = document.createElement("li"); li.innerHTML = html; todo.appendChild(li); };
+    const chat = virtBuses()[0];
+    if (chat) add(`In Discord or your voice chat app, set <b>Input Device</b> to <b>Voicemeeter Out ${chat.param}</b>.`);
+    if (kind === "stream") {
+      const discCh = strips().find((c) => c.i === +$("#setupDiscord").value);
+      if (discCh) add(`Set Discord's <b>Output Device</b> to <b>${virtInputName(discCh)}</b>, so it gets its own fader.`);
+      if (stream) add(`In OBS, add an <b>Audio Input Capture</b> of <b>Voicemeeter Out ${stream}</b>, and turn off OBS's own Desktop Audio and Mic so nothing plays twice.`);
+    }
+    $("#setupGoLive").hidden = kind !== "stream";
+    setup.applied = true;
+    paintSetupStep();
+    toast("Sound set up");
+  }
+  setupDlg.addEventListener("change", (e) => {
+    if (e.target.id === "setupMic") fillSetupMic();
+    if (setup.step === 3) paintSetupStep();
   });
+  $("#setupNext").addEventListener("click", async () => {
+    if (setup.step === SETUP_LAST) { if (setup.applied) setupDlg.close(); else applySetup(); return; }
+    if (setup.step === 0) {
+      if (!connected || !layout) return;
+      $("#setupNext").disabled = true;
+      await prepareSetup();
+    }
+    setup.step++;
+    paintSetupStep();
+  });
+  $("#setupBack").addEventListener("click", () => { setup.step = Math.max(0, setup.step - 1); paintSetupStep(); });
+  // Skipping answers the first-start question too (the close event does as well, for the X).
+  $("#setupSkip").addEventListener("click", () => { markSetupAnswered(); setupDlg.close(); });
+  $("#setupLaunchVm").addEventListener("click", () => engine.launch().catch(fail));
+  $("#setupHear").addEventListener("click", () => { setupDlg.close(); openHear(); });
+  $("#setupGoLive").addEventListener("click", () => { setupDlg.close(); $("#goLiveBtn").click(); });
+  function markSetupAnswered() {
+    if (settings.setupGuide === "pending") { settings.setupGuide = "skipped"; saveSettings(); }
+  }
+  setupDlg.addEventListener("close", markSetupAnswered);
+  // On a fresh install, once What's new (if any) has been read.
+  async function offerSetup() {
+    if (SIDE || settings.setupGuide !== "pending" || document.querySelector("dialog[open]")) return;
+    openSetup();
+    await new Promise((done) => setupDlg.addEventListener("close", done, { once: true }));
+  }
 
   /* ---------- mic chain (gate / compressor / denoiser) ---------- */
   const chainDlg = $("#chainDlg"), chainFill = $("#chainFill");
@@ -6595,6 +7083,11 @@
         fix.addEventListener("click", async () => { fix.disabled = true; await fixAudio(); runHealth(); });
         body.appendChild(fix);
       }
+      if (it.action === "crackle") {
+        const open = Object.assign(document.createElement("button"), { className: "btn", type: "button", textContent: "Open the crackle doctor" });
+        open.addEventListener("click", () => { healthDlg.close(); openCrackle(); });
+        body.appendChild(open);
+      }
       li.append(mark, body);
       list.appendChild(li);
     }
@@ -6605,6 +7098,159 @@
   $("#healthAgain").addEventListener("click", runHealth);
   $("#offlineHealth").addEventListener("click", openHealth);
   healthDlg.addEventListener("click", (e) => { if (e.target === healthDlg) healthDlg.close(); });
+
+  /* ---------- crackle doctor ---------- */
+  const crackleDlg = $("#crackleDlg");
+  async function runCrackle() {
+    const list = $("#crackleList");
+    list.replaceChildren(Object.assign(document.createElement("li"), { className: "busy", textContent: "Checking…" }));
+    let items;
+    try { items = await engine.crackleCheck(); } catch (e) { items = [{ state: "bad", label: "Crackle doctor", detail: String(e && e.message ? e.message : e) }]; }
+    list.textContent = "";
+    for (const it of items) {
+      const li = document.createElement("li");
+      li.dataset.state = it.state;
+      const mark = Object.assign(document.createElement("span"), { className: "mark", textContent: it.state === "ok" ? "✓" : it.state === "warn" ? "!" : "×" });
+      const body = document.createElement("div");
+      body.append(Object.assign(document.createElement("b"), { textContent: it.label }), Object.assign(document.createElement("span"), { className: "detail", textContent: it.detail }));
+      if ((it.action === "set" && it.param) || (it.action === "page" && it.page)) {
+        const btn = Object.assign(document.createElement("button"), { className: it.action === "set" ? "btn primary" : "btn", type: "button", textContent: it.button || "Fix it" });
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            if (it.action === "page") await engine.openWindowsPage(it.page);
+            else {
+              await engine.setFloat(it.param, it.value);
+              toast(`${it.label}: changed. Voicemeeter restarts its audio for a moment.`);
+              setTimeout(runCrackle, 2500);
+            }
+          } catch (err) { fail(err); }
+          btn.disabled = false;
+        });
+        body.appendChild(btn);
+      }
+      li.append(mark, body);
+      list.appendChild(li);
+    }
+  }
+  function openCrackle() { if (!crackleDlg.open) crackleDlg.showModal(); runCrackle(); }
+  $("#crackleAgain").addEventListener("click", runCrackle);
+  crackleDlg.addEventListener("click", (e) => { if (e.target === crackleDlg) crackleDlg.close(); });
+
+  /* ---------- Bluetooth headset in call mode ---------- */
+  let btUsers = [];
+  if (!SIDE) engine.onBtCallMode((s) => {
+    const now = s?.users || [];
+    const fresh = now.filter((u) => !btUsers.some((b) => b.device === u.device && b.app === u.app));
+    btUsers = now;
+    if (fresh.length && settings.btWarn !== false) {
+      const u = fresh[0];
+      toast(`${u.app} is using the mic of ${u.device}, so Windows switched it to call quality. The crackle doctor says how to fix it.`);
+    }
+    if (crackleDlg.open) runCrackle();
+  }).catch(() => {});
+
+  /* ---------- mic coach ---------- */
+  const coachDlg = $("#coachDlg"), coachInput = $("#coachInput"), coachGo = $("#coachGo");
+  const COACH_ENOUGH = 12;
+  let coachOn = false, coachTimer = 0, coachLast = null;
+  const eqName = (id) => (SOUND_EQ.find(([v]) => v === id) || [id, id])[1].replace(/^Mic: (.)/, (_, c) => c.toUpperCase());
+  function coachTarget() { return chans.find((c) => c.prefix === coachInput.value); }
+  function paintCoachTips(s) {
+    const list = $("#coachTips");
+    list.textContent = "";
+    if (!s?.enough) return;
+    const tips = s.tips || [];
+    if (!tips.length) {
+      const li = document.createElement("li");
+      li.dataset.state = "ok";
+      const body = document.createElement("div");
+      body.append(Object.assign(document.createElement("b"), { textContent: "Your mic sounds good" }),
+        Object.assign(document.createElement("span"), { className: "detail", textContent: "No popping, harsh s's, boom, clipping or room noise worth fixing." }));
+      li.append(Object.assign(document.createElement("span"), { className: "mark", textContent: "✓" }), body);
+      list.appendChild(li);
+      return;
+    }
+    for (const t of tips) {
+      const li = document.createElement("li");
+      li.dataset.state = t.id === "clip" ? "bad" : "warn";
+      const body = document.createElement("div");
+      body.append(Object.assign(document.createElement("b"), { textContent: t.title }), Object.assign(document.createElement("span"), { className: "detail", textContent: t.detail }));
+      const button = (label, fn) => {
+        const b = Object.assign(document.createElement("button"), { className: "btn", type: "button", textContent: label });
+        b.addEventListener("click", fn);
+        body.appendChild(b);
+      };
+      const target = s.target;
+      if (t.fix && t.fix.eq) {
+        const on = (settings.soundFx || {})[target]?.eq === t.fix.eq;
+        button(on ? `${eqName(t.fix.eq)} EQ is on` : `Use the ${eqName(t.fix.eq)} EQ`, (e) => {
+          settings.soundFx = { ...(settings.soundFx || {}), [target]: { ...((settings.soundFx || {})[target] || {}), eq: t.fix.eq } };
+          saveSettings();
+          e.target.textContent = `${eqName(t.fix.eq)} EQ is on`;
+          const ch = chans.find((c) => c.prefix === target);
+          toast(`${eqName(t.fix.eq)} EQ is on for ${ch ? displayName(ch) : "this mic"}. Change it in the input's Sound tab.`);
+        });
+      } else if (t.fix === "tune") button("Open Mic tune-up", () => { stopCoach(); coachDlg.close(); openMicTune(target); });
+      else if (t.fix === "cleanup") button("Open mic clean-up", () => { stopCoach(); coachDlg.close(); openSettings("microphone"); });
+      li.append(Object.assign(document.createElement("span"), { className: "mark", textContent: li.dataset.state === "bad" ? "×" : "!" }), body);
+      list.appendChild(li);
+    }
+  }
+  function paintCoach(s) {
+    const heard = Math.min(1, (s?.speechSecs || 0) / COACH_ENOUGH);
+    $("#coachFill").style.transform = `scaleX(${coachOn ? heard : s?.enough ? 1 : 0})`;
+    let text;
+    if (coachOn) {
+      text = s?.message || (s?.enough
+        ? "Keep talking if you like: the tips below get more accurate the longer the coach listens."
+        : `Talk normally, like you do on stream. Heard ${Math.round(s?.speechSecs || 0)} of ${COACH_ENOUGH} seconds of talking.`);
+    } else if (s?.enough) text = "Here's what the coach heard.";
+    else text = s?.message || "Pick your mic, press Start listening, then talk normally for half a minute.";
+    const status = $("#coachStatus");
+    if (status.textContent !== text) status.textContent = text;
+    coachGo.textContent = coachOn ? (s?.enough ? "Done" : "Stop") : s?.enough ? "Listen again" : "Start listening";
+    coachInput.disabled = coachOn;
+    paintCoachTips(s);
+  }
+  async function pollCoach() {
+    const s = await engine.coachStatus().catch(() => null);
+    if (!coachOn) return;
+    if (s && s.running) coachLast = s;
+    if (!s || !s.running) { stopCoach(s && s.enough !== undefined ? s : coachLast); return; }
+    paintCoach(s);
+    coachTimer = setTimeout(pollCoach, 300);
+  }
+  function stopCoach(final = coachLast) {
+    clearTimeout(coachTimer);
+    if (coachOn) engine.coachStop().catch(() => {});
+    coachOn = false;
+    coachLast = final;
+    paintCoach(final);
+  }
+  async function startCoach() {
+    if (!coachTarget()) return toast("Pick a microphone first");
+    try { await engine.coachStart(coachInput.value); } catch (err) { return fail(err); }
+    coachOn = true;
+    coachLast = null;
+    paintCoach(null);
+    coachTimer = setTimeout(pollCoach, 300);
+  }
+  function openCoach(preferred) {
+    if (!connected) return toast("Start Voicemeeter to use the Mic coach");
+    if (coachDlg.open) return;
+    const inputs = hwInputs();
+    coachInput.replaceChildren(...inputs.map((ch) => new Option(displayName(ch), ch.prefix)));
+    const target = preferred || settings.ducking?.trigger;
+    if (inputs.some((ch) => ch.prefix === target)) coachInput.value = target;
+    coachLast = null;
+    paintCoach(null);
+    coachDlg.showModal();
+    coachGo.focus();
+  }
+  coachGo.addEventListener("click", () => { if (coachOn) stopCoach(); else startCoach(); });
+  coachInput.addEventListener("change", () => { coachLast = null; paintCoach(null); });
+  coachDlg.addEventListener("close", () => { if (coachOn) stopCoach(); });
 
   /* ---------- backup and layout ---------- */
   async function renderBackups() {
@@ -6713,6 +7359,8 @@
     const button = (id) => () => $(`#${id}`).click();
     const actions = [
       ["Check my setup", "Tools", "health diagnostics fix audio", openHealth],
+      ["Crackle doctor", "Tools", "crackles pops dropouts stutter glitch sample rate buffer bluetooth power", openCrackle],
+      ["Mic coach", "Tools", "microphone pops plosives sibilance esses boomy distance clipping noise", () => openCoach()],
       ["Audio Event History", "Tools", "timeline log fallback device plugin quarantine", openAudioEvents],
       ["OBS audio tracks", "Tools", "stream vod recording duplicate desktop capture", openObsAudio],
       ["Game / Chat balance", "Tools", "chatmix discord headset", openBalance],
@@ -6830,7 +7478,8 @@
       const inspector = $("#routeInspector");
       inspector.open = true;
       requestAnimationFrame(() => inspector.scrollIntoView({ block: "nearest" }));
-    } else openHealth();
+    } else if (e.target === "crackle") openCrackle();
+    else openHealth();
   }
   function renderAudioEvents() {
     const selected = eventFilter.value;
@@ -6888,14 +7537,17 @@
     // Dark first: the default desk, then deeper and more atmospheric, then retro; light and playful last.
     ["console", "Console", "Dark hardware desk with amber light"],
     ["oled", "OLED black", "Pure black with high-contrast controls"],
-    ["glass", "Glass", "Iridescent glass panels, pearl faders and a drifting aurora"],
-    ["hadal", "Hadal", "Deep blue panels, cyan faders and drifting sonar rings"],
-    ["hyrule", "Kokiri Forest", "Sunlit forest, mossy wood panels, fireflies and Hylian Shield faders"],
+    ["darkroom", "Darkroom", "Red safelight, film-strip channels and enlarger-knob faders"],
+    ["glass", "Glass", "Frosted panes with rainbow rims over vivid, ever-moving light"],
+    ["overclock", "Overclock", "Carbon-fibre gaming rig with RGB edge lights and angled faders"],
+    ["cassette", "Cassette", "80s mixtape: smoked plastic, label cards and piano keys"],
+    ["groovy", "Groovy", "70s lounge: TV-screen strips, rainbow stripes and lava-lamp faders"],
     ["neon", "Neon", "Dark synth night with glowing outlines"],
     ["terminal", "Terminal", "Green phosphor, monospace, square corners"],
     ["arcade", "Arcade", "8-bit cabinet with pixel corners and bright colours"],
     ["block", "Block", "Thick outlines, hard shadows and bright colour blocks"],
-    ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, starburst faders"],
+    ["transit", "Transit", "Station signage: line-coloured channels, interchange faders and a little train"],
+    ["greenhouse", "Greenhouse", "Misted glass panes, plant markers and terracotta faders"],
     ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
     ["peach", "Peaches & Cream", "Warm pastels, peach faders, heart meters and scalloped cards"],
   ];
@@ -6907,6 +7559,8 @@
     titanium: "console", afterburner: "console", opal: "console", onyx: "console",
     afterhours: "console", caldera: "console", blueprint: "console",
     letterpress: "console", eventhorizon: "console", lunar: "console",
+    observatory: "console", mission: "console", sumi: "console",
+    hyrule: "overclock", hadal: "glass", sticker: "block",
   };
   const currentTheme = () => {
     const t = RETIRED[settings.theme] || settings.theme;
@@ -6919,9 +7573,69 @@
     document.body.dataset.themeMotion = themeMotion();
     saveSettings();
   });
+
+  /* ---------- themed logos, particles and the Liquid Glass light (theme makeover) ---------- */
+  // Each theme draws the Sleekmeeter mark (a tile with three faders) its own way. [viewBox, inner SVG]
+  const markBars = (f1, f2, f3, track, rx = 1.1, x = [6, 11, 16], top = 5, h = 14) => {
+    const fills = [[f1, 7], [f2, 11], [f3, 9]];
+    return x.map((xx, k) => (track ? '<rect x="' + xx + '" y="' + top + '" width="2.2" height="' + h + '" rx="' + rx + '" fill="' + track + '"/>' : "")
+      + '<rect x="' + xx + '" y="' + (top + h - fills[k][1]) + '" width="2.2" height="' + fills[k][1] + '" rx="' + rx + '" fill="' + fills[k][0] + '"/>').join("");
+  };
+  const BASE_MARK = '<rect x="1" y="1" width="22" height="22" rx="6" fill="var(--panel-hi)"/>' + markBars("var(--amber)", "var(--amber)", "var(--cyan)", "var(--track)");
+  const THEME_LOGOS = {
+    console: '<defs><linearGradient id="bm-cm" x2="0" y2="1"><stop stop-color="#45454f"/><stop offset="1" stop-color="#1b1b21"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6" fill="url(#bm-cm)" stroke="#ffffff24"/>' + markBars("#f2b443", "#f2b443", "#46c6ec", "#0a0a0d"),
+    oled: '<rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="#000" stroke="#2c2c33"/>' + markBars("#ffb000", "#ffb000", "#00d5ff", "#111116"),
+    darkroom: '<defs><radialGradient id="bm-dr" cx=".4" cy=".35"><stop stop-color="#ff9b7d"/><stop offset=".55" stop-color="#ff2a12"/><stop offset="1" stop-color="#6a0a02"/></radialGradient></defs><circle cx="12" cy="12" r="11" fill="url(#bm-dr)"/>' + markBars("#ffe9d0", "#ffe9d0", "#ffb36a", "#5a0d04"),
+    glass: '<circle cx="12" cy="12" r="11" fill="#ffffff3a" stroke="#ffffffcc" stroke-width=".8"/><ellipse cx="9" cy="6" rx="6" ry="3" fill="#ffffff70"/>' + markBars("#fff", "#fff", "#cfefff", "#ffffff40"),
+    overclock: '<path d="M5 1h18v17l-5 5H1V5z" fill="#12141b" stroke="#2c3240" stroke-width=".7"/><path d="M1.6 5.5v17" stroke="#00e5ff" stroke-width="1.4"/>' + markBars("#00e5ff", "#7b5cff", "#2bff9a", "#1a1d26", 0),
+    transit: '<rect x="1" y="1" width="22" height="22" rx="5" fill="#1b1b1b"/><path d="M7.1 5v14M12.1 5v14M17.1 5v14" stroke="#ffffff30" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="2 2"/><path d="M7.1 19v-7M12.1 19V8M17.1 19v-5" stroke-width="2.2" stroke-linecap="round"/><circle cx="7.1" cy="12" r="2.2" fill="#fff" stroke="#e8502e" stroke-width="1.2"/><circle cx="12.1" cy="8" r="2.2" fill="#fff" stroke="#0a7ad1" stroke-width="1.2"/><circle cx="17.1" cy="14" r="2.2" fill="#fff" stroke="#00985f" stroke-width="1.2"/>',
+    groovy: '<rect x="1" y="1" width="22" height="22" rx="7" fill="#2b1810"/><path d="M1 15a8 8 0 0 1 8 8" fill="none" stroke="#e0a526" stroke-width="2"/><path d="M1 11.5a11.5 11.5 0 0 1 11.5 11.5" fill="none" stroke="#e8702a" stroke-width="2"/><path d="M1 8a15 15 0 0 1 15 15" fill="none" stroke="#c4532a" stroke-width="2"/><path d="M17 5c2 0 3 1.5 3 4s-.8 6-3 6-3-3.5-3-6 1-4 3-4z" fill="#e8702a" stroke="#f6e3bf" stroke-width=".7"/><circle cx="17" cy="9" r="1.3" fill="#ffd27a"/>',
+    cassette: '<rect x=".8" y="4" width="22.4" height="16" rx="2" fill="#2c2c36" stroke="#6a6a78" stroke-width=".7"/><rect x="3" y="5.6" width="18" height="7.2" rx="1" fill="#f6f4ec"/>'
+      + '<rect x="3" y="10.6" width="18" height=".8" fill="#ff7a1a"/><rect x="3" y="11.4" width="18" height=".7" fill="#e63b2e"/><rect x="3" y="12.1" width="18" height=".7" fill="#1fb5a8"/>'
+      + '<rect x="9.4" y="7.4" width="1.4" height="3" rx=".3" fill="#ff7a1a"/><rect x="11.3" y="6.4" width="1.4" height="4" rx=".3" fill="#ff7a1a"/><rect x="13.2" y="7" width="1.4" height="3.4" rx=".3" fill="#1fb5a8"/>'
+      + '<circle cx="8" cy="16.2" r="2.3" fill="#ecebf2"/><circle cx="8" cy="16.2" r=".9" fill="#2c2c36"/><circle cx="16" cy="16.2" r="2.3" fill="#ecebf2"/><circle cx="16" cy="16.2" r=".9" fill="#2c2c36"/>',
+    neon: '<rect x="1.8" y="1.8" width="20.4" height="20.4" rx="6" fill="none" stroke="#ff2e97" stroke-width="1.6"/>' + markBars("#ff2e97", "#ff2e97", "#19f0ff", ""),
+    terminal: '<rect x="1.5" y="1.5" width="21" height="21" fill="#021a0a" stroke="#3dff7a" stroke-width="1"/>' + markBars("#3dff7a", "#3dff7a", "#b6ff5c", "#0a3318", 0),
+    arcade: '<g shape-rendering="crispEdges"><rect x="3" y="3" width="21" height="21" fill="#ff3bd0"/><rect x="0" y="0" width="21" height="21" fill="#ffe14a"/><rect x="4" y="9" width="3" height="9" fill="#2c1268"/><rect x="9" y="5" width="3" height="13" fill="#2c1268"/><rect x="14" y="8" width="3" height="10" fill="#3df0ff"/><rect x="14" y="8" width="3" height="3" fill="#2c1268"/></g>',
+    block: '<rect x="4" y="4" width="19" height="19" fill="#111"/><rect x="1" y="1" width="19" height="19" fill="#ffe24a" stroke="#111" stroke-width="2"/><rect x="4.5" y="9" width="3" height="8" fill="#ff6b1a" stroke="#111"/><rect x="9" y="5.5" width="3" height="11.5" fill="#8a5cff" stroke="#111"/><rect x="13.5" y="8" width="3" height="9" fill="#2ad1ff" stroke="#111"/>',
+    greenhouse: '<path d="M5 15h14l-1.8 7.5H6.8z" fill="#c4551f"/><rect x="4.3" y="14" width="15.4" height="2.4" rx=".6" fill="#ef9d6c"/><path d="M8 14V9M12 14V5M16 14V7.5" stroke="#2f8f42" stroke-width="1.6" stroke-linecap="round"/><path d="M8 9.4c-2-.2-3-1.6-3-3 1.8 0 3 1.1 3 3zM12 5.4c0-2 1.3-3.4 3.2-3.6.1 2-1.3 3.4-3.2 3.6zM16 7.9c2-.2 3-1.6 3-3-1.8 0-3 1.1-3 3z" fill="#3fae54"/>',
+    bubblegum: '<defs><linearGradient id="bm-bg" x2="0" y2="1"><stop stop-color="#ff9ed2"/><stop offset="1" stop-color="#ff3d9a"/></linearGradient></defs><path d="M12 22C4 16.5 1 12.5 1 8.3 1 4.8 3.6 2.4 6.7 2.4c2.1 0 3.9 1.1 5.3 2.9 1.4-1.8 3.2-2.9 5.3-2.9 3.1 0 5.7 2.4 5.7 5.9 0 4.2-3 8.2-11 13.7z" fill="url(#bm-bg)"/><ellipse cx="6.5" cy="6.4" rx="2.4" ry="1.4" fill="#ffffffaa" transform="rotate(-25 6.5 6.4)"/>' + markBars("#fff", "#fff", "#e9dcff", "#ffffff40", 1.1, [7.4, 11, 14.6], 7.5, 10),
+    peach: '<defs><radialGradient id="bm-pc" cx=".35" cy=".35"><stop stop-color="#ffe2c4"/><stop offset=".5" stop-color="#ffb07a"/><stop offset="1" stop-color="#ff6a6a"/></radialGradient></defs><circle cx="12" cy="13.4" r="9.8" fill="url(#bm-pc)"/><path d="M12.4 4.2c1-2.3 3.2-3.4 5.6-3-.8 2.4-3 3.5-5.6 3z" fill="#5fae4a"/>' + markBars("#fff", "#fff", "#fff0e6", "#ffffff50", 1.1, [7.4, 11, 14.6], 9, 9.5),
+  };
+  let markFor = "";
+  function paintBrandMark(theme) {
+    if (theme === markFor) return;
+    markFor = theme;
+    const logo = THEME_LOGOS[theme];
+    const [vb, inner] = Array.isArray(logo) ? logo : ["0 0 24 24", logo || BASE_MARK];
+    document.querySelectorAll(".brand-mark").forEach((svg) => { svg.setAttribute("viewBox", vb); svg.innerHTML = inner; });
+  }
+  // Drifting particles: [count, shortest and longest loop in seconds]. Stars start above the window.
+  const THEME_FX = { arcade: [30, 4, 9], greenhouse: [10, 4, 8], bubblegum: [16, 2.5, 5] };
+  let fxFor = "";
+  function fillThemeFx(theme) {
+    if (theme === fxFor) return;
+    fxFor = theme;
+    const layer = document.querySelector(".theme-fx");
+    if (!layer) return;
+    layer.textContent = "";
+    const fx = THEME_FX[theme];
+    if (!fx || SIDE) return;
+    const [n, d0, d1] = fx;
+    for (let k = 0; k < n; k++) {
+      const b = document.createElement("b");
+      b.style.setProperty("--x", (Math.random() * 100).toFixed(1) + "%");
+      b.style.setProperty("--y", theme === "arcade" ? (-10 - Math.random() * 100).toFixed(1) + "%" : theme === "bubblegum" ? (8 + Math.random() * 84).toFixed(1) + "%" : "0");
+      b.style.setProperty("--d", (d0 + Math.random() * (d1 - d0)).toFixed(1) + "s");
+      b.style.setProperty("--dl", (-Math.random() * d1).toFixed(1) + "s");
+      layer.appendChild(b);
+    }
+  }
   function applyTheme() {
     document.body.dataset.theme = RETIRED[autoTheme] || autoTheme || currentTheme();
     document.body.dataset.themeMotion = themeMotion();
+    paintBrandMark(document.body.dataset.theme);
+    fillThemeFx(document.body.dataset.theme);
     // Fonts and spacing change with the theme, so strips must be re-sized to their names.
     lastSizes = "";
     requestAnimationFrame(() => sizeToNames());
@@ -7075,9 +7789,12 @@
         if (settingsDlg.open) syncFadeDuck();
       }).catch(() => {});
       engine.onFileDrop(onFilesDropped).catch(() => {});
+      engine.onMidiLearned(onMidiLearned).catch(() => {});
     }
+    fitHeader();
     checkForUpdate();
-    offerWhatsNew().then(offerStreamDeck).then(offerUsage);
+    scheduleLoud();
+    offerWhatsNew().then(offerSetup).then(offerStreamDeck).then(offerUsage);
     // Show the window once the first frame with the real layout is drawn.
     requestAnimationFrame(() => requestAnimationFrame(() => engine.uiReady().catch(() => {})));
     // Names are measured with the real font once it has loaded.

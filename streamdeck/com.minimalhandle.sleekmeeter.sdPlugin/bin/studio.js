@@ -109,6 +109,14 @@ function renderKey(c,e) {
     }
     case 'brb':return draw({name:'STREAM MODE',icon:'coffee',caption:st.brb?'BACK LIVE':st.brbSet?'GO BRB':'Not set up',color:st.brb?C.amber:C.cyan,active:!!st.brb});
     case 'record':return draw({name:'RECORDER',icon:'record',caption:st.recording?'RECORDING':'START RECORD',color:st.recording?C.red:C.cyan,active:!!st.recording});
+    case 'replay':return st.replay===undefined?tile({name:'REPLAY',icon:'replay',caption:'Update Sleekmeeter',color:C.muted}):st.replay?draw({name:'INSTANT REPLAY',icon:'replay',caption:'SAVE REPLAY',color:C.green,active:true}):tile({name:'INSTANT REPLAY',icon:'settings',caption:'Turn on in app',color:C.amber});
+    case 'musicguard':return !st.musicGuardSet?tile({name:'MUSIC OFF STREAM',icon:'settings',caption:'Set up in app',color:C.amber}):draw({name:'STREAM MUSIC',icon:'music',slash:!!st.musicGuard,caption:st.musicGuard?'OFF STREAM':'ON STREAM',color:st.musicGuard?C.amber:C.cyan,active:!!st.musicGuard});
+    case 'balance':{
+      if(st.balance===undefined)return tile({name:'GAME / CHAT',icon:'balance',caption:'Update Sleekmeeter',color:C.muted});
+      if(!st.balanceSet)return tile({name:'GAME / CHAT',icon:'settings',caption:'Set up in app',color:C.amber});
+      const mode=s.mode||'centre',p=Number.isFinite(e.balance)?e.balance:st.balance;
+      return draw({name:mode==='game'?'MORE GAME':mode==='chat'?'MORE CHAT':'GAME / CHAT',icon:mode==='game'?'down':mode==='chat'?'up':'balance',caption:balanceLabel(p),color:p<0?C.amber:p>0?C.blue:C.cyan,active:mode==='centre'?p===0:true});
+    }
     case 'duck':return draw({name:'TALK OVER',icon:'duck',caption:st.duck?'DUCKING ON':'DUCKING OFF',color:st.duck?C.green:C.muted,active:!!st.duck});
     case 'mixfor':{const want=s.bus||'B3',idx=busIndex(st,want),sel=(st.buses||[]).findIndex(b=>b.sel);if(!(st.buses||[]).some(b=>'sel' in b&&b.sel!==null)||!(st.strips||[]).some(x=>(x.layers||[]).length))return tile({name:'FADERS SET',icon:'faders',caption:'Potato only',color:C.muted});const on=want==='all'?sel<0:sel===idx;return draw({name:'FADERS SET',bus:want==='all'?'ALL':want,color:on?(want==='all'?C.cyan:want[0]==='A'?C.amber:C.blue):C.muted,active:on,pulse:on?1:.25});}
     case 'output':{const name=s.output||st.outputNow||'',active=!!name&&name===st.outputNow;return draw({name:'OUTPUT',icon:outputIcon(name,s),caption:name||'Next output',active,color:active?C.cyan:C.muted});}
@@ -184,6 +192,21 @@ function renderAppDial(c,a) {
   const value=text(String(Math.round(a.app.volume)),12,66,35,muted?C.subtle:C.ink,'start',500)+text('%',178,65,12,C.subtle);
   return base(200,100,heading+value+glyph(muted?'speaker':'faders',159,29,1.1,color,muted)+bar(a.app.volume/100,12,83,176,color),color);
 }
+// "CENTRED", "GAME 30" (30 toward game) or "CHAT 20".
+function balanceLabel(p){p=Math.round(Number(p)||0);return p===0?'CENTRED':p<0?`GAME ${-p}`:`CHAT ${p}`;}
+// Game / Chat dial: turn left for more game, right for more chat; the bar fills out from the centre.
+function renderBalanceDial(c,e) {
+  const s=c.settings||{},st=e.st;
+  if(e.status!=='ok'||!st)return renderNote('SLEEKMEETER OFFLINE','Check the connection');
+  if(st.balance===undefined)return renderNote('UPDATE SLEEKMEETER','Game / Chat needs a newer app');
+  if(!st.balanceSet)return renderNote('SET UP GAME / CHAT','Use Game / Chat in Sleekmeeter');
+  const p=clamp(Math.round(Number.isFinite(e.balance)?e.balance:st.balance),-100,100),color=p<0?C.amber:p>0?C.blue:C.cyan;
+  const heading=s.showText!==false?text('GAME',12,22,10,p<0?C.amber:C.subtle)+text('CHAT',188,22,10,p>0?C.blue:C.subtle,'end')+text('BALANCE',100,22,9,C.muted,'middle'):'';
+  const value=text(p===0?'Centre':`${p<0?'Game':'Chat'} ${Math.abs(p)}`,100,62,28,C.ink,'middle',450);
+  const half=88,w=Math.abs(p)/100*half,x=p<0?100-w:100;
+  const track=`<rect x="12" y="78" width="176" height="6" rx="3" fill="#28303c"/><rect x="${x.toFixed(1)}" y="78" width="${w.toFixed(1)}" height="6" rx="3" fill="${color}"/><path d="M100 74v14" stroke="#b6c1d0" stroke-width="1.2"/>`;
+  return base(200,100,heading+value+track,color);
+}
 function renderNote(line1,line2){return base(200,100,text(line1,12,43,12,C.amber)+text(line2,12,64,11,C.subtle),C.amber);}
 /* Potato: an output's place in an input's gain layers. A1… come first, then B1…. */
 function busIndex(st,bus){if(!bus||bus==='all')return -1;const a=((st&&st.strips||[])[0]||{}).a||[],n=Number(bus.slice(1));if(!(n>=1))return -1;return bus[0]==='A'?n-1:a.length+n-1;}
@@ -208,4 +231,4 @@ function profileSettings(settings, state) {
   }
   return s;
 }
-module.exports={busIndex,partOutputs,outputsLabel,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time,profileSettings};
+module.exports={balanceLabel,renderBalanceDial,busIndex,partOutputs,outputsLabel,renderNote,renderKey,renderDial,renderNowPlaying,renderNowPlayingKey,renderTrackDial,renderAppDial,time,profileSettings};

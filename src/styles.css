@@ -160,8 +160,33 @@ body:not(.is-mini, .is-panel) .bar { flex-wrap: wrap; }
 #streamMenu .stream-item > button { white-space: normal; overflow-wrap: anywhere; }
 .stream-item label { display: flex; align-items: center; gap: 4px; padding: 6px; color: var(--ink-2); font-size: var(--s-1); }
 .stream-item input { accent-color: var(--amber); margin: 0; }
-.stream-badge, button.live-tag { border: 1px solid currentColor; border-radius: 6px; background: var(--well); color: var(--red); padding: 2px 6px; white-space: nowrap; font-size: var(--s-1); font-weight: 700; }
-#awayBadge { color: var(--amber); }
+/* Header status chips (Recording, BRB, stream loudness) are theme buttons with a status dot, so
+   each theme gives them its own shape, material and font instead of a fixed outlined box. */
+.bar .stream-badge.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
+  font-size: var(--s-1); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.stream-badge { --dot: var(--muted); }
+.bar .stream-badge.btn::before {
+  content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--dot);
+  box-shadow: 0 0 calc(6px * var(--glow)) color-mix(in srgb, var(--dot) 70%, transparent);
+}
+#recordingBadge { --dot: var(--red); }
+#awayBadge { --dot: var(--amber); }
+.bar .loud-badge.btn { min-width: 96px; justify-content: center; }
+.loud-badge .loud-unit { font-size: 10px; font-weight: 500; letter-spacing: .06em; opacity: .7; }
+.loud-badge[data-state="ok"] { --dot: var(--led-g); }
+.loud-badge[data-state="warn"] { --dot: var(--amber); }
+.loud-badge[data-state="bad"] { --dot: var(--red); }
+/* When the header would wrap, app.js (fitHeader) compacts it a step at a time: tight-1 hides the
+   status text and pinned-button labels and folds the badges to their dot (their title and label
+   still say what they are); tight-2 also drops the brand name and the loudness unit. */
+.bar.tight-1 #statusText, .bar.tight-1 #streamPins :is(#recLabel, .brb-label), .bar.tight-1 #streamPins #goLiveBtn span { display: none; }
+.bar.tight-1 .stream-badge.btn:not(.loud-badge) { width: 26px; padding: 0; gap: 0; justify-content: center; }
+.bar.tight-1 .stream-badge:not(.loud-badge) .badge-text { display: none; }
+.bar.tight-1 .loud-badge.btn { min-width: 0; padding: 0 9px; }
+.bar.tight-2 .brand-name, .bar.tight-2 .scene-now, .bar.tight-2 .loud-badge .loud-unit { display: none; }
+.bar.tight-2 .live-tag { padding: 0 7px; letter-spacing: .06em; margin-left: 4px; }
 @media (max-width: 1300px) {
   .bar #statusText, #streamPins :is(#recLabel, .brb-label), #streamPins #goLiveBtn span { display: none; }
   .bar .status { margin-left: 0; }
@@ -766,6 +791,11 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 22px; border: 0; bo
 .settings-body .hint { margin: 0 0 4px; }
 .hotkeys { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .hotkey { display: grid; grid-template-columns: 1.1fr 1fr 1fr 32px; gap: 6px; align-items: center; }
+.midi-maps .hotkey { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr) 32px; }
+.midi-control { font-size: var(--s-1); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+.midi-control small { color: var(--muted); }
+.midi-control.learning { color: var(--amber); }
+.midi-status .bad { color: var(--red); }
 .hotkey select:disabled { visibility: hidden; }
 .keys { height: 34px; font-weight: 600; padding: 0 8px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .keys.recording { background: var(--amber); color: var(--on-ink); box-shadow: 0 0 calc(12px * var(--glow)) color-mix(in srgb, var(--amber) 45%, transparent); }
@@ -998,7 +1028,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 }
 @keyframes brb-pulse { 50% { opacity: .78; } }
 .live-tag {
-  display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 5px; margin-left: 8px;
+  display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border: 0; border-radius: 6px; margin-left: 8px; cursor: pointer;
   font-size: 11px; font-weight: 700; letter-spacing: .12em; color: #fff; background: var(--red);
   box-shadow: 0 0 calc(10px * var(--glow)) color-mix(in srgb, var(--red) 55%, transparent);
 }
@@ -1049,6 +1079,8 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 
 /* ---------- mic level check ---------- */
 .mic-meter { position: relative; height: 22px; margin: 6px 0 2px; border-radius: 6px; background: var(--well); box-shadow: inset 0 2px 5px rgba(0, 0, 0, .6); overflow: hidden; }
+#crackleList .btn, #coachTips .btn { display: flex; width: fit-content; }
+.mic-fill.coach-fill { background: var(--led-g); transition: transform .3s ease-out; }
 .mic-fill { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); background: linear-gradient(to right, var(--led-g) 0, var(--led-g) 70%, var(--led-y) 70%, var(--led-y) 90%, var(--led-r) 90%); will-change: transform; }
 .mic-zone { position: absolute; top: 0; bottom: 0; left: 75%; width: 15%; border-left: 2px solid var(--amber); border-right: 2px solid var(--amber); opacity: .8; }
 .mic-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
@@ -1125,11 +1157,44 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .chain-row output { text-align: right; color: var(--ink-dim, var(--muted)); font-variant-numeric: tabular-nums; }
 .chain-row input[type=range] { width: 100%; }
 
-/* Setup assistant */
+/* Stream loudness */
+.loud-big { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 2px; }
+.loud-big output { font-size: 44px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.loud-big span { color: var(--muted); font-weight: 600; }
+.loud-big[data-state="ok"] output { color: var(--led-g); }
+.loud-big[data-state="warn"] output { color: var(--amber); }
+.loud-big[data-state="bad"] output { color: var(--red); }
+.loud-verdict { margin: 4px 0 12px; color: var(--ink-2); min-height: 1.4em; max-width: 60ch; }
+.loud-scale { position: relative; height: 14px; border-radius: 7px; background: var(--well); box-shadow: inset 0 2px 5px rgba(0, 0, 0, .5); overflow: hidden; }
+.loud-bar { position: absolute; inset: 0; clip-path: inset(0 100% 0 0); background: linear-gradient(to right, var(--led-g) 0 72%, var(--led-y) 72% 88%, var(--led-r) 88%); transition: clip-path .12s linear; }
+.loud-target { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--ink); }
+.loud-ticks { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin: 3px 0 12px; font-variant-numeric: tabular-nums; }
+.loud-rows { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; margin: 0 0 16px; align-items: center; }
+.loud-rows dt { color: var(--ink-2); }
+.loud-rows dt small { color: var(--muted); }
+.loud-rows dd { margin: 0; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.loud-rows .btn.small { padding: 2px 8px; font-size: var(--s-1); }
+@media (prefers-reduced-motion: reduce) { .loud-bar { transition: none; } }
+
+/* Setup guide */
+.dlg.setup-dlg { width: min(520px, calc(100vw - 32px)); }
+.setup-steps { list-style: none; display: flex; gap: 4px; margin: 2px 0 16px; padding: 0; counter-reset: step; }
+.setup-steps li { flex: 1; min-width: 0; counter-increment: step; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-top: 7px; border-top: 3px solid var(--line); }
+.setup-steps li.done { border-top-color: color-mix(in srgb, var(--amber) 45%, var(--line)); }
+.setup-steps li.now { border-top-color: var(--amber); color: var(--ink); }
+.setup-page { min-height: 150px; }
+.setup-lead { margin: 0 0 12px; max-width: 60ch; }
+.setup-meter-row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; color: var(--ink-2); margin: 8px 0 6px; }
+.setup-meter-row .mic-meter { margin: 0; }
+.setup-todo { margin: 0 0 14px; padding-left: 18px; display: grid; gap: 6px; }
+.setup-nav { margin-top: 16px; align-items: center; justify-content: flex-end; }
+.setup-nav .setup-skip { margin-right: auto; background: none; box-shadow: none; color: var(--muted); padding-inline: 4px; }
+.setup-nav .setup-skip:hover { color: var(--ink); background: none; }
 .setup-choices { display: grid; gap: 8px; margin: 6px 0 10px; }
 .setup-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-sm, 8px); background: var(--well); cursor: pointer; }
 .setup-choice small { display: block; color: var(--muted); margin-top: 2px; }
-.setup-plan { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.setup-plan { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.setup-plan b { color: var(--ink); font-weight: 600; }
 .setup-plan .warn { color: var(--warn, #e0a030); }
 
 /* Soundboard groups, hotkeys, packs */
@@ -1179,7 +1244,7 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .app-stack:hover { color: var(--ink); }
 .app-stack svg { width: 12px; height: 12px; }
 /* On themes with very round channels, sit further in along the top edge so the corner doesn't clip it. */
-:is([data-theme="glass"], [data-theme="bubblegum"], [data-theme="sticker"]) .app-stack { top: 4px; right: 13px; }
+:is([data-theme="glass"], [data-theme="bubblegum"]) .app-stack { top: 4px; right: 13px; }
 [data-theme="peach"] .app-stack { top: 5px; right: 14px; }
 body.no-streamer .streamer { display: none !important; }
 .app-stack svg { opacity: .85; }

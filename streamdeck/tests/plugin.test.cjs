@@ -18,10 +18,10 @@ function fixture(extra = {}) {
 test('every manifest action produces a live key or dial', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(plugin, 'manifest.json')));
   assert.equal(manifest.UUID, uuid);
-  assert.equal(manifest.Actions.length, 21);
+  assert.equal(manifest.Actions.length, 25);
   for (const action of manifest.Actions) {
     const c = { action: action.UUID.slice(uuid.length + 1), settings: { channel: 'Strip[0]', scene: 'Gaming', sound: 'Air horn', output: 'Headphones' } };
-    const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : ['channel', 'mixdial'].includes(c.action) ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));
+    const svg = decode(c.action === 'nowplaying' ? studio.renderNowPlaying(c, fixture()) : c.action === 'trackdial' ? studio.renderTrackDial(c) : c.action === 'appvolume' ? studio.renderAppDial(c, { status: 'ok' }) : c.action === 'nowplayingkey' ? studio.renderNowPlayingKey(c) : c.action === 'balancedial' ? studio.renderBalanceDial(c, fixture()) : ['channel', 'mixdial'].includes(c.action) ? studio.renderDial(c, fixture()) : studio.renderKey(c, fixture()));
     assert.match(svg, /<svg /, action.Name);
     assert.match(svg, action.Controllers.includes('Encoder') ? /width="200" height="100"/ : /width="144" height="144"/);
     assert.doesNotMatch(svg, /NaN|undefined/);
@@ -222,4 +222,69 @@ test('Mute on outputs sends the input and its outputs, and unmutes when muted', 
   await p.onKeyDown('k2', { action: 'partmute', settings: { channel: 'Strip[2]' } });
   assert.equal(calls.length, before);
   assert.ok(events.some(e => e.event === 'showAlert' && e.context === 'k2'));
+});
+
+test('replay, music off stream and Game / Chat keys show their setup and live states', () => {
+  const draw = (action, st, settings = {}, extra = {}) => decode(studio.renderKey({ action, settings }, fixture({ st: { ...fixture().st, ...st }, ...extra })));
+  assert.match(draw('replay', {}), /Update Sleekmeeter/);
+  assert.match(draw('replay', { replay: false }), /Turn on in app/);
+  assert.match(draw('replay', { replay: true }), /SAVE REPLAY/);
+  assert.match(draw('musicguard', { musicGuardSet: false }), /Set up in app/);
+  assert.match(draw('musicguard', { musicGuardSet: true, musicGuard: false }), /ON STREAM/);
+  assert.match(draw('musicguard', { musicGuardSet: true, musicGuard: true }), /OFF STREAM/);
+  assert.match(draw('balance', {}), /Update Sleekmeeter/);
+  assert.match(draw('balance', { balance: 0, balanceSet: false }), /Set up in app/);
+  assert.match(draw('balance', { balance: -30, balanceSet: true }, { mode: 'game' }), /MORE GAME[\s\S]*GAME 30/);
+  assert.match(draw('balance', { balance: 0, balanceSet: true }), /CENTRED/);
+  assert.equal(studio.balanceLabel(20), 'CHAT 20');
+  const dial = (st, extra = {}) => decode(studio.renderBalanceDial({ settings: {} }, fixture({ st: { ...fixture().st, ...st }, ...extra })));
+  assert.match(dial({ balance: 40, balanceSet: true }), />Chat 40</);
+  assert.match(dial({ balance: 0, balanceSet: true }), />Centre</);
+  assert.match(dial({ balance: 0, balanceSet: false }), /SET UP GAME/);
+  assert.match(dial({}), /UPDATE SLEEKMEETER/);
+  assert.match(dial({ balance: 0, balanceSet: true }, { status: 'offline' }), /OFFLINE/);
+});
+test('replay, music off stream and Game / Chat send the right requests', async () => {
+  const calls = [], events = [], timers = [];
+  const localRequire = createRequire(path.join(plugin, 'bin/plugin.js'));
+  const sandbox = {
+    require: name => name === './media-session' ? { MediaSession: class { start() {} stop() {} snapshot() { return { available: false }; } command() { return true; } } } : localRequire(name),
+    process: { argv: ['node', 'plugin.js'], exit() {} }, console: { error() {} }, URL, AbortController,
+    setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; }, clearTimeout() {}, setInterval: () => 1, clearInterval() {},
+    fetch: async (url, options) => { calls.push({ url, body: options.body && JSON.parse(options.body) }); return { ok: true, json: async () => ({}) }; },
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(source + '\nthis.testPlugin = { onKeyDown, onMessage, balanceOf, setState(s) { st=s; status="ok"; }, setSocket(s) { ws=s; } };', sandbox);
+  const p = sandbox.testPlugin;
+  p.setSocket({ open: true, send: value => events.push(JSON.parse(value)) });
+  p.setState({ connected: true, strips: [], buses: [], replay: false, musicGuardSet: false, balance: 0, balanceSet: false });
+  await p.onKeyDown('r', { action: 'replay', settings: {} });
+  await p.onKeyDown('g', { action: 'musicguard', settings: {} });
+  await p.onKeyDown('b', { action: 'balance', settings: { mode: 'chat' } });
+  assert.equal(calls.length, 0, 'nothing is sent before it is set up');
+  assert.deepEqual(events.filter(e => e.event === 'showAlert').map(e => e.context), ['r', 'g', 'b']);
+  p.setState({ connected: true, strips: [], buses: [], replay: true, musicGuardSet: true, musicGuard: false, balance: 10, balanceSet: true });
+  await p.onKeyDown('r', { action: 'replay', settings: {} });
+  assert.deepEqual(calls.at(-1).body, { action: 'replay', target: '' });
+  assert.ok(events.some(e => e.event === 'showOk' && e.context === 'r'), 'a saved replay shows a tick');
+  await p.onKeyDown('g', { action: 'musicguard', settings: {} });
+  assert.deepEqual(calls.at(-1).body, { action: 'musicguard', target: '' });
+  await p.onKeyDown('b', { action: 'balance', settings: { mode: 'game', step: '20' } });
+  assert.equal(calls.at(-1).url, 'http://127.0.0.1:8787/api/balance'); assert.deepEqual(calls.at(-1).body, { amount: -20 });
+  assert.equal(p.balanceOf(), -10, 'the key shows the new position straight away');
+  await new Promise(r => setImmediate(r));
+  await p.onKeyDown('b', { action: 'balance', settings: {} });
+  assert.deepEqual(calls.at(-1).body, { action: 'chatcentre', target: '' });
+  // Dial: turns step by the chosen amount from the centred position, stop at the ends, and a press centres.
+  await new Promise(r => setImmediate(r));
+  p.onMessage(JSON.stringify({ event: 'willAppear', action: uuid + '.balancedial', context: 'bd', payload: { controller: 'Encoder', settings: { step: '5' } } }));
+  p.onMessage(JSON.stringify({ event: 'dialRotate', context: 'bd', payload: { ticks: 3 } }));
+  assert.deepEqual(calls.at(-1).body, { amount: 15 });
+  await new Promise(r => setTimeout(r, 20));
+  p.setState({ connected: true, strips: [], buses: [], balance: 15, balanceSet: true }); // the mocked poll answered {}
+  p.onMessage(JSON.stringify({ event: 'dialRotate', context: 'bd', payload: { ticks: 30 } }));
+  assert.deepEqual(calls.at(-1).body, { amount: 85 }, 'stops at 100');
+  assert.ok(events.some(e => e.event === 'setFeedback' && e.context === 'bd'));
+  p.onMessage(JSON.stringify({ event: 'dialDown', context: 'bd', payload: {} }));
+  assert.deepEqual(calls.at(-1).body, { action: 'chatcentre', target: '' });
 });

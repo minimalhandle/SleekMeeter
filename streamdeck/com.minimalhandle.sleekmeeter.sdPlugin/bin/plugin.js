@@ -109,7 +109,7 @@ function partMuteOf(ch, outs) {
   if (l && Date.now() < l.until) return l.v;
   return outs.some((o) => (ch.partMute || []).includes(o));
 }
-const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf, partMuteOf });
+const drawingState = () => ({ st, status, chan, gainOf, muteOf, routeOf, breath, levelOf, partMuteOf, balance: balanceOf() });
 const MEDIA_ACTIONS = ['nowplaying', 'nowplayingkey', 'trackdial'];
 const media = new MediaSession(() => { for (const [context, c] of contexts) if (MEDIA_ACTIONS.includes(c.action)) render(context); });
 // Changing page or opening a folder hides every action for a moment, so the worker outlives that.
@@ -130,6 +130,7 @@ const renderDial = (c) => {
   if (c.action === 'trackdial') return studio.renderTrackDial(c, mediaFor(c));
   if (c.action === 'appvolume') return studio.renderAppDial(c, { status: appsStatus, app: appOf((c.settings || {}).exe) });
   if (c.action === 'mixdial') return renderMixDial(c);
+  if (c.action === 'balancedial') return studio.renderBalanceDial(c, drawingState());
   return studio.renderDial(c, drawingState());
 };
 
@@ -230,9 +231,11 @@ async function act(context, action, target) {
   try {
     await api('POST', '/api/action', { action, target: target || '' });
     setTimeout(poll, 120);
+    return true;
   } catch (e) {
     showAlert(context);
     if (e.status === 401) { status = 'key'; renderAll(); }
+    return false;
   }
 }
 
@@ -362,6 +365,54 @@ async function pickMixFor(context, c) {
   try { await api('POST', '/api/mixfor', { bus: pick }); } catch (_) { showAlert(context); }
 }
 
+/* ------------------------------------------------------------------ Game / Chat balance */
+// -100 is all game, 100 all chat. A turn shows straight away; quick turns are sent together.
+let balanceLocal = null; // { v, until }
+function balanceOf() {
+  if (balanceLocal && Date.now() < balanceLocal.until) return balanceLocal.v;
+  return st && Number.isFinite(st.balance) ? st.balance : 0;
+}
+let balancePending = 0;
+let balanceSending = false;
+async function sendBalance(context) {
+  if (balanceSending || !balancePending) return;
+  balanceSending = true;
+  const amount = balancePending;
+  balancePending = 0;
+  try {
+    await api('POST', '/api/balance', { amount });
+  } catch (e) {
+    balanceLocal = null;
+    balancePending = 0;
+    showAlert(context);
+    if (e.status === 401) status = 'key';
+  }
+  balanceSending = false;
+  if (balancePending) sendBalance(context); else setTimeout(poll, 120);
+}
+function moveBalance(context, delta) {
+  if (!st || !st.balanceSet) { showAlert(context); return; }
+  const now = balanceOf(), next = clamp(Math.round(now + delta), -100, 100);
+  if (next === now) return;
+  balanceLocal = { v: next, until: Date.now() + 1500 };
+  balancePending += next - now;
+  renderAll();
+  sendBalance(context);
+}
+function centreBalance(context) {
+  if (!st || !st.balanceSet) { showAlert(context); return; }
+  balanceLocal = { v: 0, until: Date.now() + 1500 };
+  renderAll();
+  act(context, 'chatcentre');
+}
+// Key: a step toward game or chat, or back to centre.
+function pressBalance(context, s) {
+  const mode = s.mode || 'centre';
+  if (mode === 'centre') return centreBalance(context);
+  const step = Number(s.step) || 10;
+  return moveBalance(context, mode === 'game' ? -step : step);
+}
+
 /* ------------------------------------------------------------------ media and app dials */
 function mediaCommand(context, what, source) {
   if (!media.command(what, source)) showAlert(context);
@@ -477,6 +528,9 @@ function onKeyDown(context, c) {
     case 'brb': return act(context, 'brb');
     case 'micfx': return act(context, 'micfx', s.channel || '');
     case 'record': return act(context, 'record');
+    case 'replay': return st && !st.replay ? showAlert(context) : act(context, 'replay').then((ok) => ok && showOk(context));
+    case 'musicguard': return st && !st.musicGuardSet ? showAlert(context) : act(context, 'musicguard');
+    case 'balance': return pressBalance(context, s);
     case 'duck': return act(context, 'duck');
     case 'output': return s.output ? act(context, 'output', s.output) : act(context, 'outputnext');
     case 'nowplayingkey': return (s.press || 'playpause') === 'none' ? undefined : mediaCommand(context, s.press || 'playpause', s.mediaSource);
@@ -558,21 +612,27 @@ function onMessage(raw) {
     }
     case 'keyDown': {
       const c = contexts.get(ctx);
+      // Every key press carries the key's current settings; use them so a change made in the
+      // settings panel always applies, even if its separate update hasn't arrived.
+      if (c && m.payload && m.payload.settings) c.settings = m.payload.settings;
       if (c) onKeyDown(ctx, c);
       break;
     }
     case 'dialRotate': {
       const c = contexts.get(ctx);
+      if (c && m.payload && m.payload.settings) c.settings = m.payload.settings;
       if (c && ['channel', 'nowplaying'].includes(c.action)) rotate(c, (m.payload && m.payload.ticks) || 0);
       else if (c && c.action === 'trackdial') skipTrack(ctx, c, (m.payload && m.payload.ticks) || 0);
       else if (c && c.action === 'appvolume') rotateApp(ctx, c, (m.payload && m.payload.ticks) || 0);
       else if (c && c.action === 'mixdial') rotateLayer(ctx, c, (m.payload && m.payload.ticks) || 0);
+      else if (c && c.action === 'balancedial') moveBalance(ctx, ((m.payload && m.payload.ticks) || 0) * (Number((c.settings || {}).step) || 5));
       break;
     }
     case 'dialDown': {
       const c = contexts.get(ctx);
       if (c && c.action === 'appvolume') { if (((c.settings || {}).press || 'mute') === 'mute') toggleAppMute(ctx, c); break; }
       if (c && c.action === 'mixdial') { if (((c.settings || {}).press || 'match') === 'match') matchMain(ctx, c); break; }
+      if (c && c.action === 'balancedial') { if (((c.settings || {}).press || 'centre') === 'centre') centreBalance(ctx); break; }
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.press || (c.action === 'trackdial' ? 'playpause' : 'mute');
@@ -586,6 +646,7 @@ function onMessage(raw) {
       const c = contexts.get(ctx);
       if (c && c.action === 'appvolume') { if (((c.settings || {}).tap || 'mute') === 'mute') toggleAppMute(ctx, c); break; }
       if (c && c.action === 'mixdial') { if (((c.settings || {}).tap || 'match') === 'match') matchMain(ctx, c); break; }
+      if (c && c.action === 'balancedial') { if (((c.settings || {}).tap || 'centre') === 'centre') centreBalance(ctx); break; }
       if (!c || !['channel', 'nowplaying', 'trackdial'].includes(c.action)) break;
       const s = c.settings || {};
       const what = s.tap || (c.action === 'channel' ? 'mute' : 'playpause');

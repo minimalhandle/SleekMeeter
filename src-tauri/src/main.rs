@@ -12,8 +12,12 @@ mod appvol;
 mod audio_events;
 mod backups;
 mod brb;
+mod btwatch;
 mod chat_balance;
+mod coach;
+mod crackle;
 mod devwatch;
+mod endpoints;
 mod fades;
 mod files;
 mod gain;
@@ -22,10 +26,12 @@ mod health;
 mod history;
 mod hold;
 mod layers;
+mod loudness;
 mod mic_tune;
 mod micfx;
 mod soundfx;
 mod micpreset;
+mod midi;
 mod notes;
 mod obs;
 mod outputs;
@@ -172,6 +178,45 @@ fn mic_tune_change(
 #[tauri::command]
 fn mic_tune_finish(app: AppHandle, keep: bool) -> Result<bool, String> {
     mic_tune::finish(&app, keep, false)
+}
+
+/// Crackle doctor: the usual reasons for crackles and dropouts, checked on this PC.
+#[tauri::command]
+async fn crackle_check(app: AppHandle) -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || crackle::run(&app))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Open a Windows page a crackle doctor button names ("playback", "recording", "power", "bluetooth").
+#[tauri::command]
+fn open_windows_page(page: String) -> Result<(), String> {
+    crackle::open_page(&page)
+}
+
+/// Who has a Bluetooth headset in call mode: { users: [{ device, app }] }.
+#[tauri::command]
+fn bt_status() -> Value {
+    btwatch::status()
+}
+
+/// Mic coach: start listening to an input ("Strip[0]").
+#[tauri::command]
+fn coach_start(app: AppHandle, target: String) -> Result<(), String> {
+    let edition = app.state::<Vm>().last.lock().unwrap()["edition"]
+        .as_i64()
+        .unwrap_or(2) as i32;
+    coach::start(&Layout::for_edition(edition), &target)
+}
+
+#[tauri::command]
+fn coach_stop() {
+    coach::stop();
+}
+
+#[tauri::command]
+fn coach_status() -> Value {
+    coach::status()
 }
 
 #[tauri::command]
@@ -814,12 +859,20 @@ fn show_osd_text(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str) 
 }
 
 /// A warning on the overlay (watch.rs: talking while muted, a silent stream), shown longer
-/// and in red, even when the volume overlay is switched off.
+/// and in red, even when levels on the overlay are switched off (but not with the overlay off).
 pub fn show_osd_alert(app: &AppHandle, name: &str, text: &str, icon: &str) {
     osd_words(app, name, text, false, icon, "rose", 3000);
 }
 
+/// Is the volume overlay switched on at all (Settings → Appearance → Volume overlay)?
+fn osd_on(app: &AppHandle) -> bool {
+    settings::flag_or(&app.state::<Settings>().0.lock().unwrap(), "osdOn", true)
+}
+
 fn osd_words(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str, color: &str, ms: u64) {
+    if !osd_on(app) {
+        return;
+    }
     let Some(osd) = app.get_webview_window("osd") else {
         return;
     };
@@ -1029,7 +1082,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
 /// Show the overlay when one or two channels change while the mixer isn't in front.
 /// Bigger jumps (scene loads, startup) are skipped.
 fn maybe_osd(app: &AppHandle, prev: &Value, next: &Value, settling: bool) {
-    if settling || !settings::flag(&app.state::<Settings>().0.lock().unwrap(), "overlay") {
+    if settling || !osd_on(app) || !settings::flag(&app.state::<Settings>().0.lock().unwrap(), "overlay") {
         return;
     }
     let focused = ["main", FLYOUT].iter().any(|label| {
@@ -1938,6 +1991,26 @@ fn replay_status() -> Value {
 }
 
 #[tauri::command]
+fn loudness_status() -> Value {
+    loudness::status()
+}
+
+#[tauri::command]
+fn loudness_reset() {
+    loudness::reset();
+}
+
+#[tauri::command]
+fn midi_status() -> Value {
+    midi::status()
+}
+
+#[tauri::command]
+fn midi_learn(on: bool) {
+    midi::learn(on);
+}
+
+#[tauri::command]
 async fn replay_devices() -> Result<Vec<String>, String> {
     tauri::async_runtime::spawn_blocking(replay::devices)
         .await
@@ -2414,6 +2487,12 @@ fn main() {
     );
     let had_settings = settings::exists();
     let mut settings = settings::load();
+    // The setup guide opens by itself once, on a fresh install. People updating from an older
+    // version already have their sound set up, so it waits in the ⋯ menu for them.
+    if settings.get("setupGuide").map_or(true, Value::is_null) {
+        settings["setupGuide"] = json!(if had_settings { "existing" } else { "pending" });
+    }
+    // Saves the settings (with the setupGuide answer) whenever the version changed.
     let pending_notes = notes::on_start(&mut settings, had_settings);
     // Installing a new version by hand runs the old uninstaller, which removes the startup
     // entry. Put it back when the saved setting still says to start with Windows.
@@ -2571,9 +2650,19 @@ fn main() {
             chat_balance_set,
             chat_balance_status,
             health_check,
+            crackle_check,
+            open_windows_page,
+            bt_status,
+            coach_start,
+            coach_stop,
+            coach_status,
             golive_check,
             replay_save,
             replay_status,
+            loudness_status,
+            loudness_reset,
+            midi_status,
+            midi_learn,
             micfx_status,
             vst_recover,
             vst_scan,
@@ -2720,11 +2809,14 @@ fn main() {
                 twitch::spawn(handle.clone());
                 remote::spawn(handle.clone());
                 replay::spawn(handle.clone());
+                loudness::spawn(handle.clone());
+                midi::spawn(handle.clone());
                 micfx::spawn(handle.clone());
                 winout::spawn(handle.clone());
                 usage::spawn(handle.clone());
                 routing::spawn(handle.clone());
                 backups::spawn(handle.clone());
+                btwatch::spawn(handle.clone());
                 devwatch::spawn(handle);
             }
             Ok(())

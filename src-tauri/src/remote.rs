@@ -33,6 +33,9 @@ const ALLOWED: &[&str] = &[
     "musicguard",
     "partmute",
     "micfx",
+    "chatgame",
+    "chatchat",
+    "chatcentre",
 ];
 
 static STATUS: Mutex<Value> = Mutex::new(Value::Null);
@@ -264,7 +267,7 @@ fn state_json(app: &AppHandle) -> Value {
                 .unwrap_or(false);
         (sounds, profiles, brb_set)
     };
-    let (duck, guard_set, replay_on) = {
+    let (duck, guard_set, replay_on, balance_set) = {
         let state = app.state::<Settings>();
         let s = state.0.lock().unwrap();
         let g = &s["musicGuard"];
@@ -273,6 +276,7 @@ fn state_json(app: &AppHandle) -> Value {
             g["on"].as_bool().unwrap_or(false)
                 && g["strip"].as_str().map(|x| !x.is_empty()).unwrap_or(false),
             s["replay"]["on"].as_bool().unwrap_or(false),
+            s["chatBalance"].is_object() || s["chatBalanceLive"].is_object(),
         )
     };
     json!({
@@ -284,6 +288,9 @@ fn state_json(app: &AppHandle) -> Value {
         "musicGuard": snap["musicGuard"].as_bool().unwrap_or(false),
         "musicGuardSet": guard_set,
         "replay": replay_on,
+        // Game / Chat: -100 (all game) to 100 (all chat), and whether its inputs are chosen.
+        "balance": crate::chat_balance::status(app)["position"].as_i64().unwrap_or(0),
+        "balanceSet": balance_set,
         // Mics with clean-up or plugins set up, and whether each is on: { "Strip[0]": { "on" } }.
         "micFx": crate::micfx::api_state(app),
         "strips": list("strips", "Strip", "Input"),
@@ -397,6 +404,12 @@ fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
             }
             None => Err("Voicemeeter isn't available".to_string()),
         },
+        // Game / Chat from a dial: { "amount": 5 } moves it toward chat, -5 toward game.
+        ("POST", "/api/balance") => {
+            let amount = body["amount"].as_i64().unwrap_or(0).clamp(-200, 200) as i32;
+            crate::chat_balance::change(app, None, amount, true, false)
+                .map(|v| json!({ "position": v["position"] }))
+        }
         ("POST", "/api/action") => {
             let action = body["action"].as_str().unwrap_or("");
             let target = body["target"].as_str().unwrap_or("");

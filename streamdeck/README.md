@@ -53,6 +53,7 @@ Audio controls operate through **Sleekmeeter**; the new Now Playing action separ
 | **Channel level** | Dial | Turn to change the level, press to mute or unmute, tap the screen to mute. The screen shows the name, level and a bar. |
 | **Now Playing + channel** | Dial | Album art, title, artist and elapsed/total time. Turn for channel level, press to mute and tap to play/pause (configurable). |
 | **Now Playing + tracks** | Dial | Album art, title and track time. Turn to change track, press or tap to play or pause. |
+| **Game / Chat dial** | Dial | Turn left for more game, right for more chat, like the Game / Chat slider in Sleekmeeter. Press or tap to centre. |
 | **Output mix** | Dial | Voicemeeter Potato: one input's level on one output (its gain layer), for example less game on your stream (B3) than in your headphones. Press or tap to match the input's main level. |
 | **App volume** | Dial | Pick an app such as Discord or a game. Turn to change its volume, press or tap to mute it. Needs the latest Sleekmeeter. |
 | **Now Playing key** | Key | Album art, title and a progress rail on any Stream Deck. Press to play or pause, or set it to next or previous track. |
@@ -69,6 +70,9 @@ Audio controls operate through **Sleekmeeter**; the new Now Playing action separ
 | **Be right back** | Key | Turn Be right back on or off, and shows its state. |
 | **Record** | Key | Start or stop the recorder, and shows its state. |
 | **Talk-over ducking** | Key | Turn ducking on or off, and shows its state. |
+| **Save replay** | Key | Saves the last seconds of your stream (Instant replay), with a tick when it's saved. |
+| **Music off stream** | Key | Keeps your music channel off the stream while you still hear it; press again to put it back. |
+| **Game / Chat** | Key | One step toward the game or the chat, or back to the centre, and shows where it is. |
 | **Faders set** | Key | Voicemeeter Potato: press to make the input faders set one output's mix; press again for all outputs. Lit while that output is picked. |
 | **Output profile** | Key | Switch to an output profile, or the next one. |
 

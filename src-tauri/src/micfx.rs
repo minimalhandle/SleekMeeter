@@ -307,10 +307,29 @@ fn to_mono(left: &[f32], right: &[f32], power: &mut [f32; 2], out: &mut [f32]) {
 }
 
 fn process_in(sh: &Shared, b: &AudioBuffer) {
+    {
+        // Mic coach: the mic as it arrives, before clean-up and plugins.
+        let n = b.nbs.max(0) as usize;
+        let chans = (b.nbi.max(0) as usize).min(128);
+        unsafe { crate::coach::tap(&b.r, chans, n, sh.sample_rate.load(Ordering::Relaxed)) };
+    }
     run_lanes(sh, b, false);
     let n = b.nbs.max(0) as usize;
     let chans = (b.nbi.min(b.nbo).max(0) as usize).min(128);
     unsafe { crate::soundfx::process(&b.w, chans, n, false) };
+    // Instant replay's separate tracks: each input as the mixer gets it (after clean-up and EQ).
+    unsafe { crate::replay::tap(&b.w, chans, n, sh.sample_rate.load(Ordering::Relaxed)) };
+}
+
+/// Is Sleekmeeter in Voicemeeter's input insert right now (and getting audio)?
+pub fn input_insert_on() -> bool {
+    REG_MODE.load(Ordering::Acquire) & crate::vm::AUDIOCALLBACK_IN != 0
+        && shared().sample_rate.load(Ordering::Relaxed) > 0
+}
+
+/// The input insert's sample rate (0 until Voicemeeter starts sending audio).
+pub fn insert_rate() -> u32 {
+    shared().sample_rate.load(Ordering::Relaxed)
 }
 
 /// The lanes on this insert (inputs or outputs): hand their audio to the workers and play back
@@ -1097,7 +1116,7 @@ fn bus_index(target: &str) -> Option<usize> {
 /// Where a chain's target is in Voicemeeter's inserts: (first channel, on the output insert).
 /// Hardware inputs have 2 channels each, then virtual inputs 8 each; every bus has 8. Virtual
 /// inputs and buses are cleaned on their front left and right (where voices and stereo are).
-fn insert_slot(target: &str, layout: &crate::vm::Layout) -> Option<(usize, bool)> {
+pub(crate) fn insert_slot(target: &str, layout: &crate::vm::Layout) -> Option<(usize, bool)> {
     if let Some(i) = strip_index(target) {
         if i < layout.hw_strips {
             return Some((i * 2, false));
@@ -1707,7 +1726,13 @@ pub fn spawn(app: AppHandle) {
             // Join (or leave) Voicemeeter's inserts: inputs for anything on an input, outputs for
             // echo removal, plugins on outputs, and EQ or levelling on an output.
             let mut global = String::new();
-            let need_in = (any_in || any_aec || fx_in) && vm_up;
+            let need_in =
+                (any_in
+                    || any_aec
+                    || fx_in
+                    || crate::replay::tracks_want_insert()
+                    || crate::coach::want_insert())
+                    && vm_up;
             let need_out = (any_out || any_aec || (fx_out && out_free)) && vm_up;
             let want_mode = (if need_in {
                 crate::vm::AUDIOCALLBACK_IN

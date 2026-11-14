@@ -80,26 +80,31 @@ Channels use a consistent width to keep the mixer tidy, and the input and output
 
 ### Themes
 
-Choose from twelve themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 12 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** offers Off, Subtle, or Full for Glass, Hadal, Kokiri Forest, Neon, and Arcade. Windows reduced motion takes priority.
+Choose from fifteen themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 15 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** sets how much every theme moves: Off, Subtle, or Full. Windows reduced motion takes priority.
 
 <table>
 <tr>
 <td align="center" valign="top"><img src="site/img/themes/console.webp" alt="The Console theme" width="260"><br><sub><b>Console</b> (default)</sub></td>
 <td align="center" valign="top"><img src="site/img/themes/oled.webp" alt="The OLED black theme" width="260"><br><sub><b>OLED black</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with translucent panels and pearl faders" width="260"><br><sub><b>Glass</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/darkroom.webp" alt="Darkroom with a red safelight and film-strip channels" width="260"><br><sub><b>Darkroom</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/hadal.webp" alt="Hadal with deep blue panels and cyan faders" width="260"><br><sub><b>Hadal</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/hyrule.webp" alt="Kokiri Forest with green and gold panels and shield faders" width="260"><br><sub><b>Kokiri Forest</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with frosted panes and rainbow rims over vivid moving light" width="260"><br><sub><b>Glass</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/overclock.webp" alt="Overclock with carbon-fibre panels, RGB edge lights and angled faders" width="260"><br><sub><b>Overclock</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/cassette.webp" alt="Cassette with smoked plastic, label cards and piano keys" width="260"><br><sub><b>Cassette</b></sub></td>
+</tr>
+<tr>
+<td align="center" valign="top"><img src="site/img/themes/groovy.webp" alt="Groovy with TV-screen strips, rainbow stripes and lava-lamp faders" width="260"><br><sub><b>Groovy</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/neon.webp" alt="The Neon theme" width="260"><br><sub><b>Neon</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/arcade.webp" alt="The Arcade theme" width="260"><br><sub><b>Arcade</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/block.webp" alt="The Block theme" width="260"><br><sub><b>Block</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/transit.webp" alt="Transit with line-coloured channels and interchange-marker faders" width="260"><br><sub><b>Transit</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/sticker.webp" alt="The Sticker Bomb theme" width="260"><br><sub><b>Sticker Bomb</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/greenhouse.webp" alt="Greenhouse with misted glass panes and terracotta faders" width="260"><br><sub><b>Greenhouse</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/bubblegum.webp" alt="The Bubblegum theme" width="260"><br><sub><b>Bubblegum</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/peach.webp" alt="The Peaches &amp; Cream theme" width="260"><br><sub><b>Peaches &amp; Cream</b></sub></td>
 </tr>
@@ -168,6 +173,22 @@ Unplug USB headphones or let Bluetooth disconnect, and Voicemeeter often stays s
 
 Plug devices in, especially in a different order, and Windows may start playing sound straight to one of them instead of to Voicemeeter. Apps then skip the mixer and its channels go quiet. Sleekmeeter notices when Windows' sound output isn't one of Voicemeeter's inputs and shows a red **Fix my audio** button in the header and in **Check my setup**. One click switches Windows back to the Voicemeeter input it was using and restarts the audio engine. Turn on **Settings → Mixer & devices → Audio devices → Keep Windows sound on Voicemeeter** to have this happen by itself. Windows' device for calls is checked and switched too, so apps like Discord also go through the mixer.
 
+### Crackle doctor
+
+Crackles, pops and dropouts in Voicemeeter usually come from a handful of settings. **⋯ → Crackle doctor…** checks them on your PC and explains each one in plain words, with a button where there's a fix:
+
+- **Sample rates:** a device Windows runs at a different rate than Voicemeeter (44.1 kHz against 48 kHz, say), so Voicemeeter has to convert its sound on the fly. **Open Sound settings** takes you to the right tab; pick the same rate under the device's **Properties → Advanced**.
+- **Audio buffer:** Voicemeeter's buffer set very small. **Use 512 samples** sets a safer size (Voicemeeter restarts its audio for a moment).
+- **Power plan:** Windows' Power saver plan, which slows the processor down between bursts of work.
+- **Bluetooth:** outputs that play over Bluetooth, and a Bluetooth headset that's been dropped to call quality (see below).
+- **Mic clean-up and plugins** falling behind.
+
+Nothing changes until you press a button. **Check my setup** shows the crackle doctor's verdict on one line, with a button that opens it.
+
+### Bluetooth headset warning
+
+A Bluetooth headset can't play stereo and use its mic at the same time. As soon as an app opens the headset's mic (Discord, a game's voice chat, a browser tab, even a Voicemeeter input), Windows switches the headset to its hands-free call mode, which sounds mono and muffled. Sleekmeeter notices, and says which app did it on the overlay, in the mixer and in **Audio Event History**. The crackle doctor then explains how to fix it: choose another mic in that app, or switch off the headset's Hands-Free service in Windows' Bluetooth settings. Sleekmeeter only watches; it never closes the app or changes the device. Turn the warning off in **Settings → Mixer & devices → Audio devices**. Headsets with their own USB dongle look like any USB headset to Windows, so they aren't covered.
+
 ### Privacy and the user count
 
 Sleekmeeter asks once whether you'd like to be counted as a user. If you say yes, it sends sleekmeeter.app one small message a day: a random ID made on your PC, the Sleekmeeter version and your Voicemeeter edition (Standard, Banana or Potato). That's all: no names, devices, settings, audio or anything about your PC. The server keeps one line per ID per day, doesn't store IP addresses, and deletes lines after 400 days. Turn it on or off any time in **Settings → System & backup → Privacy**; turning it off deletes the ID. The totals are public at [sleekmeeter.app/api/stats](https://sleekmeeter.app/api/stats), and the server code is in [`server/usage`](server/usage).
@@ -196,7 +217,7 @@ In **Settings → Controls & remote → Shortcuts**, set an action to **Push to 
 
 ### Apps tray: drag an app onto a channel
 
-Select **Apps → Volumes → Show apps tray** to open the tray along the bottom. Drag an app chip onto a channel to play that app through its fader. A small stack icon marks routed apps, or a green rupee in Kokiri Forest. Hover over the input to see its apps, or click the icon to keep the list open. The channel’s **Apps** tab also lists its assignments. Use **×** in the popover, **Remove** in the drawer, or drag the chip back to the tray to restore the Windows default. **Volumes…** on the tray reopens the Apps workspace.
+Select **Apps → Volumes → Show apps tray** to open the tray along the bottom. Drag an app chip onto a channel to play that app through its fader. A small stack icon marks routed apps. Hover over the input to see its apps, or click the icon to keep the list open. The channel’s **Apps** tab also lists its assignments. Use **×** in the popover, **Remove** in the drawer, or drag the chip back to the tray to restore the Windows default. **Volumes…** on the tray reopens the Apps workspace.
 
 Which channels accept apps: Voicemeeter's own virtual inputs (VAIO, AUX and, on Potato, VAIO3), and any hardware input that listens to a virtual cable such as VB-Cable. For a cable channel Sleekmeeter sends the app to the other end of that cable (CABLE-A Input for a channel listening to CABLE-A Output). You hear it the usual way: with the channel's A1 (or A2…) button on. Channels with a real microphone or other hardware, and outputs, can't take apps.
 
@@ -298,6 +319,19 @@ In **Edit** mode every sound also gets a **Group** box and a **Key** button. Typ
 
 Sounds can also be played from a **shortcut** or a **Twitch chat command** (the action *Play a sound*).
 
+### Mic coach
+
+**⋯ → Mic coach…** listens to your mic while you talk normally for half a minute, the way you do on stream or in a call, and tells you what would make it sound better:
+
+- **P's and B's pop:** aim the mic slightly past your mouth or use a pop filter; **Use the Fewer pops EQ** takes out the rumble they leave.
+- **S sounds are harsh:** turn the mic a little off-axis; **Use the Softer S EQ** tames them.
+- **Your voice is boomy:** you're very close to the mic; back off a little.
+- **You're quiet, or far from the mic:** move closer, then **Open Mic tune-up** to set the fader.
+- **The room is loud next to your voice:** get closer, or **Open mic clean-up**.
+- **Your mic is too hot:** turn the gain down on the mic or interface, before it distorts.
+
+It hears the mic as it arrives in Voicemeeter, before the fader and any clean-up, and nothing is recorded. The EQ presets it uses (**Mic: fewer pops**, **Mic: softer S**, and both together) are also in each input's **Sound** tab. Like the other EQ presets, they only run while Sleekmeeter is open.
+
 ### Mic chain, setup assistant and hear-yourself test
 
 The **⋯** menu in the header has three helpers for a good stream voice:
@@ -356,7 +390,7 @@ Double-click the tray icon to open a small volume panel: one fader and mute butt
 
 ### Shortcuts and the volume overlay
 
-Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings, including hold-to-talk, switching output profiles, talk-over ducking and recording. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level. Choose which screen it appears on in **Settings → Appearance & layout → Volume overlay**, and untick **Show in the volume overlay** in a channel's settings to leave that channel out.
+Global shortcuts work in any app. The defaults are **Ctrl+Alt+M** (mute input 1), **Ctrl+Alt+Up / Down** (A1 volume) and **Ctrl+Alt+S** (show or hide Sleekmeeter); change or add them in Settings, including hold-to-talk, switching output profiles, talk-over ducking and recording. When a level changes while Sleekmeeter isn't in front — from a shortcut, a MIDI controller or a Stream Deck — a small overlay shows which channel changed and its new level. Choose which screen it appears on in **Settings → Appearance & layout → Volume overlay**, and untick **Show in the volume overlay** in a channel's settings to leave that channel out. To get rid of the overlay completely, including messages like Be right back and warnings like "You're muted", untick **Show the volume overlay** there.
 
 ### Switching scenes automatically
 

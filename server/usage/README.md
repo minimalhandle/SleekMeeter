@@ -34,9 +34,13 @@ npx wrangler deploy
 
 Check it with `https://sleekmeeter.app/api/stats`. The free plans cover this easily.
 
+To update an existing deployment, run `npx wrangler deploy` from this folder with the existing D1 binding in `wrangler.toml`.
+
 ## Reading the numbers
 
-`https://sleekmeeter.app/api/stats` shows totals only (they can be up to a minute old): people today, in the last 7 and 30 days, each day for the last 30 days, and the last 30 days by version and by Voicemeeter edition.
+`https://sleekmeeter.app/api/stats` opens a dashboard in the browser. It shows opted-in installations today (UTC) and over the last 7 and 30 days, daily counts, and 30-day breakdowns by Sleekmeeter version and Voicemeeter edition. The page refreshes once a minute while visible and follows the site's light or dark mode choice.
+
+For scripts, `GET /api/stats` still returns JSON by default. `GET /api/stats?format=json` explicitly requests JSON regardless of the `Accept` header. Responses can be up to a minute old.
 
 ## Test
 

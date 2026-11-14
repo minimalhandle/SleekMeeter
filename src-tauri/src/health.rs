@@ -112,6 +112,26 @@ pub fn run(app: &AppHandle) -> Vec<Value> {
         _ => {}
     }
 
+    // Crackles and dropouts: the crackle doctor's verdict, with a button to open it.
+    let crackle = crate::crackle::run(app);
+    let worst = crate::crackle::worst(&crackle);
+    let problems = crackle.iter().filter(|i| i["state"] != "ok").count();
+    let mut it = item(
+        worst,
+        "Crackles and dropouts",
+        &if problems == 0 {
+            "Nothing on this PC that usually causes crackles.".to_string()
+        } else {
+            format!(
+                "{problems} thing{} that can cause crackles or dropouts. The crackle doctor explains and fixes {}.",
+                if problems == 1 { "" } else { "s" },
+                if problems == 1 { "it" } else { "them" }
+            )
+        },
+    );
+    it["action"] = json!("crackle");
+    out.push(it);
+
     // Shortcuts that couldn't be registered
     let wanted = settings["hotkeys"]
         .as_array()

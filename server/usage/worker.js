@@ -2,6 +2,8 @@
 // Copies that opted in send { id, version, edition } once a day. It keeps one row per ID per
 // day and nothing else: no IP addresses, no names, no other details.
 
+import { statsPage } from './stats-page.js';
+
 const EDITIONS = ['standard', 'banana', 'potato', 'unknown'];
 // Rows older than this are deleted every day.
 const KEEP_DAYS = 400;
@@ -30,10 +32,10 @@ async function ping(request, env) {
 }
 
 // Totals only, so anyone may read them.
-async function stats(env) {
+async function readStats(env) {
   const one = async (sql) => (await env.DB.prepare(sql).first()) || {};
   const all = async (sql) => (await env.DB.prepare(sql).all()).results || [];
-  const body = {
+  return {
     today: (await one("SELECT COUNT(*) AS n FROM pings WHERE day = date('now')")).n || 0,
     last7Days: (await one("SELECT COUNT(DISTINCT id) AS n FROM pings WHERE day > date('now', '-7 days')")).n || 0,
     last30Days: (await one("SELECT COUNT(DISTINCT id) AS n FROM pings WHERE day > date('now', '-30 days')")).n || 0,
@@ -41,14 +43,45 @@ async function stats(env) {
     versions: await all("SELECT version, COUNT(DISTINCT id) AS users FROM pings WHERE day > date('now', '-30 days') GROUP BY version ORDER BY users DESC"),
     editions: await all("SELECT edition, COUNT(DISTINCT id) AS users FROM pings WHERE day > date('now', '-30 days') GROUP BY edition ORDER BY users DESC"),
   };
-  return json(body, 200, { 'cache-control': 'public, max-age=60' });
+}
+
+function wantsStatsPage(request, url) {
+  if (url.searchParams.get('format') === 'json') return false;
+  const qualities = new Map();
+  for (const entry of (request.headers.get('accept') || '').split(',')) {
+    const [type, ...parameters] = entry.toLowerCase().split(';').map((part) => part.trim());
+    const quality = parameters.find((part) => part.startsWith('q='));
+    const value = quality === undefined ? 1 : Number(quality.slice(2));
+    if (value >= 0 && value <= 1) qualities.set(type, Math.max(qualities.get(type) || 0, value));
+  }
+  return (qualities.get('text/html') || 0) > (qualities.get('application/json') || 0);
+}
+
+async function stats(request, url, env) {
+  const asPage = wantsStatsPage(request, url);
+  const headers = { vary: 'Accept' };
+  if (!asPage) {
+    // Shared caches can ignore Vary, so let each client cache the JSON separately.
+    return json(await readStats(env), 200, { ...headers, 'cache-control': 'private, max-age=60' });
+  }
+
+  let totals;
+  try {
+    totals = await readStats(env);
+  } catch (error) {
+    console.error('Could not read Sleekmeeter usage totals', error);
+  }
+  return new Response(statsPage(totals), {
+    status: totals ? 200 : 503,
+    headers: { ...headers, 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+  });
 }
 
 export default {
   async fetch(request, env) {
-    const { pathname } = new URL(request.url);
-    if (pathname === '/api/ping') return ping(request, env);
-    if (pathname === '/api/stats' && request.method === 'GET') return stats(env);
+    const url = new URL(request.url);
+    if (url.pathname === '/api/ping') return ping(request, env);
+    if (url.pathname === '/api/stats' && request.method === 'GET') return stats(request, url, env);
     return json({ error: 'Not found' }, 404);
   },
   async scheduled(_event, env) {

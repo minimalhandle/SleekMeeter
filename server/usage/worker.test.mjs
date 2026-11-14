@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
+import { statsPage } from './stats-page.js';
 import worker, { valid } from './worker.js';
 
 function d1() {
@@ -36,6 +37,37 @@ test('counts each install once a day and keeps only id, version and edition', as
   assert.equal(stats.today, 2);
   assert.equal(stats.last30Days, 2);
   assert.deepEqual(stats.editions.map((e) => e.edition).sort(), ['banana', 'potato']);
+});
+
+test('serves the stats dashboard to browsers and retains the JSON endpoint', async () => {
+  const env = d1();
+  await ping(env, { id: id(1), version: '0.20.0', edition: 'banana' });
+  const request = (accept, query = '') =>
+    worker.fetch(new Request('https://sleekmeeter.app/api/stats' + query, { headers: { accept } }), env);
+
+  const browser = await request('text/html,application/xhtml+xml,*/*;q=0.8');
+  assert.equal(browser.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(browser.headers.get('cache-control'), 'no-store');
+  assert.equal(browser.headers.get('vary'), 'Accept');
+  const page = await browser.text();
+  assert.match(page, /data-metric="today">1<\/dd>/);
+  const data = JSON.parse(page.match(/id="usage-data">([^<]+)<\/script>/)[1]);
+
+  for (const accept of ['*/*', 'application/json', 'text/html;q=0,*/*', 'text/html;q=0.2,application/json']) {
+    const response = await request(accept);
+    assert.equal(response.headers.get('content-type'), 'application/json');
+    assert.equal(response.headers.get('vary'), 'Accept');
+    assert.deepEqual(await response.json(), data);
+  }
+  assert.deepEqual(await (await request('text/html', '?format=json')).json(), data);
+});
+
+test('embedded dashboard data cannot close the JSON script element', () => {
+  const hostile = '</script><script>alert(1)</script>';
+  const page = statsPage({ today: 1, last7Days: 1, last30Days: 1, versions: [{ version: hostile, users: 1 }] });
+  assert.equal(page.includes(hostile), false);
+  const data = JSON.parse(page.match(/id="usage-data">([^<]+)<\/script>/)[1]);
+  assert.equal(data.versions[0].version, hostile);
 });
 
 test('rejects anything that is not the expected ping', async () => {

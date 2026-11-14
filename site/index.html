@@ -7,9 +7,9 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
 <link rel="preload" href="fonts/SairaSemiCondensed-SemiBold.woff" as="font" type="font/woff" crossorigin>
 <title>Sleekmeeter: a modern face for Voicemeeter</title>
-<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows. Explore twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and remote control from your phone or Stream Deck.">
+<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows. Explore fifteen themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and remote control from your phone or Stream Deck.">
 <meta property="og:title" content="Sleekmeeter: a modern face for Voicemeeter">
-<meta property="og:description" content="Free and open source. Twelve themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and remote control from your phone or Stream Deck.">
+<meta property="og:description" content="Free and open source. Fifteen themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and remote control from your phone or Stream Deck.">
 <meta property="og:image" content="https://sleekmeeter.app/img/themes/console.webp">
 <meta property="og:url" content="https://sleekmeeter.app/">
 <meta name="theme-color" content="#08090b">
@@ -348,7 +348,7 @@ footer a { color: var(--ink-2); }
           <h1>A modern face for <span class="lit">Voicemeeter</span></h1>
         </div>
         <div class="hero-side">
-        <p class="lede">Sleekmeeter sits on top of Voicemeeter Standard, Banana and Potato and controls it through the official Remote API. Voicemeeter keeps doing the audio. You get twelve themes, a separate mix for every output on Potato, a Stream Deck plugin, fades that never click, talk-over ducking, a soundboard and a remote on your phone.</p>
+        <p class="lede">Sleekmeeter sits on top of Voicemeeter Standard, Banana and Potato and controls it through the official Remote API. Voicemeeter keeps doing the audio. You get fifteen themes, a separate mix for every output on Potato, a Stream Deck plugin, fades that never click, talk-over ducking, a soundboard and a remote on your phone.</p>
         <div>
           <div class="hero-cta">
             <a class="btn primary" href="https://github.com/minimalhandle/SleekMeeter/releases/latest" target="_blank" rel="noopener">
@@ -443,8 +443,8 @@ footer a { color: var(--ink-2); }
     <div class="wrap">
       <div class="head">
         <p class="eyebrow">Appearance</p>
-        <h2>Twelve themes to match your mood</h2>
-        <p class="lede">Explore Glass’s drifting aurora, Hadal’s deep-sea currents, and Kokiri Forest’s fairy lights. The tray panel and volume overlay follow the mixer. Choose how much ambient motion you want in Appearance.</p>
+        <h2>Fifteen themes to match your mood</h2>
+        <p class="lede">Explore Glass’s moving light, Overclock’s RGB lighting, and Groovy’s lava lamps. The tray panel and volume overlay follow the mixer. Choose how much ambient motion you want in Appearance.</p>
       </div>
       <div class="theme-stage">
         <div class="window ar-theme" id="themeWin">
@@ -820,14 +820,17 @@ footer a { color: var(--ink-2); }
   const THEMES = [
     ["console", "Console", "The dark hardware desk with amber light. The default."],
     ["oled", "OLED black", "True black with high-contrast controls."],
-    ["glass", "Glass", "Iridescent glass panels, pearl faders, and a slowly drifting aurora."],
-    ["hadal", "Hadal", "Deep ocean blue with cyan faders, moving currents and sonar rings."],
-    ["hyrule", "Kokiri Forest", "A sunlit forest clearing with mossy wood panels, light through the canopy, fireflies, a guide fairy and Hylian Shield faders."],
+    ["darkroom", "Darkroom", "A red safelight, film-strip channels and enlarger-knob faders."],
+    ["glass", "Glass", "Frosted panes with rainbow rims over vivid, ever-moving light, and clear glass-bead faders."],
+    ["overclock", "Overclock", "A modern gaming rig: carbon-fibre panels with angled corners, an RGB light strip down each channel and angled fader caps."],
+    ["cassette", "Cassette", "An 80s mixtape: smoked plastic, handwritten label cards and piano-key buttons."],
+    ["groovy", "Groovy", "A 70s lounge with TV-screen strips, rainbow stripes and lava-lamp fader caps."],
     ["neon", "Neon", "A dark synth night with glowing outlines and flat light-bar caps."],
     ["terminal", "Terminal", "Green phosphor, monospace type, square corners and [bracketed] keys."],
     ["arcade", "Arcade", "An 8-bit cabinet with pixel-stepped corners and chunky blocks."],
     ["block", "Block", "Bold and flat, with thick outlines, hard shadows and bright colour blocks."],
-    ["sticker", "Sticker Bomb", "Tilted die-cut stickers on notebook paper, with starburst fader caps."],
+    ["transit", "Transit", "Station signage: each channel is a coloured line, with interchange-marker faders and a little train."],
+    ["greenhouse", "Greenhouse", "Misted glass panes, plant markers and terracotta pot faders."],
     ["bubblegum", "Bubblegum", "Pink and sparkly, with heart-capped candy faders and cute icons for each channel."],
     ["peach", "Peaches & Cream", "Peach-capped faders, heart-shaped meters, scalloped cards and a lavender Sleepy button in place of Mute."],
   ];
