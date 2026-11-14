@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.2
+- **Fixed mini mode and the volume panel in most themes.** The level on each slider was crossed out by a coloured line and a pale box, OLED printed it dark on a black slider, Darkroom and Transit sliders were squashed into ovals, and Greenhouse's seedling covered the number. Each slider now shows its level cleanly in all 15 themes.
+- **Fixed the Docked button going blank in the volume panel**, and **Keep on top** now lights up while it's on.
+- **Fixed the first channel's outline being cut off** at the top of mini mode and the volume panel in Neon, Terminal, Arcade, Block, Bubblegum and Peaches & Cream.
+
 ## 0.21.1
 - **Crackle doctor:** **⋯ → Crackle doctor…** checks the usual reasons for crackles and dropouts on your PC: a device Windows runs at another sample rate than Voicemeeter, a very small Voicemeeter buffer, Windows' Power saver plan, Bluetooth outputs, and mic clean-up falling behind. Each comes with a plain explanation and, where there's a fix, a button (**Use 512 samples**, **Open Sound settings**, **Open Power options**). **Check my setup** sums it up on one line.
 - **Bluetooth headset warning:** when an app opens a Bluetooth headset's mic and Windows drops the headset to muffled call quality, Sleekmeeter says which app did it, on the overlay, in the mixer and in Audio Event History, and the crackle doctor explains the fix. Switch it off in **Settings → Mixer & devices**.
