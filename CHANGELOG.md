@@ -1,12 +1,13 @@
 # Changelog
 
-## 0.21.0
+## 0.21.1
 - **Crackle doctor:** **⋯ → Crackle doctor…** checks the usual reasons for crackles and dropouts on your PC: a device Windows runs at another sample rate than Voicemeeter, a very small Voicemeeter buffer, Windows' Power saver plan, Bluetooth outputs, and mic clean-up falling behind. Each comes with a plain explanation and, where there's a fix, a button (**Use 512 samples**, **Open Sound settings**, **Open Power options**). **Check my setup** sums it up on one line.
 - **Bluetooth headset warning:** when an app opens a Bluetooth headset's mic and Windows drops the headset to muffled call quality, Sleekmeeter says which app did it, on the overlay, in the mixer and in Audio Event History, and the crackle doctor explains the fix. Switch it off in **Settings → Mixer & devices**.
 - **Mic coach:** **⋯ → Mic coach…** listens while you talk for half a minute and points out popping p's, harsh s's, boom, sitting too far away, a noisy room or a mic that clips, each with a fix where Sleekmeeter has one. Nothing is recorded.
 - **Turn the volume overlay off completely:** **Settings → Appearance → Volume overlay → Show the volume overlay**. Before, switching off levels still left messages (Be right back, Recording, Outputs) and warnings on screen.
 - **Mic EQ presets:** **Mic: fewer pops**, **Mic: softer S**, and both together, in each input's **Sound** tab.
 
+## 0.21.0
 - **Setup guide:** a fresh install opens a short guide that picks your headphones and mic, asks whether you just game and chat or also stream, shows every change before it applies, then tells you what to set in Discord and OBS. It replaces the Setup assistant in the **⋯** menu, where you can run it again any time. A backup of your Voicemeeter setup is saved first.
 - **Stream loudness:** turn it on in **Settings → Going live** and a badge next to the Live tag shows how loud your stream is in LUFS, the way YouTube and Twitch measure it. Click it for the last 3 seconds, the whole stream, the peak, how your voice sits against the game, and a button that turns the stream output up or down to reach -14 LUFS (or the target you pick) without pushing the peaks past -1 dB.
 - **MIDI controllers:** **Settings → Controls → MIDI controller** learns a fader, knob or button when you move or press it. Faders and knobs move a level, following the mixer's fader curve, and wait until you pass the current level so nothing jumps. Buttons do anything a shortcut can. Sleekmeeter only opens the controllers you've mapped. If Voicemeeter's own MIDI mapping holds one, Settings says so.
