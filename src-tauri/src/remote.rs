@@ -226,6 +226,9 @@ fn state_json(app: &AppHandle) -> Value {
                     "name": if label.is_empty() { format!("{fallback} {}", i + 1) } else { label.to_string() },
                     "gain": c["gain"].as_f64().unwrap_or(0.0),
                     "mute": c["mute"].as_bool().unwrap_or(false),
+                    // Hardware channels: the Windows device Voicemeeter uses ("" for virtual ones).
+                    // Lets other apps, like a visualizer, listen to the same audio.
+                    "device": c["device"].as_str().unwrap_or(""),
                     // Which A/B buses an input feeds (1 = on); null for outputs.
                     "a": c["a"].clone(),
                     "b": c["b"].clone(),
