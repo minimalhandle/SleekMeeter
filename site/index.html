@@ -1,914 +1,189 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2308090b'/%3E%3Crect x='7' y='16' width='5' height='10' rx='1' fill='%23ffc66d'/%3E%3Crect x='13.5' y='6' width='5' height='20' rx='1' fill='%23ffc66d'/%3E%3Crect x='20' y='12' width='5' height='14' rx='1' fill='%2354d4ff'/%3E%3C/svg%3E">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
-<link rel="preload" href="fonts/SairaSemiCondensed-SemiBold.woff" as="font" type="font/woff" crossorigin>
-<title>Sleekmeeter: a modern face for Voicemeeter</title>
-<meta name="description" content="Sleekmeeter is a free, open-source mixer for Voicemeeter Standard, Banana and Potato on Windows. Explore fifteen themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, talk-over ducking, a soundboard and remote control from your phone or Stream Deck.">
-<meta property="og:title" content="Sleekmeeter: a modern face for Voicemeeter">
-<meta property="og:description" content="Free and open source. Fifteen themes, a per-output mix for Potato, a Stream Deck plugin, smooth fades, ducking, a soundboard and remote control from your phone or Stream Deck.">
-<meta property="og:image" content="https://sleekmeeter.app/img/themes/console.webp">
-<meta property="og:url" content="https://sleekmeeter.app/">
-<meta name="theme-color" content="#08090b">
-<style>
-@font-face{font-family:"Saira Semi Condensed";src:url("fonts/SairaSemiCondensed-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"Saira Semi Condensed";src:url("fonts/SairaSemiCondensed-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:"Saira Semi Condensed";src:url("fonts/SairaSemiCondensed-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-@font-face{font-family:"Instrument Sans";src:url("fonts/InstrumentSans-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"Instrument Sans";src:url("fonts/InstrumentSans-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"Instrument Sans";src:url("fonts/InstrumentSans-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:"JetBrains Mono";src:url("fonts/JetBrainsMono-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
-
-/* Layout: a console at night. Wide product stages on graphite under one amber light.
-   Feature tours play one clip at a time beside a list of controls; streaming tools sit in a tile board. */
-:root {
-  --bg: #08090b;
-  --bg-2: #0c0e11;
-  --surface: #111317;
-  --surface-2: #16191e;
-  --line: rgba(255, 255, 255, .075);
-  --line-2: rgba(255, 255, 255, .14);
-  --ink: #f4f2ee;
-  --ink-2: #b2b6be;
-  --ink-3: #7b808a;
-  --amber: #ffc66d;
-  --amber-2: #ffdca3;
-  --amber-ink: #241603;
-  --amber-glow: rgba(255, 198, 109, .16);
-  --cyan: #54d4ff;
-  --red: #ff6464;
-  --green: #4be08a;
-  --display: "Saira Semi Condensed", "Bahnschrift", "Arial Narrow", system-ui, sans-serif;
-  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --max: 1240px;
-  --gut-l: max(20px, env(safe-area-inset-left, 0px));
-  --gut-r: max(20px, env(safe-area-inset-right, 0px));
-  color-scheme: dark;
-}
-*, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
-body {
-  margin: 0; background: var(--bg); color: var(--ink-2);
-  font: 400 17px/1.65 var(--body);
-  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
-  overflow-x: clip;
-}
-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
-a { color: inherit; }
-img, video { display: block; max-width: 100%; }
-button { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; border-radius: 6px; }
-.wrap { max-width: calc(var(--max) + 48px); margin-inline: auto; padding-left: var(--gut-l); padding-right: var(--gut-r); }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
-/* ---------- nav ---------- */
-.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(8, 9, 11, .9); border-bottom: 1px solid transparent; transition: border-color .3s; }
-.nav.scrolled { border-bottom-color: var(--line); }
-.nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
-.mark { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: var(--ink); font: 600 21px/1 var(--display); letter-spacing: .01em; }
-.mark i { display: inline-grid; grid-auto-flow: column; align-items: end; gap: 2.5px; height: 18px; }
-.mark i b { width: 4px; border-radius: 1px; background: var(--amber); }
-.mark i b:nth-child(1) { height: 8px; } .mark i b:nth-child(2) { height: 18px; } .mark i b:nth-child(3) { height: 12px; background: var(--cyan); }
-.nav-links { display: flex; gap: 26px; margin-left: auto; font: 500 15px var(--body); }
-.nav-links a { text-decoration: none; color: var(--ink-3); transition: color .2s; }
-.nav-links a:hover { color: var(--ink); }
-.nav .gh { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; color: var(--ink-3); transition: color .2s, background .2s; }
-.nav .gh:hover { color: var(--ink); background: var(--surface-2); }
-@media (max-width: 1080px) { .nav-links { gap: 18px; font-size: 14.5px; } }
-@media (max-width: 940px) { .nav-links { display: none; } .nav .gh { margin-left: auto; } }
-
-/* ---------- buttons ---------- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 11px; border: 0; cursor: pointer; text-decoration: none; font: 600 16px/1 var(--body); letter-spacing: .005em; transition: transform .2s ease, background .2s, box-shadow .2s, color .2s; }
-.btn.primary { background: var(--amber); color: var(--amber-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 10px 30px -8px rgba(255, 198, 109, .45); }
-.btn.primary:hover { background: var(--amber-2); transform: translateY(-1px); }
-.btn.quiet { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
-.btn.quiet:hover { background: var(--surface-2); }
-.btn.sm { min-height: 38px; padding: 0 16px; font-size: 14.5px; border-radius: 9px; }
-.btn svg { flex: none; }
-
-/* ---------- type ---------- */
-.eyebrow { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 18px; font: 500 12.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
-.eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px 1px rgba(255, 198, 109, .7); }
-h1, h2, h3 { color: var(--ink); text-wrap: balance; margin: 0; font-family: var(--display); }
-h1 { font-weight: 600; font-size: clamp(46px, 6.2vw, 86px); line-height: .95; letter-spacing: -.018em; max-width: 13ch; }
-h1 .lit { color: var(--amber); }
-h2 { font-weight: 600; font-size: clamp(36px, 4.6vw, 62px); line-height: 1; letter-spacing: -.012em; max-width: 17ch; }
-h3 { font-weight: 600; font-size: clamp(24px, 2.3vw, 30px); line-height: 1.1; letter-spacing: -.004em; }
-p { margin: 0; text-wrap: pretty; }
-.lede { font-size: clamp(18px, 1.6vw, 21px); line-height: 1.6; max-width: 58ch; color: var(--ink-2); }
-.where { font: 500 12px/1.3 var(--mono); letter-spacing: .02em; color: var(--amber); }
-code { font: 400 .88em var(--mono); color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
-b, strong { color: var(--ink); font-weight: 600; }
-
-section { position: relative; }
-.band { padding-block: clamp(96px, 12vw, 168px) 0; }
-.head { display: grid; gap: 20px; max-width: 760px; }
-
-/* ---------- windows (product frames) ---------- */
-.window { position: relative; border-radius: 12px; overflow: hidden; background: #050506; isolation: isolate;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 24px 48px -16px rgba(0, 0, 0, .8), 0 60px 120px -40px rgba(0, 0, 0, .7); }
-.window::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08); }
-.window video, .window img { width: 100%; height: 100%; object-fit: cover; }
-.window video { transition: opacity .35s ease; }
-.window.switching video { opacity: .25; transition-duration: .15s; }
-.ar-mixer { aspect-ratio: 1280 / 722; }
-.ar-dialog { aspect-ratio: 1040 / 680; }
-.ar-wide { aspect-ratio: 16 / 9; }
-.ar-theme { aspect-ratio: 1440 / 812; }
-
-/* ---------- hero ---------- */
-.hero { padding-block: clamp(40px, 6vw, 76px) 0; overflow: clip; }
-.hero::before { content: ""; position: absolute; inset: -340px 0 auto; height: 1000px; pointer-events: none;
-  background: radial-gradient(42% 46% at 72% 40%, rgba(255, 198, 109, .11), transparent 72%), radial-gradient(36% 40% at 18% 30%, rgba(84, 212, 255, .06), transparent 70%); }
-.hero-copy { position: relative; display: grid; gap: 24px; }
-.hero-side { display: grid; gap: 22px; }
-@media (min-width: 1000px) {
-  .hero-copy { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 64px; align-items: end; }
-  .hero-side .lede { font-size: 18px; }
-}
-.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 6px; }
-.hero-note { font: 400 13px/1.5 var(--mono); color: var(--ink-3); }
-.hero-stage { position: relative; margin-top: clamp(40px, 5vw, 64px); perspective: 1800px; }
-.hero-stage::before { content: ""; position: absolute; left: 6%; right: 6%; bottom: -12%; height: 40%; z-index: -1; pointer-events: none;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(255, 198, 109, .2), transparent 72%); }
-.hero-stage .window { transform-origin: 50% 0; animation: rise 1.4s cubic-bezier(.16, 1, .3, 1) .1s both; }
-@keyframes rise { from { transform: translateY(56px) rotateX(16deg) scale(.97); opacity: .4; } to { transform: none; opacity: 1; } }
-.hero-copy > * { animation: up .9s cubic-bezier(.16, 1, .3, 1) both; }
-.hero-copy > *:nth-child(2) { animation-delay: .06s; } .hero-copy > *:nth-child(3) { animation-delay: .12s; } .hero-copy > *:nth-child(4) { animation-delay: .18s; }
-@keyframes up { from { transform: translateY(14px); opacity: .5; } to { transform: none; opacity: 1; } }
-
-.editions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: clamp(56px, 7vw, 88px); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.editions > div { padding: 22px 22px 22px 0; display: grid; gap: 6px; }
-.editions > div + div { padding-left: 22px; border-left: 1px solid var(--line); }
-.editions dt { font: 500 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
-.editions dd { margin: 0; font: 500 19px/1.3 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
-@media (max-width: 820px) {
-  .editions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .editions > div:nth-child(3) { padding-left: 0; border-left: 0; }
-  .editions > div:nth-child(n+3) { border-top: 1px solid var(--line); }
-}
-
-/* ---------- tours ---------- */
-.tour { display: grid; gap: 28px; margin-top: clamp(44px, 5vw, 64px); }
-.tour-stage { min-width: 0; }
-.tour-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); min-width: 0; }
-.tab { position: relative; display: grid; gap: 8px; width: 100%; padding: 20px 8px 21px 0; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
-.tab .t { font: 600 22px/1.15 var(--display); color: var(--ink-3); transition: color .25s; }
-.tab:hover .t { color: var(--ink-2); }
-.tab[aria-selected="true"] .t { color: var(--ink); }
-.tab .where { opacity: .55; transition: opacity .25s; }
-.tab[aria-selected="true"] .where { opacity: 1; }
-.tab .d { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .4s cubic-bezier(.16, 1, .3, 1); }
-.tab .d > span { overflow: hidden; font-size: 16px; line-height: 1.6; color: var(--ink-2); }
-.tab[aria-selected="true"] .d { grid-template-rows: 1fr; }
-.tab .bar { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; overflow: hidden; }
-.tab .bar i { display: block; height: 100%; background: var(--amber); transform: scaleX(0); transform-origin: left; }
-.tab[aria-selected="true"] .bar { background: rgba(255, 198, 109, .14); }
-@media (min-width: 1000px) {
-  .tour { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; align-items: center; }
-  .tour.flip { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); }
-  .tour.flip .tour-stage { order: -1; }
-  .tour:not(.flip) .tour-stage { order: 2; }
-}
-
-/* ---------- themes ---------- */
-.theme-stage { margin-top: clamp(44px, 5vw, 64px); }
-.theme-stage .window img { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease; }
-.theme-stage .window img.on { opacity: 1; }
-.theme-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-top: 24px; min-height: 3.4em; }
-.theme-meta h3 { font-size: 26px; }
-.theme-meta p { flex: 1 1 360px; color: var(--ink-2); }
-.picker { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
-.tcard { position: relative; display: grid; gap: 9px; padding: 6px 6px 11px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; text-align: left; overflow: hidden; transition: border-color .25s, background .25s, transform .25s; }
-.tcard:hover { border-color: var(--line-2); transform: translateY(-2px); }
-.tcard img { width: 100%; aspect-ratio: 360 / 203; object-fit: cover; border-radius: 7px; }
-.tcard span { padding-inline: 4px; font: 600 13.5px/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); transition: color .25s; }
-.tcard[aria-pressed="true"] { border-color: rgba(255, 198, 109, .55); background: var(--surface-2); }
-.tcard[aria-pressed="true"] span { color: var(--ink); }
-.tcard .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--amber); transform: scaleX(0); transform-origin: left; }
-.tcard.cycling .bar { animation: fill var(--cycle, 3.6s) linear forwards; }
-@keyframes fill { to { transform: scaleX(1); } }
-@media (max-width: 1000px) { .picker { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 620px) {
-  .picker-scroll { overflow-x: auto; margin-inline: calc(-1 * var(--gut-l)) calc(-1 * var(--gut-r)); padding: 0 var(--gut-r) 6px var(--gut-l); scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .picker-scroll::-webkit-scrollbar { display: none; }
-  .picker { display: flex; width: max-content; }
-  .tcard { width: 132px; flex: none; scroll-snap-align: start; }
-}
-
-/* ---------- streaming board ---------- */
-.board { display: grid; gap: 20px; margin-top: clamp(44px, 5vw, 64px); }
-.tile { position: relative; display: flex; flex-direction: column; gap: 22px; min-width: 0; padding: clamp(22px, 2.6vw, 34px); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(180deg, var(--surface-2), var(--surface) 55%); overflow: hidden; }
-.tile .txt { display: grid; gap: 12px; }
-.tile .txt p { max-width: 54ch; font-size: 16.5px; }
-.tile .media { margin-top: auto; }
-.tile .window { border-radius: 10px; }
-.b-phone { align-items: stretch; }
-.b-phone .media { flex: 1 1 auto; margin-top: 0; display: grid; place-items: center; padding-top: 8px; position: relative; }
-.b-phone .media::before { content: ""; position: absolute; inset: 10% -10% -10%; background: radial-gradient(45% 45% at 50% 55%, rgba(255, 198, 109, .14), transparent 70%); pointer-events: none; }
-.chat-wrap { display: grid; gap: 28px; align-items: center; }
-@media (min-width: 960px) {
-  .board { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .b-sound { grid-column: 1 / 8; grid-row: 1; }
-  .b-overlay { grid-column: 1 / 8; grid-row: 2; }
-  .b-phone { grid-column: 8 / 13; grid-row: 1 / 3; }
-  .b-chat { grid-column: 1 / 13; }
-  .chat-wrap { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; }
-}
-
-/* phone */
-.phone { position: relative; width: min(296px, 76vw); padding: 11px; border-radius: 50px; background: linear-gradient(145deg, #2a2d33, #121418 40%, #1c1f24); box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), inset 0 0 0 1.5px rgba(255, 255, 255, .06), 0 40px 80px -24px rgba(0, 0, 0, .9); }
-.phone .screen { position: relative; aspect-ratio: 588 / 1272; border-radius: 40px; overflow: hidden; background: #14161b; }
-.phone .screen video { width: 100%; height: 100%; object-fit: cover; }
-.phone .island { position: absolute; top: 9px; left: 50%; width: 31%; height: 25px; margin-left: -15.5%; border-radius: 20px; background: #000; z-index: 2; }
-.phone .home { position: absolute; bottom: 7px; left: 50%; width: 36%; height: 4px; margin-left: -18%; border-radius: 4px; background: rgba(255, 255, 255, .55); z-index: 2; }
-.phone::before, .phone::after { content: ""; position: absolute; width: 3px; border-radius: 2px; background: #2a2d33; }
-.phone::before { left: -3px; top: 22%; height: 9%; } .phone::after { right: -3px; top: 27%; height: 14%; }
-
-/* chat */
-.chat { display: grid; grid-template-rows: auto 1fr auto; height: 340px; border-radius: 14px; border: 1px solid var(--line); background: #0b0c0f; overflow: hidden; }
-.chat .ch { display: flex; justify-content: space-between; padding: 12px 16px; font: 500 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--line); }
-.chat .ch .live { color: var(--red); display: inline-flex; gap: 7px; align-items: center; }
-.chat .ch .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
-.chat .log { display: flex; flex-direction: column; justify-content: flex-end; gap: 9px; padding: 14px 16px; overflow: hidden; font-size: 15px; line-height: 1.45; color: #dcdde2; }
-.chat .msg { animation: msg .35s cubic-bezier(.16, 1, .3, 1); }
-.chat .msg b { font-weight: 600; }
-.chat .mod { display: inline-block; margin-right: 6px; padding: 1px 5px; border-radius: 3px; background: #1f9d55; color: #04150b; font: 600 10px/1.4 var(--mono); vertical-align: 1px; }
-.chat .msg code { background: #1a1c21; border-color: #2a2d34; }
-.chat .foot { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 12px 16px; border-top: 1px solid var(--line); font: 400 13px/1.4 var(--mono); color: var(--ink-3); transition: color .3s; }
-.chat .foot i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #3a3d45; transition: background .3s, box-shadow .3s; }
-.chat .foot.fire { color: var(--ink); }
-.chat .foot.fire i { background: var(--green); box-shadow: 0 0 10px var(--green); }
-.chat .foot.no i { background: var(--ink-3); }
-@keyframes msg { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
-
-/* ---------- specs ---------- */
-.specs { display: grid; margin: clamp(40px, 5vw, 56px) 0 0; border-top: 1px solid var(--line); }
-.spec { display: grid; grid-template-columns: minmax(0, 210px) minmax(0, 1fr); gap: 8px 28px; padding: 22px 0; border-bottom: 1px solid var(--line); }
-.spec dt { font: 600 19px/1.3 var(--display); color: var(--ink); }
-.spec dd { margin: 0; font-size: 16px; }
-@media (min-width: 960px) { .specs { grid-template-columns: 1fr 1fr; column-gap: 64px; } }
-@media (max-width: 600px) { .spec { grid-template-columns: 1fr; } }
-
-/* ---------- download ---------- */
-.get { padding-block: clamp(96px, 12vw, 168px) 0; }
-.get-panel { position: relative; padding: clamp(32px, 5vw, 64px); border-radius: 28px; border: 1px solid var(--line); overflow: hidden;
-  background: radial-gradient(70% 90% at 85% 0%, rgba(255, 198, 109, .13), transparent 60%), linear-gradient(180deg, var(--surface-2), var(--bg-2)); }
-.get-panel .head { max-width: 680px; }
-.files { display: grid; gap: 14px; margin-top: 40px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
-.file { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 24px; border-radius: 16px; border: 1px solid var(--line); background: rgba(8, 9, 11, .55); }
-.file.main { border-color: rgba(255, 198, 109, .45); background: rgba(255, 198, 109, .05); }
-.file .fname { font: 500 14.5px/1.3 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
-.file .tag { font: 500 11.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
-.file p { font-size: 15.5px; flex: 1; }
-.file .btn { align-self: flex-start; margin-top: 4px; }
-.req { display: grid; gap: 10px; margin-top: 32px; font-size: 15px; max-width: 80ch; color: var(--ink-3); }
-.req b { color: var(--ink-2); }
-
-/* ---------- VB-Audio listing ---------- */
-.listed { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 8px 14px 8px 10px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, .03); text-decoration: none; font: 500 13.5px/1.3 var(--body); color: var(--ink-2); transition: border-color .2s, background .2s, color .2s; }
-.listed:hover { border-color: rgba(255, 198, 109, .5); background: rgba(255, 198, 109, .06); color: var(--ink); }
-.listed .dot { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: rgba(75, 224, 138, .14); color: var(--green); }
-.listed b { font-weight: 600; }
-.vb { display: grid; gap: 16px; align-items: center; margin-top: 28px; padding: 20px 24px; border-radius: 16px; border: 1px solid var(--line); background: rgba(8, 9, 11, .55); }
-.vb p { font-size: 15.5px; }
-@media (min-width: 760px) { .vb { grid-template-columns: minmax(0, 1fr) auto; } }
-
-/* ---------- output mix ---------- */
-.mixgrid { display: grid; gap: 28px; margin-top: clamp(44px, 5vw, 64px); }
-.mixgrid .window img { width: 100%; height: auto; }
-.points { display: grid; gap: 0; border-top: 1px solid var(--line); }
-.points > div { display: grid; gap: 6px; padding: 18px 0; border-bottom: 1px solid var(--line); }
-.points dt { font: 600 20px/1.2 var(--display); color: var(--ink); }
-.points dd { margin: 0; font-size: 16px; }
-.pill { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(84, 212, 255, .12); color: var(--cyan); font: 500 11px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; vertical-align: 3px; }
-@media (min-width: 1000px) { .mixgrid { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 48px; align-items: start; } }
-
-/* ---------- stream deck ---------- */
-.deck { display: grid; gap: 20px; margin-top: clamp(44px, 5vw, 64px); }
-.deck .shot { width: 100%; max-width: 920px; justify-self: center; border-radius: 18px; overflow: hidden; background: #050506; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 30px 70px -30px rgba(0, 0, 0, .9); }
-.deck .shot img { width: 100%; height: auto; }
-.actions { display: grid; gap: 20px; }
-.acts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
-.acts li { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 4px 18px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 15.5px; }
-.acts li b { font: 600 17px/1.35 var(--display); }
-.acts .new { color: var(--amber); font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; margin-left: 6px; vertical-align: 2px; }
-.deck-foot { display: grid; gap: 20px; align-items: center; }
-.deck-foot .icons { display: grid; gap: 18px; align-items: center; }
-.deck-foot .icons img { width: min(300px, 70vw); height: auto; border-radius: 14px; }
-@media (min-width: 960px) {
-  .actions { grid-template-columns: 1fr 1fr; column-gap: 48px; }
-  .deck-foot .icons { grid-template-columns: auto minmax(0, 1fr); gap: 32px; }
-}
-@media (max-width: 600px) { .acts li { grid-template-columns: 1fr; } }
-
-footer { margin-top: clamp(80px, 10vw, 120px); padding-block: 32px 48px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-3); }
-footer .wrap { display: grid; gap: 10px; }
-footer a { color: var(--ink-2); }
-
-@media (max-width: 560px) {
-  .editions dd { font-size: 16px; }
-  .editions > div { padding-right: 12px; }
-  .editions > div + div { padding-left: 14px; }
-  .editions > div:nth-child(3) { padding-left: 0; }
-  .hero-cta .btn { flex: 1 1 100%; }
-  .chat { height: 290px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <script src="./theme.js"></script>
+  <meta name="description" content="A modern mixer for Voicemeeter. Try Sleekmeeter in your browser, explore its audio tools, and download it free for Windows.">
+  <meta property="og:title" content="Sleekmeeter — Your audio, in clear view">
+  <meta property="og:description" content="The Windows mixer for Voicemeeter. Explore interactive demos, app routing, stream mixes, and more.">
+  <link rel="icon" type="image/svg+xml" href="./assets/mark.svg">
+  <link rel="stylesheet" href="./styles.css?v=3">
+  <link rel="stylesheet" href="./preview.css?v=2">
+  <title>Sleekmeeter — Your audio, in clear view</title>
+  <script type="module" src="./site.js"></script>
 </head>
 <body>
-<header class="nav" id="nav">
-  <div class="wrap">
-    <a class="mark" href="#top" aria-label="Sleekmeeter, back to top"><i aria-hidden="true"><b></b><b></b><b></b></i>Sleekmeeter</a>
-    <nav class="nav-links" aria-label="Sections">
-      <a href="#mixer">Mixer</a><a href="#mix">Output mix</a><a href="#themes">Themes</a><a href="#streamdeck">Stream Deck</a><a href="#streaming">Streaming</a><a href="#setup">Setup</a><a href="#download">Download</a>
-    </nav>
-    <a class="gh" href="https://github.com/minimalhandle/SleekMeeter" target="_blank" rel="noopener" aria-label="Sleekmeeter on GitHub">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
-    </a>
-    <a class="btn primary sm" href="#download">Download</a>
-  </div>
-</header>
+  <svg xmlns="http://www.w3.org/2000/svg" class="svg-library" aria-hidden="true">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 12 7-12 7z"/></symbol>
+    <symbol id="i-windows" viewBox="0 0 24 24"><path d="M3 4h8v7H3zm10 0h8v7h-8zM3 13h8v7H3zm10 0h8v7h-8z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-mix" viewBox="0 0 24 24"><path d="M5 3v18m7-18v18m7-18v18"/><path d="M2 8h6m1 7h6m1-9h6" stroke-width="3"/></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 12h4c4 0 2-7 6-7M11 12c4 0 2 7 6 7"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h3l2-6 4 13 4-15 2 8h3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+  </svg>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" id="top">
+    <div class="shell header-inner">
+      <a class="brand" href="#top"><img src="./assets/mark.svg" alt="" width="35" height="35">Sleekmeeter</a>
+      <nav aria-label="Main navigation">
+        <a href="#playground">Playground</a>
+        <a href="#highlights">Highlights</a>
+        <a href="#features">All features</a>
+      </nav>
+      <div class="header-actions">
+        <button class="button button-small button-outline theme-toggle" id="site-theme-toggle" type="button" aria-label="Dark mode" aria-pressed="false" hidden>
+          <svg class="icon theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 14a9 9 0 0 1-10.8-10.7A9 9 0 1 0 20.7 14Z"/></svg>
+          <svg class="icon theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></svg>
+        </button>
+        <a class="button button-small button-dark header-cta" href="#download">Download <svg class="icon"><use href="#i-download"/></svg></a>
+      </div>
+    </div>
+  </header>
 
-<main id="top">
-  <!-- HERO -->
-  <section class="hero">
-    <div class="wrap">
-      <div class="hero-copy">
-        <div class="hero-title">
-          <p class="eyebrow">For Voicemeeter on Windows</p>
-          <h1>A modern face for <span class="lit">Voicemeeter</span></h1>
-        </div>
-        <div class="hero-side">
-        <p class="lede">Sleekmeeter sits on top of Voicemeeter Standard, Banana and Potato and controls it through the official Remote API. Voicemeeter keeps doing the audio. You get fifteen themes, a separate mix for every output on Potato, a Stream Deck plugin, fades that never click, talk-over ducking, a soundboard and a remote on your phone.</p>
-        <div>
-          <div class="hero-cta">
-            <a class="btn primary" href="https://github.com/minimalhandle/SleekMeeter/releases/latest" target="_blank" rel="noopener">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>
-              Download for Windows</a>
-            <a class="btn quiet" href="#mixer">See what it does</a>
+  <main id="main">
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div class="hero-eyebrow"><span class="signal-dot"></span> THE VOICEMEETER MIXER FOR WINDOWS</div>
+      <div class="hero-grid">
+        <h1 id="hero-title">Your audio,<br>in <em>clear view.</em></h1>
+        <div class="hero-intro">
+          <p>Mix your mic, games, music and calls in one place. Sleekmeeter gives Voicemeeter a modern interface with per-app routing, live meters and controls built for streaming.</p>
+          <div class="hero-actions">
+            <a class="button button-dark" href="#download"><svg class="icon"><use href="#i-download"/></svg> Get Sleekmeeter</a>
+            <a class="button button-outline" href="#playground"><svg class="icon"><use href="#i-play"/></svg> Try the mixer</a>
           </div>
-          <p class="hero-note" style="margin-top:16px">Free and open source · Windows 10 and 11 · No administrator rights</p>
-          <a class="listed" href="https://vb-audio.com/Services/support.htm" target="_blank" rel="noopener">
-            <span class="dot" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
-            <span>Listed on <b>VB-Audio's support page</b></span>
-          </a>
-        </div>
+          <span class="hero-note">FREE & OPEN SOURCE <span></span> WINDOWS 10 / 11</span>
         </div>
       </div>
-      <div class="hero-stage">
-        <div class="window ar-mixer">
-          <video data-src="media/hero.mp4" poster="media/hero.webp" data-loop muted playsinline preload="none" disablepictureinpicture aria-label="Sleekmeeter's mixer changing between six of its themes while the meters play"></video>
-        </div>
-      </div>
-      <dl class="editions">
-        <div><dt>Standard</dt><dd>3 inputs · 3 outputs</dd></div>
-        <div><dt>Banana</dt><dd>5 inputs · 5 outputs</dd></div>
-        <div><dt>Potato</dt><dd>8 inputs · 8 outputs</dd></div>
-        <div><dt>Stays in sync</dt><dd>Stream Deck, MIDI, other remotes</dd></div>
-      </dl>
-    </div>
-  </section>
+    </section>
 
-  <!-- MIXER TOUR -->
-  <section class="band" id="mixer">
-    <div class="wrap">
-      <div class="head">
-        <p class="eyebrow">The mixer</p>
-        <h2>Smooth by default</h2>
-        <p class="lede">Every level change glides, and the meters show post-fader level on the same scale as the fader, so you see signal and fader position together.</p>
+    <section class="playground shell" id="playground" aria-labelledby="playground-title">
+      <div class="section-bar">
+        <div class="index-label"><span>01</span><h2 id="playground-title">Interactive playground</h2></div>
+        <span class="playground-label"><span class="signal-dot"></span> SIMULATED AUDIO</span>
       </div>
-      <div class="tour" data-tour>
-        <div class="tour-stage">
-          <div class="window ar-mixer"><video muted playsinline preload="none" disablepictureinpicture></video></div>
-        </div>
-        <div class="tour-list" role="tablist" aria-label="Mixer features">
-          <button class="tab" role="tab" type="button" data-src="media/fades.mp4" data-poster="media/fades.webp" data-label="Muting and unmuting with fades, dragging a fader and double-clicking it back">
-            <span class="t">Smooth fades</span><span class="where">Settings → Mixer &amp; devices → Smooth fades</span>
-            <span class="d"><span>Mute fades out and unmute fades back in, so nothing clicks. Typed levels, double-click to 0 dB, shortcuts and scene changes glide too. Dragging stays direct.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/ducking.mp4" data-poster="media/ducking.webp" data-label="Desktop and Discord channels ducking while the mic is talking">
-            <span class="t">Talk-over ducking</span><span class="where">Settings → Mixer &amp; devices → Talk-over ducking</span>
-            <span class="d"><span>Music, game and desktop audio dip while you talk and come back when you stop. Add Discord so the game also dips when a friend speaks. Your faders stay where you set them.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/brb.mp4" data-poster="media/brb.webp" data-label="Be right back muting the mic and lowering the game, then going back live">
-            <span class="t">Be right back</span><span class="where">Header → BRB</span>
-            <span class="d"><span>One press mutes your mic, turns the game down and brings up music, all with fades. <b>Back live</b> puts everything back exactly as it was.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/desktop.mp4" data-poster="media/desktop.webp" data-label="Mini mode and the tray volume panel on a Windows desktop">
-            <span class="t">Mini mode and tray panel</span><span class="where">Mini button · double-click the tray icon</span>
-            <span class="d"><span>Shrink the mixer to one slim row per channel, or open a volume panel docked by the clock, in the same spot every time.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
+      <div id="app-preview"><div class="preview-fallback"><img src="./assets/themes/console.webp" width="1440" height="812" alt="Sleekmeeter’s Console mixer with inputs and outputs"></div></div>
+      <div class="playground-end">
+        <p>Want to explore the actual app interface? Open the desktop simulator and choose a Voicemeeter edition.</p>
+        <div class="sim-links" aria-label="Open the desktop simulator">
+          <a href="./demo/index.html?edition=1" target="_blank" rel="noopener">Standard <svg class="icon"><use href="#i-external"/></svg></a>
+          <a href="./demo/index.html?edition=2" target="_blank" rel="noopener">Banana <svg class="icon"><use href="#i-external"/></svg></a>
+          <a href="./demo/index.html?edition=3" target="_blank" rel="noopener">Potato <svg class="icon"><use href="#i-external"/></svg></a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- OUTPUT MIX -->
-  <section class="band" id="mix">
-    <div class="wrap">
-      <div class="head">
-        <p class="eyebrow">Output mix · Voicemeeter Potato</p>
-        <h2>A different mix on every output</h2>
-        <p class="lede">Less game on your stream than in your headphones, Discord in your ears but not on air. Potato keeps a level for every input on every output, and Sleekmeeter shows them all at once, like Voicemeeter's Streamer View.</p>
-      </div>
-      <div class="mixgrid">
-        <div class="window"><img src="img/mix.webp" alt="The Output mix window: a column of sliders for each input, one per output from A1 to B3. Desktop and Discord are lower on B1 to B3 than on A1." width="1440" height="812" loading="lazy" decoding="async"></div>
-        <dl class="points">
-          <div><dt>Every input, every output</dt><dd><b>Mix</b> in the header lays out each input's level on A1 to B3, with the output's on/off button under each slider. Drag, scroll, or double-click to match the main fader.</dd></div>
-          <div><dt>Personal / Stream</dt><dd>Put your listening and audience faders side by side. Assign and verify game and chat apps, then pin a live balance slider to your mixer.</dd></div>
-          <div><dt>Listen to a mix</dt><dd>Audition a Voicemeeter virtual output live on headphones while your routes stay in place.</dd></div>
-          <div><dt>Pop it out <span class="pill">New</span></dt><dd>Open the mix in a window of its own and keep it on a second screen. It remembers where you left it.</dd></div>
-          <div><dt>Faders set one output</dt><dd>Pick an output above the inputs and the normal faders set that output's mix. <b>All outputs</b> goes back.</dd></div>
-          <div><dt>Kept everywhere</dt><dd>Mute fades, ducking, Be right back and scenes keep the differences between outputs. Scenes even save them, which Voicemeeter's own scene file doesn't.</dd></div>
-        </dl>
-      </div>
-    </div>
-  </section>
+    <section class="highlights section-spaced" id="highlights" aria-labelledby="highlights-title">
+      <div class="shell">
+        <div class="section-bar"><div class="index-label"><span>02</span><p>THE HIGHLIGHTS</p></div></div>
+        <div class="section-heading">
+          <h2 id="highlights-title">A better handle<br>on your mix.</h2>
+          <p>Follow the signal from Windows to your headphones, your voice chat and your stream. Reach the controls you need while you’re playing or live.</p>
+        </div>
 
-  <!-- THEMES -->
-  <section class="band" id="themes">
-    <div class="wrap">
-      <div class="head">
-        <p class="eyebrow">Appearance</p>
-        <h2>Fifteen themes to match your mood</h2>
-        <p class="lede">Explore Glass’s moving light, Overclock’s RGB lighting, and Groovy’s lava lamps. The tray panel and volume overlay follow the mixer. Choose how much ambient motion you want in Appearance.</p>
-      </div>
-      <div class="theme-stage">
-        <div class="window ar-theme" id="themeWin">
-          <img class="on" src="img/themes/console.webp" alt="Sleekmeeter in the Console theme" decoding="async">
-          <img alt="" decoding="async">
+        <div class="feature-tiles">
+          <article class="feature-tile tile-mix">
+            <div class="tile-copy">
+              <span class="tile-icon"><svg class="icon"><use href="#i-mix"/></svg></span>
+              <div><p class="tile-kicker">OUTPUT MIX <span>· POTATO</span></p><h3>Different mixes for you and your stream.</h3></div>
+              <p>Turn the game up in your headphones and keep it lower for viewers. See every input on every output, or pop the mix out onto a second screen.</p>
+              <a class="text-link" href="./demo/index.html?edition=3&amp;mixwin" target="_blank" rel="noopener">Try Output Mix <svg class="icon"><use href="#i-external"/></svg></a>
+            </div>
+            <div class="tile-media mix-media"><img src="./assets/mix.webp" alt="Sleekmeeter’s Output Mix showing independent input levels for several output buses" loading="lazy"></div>
+          </article>
+
+          <article class="feature-tile tile-routing">
+            <div class="tile-copy">
+              <span class="tile-icon"><svg class="icon"><use href="#i-route"/></svg></span>
+              <div><p class="tile-kicker">APP ROUTING</p><h3>See where every app goes.</h3></div>
+              <p>Give Discord, Spotify and your game their own channels. Save those assignments and trace their path from Windows to the output.</p>
+              <a class="text-link" href="#features" data-feature-category="routing">Explore routing tools <svg class="icon"><use href="#i-arrow"/></svg></a>
+            </div>
+            <div class="tile-media route-media"><img src="./assets/apps.webp" alt="App volumes panel with separate level, mute and output controls for each app" loading="lazy"></div>
+          </article>
+
+          <article class="feature-tile tile-deck">
+            <div class="tile-copy">
+              <span class="tile-icon"><svg class="icon"><use href="#i-wave"/></svg></span>
+              <div><p class="tile-kicker">STREAM DECK STUDIO</p><h3>Keep the mix at your fingertips.</h3></div>
+              <p>Mute a mic, change scenes or control what’s playing from Stream Deck. Use the dials on Stream Deck + to adjust levels, including per-output levels with Potato.</p>
+              <a class="text-link" href="#features" data-feature-category="controls">Explore remote controls <svg class="icon"><use href="#i-arrow"/></svg></a>
+            </div>
+            <div class="tile-media deck-media"><video src="./assets/showcase.mp4" poster="./assets/showcase.webp" controls muted loop playsinline preload="none" width="1920" height="1080" style="width:100%;height:auto" aria-label="A 45-second film of Sleekmeeter on a Stream Deck Plus: muting the mic, turning a channel’s dial, Now Playing, routing keys and Be right back, then Afterclip’s keys on the same deck. It has no sound."></video></div>
+          </article>
         </div>
       </div>
-      <div class="theme-meta" aria-live="polite"><h3 id="themeName">Console</h3><p id="themeDesc">The dark hardware desk with amber light. The default.</p></div>
-      <div class="picker-scroll"><div class="picker" id="picker" role="group" aria-label="Choose a theme"></div></div>
-    </div>
-  </section>
+    </section>
 
-  <!-- STREAM DECK -->
-  <section class="band" id="streamdeck">
-    <div class="wrap">
-      <div class="head">
-        <p class="eyebrow">Stream Deck</p>
-        <h2>Your mixer on the Stream Deck</h2>
-        <p class="lede">A plugin made for Sleekmeeter, with live keys and dials that show the real state: levels, mutes, routes and what's playing. Sleekmeeter spots the Stream Deck app and offers to install it, and keeps it up to date.</p>
+    <section class="theme-section section-spaced" id="themes" aria-labelledby="themes-title">
+      <div class="shell">
+        <div class="section-bar"><div class="index-label"><span>03</span><p>MAKE IT YOURS</p></div></div>
+        <div class="section-heading">
+          <h2 id="themes-title">Twelve ways<br>to dress the desk.</h2>
+          <p>From the clean lines of Console to Glass, Arcade and Peaches & Cream. Your mixer, mini panel, tray controls and volume overlay all follow your theme.</p>
+        </div>
+        <div class="theme-gallery">
+          <div id="theme-options" class="theme-options" role="group" aria-label="Mixer themes"></div>
+          <figure class="theme-display" aria-live="polite">
+            <div class="theme-frame"><img id="theme-image" src="./assets/themes/console.webp" alt="Sleekmeeter in the Console theme" loading="lazy"></div>
+            <figcaption><span id="theme-caption">Console</span><span id="theme-index">01 / 12</span></figcaption>
+          </figure>
+        </div>
       </div>
-      <div class="deck">
-        <div class="shot"><img src="img/streamdeck/streamdeck-deck.png" alt="The Sleekmeeter plugin on a Stream Deck +, with live keys, album art and four dials" width="1840" height="1300" loading="lazy" decoding="async"></div>
-        <div class="actions">
+    </section>
+
+    <section class="feature-section section-spaced shell" id="features" aria-labelledby="features-title">
+      <div class="section-bar"><div class="index-label"><span>04</span><p>FEATURE LIBRARY</p></div></div>
+      <div class="section-heading">
+        <h2 id="features-title">The full feature list.</h2>
+        <p>Search every part of Sleekmeeter, from a quick mute to a complete streaming setup. Edition and hardware requirements are listed with each feature.</p>
+      </div>
+      <div class="catalog-toolbar">
+        <label class="catalog-search"><svg class="icon"><use href="#i-search"/></svg><span class="visually-hidden">Search features</span><input type="search" id="feature-search" placeholder="Search features…" autocomplete="off"></label>
+        <div class="catalog-filters" id="feature-filters" role="group" aria-label="Filter by category"></div>
+      </div>
+      <p class="catalog-count" id="feature-count" role="status"></p>
+      <div id="feature-list" class="catalog-list"></div>
+      <noscript><p><a href="https://github.com/minimalhandle/SleekMeeter#readme">Read the feature documentation on GitHub.</a></p></noscript>
+    </section>
+
+    <section class="download-section" id="download" aria-labelledby="download-title">
+      <div class="shell">
+        <div class="section-bar"><div class="index-label"><span>05</span><p>DOWNLOAD</p></div></div>
+        <div class="download-main">
+          <h2 id="download-title">Put your mix<br>within reach.</h2>
           <div>
-            <h3>Dials <span class="where">Stream Deck +</span></h3>
-            <ul class="acts" style="margin-top:14px">
-              <li><b>Channel level</b><span>Turn to set a level, press or tap to mute, with a live meter.</span></li>
-              <li><b>Now Playing</b><span>Album art, title and track time from Spotify, Apple Music, a browser or any Windows player. Turn for a channel or to skip tracks.</span></li>
-              <li><b>App volume</b><span>One app, such as Discord or a game: turn for its volume, press to mute.</span></li>
-              <li><b>Output mix</b><span>One input's level on one output, like game on your stream. Potato.</span></li>
-            </ul>
-          </div>
-          <div>
-            <h3>Keys <span class="where">Any Stream Deck</span></h3>
-            <ul class="acts" style="margin-top:14px">
-              <li><b>Mute mic · Mute channel</b><span>Green when live, red and slashed when muted. Hold-to-talk too.</span></li>
-              <li><b>Route to bus</b><span>Turn one route on or off, like your mic to B3, lit while it's on.</span></li>
-              <li><b>Swap route<span class="new">New</span></b><span>One press switches between two routes: headset mic or main mic on B2, game on speakers or headset.</span></li>
-              <li><b>Level step<span class="new">New</span></b><span>Up, down or jump to a level. Hold to keep going. On Potato, change one output only: game +5 dB in your headphones, stream untouched.</span></li>
-              <li><b>Faders set</b><span>Make the input faders set one output's mix. Potato.</span></li>
-              <li><b>Scenes · Sounds · BRB</b><span>Load a scene, play or stop sounds, go Be right back, record, toggle ducking, switch output profiles.</span></li>
-              <li><b>Now Playing key</b><span>Album art and progress on a key. Press to play or pause.</span></li>
-            </ul>
+            <p>Sleekmeeter is free and MIT licensed. You’ll need Windows 10 or 11 and Voicemeeter Standard, Banana or Potato installed.</p>
+            <a class="button button-dark" href="https://github.com/minimalhandle/SleekMeeter/releases/latest"><svg class="icon"><use href="#i-windows"/></svg> Download for Windows <svg class="icon"><use href="#i-external"/></svg></a>
           </div>
         </div>
-        <div class="deck-foot">
-          <div class="icons">
-            <img src="img/streamdeck/streamdeck-icons.png" alt="A sample of the Studio icon pack: Discord, Spotify, Twitch, OBS and Philips Hue keys" width="696" height="784" loading="lazy" decoding="async">
-            <div class="head" style="gap:12px">
-              <h3>486 icons to match</h3>
-              <p>The Studio icon pack adds keys for Discord, Spotify, Twitch, OBS, Philips Hue and more to the Stream Deck icon library, in the same dark style, for your other buttons.</p>
-              <p style="color:var(--ink-3);font-size:15px">The plugin talks to Sleekmeeter on your own PC through its Sleekmeeter Remote address, pasted once. Nothing goes over the internet.</p>
-            </div>
-          </div>
+        <div class="install-options" aria-label="Download formats">
+          <div><span>SETUP.EXE</span><strong>Standard installer</strong><p>Install for your Windows account.</p></div>
+          <div><span>.MSI</span><strong>All-users installer</strong><p>Install in Program Files with administrator rights.</p></div>
+          <div><span>PORTABLE.ZIP</span><strong>Portable build</strong><p>Unzip and run Sleekmeeter from any folder.</p></div>
         </div>
       </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell">
+      <div class="footer-main">
+        <a class="brand" href="#top"><img src="./assets/mark.svg" alt="" width="35" height="35">Sleekmeeter</a>
+        <nav aria-label="Project links">
+          <a href="https://github.com/minimalhandle/SleekMeeter">GitHub <svg class="icon"><use href="#i-external"/></svg></a>
+          <a href="https://github.com/minimalhandle/SleekMeeter/blob/main/CHANGELOG.md">Changelog <svg class="icon"><use href="#i-external"/></svg></a>
+          <a href="https://vb-audio.com/Voicemeeter/">Voicemeeter <svg class="icon"><use href="#i-external"/></svg></a>
+          <a href="/api/stats">Live stats <svg class="icon"><use href="#i-arrow"/></svg></a>
+        </nav>
+      </div>
+      <p>Sleekmeeter is an independent, open-source project. Voicemeeter is made by VB-Audio.</p>
     </div>
-  </section>
-
-  <!-- STREAMING -->
-  <section class="band" id="streaming">
-    <div class="wrap">
-      <div class="head">
-        <p class="eyebrow">Streaming</p>
-        <h2>Run the show without leaving the game</h2>
-        <p class="lede">Sounds, an on-stream overlay, chat commands and remote control from your phone. Everything runs from the tray while you play.</p>
-      </div>
-      <div class="board">
-        <article class="tile b-sound">
-          <div class="txt">
-            <span class="where">Header → Sounds</span>
-            <h3>A soundboard that routes like a channel</h3>
-            <p>Drop in wav, mp3, ogg or flac files and each becomes a button. Play them into a Voicemeeter virtual input and every sound gets its own fader. Give a sound a hotkey, sort sounds into groups, or turn a folder into one random-pack button.</p>
-          </div>
-          <div class="media"><div class="window ar-dialog"><video data-src="media/soundboard.mp4" data-poster="media/soundboard.webp" data-loop muted playsinline preload="none" disablepictureinpicture aria-label="Adding sounds to the soundboard and playing them"></video></div></div>
-        </article>
-
-        <article class="tile b-phone">
-          <div class="txt">
-            <span class="where">Settings → Controls &amp; remote → Sleekmeeter Remote</span>
-            <h3>The mixer in your pocket</h3>
-            <p>Faders, mutes, Be right back, scenes, sounds and output profiles on any phone on your Wi-Fi. A secret key in the address keeps it yours, and nothing leaves your home network.</p>
-          </div>
-          <div class="media">
-            <div class="phone">
-              <span class="island" aria-hidden="true"></span>
-              <div class="screen"><video data-src="media/remote.mp4" data-poster="media/remote.webp" data-loop muted playsinline preload="none" disablepictureinpicture aria-label="Sleekmeeter Remote on a phone: Be right back, output switching, a fader and a mute"></video></div>
-              <span class="home" aria-hidden="true"></span>
-            </div>
-          </div>
-        </article>
-
-        <article class="tile b-overlay">
-          <div class="txt">
-            <span class="where">Settings → Controls &amp; remote → Sleekmeeter Remote · OBS Studio</span>
-            <h3>An overlay that tells chat what's going on</h3>
-            <p>Add one browser source in OBS and your scene shows a <b>MUTED</b> or <b>BRB</b> badge, a mic meter and the sound that just played. Connect OBS and Sleekmeeter can follow your scenes and react when you go live.</p>
-          </div>
-          <div class="media"><div class="window ar-wide"><video data-src="media/overlay.mp4" data-poster="media/overlay.webp" data-loop muted playsinline preload="none" disablepictureinpicture aria-label="The OBS overlay over a game scene, showing Muted, BRB and a sound name"></video></div></div>
-        </article>
-
-        <article class="tile b-chat">
-          <div class="chat-wrap">
-            <div class="txt">
-              <span class="where">Settings → Streaming → Twitch chat commands</span>
-              <h3>Let your mods run the board</h3>
-              <p>Add <code>!brb</code>, <code>!scene</code> and <code>!sound</code>, then choose who may use them: just you, you and your mods, or everyone. A cooldown stops spam. Channel point rewards can play sounds too.</p>
-              <p>Sleekmeeter joins chat as a silent, anonymous viewer. It never signs in and never posts.</p>
-            </div>
-            <div class="chat" id="chat" role="img" aria-label="Example chat: a moderator plays a sound, loads a scene and starts Be right back, and a viewer's command is ignored">
-              <div class="ch"><span>Stream chat</span><span class="live">Live</span></div>
-              <div class="log" id="chatLog" aria-hidden="true"></div>
-              <div class="foot" id="chatFoot" aria-hidden="true"><i></i><span id="chatText">Sleekmeeter is listening for your commands</span></div>
-            </div>
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- SETUP TOUR -->
-  <section class="band" id="setup">
-    <div class="wrap">
-      <div class="head">
-        <p class="eyebrow">Setup</p>
-        <h2>The fiddly parts, handled</h2>
-        <p class="lede">Switch devices, load a mix per game, tame app volumes and get a clean stream voice without touching Voicemeeter's own window.</p>
-      </div>
-      <div class="tour flip" data-tour>
-        <div class="tour-stage">
-          <div class="window ar-dialog"><video muted playsinline preload="none" disablepictureinpicture></video></div>
-        </div>
-        <div class="tour-list" role="tablist" aria-label="Setup features">
-          <button class="tab" role="tab" type="button" data-src="media/outputs.mp4" data-poster="media/outputs.webp" data-label="Saving Headphones and Speakers output setups and switching between them">
-            <span class="t">Output profiles</span><span class="where">Header → Outputs</span>
-            <span class="d"><span>Save headphones and speakers as setups and switch in one click. Turn on <b>Auto</b> and Sleekmeeter switches by itself when a device connects.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/scenes.mp4" data-poster="media/scenes.webp" data-label="Adding a rule that loads the Gaming scene when valorant.exe starts">
-            <span class="t">Scenes and game rules</span><span class="where">Header → Scenes</span>
-            <span class="d"><span>Save your whole mix as a scene. A rule can load <i>Gaming</i> when <code>valorant.exe</code> starts, switch outputs and change the theme, then put it all back when the game closes.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/apps.mp4" data-poster="media/apps.webp" data-label="Turning Spotify down and Chrome up in App volumes">
-            <span class="t">App volumes</span><span class="where">Header → Apps</span>
-            <span class="d"><span>Turn any app up or down before Voicemeeter hears it, and send it to a different output, like Discord into a virtual input.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/chain.mp4" data-poster="media/chain.webp" data-label="Choosing Mic chain presets with a live meter">
-            <span class="t">Mic chain</span><span class="where">⋯ → Mic chain</span>
-            <span class="d"><span>Noise gate, compressor and denoiser in one panel, with presets for a streamer voice, a gentle touch or a noisy room.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/setup.mp4" data-poster="media/setup.webp" data-label="Setup assistant choosing Streamer plus Discord and applying routing">
-            <span class="t">Setup assistant</span><span class="where">⋯ → Setup assistant</span>
-            <span class="d"><span>Pick <i>Just gaming + chat</i> or <i>Streamer + Discord</i>, check what will change, and the A1 and B1 routing is set on every channel.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/recorder.mp4" data-poster="media/recorder.webp" data-label="Choosing inputs, channels and MP3 format in the recorder">
-            <span class="t">Recorder</span><span class="where">Header → Rec</span>
-            <span class="d"><span>Record inputs or outputs as WAV, AIFF, BWF or MP3, from mono to 7.1, with one file per channel for multitrack.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-          <button class="tab" role="tab" type="button" data-src="media/history.mp4" data-poster="media/history.webp" data-label="Level history graph switching between time ranges">
-            <span class="t">Level history</span><span class="where">⋯ → Level history</span>
-            <span class="d"><span>See how loud every channel was over the last few hours, with a red line at 0 dB, so you know whether your mic clipped mid-stream.</span></span>
-            <span class="bar" aria-hidden="true"><i></i></span>
-          </button>
-        </div>
-      </div>
-
-      <dl class="specs" aria-label="More features">
-        <div class="spec"><dt>“You're muted”</dt><dd>Enable a talking-while-muted alert in Streaming settings. The overlay can tell you when you speak into a muted mic, even with Sleekmeeter in the tray.</dd></div>
-        <div class="spec"><dt>Go-live check</dt><dd>Mic on and sent to the stream, stream output has sound, OBS linked. One button checks it all, and it runs by itself when you go live.</dd></div>
-        <div class="spec"><dt>Silent stream warning</dt><dd>If your stream goes quiet for too long, or starts clipping, while you're live, Sleekmeeter says so.</dd></div>
-        <div class="spec"><dt>Music off stream</dt><dd>Keep your music out of the stream and your VODs while you're live or recording, and still hear it yourself.</dd></div>
-        <div class="spec"><dt>Instant replay</dt><dd>Keeps up to the last two minutes of your stream in memory. One key saves them as a WAV file for clipping a moment.</dd></div>
-        <div class="spec"><dt>Push to talk</dt><dd>Hold a key to open the mic. It closes a moment after you let go, so the end of a word isn't cut off. Push to mute works the other way round.</dd></div>
-        <div class="spec"><dt>Devices that come back</dt><dd>Unplug USB headphones or lose Bluetooth and the audio engine restarts by itself when the device returns.</dd></div>
-        <div class="spec"><dt>Shared device fallback policies</dt><dd>Copy or link an ordered playback list across hardware outputs and see which device is preferred or active.</dd></div>
-        <div class="spec"><dt>Audio Event History</dt><dd>See playback device changes, output fallbacks, app route recovery and plugin quarantine in a local timeline. Select an event to open its controls.</dd></div>
-        <div class="spec"><dt>Mute destinations and headphone cue</dt><dd>Choose what each channel’s Mute button targets. Audition an input through a physical playback device or switch between Personal and Stream in Listen to a mix.</dd></div>
-        <div class="spec"><dt>OBS audio tracks</dt><dd>Inspect live, VOD and recording track assignments and spot possible duplicate audio captures.</dd></div>
-        <div class="spec"><dt>Quick Actions</dt><dd>Press Ctrl+K to find a channel, scene, output profile, tool or setting from the mixer.</dd></div>
-        <div class="spec"><dt>Global shortcuts</dt><dd>Mute, volume, scenes, sounds, recording, ducking and BRB from any app, with an on-screen level overlay.</dd></div>
-        <div class="spec"><dt>Mic level check</dt><dd>Talk for eight seconds and it tells you if you're too quiet or too loud, then sets the fader for you.</dd></div>
-        <div class="spec"><dt>Mic Chain and guided tune-up</dt><dd>Adjust processing manually or measure room tone, speaking volume and a loud phrase for fader and gate suggestions. Preview the changes for eight seconds or keep them.</dd></div>
-        <div class="spec"><dt>NVIDIA mic clean-up</dt><dd>On an RTX card, NVIDIA's AI removes keyboard, fan and room noise from your mic, inside Voicemeeter, so every output hears the clean voice.</dd></div>
-        <div class="spec"><dt>VST3 plugins on your mic</dt><dd>Your own EQ, de-esser or compressor on the mic, right inside Voicemeeter, with presets. Plugins run in a separate helper, so one that crashes can't take your mic down.</dd></div>
-        <div class="spec"><dt>Speaker echo removal</dt><dd>No headphones? NVIDIA's AI takes your speakers out of your mic, so games and friends don't echo onto your stream.</dd></div>
-        <div class="spec"><dt>Clean up your friends too</dt><dd>Run NVIDIA's noise removal on the input Discord plays into, so you don't hear their keyboards and fans.</dd></div>
-        <div class="spec"><dt>Listening EQ and Night mode</dt><dd>Footsteps, Bass boost and Voice clarity presets, and a leveller that brings explosions down and dialogue up. No added delay, on every Voicemeeter.</dd></div>
-        <div class="spec"><dt>Plugins on outputs</dt><dd>Your own VST3 plugins on an output, like spatial audio on your headphones.</dd></div>
-        <div class="spec"><dt>Every mic, any key</dt><dd>Clean up a guest mic too. Switch clean-up off and on from a shortcut, the Stream Deck, your phone or chat, and per scene.</dd></div>
-        <div class="spec"><dt>Hear yourself</dt><dd>Records five seconds of your stream mix and plays it back, so you hear exactly what viewers hear.</dd></div>
-        <div class="spec"><dt>Guided audio tests</dt><dd>Send test tones through your game, chat and stream routes. Replay one mic take raw and processed at matched levels.</dd></div>
-        <div class="spec"><dt>Portable mic-chain presets</dt><dd>Move your NVIDIA settings and VST3 plugin states between PCs, with a compatibility preview before import.</dd></div>
-        <div class="spec"><dt>Live Audio Flow</dt><dd>Trace Windows apps through Voicemeeter inputs and outputs. Set up saved app assignments before a program starts making sound.</dd></div>
-        <div class="spec"><dt>Focused mixer and Stream menu</dt><dd>Keep active sends visible, expand the full routing grid when needed, and pin your most-used streaming controls to the toolbar.</dd></div>
-        <div class="spec"><dt>Stereo hardware effects</dt><dd>Keep the left and right channels of a capture card separate through a stereo VST3 chain.</dd></div>
-        <div class="spec"><dt>Stream Deck + starter profile</dt><dd>Import an editable layout for mic, game, chat and music dials, with scene and mute keys.</dd></div>
-        <div class="spec"><dt>Searchable Settings</dt><dd>Find a setting across six categories, from mixer and microphone controls to backups and updates.</dd></div>
-        <div class="spec"><dt>Voicemeeter options</dt><dd>Sample rate, buffers, exclusive and swift modes and output delays without opening Voicemeeter.</dd></div>
-        <div class="spec"><dt>Check my setup</dt><dd>Finds the usual problems: missing devices, shortcuts that couldn't register and a broken OBS link.</dd></div>
-        <div class="spec"><dt>Fix my audio</dt><dd>If Windows starts playing sound straight to a device and skips Voicemeeter, one click puts it back. Or let Sleekmeeter keep it there by itself.</dd></div>
-        <div class="spec"><dt>Voicemeeter backups</dt><dd>A copy of Voicemeeter's whole setup every day and before every big change, with a <b>Restore</b> button.</dd></div>
-        <div class="spec"><dt>Drag apps onto channels</dt><dd>Every app making sound appears in a tray. Drop it on a channel and it plays through that fader from then on, and it's remembered.</dd></div>
-        <div class="spec"><dt>Your channels, your way</dt><dd>Drag channels into any order, rename them, hide the ones you don't use, give each its own colour and icon.</dd></div>
-        <div class="spec"><dt>Starts with Windows</dt><dd>Straight to the tray if you like, starts Voicemeeter for you and hides Voicemeeter's own window.</dd></div>
-        <div class="spec"><dt>One-click updates</dt><dd>Downloads the new version, checks it against GitHub's checksum, installs it and reopens, then shows <b>What's new</b>. Check for updates any time in Settings.</dd></div>
-      </dl>
-    </div>
-  </section>
-
-  <!-- DOWNLOAD -->
-  <section class="get" id="download">
-    <div class="wrap">
-      <div class="get-panel">
-        <div class="head">
-          <p class="eyebrow">Download</p>
-          <h2>Get Sleekmeeter</h2>
-          <p class="lede">Free and open source under the MIT license. Pick the file that suits your PC from the latest release.</p>
-        </div>
-        <div class="files">
-          <div class="file main">
-            <span class="tag">Recommended</span>
-            <span class="fname">Sleekmeeter-<i>version</i>-setup.exe</span>
-            <p>Installs just for you, with no administrator rights, and updates itself. If Voicemeeter isn't installed, it tells you and offers to open VB-Audio's download page.</p>
-            <a class="btn primary sm" href="https://github.com/minimalhandle/SleekMeeter/releases/latest" target="_blank" rel="noopener">Get the latest release</a>
-          </div>
-          <div class="file">
-            <span class="tag">Installer</span>
-            <span class="fname">Sleekmeeter-<i>version</i>.msi</span>
-            <p>The same, installed for everyone on the PC in Program Files. Windows asks for administrator rights once.</p>
-            <a class="btn quiet sm" href="https://github.com/minimalhandle/SleekMeeter/releases/latest" target="_blank" rel="noopener">Releases</a>
-          </div>
-          <div class="file">
-            <span class="tag">No install</span>
-            <span class="fname">Sleekmeeter-<i>version</i>-portable.zip</span>
-            <p>Unzip anywhere and run Sleekmeeter.exe. Settings and scenes stay in a folder next to it.</p>
-            <a class="btn quiet sm" href="https://github.com/minimalhandle/SleekMeeter/releases/latest" target="_blank" rel="noopener">Releases</a>
-          </div>
-        </div>
-        <div class="req">
-          <p><b>Needs</b> Windows 10 or 11 and Voicemeeter Standard, Banana or Potato. Sleekmeeter adapts its layout to the edition you run.</p>
-          <p><b>Stream Deck:</b> the plugin and icon pack are on the same release page, and Sleekmeeter offers to install the plugin for you.</p>
-          <p>Voicemeeter is made by VB-Audio and is not included. Sleekmeeter is an independent project and isn't made by or affiliated with VB-Audio.</p>
-        </div>
-        <div class="vb">
-          <p><b>Listed by VB-Audio.</b> Sleekmeeter is on VB-Audio's own support page, among the open-source projects built with the Voicemeeter SDK.</p>
-          <a class="btn quiet sm" href="https://vb-audio.com/Services/support.htm" target="_blank" rel="noopener">See VB-Audio's support page</a>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <div class="wrap">
-    <p>Sleekmeeter is MIT licensed. Source code and issues are on <a href="https://github.com/minimalhandle/SleekMeeter" target="_blank" rel="noopener">GitHub</a>.</p>
-    <p>The clips and pictures on this page were recorded from Sleekmeeter's built-in preview mode, which simulates Voicemeeter. The Stream Deck pictures are drawn by the plugin with sample data.</p>
-    <p>Sleekmeeter can count its users if you say yes: one small anonymous message a day, and the totals are public at <a href="/api/stats">sleekmeeter.app/api/stats</a>.</p>
-    <p>Uses the Voicemeeter Remote API by Vincent Burel / VB-Audio. Voicemeeter is a trademark of VB-Audio Software.</p>
-  </div>
-</footer>
-
-<script>
-(() => {
-  "use strict";
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  /* ---------- nav border once scrolled ---------- */
-  const nav = document.getElementById("nav");
-  const onScroll = () => nav.classList.toggle("scrolled", scrollY > 8);
-  addEventListener("scroll", onScroll, { passive: true }); onScroll();
-
-  /* ---------- video budget ----------
-     Only videos on screen play. A video far off screen gives its file back,
-     and no more than MAX videos hold a file at once. */
-  const MAX = 3;
-  const videos = [...document.querySelectorAll("video")];
-  const state = new Map(videos.map((v) => [v, { visible: false, near: false }]));
-  const hasFile = (v) => !!v.getAttribute("src");
-  function unload(v) {
-    if (!hasFile(v)) return;
-    v.pause(); v.removeAttribute("src"); v.load();
-  }
-  function ensurePoster(v) {
-    const p = v.dataset.poster;
-    if (p && v.getAttribute("poster") !== p) v.setAttribute("poster", p);
-  }
-  function enforceBudget() {
-    const loaded = videos.filter(hasFile);
-    if (loaded.length <= MAX) return;
-    const mid = innerHeight / 2;
-    const dist = (v) => { const r = v.getBoundingClientRect(); return Math.abs(r.top + r.height / 2 - mid); };
-    loaded.filter((v) => !state.get(v).visible).sort((a, b) => dist(b) - dist(a))
-      .slice(0, loaded.length - MAX).forEach(unload);
-  }
-  function start(v) {
-    const s = state.get(v);
-    if (!s.visible || !v.dataset.src) return;
-    ensurePoster(v);
-    if (v.getAttribute("src") !== v.dataset.src) { v.src = v.dataset.src; enforceBudget(); }
-    if (reduce) { v.controls = true; return; }
-    const p = v.play(); if (p) p.catch(() => {});
-  }
-  videos.forEach((v) => {
-    v.muted = true; v.loop = v.hasAttribute("data-loop");
-    v.addEventListener("playing", () => v.closest(".window")?.classList.remove("switching"));
-  });
-  const seeIO = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      const v = e.target, s = state.get(v);
-      s.visible = e.isIntersecting && (e.intersectionRatio >= 0.2 || e.intersectionRect.height >= 200);
-      if (s.visible) start(v); else if (!v.paused) v.pause();
-    }
-  }, { threshold: [0, 0.05, 0.1, 0.2, 0.3] });
-  const nearIO = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      const v = e.target, s = state.get(v);
-      s.near = e.isIntersecting;
-      if (s.near) ensurePoster(v); else unload(v);
-    }
-  }, { rootMargin: "120% 0px" });
-  videos.forEach((v) => { seeIO.observe(v); nearIO.observe(v); });
-
-  /* ---------- feature tours: one video each, auto-advance, progress bars ---------- */
-  document.querySelectorAll("[data-tour]").forEach((root) => {
-    const tabs = [...root.querySelectorAll('[role="tab"]')];
-    const v = root.querySelector("video"), win = v.closest(".window");
-    const id = "stage-" + Math.random().toString(36).slice(2, 8);
-    win.id = id; win.setAttribute("role", "tabpanel");
-    let cur = -1, raf = 0;
-    const bar = (i) => tabs[i].querySelector(".bar i");
-    function select(i, focus) {
-      i = (i + tabs.length) % tabs.length;
-      if (i === cur) return;
-      cur = i;
-      tabs.forEach((t, k) => {
-        const on = k === i;
-        t.setAttribute("aria-selected", String(on)); t.tabIndex = on ? 0 : -1; t.setAttribute("aria-controls", id);
-        bar(k).style.transform = "scaleX(0)";
-      });
-      const t = tabs[i];
-      if (focus) t.focus();
-      v.dataset.src = t.dataset.src; v.dataset.poster = t.dataset.poster;
-      v.setAttribute("aria-label", t.dataset.label);
-      const s = state.get(v);
-      if (s.near) ensurePoster(v);
-      if (s.visible) { win.classList.add("switching"); start(v); }
-      else unload(v);
-    }
-    function tick() {
-      if (v.duration) bar(cur).style.transform = `scaleX(${Math.min(1, v.currentTime / v.duration)})`;
-      raf = v.paused ? 0 : requestAnimationFrame(tick);
-    }
-    v.addEventListener("playing", () => { if (!raf) raf = requestAnimationFrame(tick); });
-    v.addEventListener("ended", () => { bar(cur).style.transform = "scaleX(1)"; if (!reduce) select(cur + 1); });
-    tabs.forEach((t, k) => {
-      t.addEventListener("click", () => select(k));
-      t.addEventListener("keydown", (e) => {
-        const d = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
-        if (d) { e.preventDefault(); select(cur + d, true); }
-        if (e.key === "Home") { e.preventDefault(); select(0, true); }
-        if (e.key === "End") { e.preventDefault(); select(tabs.length - 1, true); }
-      });
-    });
-    select(0);
-  });
-
-  /* ---------- theme picker ---------- */
-  const THEMES = [
-    ["console", "Console", "The dark hardware desk with amber light. The default."],
-    ["oled", "OLED black", "True black with high-contrast controls."],
-    ["darkroom", "Darkroom", "A red safelight, film-strip channels and enlarger-knob faders."],
-    ["glass", "Glass", "Frosted panes with rainbow rims over vivid, ever-moving light, and clear glass-bead faders."],
-    ["overclock", "Overclock", "A modern gaming rig: carbon-fibre panels with angled corners, an RGB light strip down each channel and angled fader caps."],
-    ["cassette", "Cassette", "An 80s mixtape: smoked plastic, handwritten label cards and piano-key buttons."],
-    ["groovy", "Groovy", "A 70s lounge with TV-screen strips, rainbow stripes and lava-lamp fader caps."],
-    ["neon", "Neon", "A dark synth night with glowing outlines and flat light-bar caps."],
-    ["terminal", "Terminal", "Green phosphor, monospace type, square corners and [bracketed] keys."],
-    ["arcade", "Arcade", "An 8-bit cabinet with pixel-stepped corners and chunky blocks."],
-    ["block", "Block", "Bold and flat, with thick outlines, hard shadows and bright colour blocks."],
-    ["transit", "Transit", "Station signage: each channel is a coloured line, with interchange-marker faders and a little train."],
-    ["greenhouse", "Greenhouse", "Misted glass panes, plant markers and terracotta pot faders."],
-    ["bubblegum", "Bubblegum", "Pink and sparkly, with heart-capped candy faders and cute icons for each channel."],
-    ["peach", "Peaches & Cream", "Peach-capped faders, heart-shaped meters, scalloped cards and a lavender Sleepy button in place of Mute."],
-  ];
-  const CYCLE = 3600;
-  const picker = document.getElementById("picker"), win = document.getElementById("themeWin");
-  const layers = [...win.querySelectorAll("img")];
-  const nameEl = document.getElementById("themeName"), descEl = document.getElementById("themeDesc");
-  let tcur = 0, front = 0, timer = 0, touched = false, inView = false, token = 0;
-  picker.style.setProperty("--cycle", CYCLE + "ms");
-  const cards = THEMES.map(([id, name], i) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "tcard"; b.setAttribute("aria-pressed", String(i === 0));
-    b.innerHTML = `<img src="img/themes/${id}-sm.webp" alt="" loading="lazy" decoding="async" width="360" height="203"><span>${name}</span><i class="bar" aria-hidden="true"></i>`;
-    b.addEventListener("click", () => { touched = true; stopCycle(); show(i); });
-    picker.appendChild(b);
-    return b;
-  });
-  function show(i) {
-    tcur = i;
-    cards.forEach((c, k) => { c.setAttribute("aria-pressed", String(k === i)); c.classList.remove("cycling"); });
-    nameEl.textContent = THEMES[i][1]; descEl.textContent = THEMES[i][2];
-    const t = ++token, back = layers[1 - front], src = `img/themes/${THEMES[i][0]}.webp`;
-    const swap = () => {
-      if (t !== token) return;
-      back.alt = `Sleekmeeter in the ${THEMES[i][1]} theme`; layers[front].alt = "";
-      back.classList.add("on"); layers[front].classList.remove("on"); front = 1 - front;
-    };
-    if (back.getAttribute("src") === src && back.complete) swap();
-    else { back.onload = swap; back.src = src; }
-    if (timer) armBar();
-  }
-  function armBar() { const c = cards[tcur]; c.classList.remove("cycling"); void c.offsetWidth; c.classList.add("cycling"); }
-  function startCycle() {
-    if (reduce || touched || timer) return;
-    armBar();
-    timer = setInterval(() => {
-      const n = (tcur + 1) % THEMES.length;
-      new Image().src = `img/themes/${THEMES[(n + 1) % THEMES.length][0]}.webp`;
-      show(n);
-    }, CYCLE);
-  }
-  function stopCycle() { clearInterval(timer); timer = 0; cards.forEach((c) => c.classList.remove("cycling")); }
-  new IntersectionObserver((es) => { inView = es[0].isIntersecting; if (inView) startCycle(); else stopCycle(); }, { threshold: 0.35 }).observe(win);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) stopCycle(); else if (inView) startCycle(); });
-
-  /* ---------- chat commands demo ---------- */
-  const SCRIPT = [
-    { u: "mara_plays", c: "#ff7ad9", t: "that clutch was unreal" },
-    { u: "dev_null", c: "#54d4ff", mod: 1, t: "<code>!sound airhorn</code>", f: "Played <b>airhorn</b> on stream" },
-    { u: "korvus", c: "#ffc66d", t: "LMAO" },
-    { u: "dev_null", c: "#54d4ff", mod: 1, t: "<code>!scene Gaming</code>", f: "Loaded the <b>Gaming</b> scene" },
-    { u: "pixelpaws", c: "#4be08a", t: "<code>!brb</code>", f: "Ignored: only you and your mods can use !brb", no: 1 },
-    { u: "dev_null", c: "#54d4ff", mod: 1, t: "<code>!brb</code>", f: "Be right back: mic muted, game down, music up" },
-    { u: "mara_plays", c: "#ff7ad9", t: "see you in 5" },
-  ];
-  const log = document.getElementById("chatLog"), foot = document.getElementById("chatFoot"), ftxt = document.getElementById("chatText");
-  const IDLE = "Sleekmeeter is listening for your commands";
-  const line = (m) => {
-    const d = document.createElement("div"); d.className = "msg";
-    d.innerHTML = (m.mod ? '<span class="mod">MOD</span>' : "") + `<b style="color:${m.c}">${m.u}</b>: ${m.t}`;
-    log.appendChild(d); while (log.children.length > 7) log.firstChild.remove();
-  };
-  SCRIPT.slice(0, 3).forEach(line);
-  if (!reduce) {
-    let i = 3, tm = 0;
-    const step = () => {
-      const m = SCRIPT[i % SCRIPT.length]; i++; line(m);
-      foot.classList.toggle("fire", !!m.f && !m.no); foot.classList.toggle("no", !!m.no);
-      if (m.f) ftxt.innerHTML = m.f; else ftxt.textContent = IDLE;
-      tm = setTimeout(step, m.f ? 2600 : 1500);
-    };
-    new IntersectionObserver((es) => {
-      if (es[0].isIntersecting && !tm) tm = setTimeout(step, 700);
-      if (!es[0].isIntersecting && tm) { clearTimeout(tm); tm = 0; }
-    }, { threshold: 0.3 }).observe(document.getElementById("chat"));
-  }
-})();
-</script>
-
+  </footer>
 </body>
 </html>
