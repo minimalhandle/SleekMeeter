@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.21.3
 - **Fixed the Glass toolbar covering a channel's panel.** With the panel open, the toolbar sat on top of its name, close button and Routing / Sound / Appearance tabs. The panel now opens over the toolbar, as it does in every other theme.
 - **Sleekmeeter Remote reports each channel's Windows device.** `/api/state` now includes the playback or recording device Voicemeeter uses for each hardware channel (empty for virtual ones), so other apps can listen to the same audio as a channel. This is for an upcoming music visualizer for Stream Deck.
 - **The Stream Deck plugin (0.21.2.0) and icon pack (2.0.3) now list Sleekmeeter as their author.**
