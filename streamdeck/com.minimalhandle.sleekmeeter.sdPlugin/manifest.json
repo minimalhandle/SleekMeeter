@@ -1,7 +1,7 @@
 {
   "Name": "Sleekmeeter",
-  "Version": "0.21.0.0",
-  "Author": "minimalhandle",
+  "Version": "0.21.2.0",
+  "Author": "Sleekmeeter",
   "Description": "Studio live controls for Sleekmeeter: channel and app volume dials, live meters, and Now Playing with Windows media-session artwork and timeline.",
   "Category": "Sleekmeeter",
   "CategoryIcon": "imgs/category",
