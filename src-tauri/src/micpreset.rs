@@ -1,5 +1,7 @@
 //! Portable NVIDIA/VST3 chains. Paths and instance IDs are always resolved on this PC.
 
+use crate::LockExt;
+
 use crate::{files, micfx, pluginhost, settings, Settings};
 use base64::Engine as _;
 use serde_json::{json, Value};
@@ -19,8 +21,40 @@ struct Pending {
 
 static PENDING: Mutex<Option<Pending>> = Mutex::new(None);
 
+#[cfg(test)]
+mod voice_tests {
+    use super::*;
+    #[test]
+    fn portable_cpu_settings_keep_rider_and_legacy_defaults() {
+        let (cpu, rider) = portable_voice(
+            &json!({"engine":"cpu","rider":{"on":true,"maxBoostDb":6,"targetDb":-24}}),
+        )
+        .unwrap();
+        assert!(cpu);
+        assert_eq!(rider["on"], true);
+        assert_eq!(rider["maxBoostDb"], 6.0);
+        assert_eq!(rider["targetDb"], -24.0);
+        assert!(!portable_voice(&json!({})).unwrap().0);
+        assert!(portable_voice(&json!({"engine":"unknown"})).is_err());
+    }
+}
+
 pub fn clear() {
-    *PENDING.lock().unwrap() = None;
+    *PENDING.locked() = None;
+}
+
+fn portable_voice(v: &Value) -> Result<(bool, Value), String> {
+    let cpu = match v["engine"].as_str().unwrap_or("nvidia") {
+        "cpu" => true,
+        "nvidia" => false,
+        _ => return Err("Unknown noise removal engine in preset.".into()),
+    };
+    let r = crate::voice::RiderConfig::from_json(&v["rider"]);
+    Ok((
+        cpu,
+        json!({"on":r.on,"targetDb":r.target_db,"maxBoostDb":r.max_boost_db,
+        "maxCutDb":r.max_cut_db,"speedDb":r.speed_db}),
+    ))
 }
 
 fn chain(s: &Value, id: &str) -> Result<Value, String> {
@@ -33,7 +67,7 @@ fn chain(s: &Value, id: &str) -> Result<Value, String> {
 pub fn export(app: &AppHandle, id: &str) -> Result<bool, String> {
     let (chain, cached) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         (chain(&s, id)?, s["vstState"].clone())
     };
     let Some(path) = files::mic_preset_dialog(true) else {
@@ -62,6 +96,8 @@ pub fn export(app: &AppHandle, id: &str) -> Result<bool, String> {
         "on": chain["on"] == true, "aec": chain["aec"] == true,
         "stereo": chain["stereo"] == true,
         "effect": chain["effect"].as_str().unwrap_or("denoiser"),
+        "engine": chain["engine"].as_str().unwrap_or("nvidia"),
+        "rider": chain["rider"],
         "strength": chain["strength"].as_f64().unwrap_or(100.0),
         "plugins": plugins
     });
@@ -96,6 +132,7 @@ pub fn preview(app: &AppHandle, id: &str) -> Result<Option<Value>, String> {
     if preset["format"] != FORMAT || preset["version"] != 1 {
         return Err("Choose a version 1 Sleekmeeter mic-chain preset.".into());
     }
+    let (cpu, rider) = portable_voice(&preset)?;
     let effect = preset["effect"]
         .as_str()
         .and_then(|effect| micfx::EFFECTS.iter().find(|(key, _)| *key == effect))
@@ -119,7 +156,7 @@ pub fn preview(app: &AppHandle, id: &str) -> Result<Option<Value>, String> {
     }
     let (original, local, quarantine) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let local: Vec<Value> = micfx::chains_json(&s["micFx"])
             .iter()
             .flat_map(|c| c["plugins"].as_array().into_iter().flatten().cloned())
@@ -150,7 +187,7 @@ pub fn preview(app: &AppHandle, id: &str) -> Result<Option<Value>, String> {
         }
     }
     let stereo = preset["stereo"] == true;
-    let wants_nvidia = !stereo && (preset["on"] == true || preset["aec"] == true);
+    let wants_nvidia = !stereo && ((!cpu && preset["on"] == true) || preset["aec"] == true);
     let nvidia = micfx::available();
     if wants_nvidia {
         notes.push(if nvidia {
@@ -161,7 +198,12 @@ pub fn preview(app: &AppHandle, id: &str) -> Result<Option<Value>, String> {
     }
     let mut replacement = original.clone();
     replacement["stereo"] = json!(stereo);
-    replacement["on"] = json!(nvidia && preset["on"] == true);
+    replacement["on"] = json!((cpu || nvidia) && preset["on"] == true);
+    replacement["engine"] = json!(if cpu { "cpu" } else { "nvidia" });
+    replacement["rider"] = rider;
+    if cpu || preset["rider"]["on"] == true {
+        notes.push("CPU noise removal and mic level riding require Voicemeeter at 48 kHz.".into());
+    }
     replacement["aec"] = json!(nvidia && preset["aec"] == true);
     replacement["effect"] = json!(effect.0);
     replacement["strength"] = json!(strength);
@@ -200,9 +242,9 @@ pub fn preview(app: &AppHandle, id: &str) -> Result<Option<Value>, String> {
         results.push(json!({"name": found["name"], "status": status}));
     }
     replacement["plugins"] = json!(imported);
-    let result = json!({ "effect": effect.1, "strength": strength, "on": preset["on"] == true, "stereo": stereo,
+    let result = json!({ "effect": if cpu { "CPU noise removal (RNNoise)" } else { effect.1 }, "engine": if cpu { "cpu" } else { "nvidia" }, "rider": replacement["rider"], "strength": strength, "on": preset["on"] == true, "stereo": stereo,
         "aec": preset["aec"] == true, "notes": notes, "plugins": results });
-    *PENDING.lock().unwrap() = Some(Pending {
+    *PENDING.locked() = Some(Pending {
         original,
         replacement,
         states,
@@ -211,13 +253,13 @@ pub fn preview(app: &AppHandle, id: &str) -> Result<Option<Value>, String> {
 }
 
 pub fn apply(app: &AppHandle, id: &str) -> Result<Value, String> {
-    let mut pending = PENDING.lock().unwrap();
+    let mut pending = PENDING.locked();
     let preset = pending
         .as_ref()
         .filter(|p| p.original["id"] == id)
         .ok_or("Preview a preset first.")?;
     let store = app.state::<Settings>();
-    let mut s = store.0.lock().unwrap();
+    let mut s = store.0.locked();
     let mut next = s.clone();
     let mut chains = micfx::chains_json(&next["micFx"]);
     let destination = chains

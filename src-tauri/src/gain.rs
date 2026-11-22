@@ -312,6 +312,31 @@ impl Smooth {
     }
 
     /// Forget everything (a scene is replacing all levels). Ducking pauses for `hold`.
+    /// A scene writes mute immediately. Cancel mute timing while retaining level/duck history.
+    /// Return a gain correction only when cancelling an audible mute fade already sent to VM.
+    pub fn scene_mute(&mut self, key: &str, want: bool, now: Instant) -> Vec<String> {
+        let Some(c) = self.chans.get_mut(key) else {
+            return Vec::new();
+        };
+        let fading_mute = c.mute_at.take().is_some() || (c.shown_mute.is_some() && now < c.settle);
+        c.shown_mute = Some(want);
+        if fading_mute {
+            let e = c.eff();
+            c.expect = e;
+            c.settle = now + Duration::from_millis(150);
+            return vec![set_line(key, "Gain", e)];
+        }
+        c.settle = c.settle.max(now + Duration::from_millis(150));
+        Vec::new()
+    }
+
+    pub fn forget_channels(&mut self, keys: &[String]) {
+        for key in keys {
+            self.chans.remove(key);
+            self.aims.remove(key);
+        }
+    }
+
     pub fn forget(&mut self, now: Instant, hold: Duration) {
         self.chans.clear();
         self.aims.clear();
@@ -542,5 +567,61 @@ mod tests {
             ]
         );
         assert!(!s.is_managed("Strip[3]"));
+    }
+
+    #[test]
+    fn partial_scene_forgets_only_selected_channels() {
+        let t = Instant::now();
+        let mut s = Smooth::new();
+        s.mute("Strip[0]", -3.0, false, true, 300, t);
+        s.mute("Bus[0]", -5.0, false, true, 300, t);
+        s.forget_channels(&["Strip[0]".to_owned()]);
+        assert!(!s.is_managed("Strip[0]"));
+        assert!(s.is_managed("Bus[0]"));
+        assert!(s.tick(t + ms(400)).iter().all(|s| !s.contains("Strip[0]")));
+    }
+
+    #[test]
+    fn mute_only_scene_keeps_ducking_baseline_for_release() {
+        let t = Instant::now();
+        let mut s = Smooth::new();
+        s.duck(&[("Strip[0]".into(), -4.0)], 10.0, 100, t);
+        assert!(s.scene_mute("Strip[0]", true, t + ms(200)).is_empty());
+        assert_eq!(s.current("Strip[0]", -14.0, t + ms(200)), -4.0);
+        assert_eq!(
+            s.unduck(250, t + ms(500)),
+            vec!["Strip[0].FadeTo = (-4.0, 250);"]
+        );
+    }
+
+    #[test]
+    fn mute_only_scene_cancels_pending_mute_without_losing_baseline() {
+        let t = Instant::now();
+        let mut s = Smooth::new();
+        s.duck(&[("Strip[0]".into(), -4.0)], 10.0, 100, t);
+        s.mute("Strip[0]", -14.0, false, true, 300, t);
+        assert_eq!(
+            s.scene_mute("Strip[0]", false, t + ms(100)),
+            vec!["Strip[0].Gain = -14.00;"]
+        );
+        assert!(!s.is_muted("Strip[0]", true));
+        assert!(s.tick(t + ms(400)).is_empty());
+        assert_eq!(
+            s.unduck(250, t + ms(500)),
+            vec!["Strip[0].FadeTo = (-4.0, 250);"]
+        );
+    }
+
+    #[test]
+    fn mute_only_scene_preserves_in_progress_gain_aims() {
+        let t = Instant::now();
+        let mut s = Smooth::new();
+        s.glide("Strip[0]", -12.0, 800, t);
+        assert!(s.scene_mute("Strip[0]", true, t + ms(100)).is_empty());
+        assert_eq!(s.current("Strip[0]", -8.0, t + ms(200)), -12.0);
+        assert_eq!(
+            s.glide("Strip[0]", -10.0, 100, t + ms(200)),
+            vec!["Strip[0].FadeTo = (-10.0, 100);"]
+        );
     }
 }

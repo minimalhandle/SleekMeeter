@@ -1,5 +1,7 @@
 //! A small local timeline of the decisions that can change what the mixer hears.
 
+use crate::LockExt;
+
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{Mutex, OnceLock};
@@ -60,7 +62,7 @@ pub fn record(app: &AppHandle, kind: &str, title: &str, detail: &str, target: &s
         detail: bounded(detail),
         target: bounded(target),
     };
-    let mut events = store().lock().unwrap();
+    let mut events = store().locked();
     if events.front().is_some_and(|last| {
         at.saturating_sub(last.at) < 10_000
             && last.kind == event.kind
@@ -80,11 +82,11 @@ pub fn record(app: &AppHandle, kind: &str, title: &str, detail: &str, target: &s
 }
 
 pub fn list() -> Vec<Event> {
-    store().lock().unwrap().iter().cloned().collect()
+    store().locked().iter().cloned().collect()
 }
 
 pub fn clear(app: &AppHandle) -> Result<(), String> {
-    let mut events = store().lock().unwrap();
+    let mut events = store().locked();
     save(&VecDeque::new())?;
     events.clear();
     drop(events);

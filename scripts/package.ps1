@@ -23,11 +23,20 @@ Remove-Item 'src-tauri\target\release\bundle\nsis\*.exe' -Force -ErrorAction Sil
 powershell -NoProfile -ExecutionPolicy Bypass -File streamdeck\package.ps1
 if ($LASTEXITCODE -ne 0) { throw 'Packaging the Stream Deck plugin failed' }
 
-Write-Host "Building Sleekmeeter $ver (exe, installer and MSI)..."
-npx tauri build
+# The MSI format only takes numbers after the dash, so a test version like 0.22.0-beta.1 ships
+# without one (the installer and portable zip cover it).
+$withMsi = $ver -notmatch '-' -or $ver -match '^\d+\.\d+\.\d+-\d+$'
+if ($withMsi) {
+    Write-Host "Building Sleekmeeter $ver (exe, installer and MSI)..."
+    npx tauri build
+} else {
+    Write-Host "Building Sleekmeeter $ver (exe and installer; no MSI for this version)..."
+    npx tauri build --bundles nsis
+}
 if ($LASTEXITCODE -ne 0) { throw 'tauri build failed' }
 
 $exe = 'src-tauri\target\release\sleekmeeter.exe'
+if ($withMsi) {
 $msi = Get-ChildItem 'src-tauri\target\release\bundle\msi' -Filter "*_$($ver)_*.msi" | Select-Object -First 1
 if (-not $msi) { throw "No MSI for version $ver was produced" }
 
@@ -44,6 +53,7 @@ if ($msiVer -ne $ver) { throw "The MSI says version $msiVer but package.json say
 Write-Host "MSI: $($msi.Name) (version $msiVer)"
 
 Copy-Item $msi.FullName (Join-Path $out "Sleekmeeter-$ver.msi")
+}
 
 $nsis = Get-ChildItem 'src-tauri\target\release\bundle\nsis' -Filter "*_$($ver)_*-setup.exe" | Select-Object -First 1
 if (-not $nsis) { throw "No per-user setup for version $ver was produced" }

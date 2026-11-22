@@ -5,6 +5,8 @@
 //! check when I start streaming" it runs by itself a few seconds after OBS goes live: anything
 //! wrong shows on the overlay and the list opens in the mixer.
 
+use crate::LockExt;
+
 use crate::vm::Layout;
 use crate::watch::{bus_param, name_of, since_sound, stream_bus, strip_index};
 use crate::{brb, obs, replay, show_osd_alert, twitch, watch, winout, Settings, Vm};
@@ -40,8 +42,8 @@ fn ago(secs: f64) -> String {
 
 /// Run every check: `ok`, `warn` or `bad` for each.
 pub fn run(app: &AppHandle) -> Vec<Value> {
-    let snap = app.state::<Vm>().last.lock().unwrap().clone();
-    let s = app.state::<Settings>().0.lock().unwrap().clone();
+    let snap = app.state::<Vm>().last.locked().clone();
+    let s = app.state::<Settings>().0.locked().clone();
     let mut out = Vec::new();
     if !snap["connected"].as_bool().unwrap_or(false) {
         out.push(item(
@@ -291,7 +293,7 @@ pub fn run(app: &AppHandle) -> Vec<Value> {
 /// OBS just went live: run the check a few seconds later (so the stream output has had time to
 /// get sound) and speak up if something's wrong.
 pub fn on_live(app: &AppHandle) {
-    let wanted = app.state::<Settings>().0.lock().unwrap()["goLive"]["onLive"]
+    let wanted = app.state::<Settings>().0.locked()["goLive"]["onLive"]
         .as_bool()
         .unwrap_or(true);
     if !wanted {

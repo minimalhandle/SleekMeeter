@@ -1,4 +1,6 @@
 //! Live game/chat balance shared by the mixer and shortcut actions.
+
+use crate::LockExt;
 use crate::{api, fades, vm::Api, Layout, Settings, SettingsDirty, Vm};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -59,19 +61,19 @@ fn summary(live: &Option<Balance>) -> Value {
 fn load(app: &AppHandle, live: &mut Option<Balance>) {
     if live.is_none() {
         *live = serde_json::from_value(
-            app.state::<Settings>().0.lock().unwrap()["chatBalanceLive"].clone(),
+            app.state::<Settings>().0.locked()["chatBalanceLive"].clone(),
         )
         .ok();
     }
 }
 
 fn remember(app: &AppHandle, live: &Option<Balance>) {
-    app.state::<Settings>().0.lock().unwrap()["chatBalanceLive"] = json!(live);
+    app.state::<Settings>().0.locked()["chatBalanceLive"] = json!(live);
     app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
 }
 
 pub fn status(app: &AppHandle) -> Value {
-    let mut live = LIVE.lock().unwrap();
+    let mut live = LIVE.locked();
     load(app, &mut live);
     summary(&live)
 }
@@ -90,7 +92,7 @@ pub fn change(
         .edition()
         .ok_or("Start Voicemeeter to adjust Game / Chat.")?;
     let layout = Layout::for_edition(edition);
-    let mut live = LIVE.lock().unwrap();
+    let mut live = LIVE.locked();
     load(app, &mut live);
     if live.as_ref().is_some_and(|b| b.edition != edition) {
         *live = None;
@@ -113,7 +115,7 @@ pub fn change(
         None => match live.as_ref() {
             Some(b) => b.selection.clone(),
             None => serde_json::from_value(
-                app.state::<Settings>().0.lock().unwrap()["chatBalance"].clone(),
+                app.state::<Settings>().0.locked()["chatBalance"].clone(),
             )
             .map_err(|_| "Open Game / Chat and save your input and output assignments.")?,
         },

@@ -80,6 +80,7 @@ pub fn live_stop(owner: Option<&str>) {
 
 #[cfg(windows)]
 mod imp {
+    use crate::LockExt;
     use rodio::buffer::SamplesBuffer;
     use rodio::cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use rodio::cpal::SampleFormat;
@@ -114,12 +115,12 @@ mod imp {
         let (stream, channels, rate) = listen(
             input,
             false,
-            move |d| sink.lock().unwrap().extend_from_slice(d),
+            move |d| sink.locked().extend_from_slice(d),
             |e| log_warn!("Hear-yourself test: {e}"),
         )?;
         during()?;
         drop(stream);
-        let samples = std::mem::take(&mut *data.lock().unwrap());
+        let samples = std::mem::take(&mut *data.locked());
         if samples.is_empty() {
             return Err("Nothing was recorded. Is Voicemeeter running?".into());
         }
@@ -232,7 +233,7 @@ mod imp {
         }
     }
     pub fn live_stop(owner: Option<&str>) {
-        let mut live = LIVE.lock().unwrap();
+        let mut live = LIVE.locked();
         if owner.is_none()
             || live
                 .as_ref()
@@ -248,7 +249,7 @@ mod imp {
         output: String,
         cue: Option<bool>,
     ) -> Result<(), String> {
-        let mut live = LIVE.lock().unwrap();
+        let mut live = LIVE.locked();
         if let Some(previous) = live.as_ref().filter(|m| m.owner != owner) {
             let _ = app.emit_to(
                 previous.owner.as_str(),

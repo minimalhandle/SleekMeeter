@@ -12,6 +12,8 @@
 //!
 //! OBS: Tools → WebSocket Server Settings → Enable (the default port is 4455).
 
+use crate::LockExt;
+
 use crate::{brb, load_scene_auto, Settings};
 use base64::Engine as _;
 use serde_json::{json, Value};
@@ -37,7 +39,7 @@ fn idle(message: &str) -> Value {
 
 /// What the mixer shows about OBS right now.
 pub fn status() -> Value {
-    let s = STATUS.lock().unwrap().clone();
+    let s = STATUS.locked().clone();
     if s.is_null() {
         idle("Off")
     } else {
@@ -46,7 +48,7 @@ pub fn status() -> Value {
 }
 
 fn publish(app: &AppHandle, v: Value) {
-    *STATUS.lock().unwrap() = v.clone();
+    *STATUS.locked() = v.clone();
     let _ = app.emit("obs-status", v);
 }
 
@@ -65,7 +67,7 @@ impl PartialEq for Cfg {
 
 fn cfg(app: &AppHandle) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let o = &s["obs"];
     let host = o["host"]
         .as_str()
@@ -414,7 +416,7 @@ fn act(app: &AppHandle, what: &str, scene: &str, because: &str) {
 fn on_scene(app: &AppHandle, name: &str) {
     let rule = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let found = s["obs"]["rules"].as_array().and_then(|rules| {
             rules
                 .iter()
@@ -443,7 +445,7 @@ fn on_scene(app: &AppHandle, name: &str) {
 fn on_live(app: &AppHandle, live: bool) {
     let (what, scene) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let o = &s["obs"];
         let (d, sc) = if live {
             ("liveDo", "liveScene")
@@ -546,9 +548,30 @@ fn session(app: &AppHandle, c: &Cfg) -> Result<(), String> {
     }
 }
 
+/// OBS on this PC (the usual setup), as opposed to OBS on a second streaming PC.
+fn local_host(host: &str) -> bool {
+    matches!(
+        host.trim().to_lowercase().as_str(),
+        "" | "localhost" | "127.0.0.1" | "::1" | "[::1]"
+    )
+}
+
+fn obs_running() -> bool {
+    let running = crate::apps::running();
+    ["obs64.exe", "obs32.exe", "obs.exe"]
+        .iter()
+        .any(|exe| running.contains(*exe))
+}
+
+/// Waits between attempts: 3 s, then longer each time OBS doesn't answer, up to a minute.
+fn backoff(failures: u32) -> Duration {
+    RETRY * 2u32.pow(failures.min(5)).min(20)
+}
+
 pub fn spawn(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last_error = String::new();
+        let mut failures = 0u32;
         loop {
             let c = cfg(&app);
             if !c.on {
@@ -556,22 +579,42 @@ pub fn spawn(app: AppHandle) {
                     publish(&app, idle("Off"));
                 }
                 last_error.clear();
+                failures = 0;
                 std::thread::sleep(Duration::from_secs(2));
                 continue;
             }
+            // OBS on this PC isn't open: wait for it quietly instead of knocking every few seconds.
+            if local_host(&c.host) && !obs_running() {
+                const WAITING: &str = "Waiting for OBS to start";
+                if status()["message"] != json!(WAITING) {
+                    publish(&app, idle(WAITING));
+                }
+                last_error.clear();
+                failures = 0;
+                std::thread::sleep(RETRY);
+                continue;
+            }
+            let started = std::time::Instant::now();
             let message = match session(&app, &c) {
                 Ok(()) => String::new(), // settings changed: reconnect straight away
                 Err(e) => e,
             };
             if message.is_empty() {
+                failures = 0;
                 continue;
             }
+            // A session that ran a while before ending wasn't a failure to connect.
+            failures = if started.elapsed() > Duration::from_secs(30) {
+                0
+            } else {
+                failures + 1
+            };
             if message != last_error {
                 log_warn!("OBS: {message}");
                 last_error = message.clone();
             }
             publish(&app, idle(&message));
-            std::thread::sleep(RETRY);
+            std::thread::sleep(backoff(failures));
         }
     });
 }
@@ -579,6 +622,15 @@ pub fn spawn(app: AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retries_slow_down_to_a_minute() {
+        assert_eq!(backoff(0), Duration::from_secs(3));
+        assert_eq!(backoff(1), Duration::from_secs(6));
+        assert_eq!(backoff(3), Duration::from_secs(24));
+        assert_eq!(backoff(9), Duration::from_secs(60));
+        assert!(local_host("LocalHost") && local_host("127.0.0.1") && !local_host("192.168.1.9"));
+    }
 
     #[test]
     fn password_proof_matches_the_obs_websocket_example() {

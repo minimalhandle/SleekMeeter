@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.22.0-beta.1
+- **CPU noise removal:** bundled RNNoise speech clean-up at 48 kHz, without an NVIDIA GPU or runtime download; adjustable strength and aligned raw comparison.
+- **Partial scenes:** save selected channels and level, mute, routing or mic-processing categories; preview and restore only those controls. Existing scenes remain full setups.
+- **Voice-aware ducking:** require speech confidence as well as the level threshold, with attack, hold and release controls. Unavailable detection releases ducking.
+- **Complete setup migration:** one package for settings, scenes, plugin state/presets and supported sound assets, with compatibility preview, device mapping and local restore backups.
+- **Automatic mic level riding:** speech-gated, bounded and smooth gain correction before plugins, without moving the fader. Requires 48 kHz.
+- **Fixed a short dropout when a routed app starts playing.** Sleekmeeter re-applied an app's saved output (for example VLC → CABLE-B) about a second in, even when Windows already had it there, which made Windows restart the app's sound. It now leaves apps alone when they're already on the right device.
+- **App routes apply the moment an app opens sound,** instead of up to 3 seconds later, and without starting PowerShell each time (about 0.01 s instead of 1–2 s). The Windows default-output fix and the folder picker no longer use PowerShell either.
+- **Fixed a failed app route being retried every 3 seconds forever.** Each of an app's processes is now handled on its own, and one Windows refuses is left alone.
+- **Settings can no longer be wiped by a crash or power cut during a save.** Settings are written to a temporary file and swapped in, the previous good copy is kept as `settings.last-good.json`, and a damaged `settings.json` is kept (renamed) and the last good settings are used instead of the defaults.
+- **One crash in a background job no longer takes the whole app down** with it.
+- **My sound just cut out:** a button in Audio Event History (and in Check my setup) that lists what changed in the last two minutes in plain words (an app moved, a device switched, Voicemeeter restarting, a Bluetooth headset dropping to call quality), or says nothing did and offers the Crackle doctor.
+- **Saved app outputs show where Windows is really playing an app** and offer **Put it back** when it's somewhere else.
+- **Sleekmeeter Remote: choose who can connect:** phones and tablets on this network, this PC only, or the network but only this PC while Windows calls the network Public. Connections from outside your own network are refused, and Sleekmeeter warns when Windows calls your network Public.
+- **OBS link waits quietly until OBS is open** instead of trying every 3 seconds, and slows down to once a minute when OBS doesn't answer.
+- **The updater understands test versions:** 0.22.0 counts as newer than 0.22.0-beta.1, and beta.2 as newer than beta.1, so a test version moves on to the full release when it's out.
+- No MSI for this test version (the MSI format can't hold a version like beta.1): use the setup or the portable zip.
+
 ## 0.21.3
 - **Fixed the Glass toolbar covering a channel's panel.** With the panel open, the toolbar sat on top of its name, close button and Routing / Sound / Appearance tabs. The panel now opens over the toolbar, as it does in every other theme.
 - **Sleekmeeter Remote reports each channel's Windows device.** `/api/state` now includes the playback or recording device Voicemeeter uses for each hardware channel (empty for virtual ones), so other apps can listen to the same audio as a channel. This is for an upcoming music visualizer for Stream Deck.

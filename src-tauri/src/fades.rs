@@ -6,6 +6,8 @@
 //! - Ducking: while the chosen input (usually the mic) is above the threshold, the chosen
 //!   channels fade down by a set amount, and fade back after a short quiet spell.
 
+use crate::LockExt;
+
 use crate::gain::{fade_line, CEIL, FLOOR};
 use crate::vm::{Api, Layout};
 use crate::{Settings, Vm};
@@ -42,6 +44,8 @@ pub struct Ducking {
     pub targets: Vec<String>,
     pub amount: f32,
     pub threshold: f32,
+    pub voice_aware: bool,
+    pub speech_threshold: f32,
     pub attack_ms: u64,
     pub release_ms: u64,
     pub hold_ms: u64,
@@ -85,9 +89,92 @@ pub fn ducking(s: &Value) -> Ducking {
         targets,
         amount: d["amount"].as_f64().unwrap_or(12.0).clamp(1.0, 60.0) as f32,
         threshold: d["threshold"].as_f64().unwrap_or(-40.0).clamp(-80.0, 0.0) as f32,
+        voice_aware: d["voiceAware"].as_bool().unwrap_or(false),
+        speech_threshold: d["speechThreshold"].as_f64().unwrap_or(0.6).clamp(0.0, 1.0) as f32,
         attack_ms: d["attackMs"].as_u64().unwrap_or(150).clamp(10, 3000),
         release_ms: d["releaseMs"].as_u64().unwrap_or(800).clamp(50, 5000),
         hold_ms: d["holdMs"].as_u64().unwrap_or(700).clamp(0, 5000),
+    }
+}
+
+/// Gate each trigger independently, so loud noise cannot borrow speech on a quiet input.
+fn trigger_level(d: &Ducking, level: f32, speech: Option<f32>) -> f32 {
+    if !d.voice_aware
+        || speech
+            .map(|p| p.is_finite() && p >= d.speech_threshold)
+            .unwrap_or(false)
+    {
+        level
+    } else {
+        f32::NEG_INFINITY
+    }
+}
+
+fn sense_ducking(
+    d: &Ducking,
+    smooth: &mut crate::gain::Smooth,
+    level: f32,
+    speech_available: bool,
+    now: Instant,
+) -> Option<bool> {
+    if d.voice_aware && !speech_available {
+        smooth.ducked.then_some(false)
+    } else {
+        smooth.sense(level, d.threshold, d.hold_ms, now)
+    }
+}
+
+#[cfg(test)]
+mod speech_duck_tests {
+    use super::*;
+
+    #[test]
+    fn legacy_ducking_keeps_level_detection_and_voice_defaults() {
+        let d = ducking(&json!({"ducking": {"on": true}}));
+        assert!(!d.voice_aware);
+        assert_eq!(d.speech_threshold, 0.6);
+        assert_eq!(trigger_level(&d, -20.0, None), -20.0);
+    }
+
+    #[test]
+    fn speech_gate_requires_both_probability_and_level_per_trigger() {
+        let d = ducking(&json!({"ducking": {"voiceAware": true, "threshold": -40}}));
+        assert_eq!(trigger_level(&d, -20.0, Some(0.6)), -20.0);
+        assert!(trigger_level(&d, -20.0, Some(0.59)) < d.threshold);
+        assert!(trigger_level(&d, -20.0, None) < d.threshold);
+        assert!(trigger_level(&d, -20.0, Some(f32::NAN)) < d.threshold);
+        assert!(trigger_level(&d, -50.0, Some(0.95)) < d.threshold);
+        // Noise on one trigger cannot borrow speech from another quiet trigger.
+        let level = trigger_level(&d, -10.0, Some(0.1)).max(trigger_level(&d, -55.0, Some(0.9)));
+        assert!(level < d.threshold);
+    }
+
+    #[test]
+    fn speech_probability_and_timings_are_bounded() {
+        let d = ducking(&json!({"ducking": {"voiceAware": true,
+            "speechThreshold": 5, "attackMs": 0, "holdMs": 99999, "releaseMs": 0}}));
+        assert!(d.voice_aware);
+        assert_eq!(d.speech_threshold, 1.0);
+        assert_eq!((d.attack_ms, d.hold_ms, d.release_ms), (10, 5000, 50));
+        let d = ducking(&json!({"ducking": {"speechThreshold": -1}}));
+        assert_eq!(d.speech_threshold, 0.0);
+    }
+
+    #[test]
+    fn unavailable_detection_releases_without_waiting_for_hold() {
+        let d = ducking(&json!({"ducking": {"voiceAware": true, "holdMs": 5000}}));
+        let t = Instant::now();
+        let mut smooth = crate::gain::Smooth::new();
+        assert_eq!(sense_ducking(&d, &mut smooth, -20.0, true, t), Some(true));
+        smooth.duck(&[("Strip[3]".into(), -4.0)], 12.0, d.attack_ms, t);
+        // Ordinary non-speech keeps the hold; an unavailable detector releases immediately.
+        assert_eq!(
+            sense_ducking(&d, &mut smooth, f32::NEG_INFINITY, true, t),
+            None
+        );
+        assert_eq!(sense_ducking(&d, &mut smooth, -20.0, false, t), Some(false));
+        smooth.unduck(d.release_ms, t);
+        assert!(!smooth.ducked);
     }
 }
 
@@ -101,7 +188,7 @@ fn split(name: &str) -> Option<(&str, &str)> {
 }
 
 fn current_fades(app: &AppHandle) -> Fades {
-    fades(&app.state::<Settings>().0.lock().unwrap())
+    fades(&app.state::<Settings>().0.locked())
 }
 
 fn gain_of(api: &Api, key: &str) -> f32 {
@@ -137,8 +224,8 @@ pub fn mute(app: &AppHandle, api: &Api, key: &str, want: bool) -> Result<(), Str
     let vm = app.state::<Vm>();
     if !f.on {
         // A fade may still be running from before fades were turned off.
-        if vm.smooth.lock().unwrap().is_managed(key) {
-            let lines = vm.smooth.lock().unwrap().mute(
+        if vm.smooth.locked().is_managed(key) {
+            let lines = vm.smooth.locked().mute(
                 key,
                 gain_of(api, key),
                 api.get_bool(&format!("{key}.Mute")),
@@ -285,7 +372,7 @@ pub fn route_mute(
     let now = Instant::now();
     let seq = ROUTE_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
     let (level, fading) = {
-        let mut guard = ROUTE_FADES.lock().unwrap();
+        let mut guard = ROUTE_FADES.locked();
         let map = guard.get_or_insert_with(Pending::new);
         let running = map
             .get(&(strip, j))
@@ -309,7 +396,7 @@ pub fn route_mute(
         std::thread::spawn(move || {
             std::thread::sleep(Duration::from_millis(ms + 30));
             {
-                let mut guard = ROUTE_FADES.lock().unwrap();
+                let mut guard = ROUTE_FADES.locked();
                 let map = guard.get_or_insert_with(Pending::new);
                 // Unmuted (or pressed again) during the fade: that press decides.
                 if map.get(&(strip, j)).map(|e| e.0) != Some(seq) {
@@ -337,23 +424,34 @@ pub fn route_mute(
 /// Runs on every poll tick while Voicemeeter is connected (poll thread only: reads levels).
 pub fn tick(app: &AppHandle, api: &Api, layout: &Layout) {
     let now = Instant::now();
-    let d = ducking(&app.state::<Settings>().0.lock().unwrap());
+    let d = ducking(&app.state::<Settings>().0.locked());
     let vm = app.state::<Vm>();
-    let mut smooth = vm.smooth.lock().unwrap();
+    let mut smooth = vm.smooth.locked();
     let mut lines = smooth.tick(now);
-    let mut used = vm.duck_targets.lock().unwrap();
+    let mut used = vm.duck_targets.locked();
     let usable = d.on && d.trigger < layout.strips() && !d.targets.is_empty();
     if usable {
         // The targets changed while ducking: let go, and duck the new ones next time.
         if smooth.ducked && *used != d.targets {
             lines.extend(smooth.unduck(300, now));
         }
+        let mut speech_available = !d.voice_aware;
         let level = std::iter::once(d.trigger)
             .chain(d.also.iter().copied())
             .filter(|i| *i < layout.strips())
-            .map(|i| api.strip_level(layout, i))
+            .map(|i| {
+                let speech = if d.voice_aware {
+                    crate::micfx::speech_level(i)
+                } else {
+                    None
+                };
+                speech_available |= speech.map(|p| p.is_finite()).unwrap_or(false);
+                trigger_level(&d, api.strip_level(layout, i), speech)
+            })
             .fold(f32::MIN, f32::max);
-        match smooth.sense(level, d.threshold, d.hold_ms, now) {
+        // Missing/stale detection must release, never fall back to a level-only trigger.
+        let sensed = sense_ducking(&d, &mut smooth, level, speech_available, now);
+        match sensed {
             Some(true) => {
                 let targets: Vec<(String, f32)> = d
                     .targets
@@ -384,7 +482,7 @@ pub fn tick(app: &AppHandle, api: &Api, layout: &Layout) {
 pub fn dress(app: &AppHandle, snap: &mut Value) {
     let now = Instant::now();
     let vm = app.state::<Vm>();
-    let mut smooth = vm.smooth.lock().unwrap();
+    let mut smooth = vm.smooth.locked();
     for (list, prefix) in [("strips", "Strip"), ("buses", "Bus")] {
         let Some(items) = snap[list].as_array_mut() else {
             continue;
@@ -408,7 +506,7 @@ pub fn dress(app: &AppHandle, snap: &mut Value) {
 
 /// Voicemeeter went away or Sleekmeeter is quitting: put ducked levels straight back.
 pub fn release(app: &AppHandle, api: Option<&Api>) {
-    let lines = app.state::<Vm>().smooth.lock().unwrap().release_all();
+    let lines = app.state::<Vm>().smooth.locked().release_all();
     if let Some(api) = api {
         let _ = api.script(&lines);
     }
@@ -423,7 +521,14 @@ pub fn levels_path(xml: &Path) -> PathBuf {
 
 /// Record the levels of the mix being saved as a scene (the levels the person chose).
 pub fn save_levels(app: &AppHandle, xml: &Path) {
-    let snap = app.state::<Vm>().last.lock().unwrap().clone();
+    let levels = levels_snapshot(app);
+    if levels.as_object().is_some_and(|m| !m.is_empty()) {
+        let _ = std::fs::write(levels_path(xml), levels.to_string());
+    }
+}
+
+pub fn levels_snapshot(app: &AppHandle) -> Value {
+    let snap = app.state::<Vm>().last.locked().clone();
     let mut map = Map::new();
     for (list, prefix) in [("strips", "Strip"), ("buses", "Bus")] {
         for (i, ch) in snap[list].as_array().into_iter().flatten().enumerate() {
@@ -435,9 +540,7 @@ pub fn save_levels(app: &AppHandle, xml: &Path) {
             );
         }
     }
-    if !map.is_empty() {
-        let _ = std::fs::write(levels_path(xml), Value::Object(map).to_string());
-    }
+    Value::Object(map)
 }
 
 /// Put back each input's gain layers (Potato), which Voicemeeter's scene file doesn't keep.
@@ -485,6 +588,7 @@ fn restore_layers(api: &Api, levels: &Map<String, Value>) -> Vec<String> {
 }
 
 pub fn delete_levels(xml: &Path) {
+    let _ = std::fs::remove_file(crate::partial_scene::path(xml));
     let _ = std::fs::remove_file(levels_path(xml));
     let _ = std::fs::remove_file(xml.with_extension("micfx.json"));
 }
@@ -497,6 +601,61 @@ pub fn load_scene(app: &AppHandle, xml: PathBuf, done: Option<Value>) -> Result<
         .api
         .clone()
         .ok_or("Voicemeeter isn't installed")?;
+    let partial = crate::partial_scene::path(&xml);
+    if partial.exists() {
+        // A broken sidecar must fail closed, never fall through to whole-setup loading.
+        let scene: Value =
+            serde_json::from_slice(&std::fs::read(partial).map_err(|e| e.to_string())?)
+                .map_err(|e| e.to_string())?;
+        let snapshot = app.state::<Vm>().last.locked().clone();
+        let mut lines = crate::partial_scene::script(&scene, &snapshot)?;
+        let keys = crate::partial_scene::validate_scope(&scene["scope"], &snapshot)?;
+        crate::backups::before(app, "loading a partial scene");
+        if scene["scope"]["levels"].as_bool().unwrap_or(false) {
+            app.state::<Vm>()
+                .smooth
+                .lock()
+                .unwrap()
+                .forget_channels(&keys);
+        } else if scene["scope"]["mutes"].as_bool().unwrap_or(false) {
+            let vm = app.state::<Vm>();
+            let mut smooth = vm.smooth.locked();
+            for key in &keys {
+                lines.extend(smooth.scene_mute(
+                    key,
+                    scene["channels"][key]["mute"].as_bool().unwrap_or(false),
+                    Instant::now(),
+                ));
+            }
+        }
+        api.script(&lines)?;
+        if scene["scope"]["levels"].as_bool().unwrap_or(false) {
+            if let Some(channels) = scene["channels"].as_object() {
+                let selected: Map<String, Value> = channels
+                    .iter()
+                    .filter(|(k, _)| keys.contains(k))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                restore_layers(&api, &selected);
+            }
+        }
+        if scene["scope"]["micProcessing"].as_bool().unwrap_or(false) {
+            let mics = Value::Object(
+                scene["mics"]
+                    .as_object()
+                    .into_iter()
+                    .flatten()
+                    .filter(|(k, _)| keys.contains(k))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect(),
+            );
+            crate::micfx::partial_scene_apply(app, &mics);
+        }
+        if let Some(e) = done {
+            let _ = app.emit("scene-auto", e);
+        }
+        return Ok(());
+    }
     // Each mic's clean-up on or off and its strength, if the scene saved them (main.rs).
     if let Some(v) = std::fs::read_to_string(xml.with_extension("micfx.json"))
         .ok()

@@ -4,12 +4,15 @@
 //! (like "Voicemeeter Aux Input") and the clip shows up as a channel in the mixer, so it goes
 //! wherever you route that channel and you control its level with its fader.
 
+use crate::LockExt;
+
 use crate::Settings;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Manager};
 
 #[cfg(windows)]
 mod player {
+    use crate::LockExt;
     use rodio::cpal::traits::{DeviceTrait, HostTrait};
     use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
     use std::fs::File;
@@ -34,7 +37,7 @@ mod player {
             std::thread::spawn(move || worker(rx));
             Mutex::new(tx)
         });
-        let _ = tx.lock().unwrap().send(cmd);
+        let _ = tx.locked().send(cmd);
     }
 
     /// Names of all output devices Windows has.
@@ -162,7 +165,7 @@ fn pick_random(name: &str, folder: &str) -> Result<String, String> {
     if files.is_empty() {
         return Err(format!("No sounds found in {folder}"));
     }
-    let mut last = PACK_LAST.lock().unwrap();
+    let mut last = PACK_LAST.locked();
     let before = last
         .iter()
         .find(|(n, _)| n == name)
@@ -187,7 +190,7 @@ static LAST: std::sync::Mutex<(String, Option<std::time::Instant>)> =
 
 /// The sound that played most recently and how many milliseconds ago.
 pub fn last_played() -> (String, u64) {
-    let l = LAST.lock().unwrap();
+    let l = LAST.locked();
     match l.1 {
         Some(t) => (l.0.clone(), t.elapsed().as_millis() as u64),
         None => (String::new(), 0),
@@ -195,14 +198,14 @@ pub fn last_played() -> (String, u64) {
 }
 
 fn remember(name: &str) {
-    *LAST.lock().unwrap() = (name.to_string(), Some(std::time::Instant::now()));
+    *LAST.locked() = (name.to_string(), Some(std::time::Instant::now()));
 }
 
 /// Play the sound called `name` (not case sensitive) from the soundboard.
 pub fn play(app: &AppHandle, name: &str) -> Result<(), String> {
     let found = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let sb = &s["soundboard"];
         let master = sb["volume"].as_f64().unwrap_or(100.0).clamp(0.0, 100.0) as f32 / 100.0;
         let device = sb["device"].as_str().unwrap_or("").to_string();

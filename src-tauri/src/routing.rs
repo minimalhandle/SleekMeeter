@@ -5,6 +5,9 @@
 //! That call runs in a small separate helper (PowerShell), so if it ever misbehaves on some
 //! Windows version it can't take Sleekmeeter down with it.
 
+use crate::policy;
+use crate::LockExt;
+
 use serde_json::{json, Value};
 
 /// Playback devices Windows has, as `{ id, name }`; Voicemeeter's virtual inputs first.
@@ -83,106 +86,63 @@ pub fn valid_device(id: &str) -> bool {
     guid.len() == 36 && guid.chars().all(|c| c.is_ascii_hexdigit() || c == '-')
 }
 
-const HELPER: &str = r##"
-$ErrorActionPreference = 'Stop'
-Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public static class Route {
-  [DllImport("combase.dll", PreserveSig = false)]
-  static extern void RoGetActivationFactory([MarshalAs(UnmanagedType.HString)] string classId, [In] ref Guid iid, [Out, MarshalAs(UnmanagedType.IInspectable)] out object factory);
-  [DllImport("combase.dll", PreserveSig = false)]
-  static extern void WindowsCreateString([MarshalAs(UnmanagedType.LPWStr)] string source, int length, out IntPtr hstring);
-  [DllImport("combase.dll", PreserveSig = false)]
-  static extern void WindowsDeleteString(IntPtr hstring);
-
-  [ComImport, Guid("ab3d4648-e242-459f-b02f-541c70306324"), InterfaceType(ComInterfaceType.InterfaceIsIInspectable)]
-  interface IFactory {
-    [PreserveSig] int M01(); [PreserveSig] int M02(); [PreserveSig] int M03(); [PreserveSig] int M04();
-    [PreserveSig] int M05(); [PreserveSig] int M06(); [PreserveSig] int M07(); [PreserveSig] int M08();
-    [PreserveSig] int M09(); [PreserveSig] int M10(); [PreserveSig] int M11(); [PreserveSig] int M12();
-    [PreserveSig] int M13(); [PreserveSig] int M14(); [PreserveSig] int M15(); [PreserveSig] int M16();
-    [PreserveSig] int M17(); [PreserveSig] int M18(); [PreserveSig] int M19();
-    [PreserveSig] int SetPersistedDefaultAudioEndpoint(uint processId, int flow, int role, IntPtr deviceId);
-  }
-
-  public static int Set(uint pid, string endpoint) {
-    object f;
-    Guid iid = typeof(IFactory).GUID;
-    RoGetActivationFactory("Windows.Media.Internal.AudioPolicyConfig", ref iid, out f);
-    IFactory factory = (IFactory)f;
-    IntPtr h = IntPtr.Zero;
-    if (endpoint.Length > 0) {
-      string id = "\\\\?\\SWD#MMDEVAPI#" + endpoint + "#{e6327cad-dcec-4949-ae8a-991e976a79d2}";
-      WindowsCreateString(id, id.Length, out h);
-    }
-    int hr = 0;
-    try {
-      hr = factory.SetPersistedDefaultAudioEndpoint(pid, 0, 0, h);
-      int hr2 = factory.SetPersistedDefaultAudioEndpoint(pid, 0, 1, h);
-      if (hr == 0) hr = hr2;
-    } finally {
-      if (h != IntPtr.Zero) WindowsDeleteString(h);
-    }
-    return hr;
-  }
-}
-'@
-$endpoint = '__ENDPOINT__'
-$failed = 0
-foreach ($p in @(__PIDS__)) {
-  try { $hr = [Route]::Set([uint32]$p, $endpoint); if ($hr -ne 0) { $failed++; Write-Output ('HR=0x{0:X8}' -f $hr) } }
-  catch { $failed++; Write-Output ('ERR=' + $_.Exception.Message) }
-}
-if ($failed -gt 0) { exit 1 }
-Write-Output 'OK'
-"##;
-
 /// Make the apps with these process ids play to `device` (an id from [`devices`]), or back to
-/// the Windows default when `device` is empty.
-#[cfg(windows)]
-pub fn set(pids: &[u32], device: &str) -> Result<(), String> {
-    use std::os::windows::process::CommandExt;
-    static ROUTE_HELPER: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    let _guard = ROUTE_HELPER.lock().unwrap();
+/// the Windows default when `device` is empty. Each process is handled on its own: one that
+/// Windows already has on that device is left alone (moving it anyway cuts its sound for a
+/// moment), and one with no sound open is skipped. Returns the outcome for each process.
+pub fn set_each(
+    pids: &[u32],
+    device: &str,
+) -> Result<Vec<(u32, Result<policy::Moved, String>)>, String> {
+    static ROUTING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _guard = ROUTING.locked();
     if pids.is_empty() {
         return Err("That app isn't playing sound right now".into());
     }
     if !device.is_empty() && !valid_device(device) {
         return Err("That isn't a playback device".into());
     }
-    let list = pids
+    Ok(pids
         .iter()
-        .map(|p| p.to_string())
-        .collect::<Vec<_>>()
-        .join(",");
-    let script = HELPER
-        .replace("__ENDPOINT__", device)
-        .replace("__PIDS__", &list);
-    let path = std::env::temp_dir().join("sleekmeeter-route.ps1");
-    std::fs::write(&path, script).map_err(|e| format!("Couldn't prepare the change: {e}"))?;
-    let out = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-        .arg(&path)
-        .creation_flags(0x0800_0000) // no console window
-        .output()
-        .map_err(|e| format!("Couldn't run the helper: {e}"))?;
-    let _ = std::fs::remove_file(&path);
-    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    if out.status.success() && text.ends_with("OK") {
-        return Ok(());
-    }
-    let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
-    log_warn!("App routing helper: {text} {err}");
-    Err(format!(
-        "Windows didn't accept the change on this version ({})",
-        if text.is_empty() { "no details" } else { &text }
-    ))
+        .map(|&p| (p, policy::set_app_device(p, device)))
+        .collect())
 }
 
-#[cfg(not(windows))]
-pub fn set(_pids: &[u32], _device: &str) -> Result<(), String> {
-    Err("Only available on Windows".into())
+/// [`set_each`] for the mixer: Ok with how many moved unless every process failed.
+pub fn set(pids: &[u32], device: &str) -> Result<usize, String> {
+    let results = set_each(pids, device)?;
+    let moved = results
+        .iter()
+        .filter(|(_, r)| r == &Ok(policy::Moved::Moved))
+        .count();
+    let errors: Vec<&String> = results
+        .iter()
+        .filter_map(|(_, r)| r.as_ref().err())
+        .collect();
+    if !errors.is_empty() && errors.len() == results.len() {
+        log_warn!("App routing: {}", errors[0]);
+        return Err(errors[0].clone());
+    }
+    Ok(moved)
+}
+
+/// Wakes the routing loop early: a program just opened sound (see [`watch_sessions`]).
+static WAKE: (std::sync::Mutex<bool>, std::sync::Condvar) =
+    (std::sync::Mutex::new(false), std::sync::Condvar::new());
+
+pub fn wake() {
+    *WAKE.0.locked() = true;
+    WAKE.1.notify_all();
+}
+
+/// Sleep until woken or `max` has passed.
+fn nap(max: std::time::Duration) {
+    let guard = WAKE.0.locked();
+    let (mut woken, _) = WAKE
+        .1
+        .wait_timeout_while(guard, max, |w| !*w)
+        .unwrap_or_else(|e| e.into_inner());
+    *woken = false;
 }
 
 /// Put remembered routes ("appRoutes" in the settings: program → device) back on programs
@@ -197,8 +157,8 @@ pub fn spawn(app: tauri::AppHandle) {
         let mut devices: Vec<String> = Vec::new();
         let mut checked = std::time::Instant::now() - std::time::Duration::from_secs(600);
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(3));
-            let routes = app.state::<crate::Settings>().0.lock().unwrap()["appRoutes"].clone();
+            nap(std::time::Duration::from_secs(3));
+            let routes = app.state::<crate::Settings>().0.locked()["appRoutes"].clone();
             let Some(routes) = routes.as_object().filter(|r| !r.is_empty()) else {
                 continue;
             };
@@ -233,11 +193,26 @@ pub fn spawn(app: tauri::AppHandle) {
                 if fresh.is_empty() {
                     continue;
                 }
-                if let Err(e) = set(&fresh, device) {
-                    log_warn!("Couldn't put {exe} back on its output: {e}");
+                let Ok(results) = set_each(&fresh, device) else {
                     continue;
+                };
+                let (mut moved, before) = (0, entry.1.len());
+                for (pid, r) in results {
+                    match r {
+                        Ok(policy::Moved::Moved) => moved += 1,
+                        Ok(policy::Moved::Already) => {}
+                        // No sound open yet: try again when it opens some.
+                        Ok(policy::Moved::NoSound) => continue,
+                        // Given up on for this process, rather than retried every few seconds.
+                        Err(e) => {
+                            log_warn!("Couldn't put {exe} (process {pid}) on its output: {e}")
+                        }
+                    }
+                    entry.1.insert(pid);
                 }
-                entry.1.extend(fresh);
+                if entry.1.len() == before || (moved == 0 && !device.is_empty()) {
+                    continue; // Windows remembered it itself: nothing to report
+                }
                 let label = if device.is_empty() {
                     "Windows default"
                 } else {
@@ -253,7 +228,7 @@ pub fn spawn(app: tauri::AppHandle) {
                 );
                 if device.is_empty() {
                     let state = app.state::<crate::Settings>();
-                    let mut settings = state.0.lock().unwrap();
+                    let mut settings = state.0.locked();
                     if settings["appRoutes"][&exe] == "" {
                         if let Some(routes) = settings["appRoutes"].as_object_mut() {
                             routes.remove(&exe);
@@ -289,3 +264,82 @@ mod tests {
         assert!(!valid_device(""));
     }
 }
+
+/// Wake the routing loop the moment any program opens sound on any playback device, so a saved
+/// route is applied before the program has played much (rather than up to 3 seconds in).
+#[cfg(windows)]
+pub fn watch_sessions() {
+    use std::collections::HashMap;
+    use windows::core::implement;
+    use windows::Win32::Media::Audio::{
+        eRender, IAudioSessionControl, IAudioSessionManager2, IAudioSessionNotification,
+        IAudioSessionNotification_Impl, IMMDeviceEnumerator, MMDeviceEnumerator,
+        DEVICE_STATE_ACTIVE,
+    };
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CLSCTX_ALL, COINIT_MULTITHREADED,
+    };
+
+    #[implement(IAudioSessionNotification)]
+    struct Opened;
+
+    impl IAudioSessionNotification_Impl for Opened_Impl {
+        fn OnSessionCreated(&self, _: Option<&IAudioSessionControl>) -> windows::core::Result<()> {
+            wake();
+            Ok(())
+        }
+    }
+
+    std::thread::spawn(|| unsafe {
+        // This thread keeps COM running for as long as Sleekmeeter does.
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let notify: IAudioSessionNotification = Opened.into();
+        // device id → its session manager, registered for notifications
+        let mut watched: HashMap<String, IAudioSessionManager2> = HashMap::new();
+        loop {
+            let found = (|| -> windows::core::Result<Vec<(String, IAudioSessionManager2)>> {
+                let enumerator: IMMDeviceEnumerator =
+                    CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)?;
+                let devices = enumerator.EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE)?;
+                let mut out = Vec::new();
+                for d in 0..devices.GetCount()? {
+                    let Ok(device) = devices.Item(d) else {
+                        continue;
+                    };
+                    let Ok(raw) = device.GetId() else { continue };
+                    let id = raw.to_string().unwrap_or_default();
+                    CoTaskMemFree(Some(raw.0.cast()));
+                    if watched.contains_key(&id) {
+                        let manager = watched[&id].clone();
+                        out.push((id, manager));
+                        continue;
+                    }
+                    let Ok(manager) = device.Activate::<IAudioSessionManager2>(CLSCTX_ALL, None)
+                    else {
+                        continue;
+                    };
+                    // Windows only starts sending notifications after the sessions are listed once.
+                    let _ = manager.GetSessionEnumerator();
+                    if manager.RegisterSessionNotification(&notify).is_ok() {
+                        out.push((id, manager));
+                    }
+                }
+                Ok(out)
+            })();
+            if let Ok(found) = found {
+                let keep: HashMap<String, IAudioSessionManager2> = found.into_iter().collect();
+                for (id, manager) in watched.drain() {
+                    if !keep.contains_key(&id) {
+                        let _ = manager.UnregisterSessionNotification(&notify);
+                    }
+                }
+                watched = keep;
+            }
+            // Devices come and go rarely; look for new ones now and then.
+            std::thread::sleep(std::time::Duration::from_secs(20));
+        }
+    });
+}
+
+#[cfg(not(windows))]
+pub fn watch_sessions() {}

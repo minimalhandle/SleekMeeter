@@ -10,6 +10,8 @@
 //! Rewards without text never reach chat, so they can't be used. Anyone who redeems a reward
 //! can run it (they paid for it), with the same wait between runs as commands.
 
+use crate::LockExt;
+
 use crate::{actions, Settings};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -32,14 +34,14 @@ fn idle(message: &str) -> Value {
 }
 
 pub fn status() -> Value {
-    let s = STATUS.lock().unwrap().clone();
+    let s = STATUS.locked().clone();
     let mut s = if s.is_null() { idle("Off") } else { s };
-    s["reward"] = REWARD.lock().unwrap().clone();
+    s["reward"] = REWARD.locked().clone();
     s
 }
 
 fn publish(app: &AppHandle, v: Value) {
-    *STATUS.lock().unwrap() = v;
+    *STATUS.locked() = v;
     let _ = app.emit("twitch-status", status());
 }
 
@@ -63,7 +65,7 @@ fn clean_channel(s: &str) -> String {
 
 fn cfg(app: &AppHandle) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let t = &s["twitch"];
     let c = Cfg {
         on: t["on"].as_bool().unwrap_or(false),
@@ -138,11 +140,11 @@ fn handle_reward(
     cooldowns: &mut HashMap<String, Instant>,
 ) -> Option<String> {
     let text: String = c.text.trim().chars().take(100).collect();
-    *REWARD.lock().unwrap() =
+    *REWARD.locked() =
         json!({ "id": c.reward, "user": c.name, "text": text, "at": now_ms() });
     let (found, cooldown) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let t = &s["twitch"];
         let hit = t["rewards"].as_array().and_then(|list| {
             list.iter()
@@ -196,7 +198,7 @@ fn handle(
     }
     let (found, cooldown) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let t = &s["twitch"];
         let hit = t["commands"].as_array().and_then(|list| {
             list.iter()

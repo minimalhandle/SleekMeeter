@@ -3,6 +3,8 @@
 //! (loading a scene, the setup assistant, restoring a backup). Kept in the "backups" folder
 //! next to the settings.
 
+use crate::LockExt;
+
 use crate::{settings, Vm};
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -50,7 +52,7 @@ fn now_local() -> (String, String) {
 }
 
 fn connected(app: &AppHandle) -> bool {
-    app.state::<Vm>().last.lock().unwrap()["connected"]
+    app.state::<Vm>().last.locked()["connected"]
         .as_bool()
         .unwrap_or(false)
 }
@@ -104,7 +106,7 @@ fn daily(app: &AppHandle) {
 /// A copy before something that changes a lot at once. Skipped if one was made recently.
 pub fn before(app: &AppHandle, why: &str) {
     {
-        let mut last = LAST_BEFORE.lock().unwrap();
+        let mut last = LAST_BEFORE.locked();
         if last.is_some_and(|t| t.elapsed() < BEFORE_GAP) {
             return;
         }
@@ -186,7 +188,7 @@ pub fn restore(app: &AppHandle, file: &str) -> Result<(), String> {
     if !path.exists() {
         return Err("That backup is gone".into());
     }
-    *LAST_BEFORE.lock().unwrap() = None;
+    *LAST_BEFORE.locked() = None;
     before(app, "restoring a backup");
     let api = app
         .state::<Vm>()

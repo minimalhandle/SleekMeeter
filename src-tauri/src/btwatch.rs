@@ -10,6 +10,8 @@
 //! and the crackle doctor shows it with what to do. It only reads; it never closes the app or
 //! changes the device. Settings → Mixer & devices can switch the warning off ("btWarn").
 
+use crate::LockExt;
+
 use serde_json::{json, Value};
 use std::sync::Mutex;
 use std::time::Duration;
@@ -28,7 +30,7 @@ const EVERY: Duration = Duration::from_secs(3);
 
 /// `{ users: [{ device, app }] }`: who has a Bluetooth headset in call mode right now.
 pub fn status() -> Value {
-    let users = USERS.lock().unwrap().clone();
+    let users = USERS.locked().clone();
     json!({ "users": users.iter().map(|u| json!({ "device": u.device, "app": u.app })).collect::<Vec<_>>() })
 }
 
@@ -195,9 +197,9 @@ fn scan() -> Vec<User> {
 pub fn spawn(app: AppHandle) {
     std::thread::spawn(move || loop {
         let now = scan();
-        let before = std::mem::replace(&mut *USERS.lock().unwrap(), now.clone());
+        let before = std::mem::replace(&mut *USERS.locked(), now.clone());
         let warn = crate::settings::flag_or(
-            &app.state::<crate::Settings>().0.lock().unwrap(),
+            &app.state::<crate::Settings>().0.locked(),
             "btWarn",
             true,
         );

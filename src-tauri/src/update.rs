@@ -1,5 +1,7 @@
 //! Checks GitHub for a newer Sleekmeeter release.
 
+use crate::LockExt;
+
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
@@ -13,6 +15,34 @@ pub const REPO: &str = "minimalhandle/SleekMeeter";
 /// Only copies with that setting look here, so nobody else is ever offered these.
 pub const BETA_REPO: &str = "minimalhandle/SleekMeeter-beta";
 pub const CURRENT: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum Ident {
+    Num(u64),
+    Text(String),
+}
+
+/// Sort key for a version, so `a > b` means "a is newer". A release beats any pre-release of
+/// the same number (0.22.0 > 0.22.0-beta.1), pre-releases compare part by part (beta.2 >
+/// beta.1), and a local `-dev` build sits just below the version it was made from
+/// (0.22.0-beta.1-dev < 0.22.0-beta.1), so the updater moves it on to the published one.
+fn order(v: &str) -> (Vec<u64>, bool, Vec<Ident>, bool) {
+    let v = v.trim().trim_start_matches(['v', 'V']);
+    let (core, pre) = v.split_once('-').unwrap_or((v, ""));
+    let dev = pre == "dev" || pre.ends_with("-dev");
+    let rest = pre.strip_suffix("dev").unwrap_or(pre).trim_end_matches('-');
+    let rest = if dev { rest } else { pre };
+    let ids = rest
+        .split('.')
+        .filter(|p| !p.is_empty())
+        .map(|p| p.parse().map(Ident::Num).unwrap_or_else(|_| Ident::Text(p.to_string())))
+        .collect();
+    (parts(core), pre.is_empty(), ids, !dev)
+}
+
+pub(crate) fn newer(a: &str, b: &str) -> bool {
+    order(a) > order(b)
+}
 
 pub(crate) fn parts(v: &str) -> Vec<u64> {
     v.trim()
@@ -187,7 +217,7 @@ fn pick(main: Vec<Value>, test: Vec<Value>, beta: bool) -> Option<Value> {
                 .filter(|r| beta || !r["prerelease"].as_bool().unwrap_or(false)),
         )
         .filter(|r| !r["draft"].as_bool().unwrap_or(false))
-        .max_by_key(|r| parts(r["tag_name"].as_str().unwrap_or("")))
+        .max_by_key(|r| order(r["tag_name"].as_str().unwrap_or("")))
 }
 
 /// Release pages and downloads come only from Sleekmeeter's own repos.
@@ -206,7 +236,7 @@ pub fn latest(beta: bool) -> Result<Value, String> {
     Ok(json!({
         "current": CURRENT,
         "latest": latest,
-        "newer": !latest.is_empty() && parts(&latest) > parts(CURRENT),
+        "newer": !latest.is_empty() && newer(&latest, CURRENT),
         "url": release["html_url"],
         "canInstall": newer_assets(&release).is_some(),
     }))
@@ -414,12 +444,12 @@ pub fn install(app: &AppHandle) -> Result<(), String> {
 
 fn install_inner(app: &AppHandle) -> Result<(), String> {
     let beta = crate::settings::flag(
-        &app.state::<crate::Settings>().0.lock().unwrap(),
+        &app.state::<crate::Settings>().0.locked(),
         "betaUpdates",
     );
     let release = newest_release(beta)?;
     let tag = release["tag_name"].as_str().unwrap_or("");
-    if parts(tag) <= parts(CURRENT) {
+    if !newer(tag, CURRENT) {
         return Err("You already have the newest version".into());
     }
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
@@ -494,6 +524,20 @@ fn install_inner(app: &AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dev_builds_update_to_the_published_version() {
+        assert!(newer("0.22.0", "0.22.0-beta.1-dev"));
+        assert!(newer("0.22.0", "0.22.0-dev"));
+        assert!(newer("0.22.0-beta.1", "0.22.0-beta.1-dev"));
+        assert!(newer("v0.22.0-beta.2", "0.22.0-beta.1"));
+        assert!(newer("0.22.0", "0.22.0-beta.1"));
+        assert!(newer("0.22.1", "0.22.0"));
+        assert!(!newer("0.22.0-beta.1-dev", "0.22.0-beta.1"));
+        assert!(!newer("0.21.3", "0.22.0-beta.1-dev"));
+        assert!(!newer("0.22.0", "0.22.0"));
+        assert!(!newer("0.22.0-dev", "0.22.0-dev"));
+    }
 
     #[test]
     fn only_opted_in_copies_see_test_versions() {

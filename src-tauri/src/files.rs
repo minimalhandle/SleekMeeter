@@ -158,28 +158,40 @@ pub fn audio_in(dir: &std::path::Path) -> Vec<String> {
     out
 }
 
-/// The standard Windows folder picker, through PowerShell (no extra Windows API needed).
+/// The standard Windows folder picker, in front of whatever window is active.
 #[cfg(windows)]
 fn pick_folder(title: &str) -> Option<String> {
-    use std::os::windows::process::CommandExt;
-    let script = format!(
-        "[Console]::OutputEncoding = [Text.Encoding]::UTF8\n\
-         Add-Type -AssemblyName System.Windows.Forms\n\
-         $f = New-Object System.Windows.Forms.Form -Property @{{ TopMost = $true; ShowInTaskbar = $false; WindowState = 'Minimized' }}\n\
-         $d = New-Object System.Windows.Forms.FolderBrowserDialog\n\
-         $d.Description = '{}'\n\
-         $d.ShowNewFolderButton = $false\n\
-         if ($d.ShowDialog($f) -eq 'OK') {{ [Console]::Out.Write($d.SelectedPath) }}",
-        title.replace('\'', "''")
-    );
-    let out = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-STA", "-WindowStyle", "Hidden", "-Command"])
-        .arg(script)
-        .creation_flags(0x0800_0000)
-        .output()
-        .ok()?;
-    let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    (!path.is_empty()).then_some(path)
+    use windows::core::HSTRING;
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER,
+        COINIT_APARTMENTTHREADED,
+    };
+    use windows::Win32::UI::Shell::{
+        FileOpenDialog, IFileOpenDialog, FOS_FORCEFILESYSTEM, FOS_PATHMUSTEXIST, FOS_PICKFOLDERS,
+        SIGDN_FILESYSPATH,
+    };
+    unsafe {
+        let started = CoInitializeEx(None, COINIT_APARTMENTTHREADED).is_ok();
+        let pick = || -> windows::core::Result<String> {
+            let d: IFileOpenDialog = CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
+            d.SetOptions(
+                d.GetOptions()? | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST,
+            )?;
+            d.SetTitle(&HSTRING::from(title))?;
+            let owner = windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow();
+            d.Show(HWND(owner as _))?; // an error when cancelled
+            let raw = d.GetResult()?.GetDisplayName(SIGDN_FILESYSPATH)?;
+            let path = raw.to_string().unwrap_or_default();
+            CoTaskMemFree(Some(raw.0.cast()));
+            Ok(path)
+        };
+        let path = pick().ok();
+        if started {
+            CoUninitialize();
+        }
+        path.filter(|p| !p.is_empty())
+    }
 }
 
 #[cfg(not(windows))]

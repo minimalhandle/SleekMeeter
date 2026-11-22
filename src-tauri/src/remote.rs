@@ -5,6 +5,8 @@
 //! contains a secret key, and every request that changes something has to carry it. It never
 //! leaves your network: nothing is sent to the internet, and the port isn't opened on your router.
 
+use crate::LockExt;
+
 use crate::{actions, fades, Settings, Vm};
 use serde_json::{json, Value};
 use std::io::{Read, Write};
@@ -59,13 +61,13 @@ pub fn meters_wanted() -> bool {
 
 /// The latest meter readings, kept for the overlay.
 pub fn set_levels(levels: &Value) {
-    *LEVELS.lock().unwrap() = levels.clone();
+    *LEVELS.locked() = levels.clone();
 }
 
 fn overlay_json(app: &AppHandle) -> Value {
     METERS_SEEN.store(now_ms(), Ordering::Relaxed);
     let vm = app.state::<Vm>();
-    let snap = vm.last.lock().unwrap().clone();
+    let snap = vm.last.locked().clone();
     let strips: Vec<Value> = snap["strips"]
         .as_array()
         .into_iter()
@@ -76,18 +78,18 @@ fn overlay_json(app: &AppHandle) -> Value {
     json!({
         "brb": snap["brb"].as_bool().unwrap_or(false),
         "strips": strips,
-        "levels": LEVELS.lock().unwrap().clone(),
+        "levels": LEVELS.locked().clone(),
         "sound": if name.is_empty() { Value::Null } else { json!({ "name": name, "ageMs": age }) },
     })
 }
 
 fn publish(v: Value) {
-    *STATUS.lock().unwrap() = v;
+    *STATUS.locked() = v;
 }
 
 /// { running, message, urls }
 pub fn status() -> Value {
-    let s = STATUS.lock().unwrap().clone();
+    let s = STATUS.locked().clone();
     if s.is_null() {
         json!({ "running": false, "message": "Off", "urls": [] })
     } else {
@@ -100,11 +102,14 @@ struct Cfg {
     on: bool,
     port: u16,
     key: String,
+    /// Who can connect: "pc" (this PC only), "private" (the network, but only this PC while
+    /// Windows calls the network Public), or "network".
+    scope: String,
 }
 
 fn cfg(app: &AppHandle) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let r = &s["remote"];
     let c = Cfg {
         on: r["on"].as_bool().unwrap_or(false),
@@ -113,6 +118,11 @@ fn cfg(app: &AppHandle) -> Cfg {
             .filter(|p| *p >= 1024 && *p < 65536)
             .unwrap_or(8787) as u16,
         key: r["key"].as_str().unwrap_or("").to_string(),
+        scope: match r["scope"].as_str() {
+            Some("pc") => "pc".into(),
+            Some("private") => "private".into(),
+            _ => "network".into(),
+        },
     };
     c
 }
@@ -124,6 +134,69 @@ fn lan_ip() -> Option<IpAddr> {
     sock.connect("8.8.8.8:80").ok()?;
     let ip = sock.local_addr().ok()?.ip();
     (!ip.is_loopback() && !ip.is_unspecified()).then_some(ip)
+}
+
+/// Addresses that can only be on your own network (or this PC): private ranges, link-local,
+/// and the shared range VPNs like Tailscale use. Anything else is turned away.
+fn local_peer(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => {
+            let o = v4.octets();
+            v4.is_loopback()
+                || v4.is_private()
+                || v4.is_link_local()
+                || (o[0] == 100 && (64..128).contains(&o[1]))
+        }
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return local_peer(IpAddr::V4(v4));
+            }
+            let first = v6.segments()[0];
+            v6.is_loopback() || (first & 0xfe00) == 0xfc00 || (first & 0xffc0) == 0xfe80
+        }
+    }
+}
+
+/// True when Windows calls a network this PC is connected to Public (cafés, hotels, or a home
+/// network nobody marked as private).
+#[cfg(windows)]
+pub fn on_public_network() -> bool {
+    use windows::Win32::Networking::NetworkListManager::{
+        INetworkListManager, NetworkListManager, NLM_ENUM_NETWORK_CONNECTED,
+        NLM_NETWORK_CATEGORY_PUBLIC,
+    };
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_ALL, COINIT_MULTITHREADED,
+    };
+    unsafe {
+        let started = CoInitializeEx(None, COINIT_MULTITHREADED).is_ok();
+        let check = || -> windows::core::Result<bool> {
+            let m: INetworkListManager = CoCreateInstance(&NetworkListManager, None, CLSCTX_ALL)?;
+            let nets = m.GetNetworks(NLM_ENUM_NETWORK_CONNECTED)?;
+            loop {
+                let mut item = [None];
+                let mut fetched = 0u32;
+                if nets.Next(&mut item, Some(&mut fetched)).is_err() || fetched == 0 {
+                    return Ok(false);
+                }
+                if let Some(net) = &item[0] {
+                    if net.GetCategory()? == NLM_NETWORK_CATEGORY_PUBLIC {
+                        return Ok(true);
+                    }
+                }
+            }
+        };
+        let public = check().unwrap_or(false);
+        if started {
+            CoUninitialize();
+        }
+        public
+    }
+}
+
+#[cfg(not(windows))]
+pub fn on_public_network() -> bool {
+    false
 }
 
 /// Same answer in the same time whether the first byte or the last differs.
@@ -212,7 +285,7 @@ fn layer_change(body: &Value) -> Result<(String, f32), String> {
 
 fn state_json(app: &AppHandle) -> Value {
     let vm = app.state::<Vm>();
-    let snap = vm.last.lock().unwrap().clone();
+    let snap = vm.last.locked().clone();
     let list = |name: &str, prefix: &str, fallback: &str| -> Vec<Value> {
         snap[name]
             .as_array()
@@ -243,7 +316,7 @@ fn state_json(app: &AppHandle) -> Value {
     };
     let (sounds, profiles, brb_set) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let sounds: Vec<Value> = s["soundboard"]["sounds"]
             .as_array()
             .into_iter()
@@ -272,7 +345,7 @@ fn state_json(app: &AppHandle) -> Value {
     };
     let (duck, guard_set, replay_on, balance_set) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let g = &s["musicGuard"];
         (
             s["ducking"]["on"].as_bool().unwrap_or(false),
@@ -312,7 +385,7 @@ fn is_channel(k: &str) -> bool {
 /// The meters on their own, cheap enough for a Stream Deck dial to ask several times a second.
 fn levels_json() -> Value {
     METERS_SEEN.store(now_ms(), Ordering::Relaxed);
-    json!({ "levels": LEVELS.lock().unwrap().clone() })
+    json!({ "levels": LEVELS.locked().clone() })
 }
 
 /// Apps with an audio session, without the process ids the app's own window uses for routing.
@@ -347,6 +420,13 @@ fn app_change(body: &Value) -> Result<(String, Option<f32>, Option<bool>), Strin
 }
 
 fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
+    if !stream
+        .peer_addr()
+        .map(|a| local_peer(a.ip()))
+        .unwrap_or(false)
+    {
+        return; // not from this network: no answer at all
+    }
     let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
     let Some(req) = read_request(stream) else {
@@ -437,19 +517,28 @@ fn handle(app: &AppHandle, c: &Cfg, stream: &mut TcpStream) {
 
 /// Serve until the settings change. Returns an error message if it can't start.
 fn serve(app: &AppHandle, c: &Cfg) -> Result<(), String> {
-    let listener = TcpListener::bind(("0.0.0.0", c.port)).map_err(|e| {
-        format!(
-            "Couldn't start on port {}: {e}. Try another port in Settings",
-            c.port
-        )
-    })?;
+    let public = on_public_network();
+    let pc_only = c.scope == "pc" || (c.scope == "private" && public);
+    let listener = TcpListener::bind((if pc_only { "127.0.0.1" } else { "0.0.0.0" }, c.port))
+        .map_err(|e| {
+            format!(
+                "Couldn't start on port {}: {e}. Try another port in Settings",
+                c.port
+            )
+        })?;
     listener.set_nonblocking(true).map_err(|e| e.to_string())?;
-    let host = lan_ip()
-        .map(|ip| ip.to_string())
-        .unwrap_or_else(|| "this-pc".to_string());
+    let host = if pc_only {
+        "localhost".to_string()
+    } else {
+        lan_ip()
+            .map(|ip| ip.to_string())
+            .unwrap_or_else(|| "this-pc".to_string())
+    };
     publish(json!({
         "running": true,
         "message": "On",
+        "pcOnly": pc_only,
+        "publicNetwork": public,
         "urls": [format!("http://{host}:{}/?k={}", c.port, c.key)],
     }));
     log_info!("Sleekmeeter Remote listening on port {}", c.port);
@@ -468,6 +557,10 @@ fn serve(app: &AppHandle, c: &Cfg) -> Result<(), String> {
                 std::thread::sleep(Duration::from_millis(50));
                 idle_ticks += 1;
                 if idle_ticks % 20 == 0 && cfg(app) != *c {
+                    return Ok(());
+                }
+                // A network that becomes (or stops being) Public changes who may connect.
+                if c.scope == "private" && idle_ticks % 200 == 0 && on_public_network() != public {
                     return Ok(());
                 }
             }
@@ -521,6 +614,40 @@ mod tests {
         );
         assert!(layer_change(&json!({ "key": "Bus[2]", "bus": 1 })).is_err());
         assert!(layer_change(&json!({ "key": "Strip[2]", "bus": 8 })).is_err());
+    }
+
+    /// Prints what Windows says about the networks here: cargo test network_category -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn network_category() {
+        println!("public network: {}", on_public_network());
+    }
+
+    #[test]
+    fn only_local_addresses_may_connect() {
+        for ok in [
+            "127.0.0.1",
+            "192.168.1.20",
+            "10.0.0.5",
+            "172.20.1.1",
+            "169.254.3.3",
+            "100.101.102.103",
+            "::1",
+            "fd00::1",
+            "fe80::1",
+            "::ffff:192.168.1.2",
+        ] {
+            assert!(local_peer(ok.parse().unwrap()), "{ok}");
+        }
+        for bad in [
+            "8.8.8.8",
+            "172.32.0.1",
+            "100.128.0.1",
+            "2001:db8::1",
+            "::ffff:8.8.8.8",
+        ] {
+            assert!(!local_peer(bad.parse().unwrap()), "{bad}");
+        }
     }
 
     #[test]

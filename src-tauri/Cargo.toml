@@ -1,6 +1,6 @@
 [package]
 name = "sleekmeeter"
-version = "0.21.3"
+version = "0.22.0-beta.1"
 description = "A modern face for Voicemeeter Banana"
 edition = "2021"
 license = "MIT"
@@ -20,6 +20,7 @@ ureq = "2"
 tungstenite = "0.24"
 sha2 = "0.10"
 base64 = "0.22"
+nnnoiseless = { version = "0.5.2", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
@@ -30,7 +31,8 @@ vst3 = "0.3"
 # Soundboard: decode clips (wav, mp3, ogg, flac) and play them to a chosen output device.
 rodio = "0.19"
 # Per-app volume talks to Windows' audio sessions (COM), which windows-sys has no types for.
-windows = { version = "0.58", features = ["Win32_Foundation", "Win32_Media_Audio", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_UI_Shell_PropertiesSystem"] }
+windows = { version = "0.58", features = ["implement", "Win32_Foundation", "Win32_Media_Audio", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_Networking_NetworkListManager", "Win32_UI_Shell", "Win32_UI_Shell_Common", "Win32_UI_Shell_PropertiesSystem"] }
+windows-core = "0.58"
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Diagnostics_ToolHelp", "Win32_Media_Audio", "Win32_UI_Controls_Dialogs", "Win32_System_Com", "Win32_System_SystemInformation", "Win32_Graphics_Gdi", "Win32_System_Threading", "Win32_Security", "Win32_System_LibraryLoader", "Win32_System_Memory"] }
 
 [profile.release]

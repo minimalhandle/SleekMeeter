@@ -9,8 +9,12 @@ $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 $repo = 'minimalhandle/SleekMeeter-beta'
 $ver = (Get-Content package.json | ConvertFrom-Json).version
-$files = @("Sleekmeeter-$ver-setup.exe", "Sleekmeeter-$ver.msi", "Sleekmeeter-$ver-portable.zip") | ForEach-Object { Join-Path 'dist\release' $_ }
+$files = @("Sleekmeeter-$ver-setup.exe", "Sleekmeeter-$ver-portable.zip") | ForEach-Object { Join-Path 'dist\release' $_ }
 foreach ($f in $files) { if (-not (Test-Path $f)) { throw "Missing $f. Run npm run package first." } }
+# Versions like 0.22.0-beta.1 have no MSI (the format can't hold them); include it when there is one.
+$msi = Join-Path 'dist\release' "Sleekmeeter-$ver.msi"
+if (Test-Path $msi) { $files += $msi }
+if ($ver -match '-dev$') { throw "$ver is a local -dev build; set the version to publish first." }
 $files += 'streamdeck\Sleekmeeter-Studio.streamDeckPlugin'
 
 # The beta repo needs one commit before it can hold releases: create it the first time.

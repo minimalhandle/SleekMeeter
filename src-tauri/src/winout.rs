@@ -3,9 +3,9 @@
 //! that and can put Windows back on Voicemeeter's input.
 //!
 //! Reading the default uses Windows' public audio API. Changing it has no public API, so it
-//! uses the internal call Windows' own sound settings use, in a small separate helper
-//! (PowerShell), as routing.rs does, so a Windows version that changes it can't take
-//! Sleekmeeter down.
+//! uses the internal call Windows' own sound settings use (see policy.rs).
+
+use crate::LockExt;
 
 use crate::{routing, settings, Settings, Vm};
 use serde_json::{json, Value};
@@ -84,7 +84,7 @@ fn target(devices: &[Value]) -> Option<(String, String)> {
             d["name"].as_str()?.to_string(),
         ))
     };
-    let last = LAST_GOOD.lock().unwrap().clone();
+    let last = LAST_GOOD.locked().clone();
     let named = |test: &dyn Fn(&str, &str) -> bool| {
         devices
             .iter()
@@ -96,7 +96,7 @@ fn target(devices: &[Value]) -> Option<(String, String)> {
 }
 
 fn connected(app: &AppHandle) -> bool {
-    app.state::<Vm>().last.lock().unwrap()["connected"]
+    app.state::<Vm>().last.locked()["connected"]
         .as_bool()
         .unwrap_or(false)
 }
@@ -113,7 +113,7 @@ pub fn status(app: &AppHandle) -> Value {
 fn describe(devices: &[Value], main: &str, calls: &str) -> Value {
     let (output, calls) = (name_of(devices, main), name_of(devices, calls));
     if is_voicemeeter(&output) {
-        *LAST_GOOD.lock().unwrap() = Some(main.to_string());
+        *LAST_GOOD.locked() = Some(main.to_string());
     }
     // Calls count too: everything should go through the mixer, Discord included.
     let wrong = !is_voicemeeter(&output) || !is_voicemeeter(&calls);
@@ -125,66 +125,14 @@ fn describe(devices: &[Value], main: &str, calls: &str) -> Value {
     })
 }
 
-const HELPER: &str = r##"
-$ErrorActionPreference = 'Stop'
-Add-Type -TypeDefinition @'
-using System;
-using System.Runtime.InteropServices;
-public static class DefaultOutput {
-  [ComImport, Guid("f8679f50-850a-41cf-9c72-430f290290c8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-  interface IPolicyConfig {
-    [PreserveSig] int M01(); [PreserveSig] int M02(); [PreserveSig] int M03(); [PreserveSig] int M04();
-    [PreserveSig] int M05(); [PreserveSig] int M06(); [PreserveSig] int M07(); [PreserveSig] int M08();
-    [PreserveSig] int M09(); [PreserveSig] int M10();
-    [PreserveSig] int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string id, int role);
-  }
-  [ComImport, Guid("870af99c-171d-4f9e-af0d-e63df40c2bc9")]
-  class PolicyConfigClient { }
-
-  // Everything, music and video, and calls.
-  public static int Set(string id) {
-    IPolicyConfig config = (IPolicyConfig)new PolicyConfigClient();
-    for (int role = 0; role < 3; role++) {
-      int hr = config.SetDefaultEndpoint(id, role);
-      if (hr != 0) return hr;
-    }
-    return 0;
-  }
-}
-'@
-$hr = [DefaultOutput]::Set('__ID__')
-if ($hr -ne 0) { Write-Output ('HR=0x{0:X8}' -f $hr); exit 1 }
-Write-Output 'OK'
-"##;
-
-#[cfg(windows)]
 fn set_default(id: &str) -> Result<(), String> {
-    use std::os::windows::process::CommandExt;
     if !routing::valid_device(id) {
         return Err("That isn't a playback device".into());
     }
-    let path = std::env::temp_dir().join("sleekmeeter-output.ps1");
-    std::fs::write(&path, HELPER.replace("__ID__", id))
-        .map_err(|e| format!("Couldn't prepare the change: {e}"))?;
-    let out = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-        .arg(&path)
-        .creation_flags(0x0800_0000) // no console window
-        .output()
-        .map_err(|e| format!("Couldn't run the helper: {e}"))?;
-    let _ = std::fs::remove_file(&path);
-    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
-    if out.status.success() && text.ends_with("OK") {
-        return Ok(());
-    }
-    let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
-    log_warn!("Sound output helper: {text} {err}");
-    Err("Windows didn't accept the change. Pick Voicemeeter Input in Windows' sound settings instead".into())
-}
-
-#[cfg(not(windows))]
-fn set_default(_id: &str) -> Result<(), String> {
-    Err("Only available on Windows".into())
+    crate::policy::set_default_device(id).map_err(|e| {
+        log_warn!("Sound output: {e}");
+        "Windows didn't accept the change. Pick Voicemeeter Input in Windows' sound settings instead".to_string()
+    })
 }
 
 /// Put Windows' sound output back on Voicemeeter if it has moved. Returns the device it chose,
@@ -199,7 +147,7 @@ pub fn fix() -> Result<Option<String>, String> {
     let (id, name) = target(&devices)
         .ok_or("Windows doesn't list any Voicemeeter input. Is Voicemeeter installed?")?;
     set_default(&id)?;
-    *LAST_GOOD.lock().unwrap() = Some(id);
+    *LAST_GOOD.locked() = Some(id);
     log_info!(
         "Set Windows' sound output back to {name} (was {})",
         st["output"].as_str().unwrap_or("")
@@ -267,7 +215,7 @@ pub fn spawn(app: AppHandle) {
             );
             let keep = {
                 let state = app.state::<Settings>();
-                let s = state.0.lock().unwrap();
+                let s = state.0.locked();
                 settings::flag(&s, "keepWindowsOutput")
             };
             fixes.retain(|t| t.elapsed() < WINDOW);
@@ -316,7 +264,7 @@ mod tests {
 
     #[test]
     fn any_voicemeeter_input_counts_and_others_dont() {
-        *LAST_GOOD.lock().unwrap() = None;
+        *LAST_GOOD.locked() = None;
         let d = devices();
         assert_eq!(describe(&d, AUX, AUX)["state"], "ok");
         let st = describe(&d, PHONES, AUX);
@@ -333,7 +281,7 @@ mod tests {
     // Called from the test above: both share LAST_GOOD, and tests run in parallel.
     fn puts_back_the_voicemeeter_input_last_used() {
         let d = devices();
-        *LAST_GOOD.lock().unwrap() = None;
+        *LAST_GOOD.locked() = None;
         assert_eq!(
             target(&d).unwrap().1,
             "Voicemeeter Input (VB-Audio Voicemeeter VAIO)"

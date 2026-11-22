@@ -8,6 +8,8 @@
 //! Nothing is recorded: each 10 ms only leaves five numbers (its level in a few frequency
 //! bands), and those are gone when the coach closes.
 
+use crate::LockExt;
+
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
@@ -363,7 +365,7 @@ pub fn start(layout: &crate::vm::Layout, target: &str) -> Result<(), String> {
         return Err("Pick one of Voicemeeter's inputs.".into());
     }
     let rate = crate::micfx::insert_rate();
-    *COACH.lock().unwrap() = Some(Session {
+    *COACH.locked() = Some(Session {
         target: target.to_string(),
         c0,
         started: Instant::now(),
@@ -375,12 +377,12 @@ pub fn start(layout: &crate::vm::Layout, target: &str) -> Result<(), String> {
 
 pub fn stop() {
     WANT.store(false, Ordering::Relaxed);
-    *COACH.lock().unwrap() = None;
+    *COACH.locked() = None;
 }
 
 /// `{ running, target, secs, speechSecs, enough, level, noise, message, tips }`.
 pub fn status() -> Value {
-    let g = COACH.lock().unwrap();
+    let g = COACH.locked();
     let Some(s) = g.as_ref() else {
         return json!({ "running": false });
     };

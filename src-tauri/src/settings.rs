@@ -40,9 +40,77 @@ fn path() -> PathBuf {
     app_dir().join("settings.json")
 }
 
+/// The settings as they were before the last save, used when settings.json is missing or broken.
+fn last_good() -> PathBuf {
+    app_dir().join("settings.last-good.json")
+}
+
 /// False on a fresh install, before anything was saved.
 pub fn exists() -> bool {
-    path().exists()
+    path().exists() || last_good().exists()
+}
+
+/// Replace `path` with `bytes` so that a crash or power cut leaves either the old file or the
+/// new one, never half of each: write a temporary file, flush it to disk, then swap it in.
+pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = PathBuf::from(tmp);
+    {
+        let mut f = std::fs::File::create(&tmp)?;
+        f.write_all(bytes)?;
+        f.sync_all()?;
+    }
+    std::fs::rename(&tmp, path).inspect_err(|_| {
+        let _ = std::fs::remove_file(&tmp);
+    })
+}
+
+/// Read a settings file: Some(object) when it parses as one.
+fn read_object(p: &std::path::Path) -> Result<Option<serde_json::Map<String, Value>>, String> {
+    let text = match std::fs::read_to_string(p) {
+        Ok(t) => t,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e.to_string()),
+    };
+    match serde_json::from_str::<Value>(&text) {
+        Ok(Value::Object(o)) => Ok(Some(o)),
+        Ok(_) => Err("it isn't a settings object".into()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// The saved settings, falling back to the copy from before the last save. A broken
+/// settings.json is kept (renamed) rather than overwritten, so nothing is lost for good.
+fn saved_object() -> Option<serde_json::Map<String, Value>> {
+    match read_object(&path()) {
+        Ok(Some(o)) => return Some(o),
+        Ok(None) => {}
+        Err(e) => {
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let keep = app_dir().join(format!("settings.broken-{stamp}.json"));
+            let _ = std::fs::rename(path(), &keep);
+            log_warn!(
+                "settings.json couldn't be read ({e}); kept it as {} and used the previous settings",
+                keep.display()
+            );
+        }
+    }
+    match read_object(&last_good()) {
+        Ok(Some(o)) => {
+            log_warn!("Restored settings from settings.last-good.json");
+            Some(o)
+        }
+        Ok(None) => None,
+        Err(e) => {
+            log_warn!("settings.last-good.json couldn't be read either ({e}); using the defaults");
+            None
+        }
+    }
 }
 
 pub fn defaults() -> Value {
@@ -67,6 +135,8 @@ pub fn defaults() -> Value {
         "mini": false,
         // Load a scene when an app starts: [{ "app": "obs64.exe", "scene": "Streaming", "restore": "Default" }]
         "sceneRules": [],
+        // On for every build, test versions and local -dev builds included, so each one moves on
+        // to the full release when it's out.
         "checkUpdates": true,
         // Also offer test versions (GitHub pre-releases) as updates.
         "betaUpdates": false,
@@ -81,7 +151,8 @@ pub fn defaults() -> Value {
         // Talk-over ducking: while `trigger` is above `threshold` dB, lower `targets` by `amount` dB.
         "ducking": {
             "on": false, "trigger": "Strip[0]", "also": [], "targets": [], "amount": 12, "threshold": -40,
-            "attackMs": 150, "releaseMs": 800, "holdMs": 700
+            "attackMs": 150, "releaseMs": 800, "holdMs": 700,
+            "voiceAware": false, "speechThreshold": 0.6
         },
         // Restart Voicemeeter's audio engine when a device it uses comes back.
         "autoRestart": true,
@@ -134,7 +205,7 @@ pub fn defaults() -> Value {
         // rewards [{ "id", "name", "action", "target" }] (anyone who redeems one may run it).
         "twitch": { "on": false, "channel": "", "who": "mods", "cooldown": 3, "commands": [], "rewards": [] },
         // Control from a phone on the same network. `key` is the secret in the address.
-        "remote": { "on": false, "port": 8787, "key": "" },
+        "remote": { "on": false, "port": 8787, "key": "", "scope": "network" },
         // Record how loud each channel is, for the level history.
         "history": { "on": false },
         // The output your stream gets, like "Bus[4]". "" = B2 (B on Voicemeeter Standard).
@@ -169,7 +240,7 @@ pub fn defaults() -> Value {
         // "micFxLive" { chain id: { "off", "strength" } }.
         "micFx": {
             "aecRef": "Bus[0]",
-            "chains": [{ "id": "c1", "target": "Strip[0]", "on": false, "effect": "denoiser",
+            "chains": [{ "id": "c1", "target": "Strip[0]", "on": false, "engine": "cpu", "effect": "denoiser",
                          "strength": 100, "aec": false, "plugins": [] }]
         }
     })
@@ -178,27 +249,24 @@ pub fn defaults() -> Value {
 /// Saved settings laid over the defaults, so new options get sensible values.
 pub fn load() -> Value {
     let mut s = defaults();
-    if let Ok(text) = std::fs::read_to_string(path()) {
-        match serde_json::from_str::<Value>(&text) {
-            Ok(Value::Object(saved)) => {
-                if let Value::Object(base) = &mut s {
-                    // People who already use Sleekmeeter keep seeing Solo and Mono.
-                    if !saved.contains_key("hideSoloMono") {
-                        base.insert("hideSoloMono".into(), Value::Bool(false));
-                    }
-                    // These onboarding defaults only apply when there is no settings file.
-                    base.extend(json!({
-                        "startInTray": true, "launchVoicemeeter": true, "themeMotion": "full",
-                        "history": { "on": true },
-                        "mutedTalk": { "on": true, "target": "Strip[0]", "threshold": -35, "ptt": false }
-                    }).as_object().unwrap().clone());
-                    for (k, v) in saved {
-                        base.insert(k, v);
-                    }
-                }
-            }
-            Ok(_) => log_warn!("settings.json isn't a settings object; using the defaults"),
-            Err(e) => log_warn!("settings.json couldn't be read ({e}); using the defaults"),
+    if let (Some(saved), Value::Object(base)) = (saved_object(), &mut s) {
+        // People who already use Sleekmeeter keep seeing Solo and Mono.
+        if !saved.contains_key("hideSoloMono") {
+            base.insert("hideSoloMono".into(), Value::Bool(false));
+        }
+        // These onboarding defaults only apply when there is no settings file.
+        base.extend(
+            json!({
+                "startInTray": true, "launchVoicemeeter": true, "themeMotion": "full",
+                "history": { "on": true },
+                "mutedTalk": { "on": true, "target": "Strip[0]", "threshold": -35, "ptt": false }
+            })
+            .as_object()
+            .unwrap()
+            .clone(),
+        );
+        for (k, v) in saved {
+            base.insert(k, v);
         }
     }
     s
@@ -206,7 +274,11 @@ pub fn load() -> Value {
 
 pub fn save(s: &Value) -> Result<(), String> {
     let text = serde_json::to_string_pretty(s).map_err(|e| e.to_string())?;
-    std::fs::write(path(), text).map_err(|e| {
+    // The current file becomes the fallback, but only when it's a good one.
+    if matches!(read_object(&path()), Ok(Some(_))) {
+        let _ = std::fs::copy(path(), last_good());
+    }
+    write_atomic(&path(), text.as_bytes()).map_err(|e| {
         log_error!("Couldn't save settings to {}: {e}", path().display());
         format!("Couldn't save settings: {e}")
     })
@@ -234,4 +306,24 @@ pub fn flag(s: &Value, key: &str) -> bool {
 
 pub fn flag_or(s: &Value, key: &str, default: bool) -> bool {
     s.get(key).and_then(Value::as_bool).unwrap_or(default)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn atomic_write_replaces_and_leaves_no_temp_file() {
+        let dir = std::env::temp_dir().join(format!("sm-settings-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = dir.join("settings.json");
+        write_atomic(&p, br#"{"a":1}"#).unwrap();
+        write_atomic(&p, br#"{"a":2}"#).unwrap();
+        assert_eq!(read_object(&p).unwrap().unwrap()["a"], 2);
+        assert!(!dir.join("settings.json.tmp").exists());
+        std::fs::write(&p, b"{\"a\":").unwrap();
+        assert!(read_object(&p).is_err());
+        assert!(read_object(&dir.join("missing.json")).unwrap().is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

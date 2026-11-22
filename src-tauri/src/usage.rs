@@ -5,6 +5,8 @@
 //! The ID lives in usage.json next to the settings (not in settings.json, which the window
 //! rewrites) and is deleted when the user says no, so saying yes again starts a new one.
 
+use crate::LockExt;
+
 use crate::{settings, Settings};
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -25,7 +27,7 @@ static WAKE: OnceLock<Mutex<Sender<()>>> = OnceLock::new();
 /// Call when the user changes their answer.
 pub fn nudge() {
     if let Some(tx) = WAKE.get() {
-        let _ = tx.lock().unwrap().send(());
+        let _ = tx.locked().send(());
     }
 }
 
@@ -109,7 +111,7 @@ fn send(url: &str, body: &Value) -> Result<(), String> {
 fn tick(app: &AppHandle) {
     let (on, edition) = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         (s["usagePing"].as_bool() == Some(true), edition(&s))
     };
     let path = file();

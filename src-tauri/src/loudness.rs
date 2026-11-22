@@ -5,6 +5,8 @@
 //! It listens through Windows to the stream output ("Voicemeeter Out B2"), the same way
 //! Instant replay does; nothing is recorded and nothing leaves the PC.
 
+use crate::LockExt;
+
 use crate::Settings;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -224,11 +226,11 @@ fn val(v: f64) -> Value {
 
 /// `{ running, message, device, momentary, shortTerm, integrated, peak, since }` in LUFS / dBFS.
 pub fn status() -> Value {
-    let mut s = STATUS.lock().unwrap().clone();
+    let mut s = STATUS.locked().clone();
     if s.is_null() {
         return json!({ "running": false, "message": "Off", "device": "" });
     }
-    if let Some(m) = METER.lock().unwrap().as_ref() {
+    if let Some(m) = METER.locked().as_ref() {
         s["momentary"] = val(m.momentary());
         s["shortTerm"] = val(m.short_term());
         s["integrated"] = val(m.integrated());
@@ -249,7 +251,7 @@ pub fn status() -> Value {
 
 /// Start the integrated measurement again (for example at the start of a stream).
 pub fn reset() {
-    if let Some(m) = METER.lock().unwrap().as_mut() {
+    if let Some(m) = METER.locked().as_mut() {
         m.reset_integrated();
     }
 }
@@ -262,7 +264,7 @@ struct Cfg {
 
 fn cfg(app: &AppHandle) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let layout = crate::vm::Layout::for_edition(s["edition"].as_i64().unwrap_or(2) as i32);
     let stream = crate::watch::stream_bus(&s, &layout)
         .map(|j| crate::watch::bus_param(&layout, j))
@@ -274,7 +276,7 @@ fn cfg(app: &AppHandle) -> Cfg {
 }
 
 fn set_status(running: bool, device: &str, message: &str) {
-    *STATUS.lock().unwrap() = json!({ "running": running, "device": device, "message": message });
+    *STATUS.locked() = json!({ "running": running, "device": device, "message": message });
 }
 
 /// Keep measuring while it's on; follow the stream output setting.
@@ -284,14 +286,14 @@ pub fn spawn(app: AppHandle) {
         loop {
             let c = cfg(&app);
             if !c.on {
-                *METER.lock().unwrap() = None;
-                *STATUS.lock().unwrap() = Value::Null;
+                *METER.locked() = None;
+                *STATUS.locked() = Value::Null;
                 std::thread::sleep(Duration::from_secs(1));
                 continue;
             }
             let all = crate::replay::devices();
             let Some(device) = crate::replay::auto_device(&all, &c.stream) else {
-                *METER.lock().unwrap() = None;
+                *METER.locked() = None;
                 set_status(
                     false,
                     "",
@@ -308,7 +310,7 @@ pub fn spawn(app: AppHandle) {
                         log_warn!("Stream loudness: {e}");
                         last_error = e.clone();
                     }
-                    *METER.lock().unwrap() = None;
+                    *METER.locked() = None;
                     set_status(false, &device, &e);
                     std::thread::sleep(Duration::from_secs(3));
                 }
@@ -341,17 +343,18 @@ fn listen(app: &AppHandle, c: &Cfg, device: &str) -> Result<(), String> {
 
 #[cfg(windows)]
 mod imp {
+    use crate::LockExt;
     use super::{Meter, BROKEN, LAST_AUDIO, METER};
     use rodio::cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use rodio::cpal::{SampleFormat, Stream};
     use std::sync::atomic::Ordering;
 
     fn feed(data: &[f32], ch: usize) {
-        if let Some(m) = METER.lock().unwrap().as_mut() {
+        if let Some(m) = METER.locked().as_mut() {
             m.push(data, ch);
         }
         if data.iter().any(|s| s.abs() > 1e-5) {
-            *LAST_AUDIO.lock().unwrap() = Some(std::time::Instant::now());
+            *LAST_AUDIO.locked() = Some(std::time::Instant::now());
         }
     }
 
@@ -363,7 +366,7 @@ mod imp {
             .ok_or_else(|| format!("Couldn't find {name}"))?;
         let cfg = dev.default_input_config().map_err(|e| e.to_string())?;
         let (rate, ch) = (cfg.sample_rate().0, cfg.channels() as usize);
-        *METER.lock().unwrap() = Some(Meter::new(rate, ch));
+        *METER.locked() = Some(Meter::new(rate, ch));
         let err = |e: rodio::cpal::StreamError| {
             log_warn!("Stream loudness: {e}");
             BROKEN.store(true, Ordering::Relaxed);

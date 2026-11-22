@@ -19,6 +19,8 @@
 //! Shortcuts, the Stream Deck, the phone, Twitch and scenes switch a mic's chain off and on, and
 //! scenes can set NVIDIA's strength: that lives in "micFxLive" (Rust-owned, kept by settings_set).
 
+use crate::LockExt;
+
 use crate::{show_osd_text, Settings, SettingsDirty, Vm};
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
@@ -102,6 +104,114 @@ impl Queue {
 
 /* ---------- state shared with Voicemeeter's audio thread ---------- */
 
+struct SpeechInput {
+    queue: Queue,
+    channel: AtomicUsize,
+    probability: AtomicU32,
+    updated: AtomicU64,
+}
+
+impl SpeechInput {
+    fn new() -> Self {
+        Self {
+            queue: Queue::new(1 << 13),
+            channel: AtomicUsize::new(usize::MAX),
+            probability: AtomicU32::new(0),
+            updated: AtomicU64::new(0),
+        }
+    }
+}
+
+fn speech_clock() -> u64 {
+    static START: OnceLock<Instant> = OnceLock::new();
+    START.get_or_init(Instant::now).elapsed().as_millis() as u64 + 1
+}
+
+/// A recent analysis result, or None when audio/analysis is unavailable.
+pub fn speech_level(strip: usize) -> Option<f32> {
+    let s = shared().speech.get(strip)?;
+    let updated = s.updated.load(Ordering::Acquire);
+    if updated == 0
+        || speech_clock().saturating_sub(updated) > 250
+        || s.channel.load(Ordering::Acquire) == usize::MAX
+        || insert_rate() != RATE
+        || !input_insert_on()
+    {
+        return None;
+    }
+    Some(f32::from_bits(s.probability.load(Ordering::Relaxed)))
+}
+
+fn spawn_speech() {
+    for strip in 0..8 {
+        std::thread::spawn(move || {
+            let s = &shared().speech[strip];
+            let mut voice: Option<crate::voice::CpuVoice> = None;
+            let (mut input, mut output) = ([0.0; 480], [0.0; 480]);
+            let mut previous = usize::MAX;
+            loop {
+                let channel = s.channel.load(Ordering::Acquire);
+                if channel != previous {
+                    s.queue.clear();
+                    s.updated.store(0, Ordering::Release);
+                    voice = (channel != usize::MAX).then(crate::voice::CpuVoice::new);
+                    previous = channel;
+                }
+                let Some(model) = &mut voice else {
+                    std::thread::sleep(Duration::from_millis(20));
+                    continue;
+                };
+                if !s.queue.pop(&mut input) {
+                    std::thread::sleep(Duration::from_millis(4));
+                    continue;
+                }
+                // Discard a backlog rather than publishing a stale speech decision.
+                if s.queue.len() > 480 * 8 {
+                    s.queue.clear();
+                    s.updated.store(0, Ordering::Release);
+                    continue;
+                }
+                let p = model.process(&input, &mut output, 1.0);
+                s.probability.store(p.to_bits(), Ordering::Relaxed);
+                s.updated.store(speech_clock(), Ordering::Release);
+            }
+        });
+    }
+}
+
+fn tap_speech(sh: &Shared, b: &AudioBuffer) {
+    if sh.sample_rate.load(Ordering::Relaxed) != RATE {
+        return;
+    }
+    let n = b.nbs.max(0) as usize;
+    let channels = b.nbi.max(0) as usize;
+    let mut mono = [0f32; 1024];
+    for s in &sh.speech {
+        let c = s.channel.load(Ordering::Acquire);
+        if c == usize::MAX || c + 1 >= channels.min(128) || b.r[c].is_null() || b.r[c + 1].is_null()
+        {
+            continue;
+        }
+        let left = unsafe { std::slice::from_raw_parts(b.r[c], n) };
+        let right = unsafe { std::slice::from_raw_parts(b.r[c + 1], n) };
+        let lp = left.iter().map(|v| v * v).sum::<f32>();
+        let rp = right.iter().map(|v| v * v).sum::<f32>();
+        for start in (0..n).step_by(1024) {
+            let count = (n - start).min(1024);
+            for i in 0..count {
+                mono[i] = if lp > rp * 100.0 {
+                    left[start + i]
+                } else if rp > lp * 100.0 {
+                    right[start + i]
+                } else {
+                    (left[start + i] + right[start + i]) * 0.5
+                };
+            }
+            s.queue.push(&mono[..count]);
+        }
+    }
+}
+
 /// One mic's chain, as the audio thread and its worker see it.
 struct LaneShared {
     /// Interleaved input audio: audio thread → worker.
@@ -132,6 +242,7 @@ struct LaneShared {
     output: AtomicBool,
     /// Wakes the worker when audio arrives (Windows event handle).
     wake: AtomicUsize,
+    rider_gain: AtomicU32,
 }
 
 impl LaneShared {
@@ -153,6 +264,7 @@ impl LaneShared {
             want_ref: AtomicBool::new(false),
             output: AtomicBool::new(false),
             wake: AtomicUsize::new(sys::new_event()),
+            rider_gain: AtomicU32::new(0f32.to_bits()),
         }
     }
 }
@@ -167,6 +279,7 @@ struct Shared {
     restart: AtomicBool,
     /// First output-insert channel of the speakers' bus (8 per bus), usize::MAX for none.
     ref_channel: AtomicUsize,
+    speech: Vec<SpeechInput>,
 }
 
 fn shared() -> &'static Shared {
@@ -178,6 +291,7 @@ fn shared() -> &'static Shared {
         buffers: AtomicU64::new(0),
         restart: AtomicBool::new(false),
         ref_channel: AtomicUsize::new(usize::MAX),
+        speech: (0..8).map(|_| SpeechInput::new()).collect(),
     })
 }
 
@@ -307,6 +421,7 @@ fn to_mono(left: &[f32], right: &[f32], power: &mut [f32; 2], out: &mut [f32]) {
 }
 
 fn process_in(sh: &Shared, b: &AudioBuffer) {
+    tap_speech(sh, b);
     {
         // Mic coach: the mic as it arrives, before clean-up and plugins.
         let n = b.nbs.max(0) as usize;
@@ -716,6 +831,8 @@ struct WorkerKey {
     channel: usize,
     /// On an output (Voicemeeter's output insert).
     output: bool,
+    cpu: bool,
+    rider: crate::voice::RiderConfig,
 }
 
 struct Worker {
@@ -772,7 +889,11 @@ impl Worker {
         let stereo = key.stereo;
         let thread = std::thread::Builder::new()
             .name(format!("mic-clean-up-{lane}"))
-            .spawn(move || work(lane, nvfx, aec, frame, stereo, strength, stop2))
+            .spawn({
+                let cpu = key.cpu;
+                let rider = key.rider.clone();
+                move || work(lane, nvfx, aec, frame, stereo, strength, stop2, cpu, rider)
+            })
             .map_err(|e| e.to_string())?;
         Ok(Worker {
             lane,
@@ -804,6 +925,8 @@ fn work(
     stereo: bool,
     strength: Arc<AtomicU32>,
     stop: Arc<AtomicBool>,
+    cpu: bool,
+    rider_cfg: crate::voice::RiderConfig,
 ) {
     sys::raise_priority();
     let l = &shared().lanes[lane];
@@ -813,6 +936,9 @@ fn work(
     let (mut left, mut right) = (vec![0f32; frame], vec![0f32; frame]);
     let mut power = [0.0; 2];
     let mut applied = strength.load(Ordering::Relaxed);
+    let mut cpu_voice = (cpu || rider_cfg.on).then(crate::voice::CpuVoice::new);
+    let mut raw_delayed = vec![0.0; frame];
+    let mut rider = crate::voice::Rider::default();
     let mut last_error = String::new();
     let mut report = |err: String| {
         if err != last_error {
@@ -873,18 +999,33 @@ fn work(
                 Err(e) => report(e),
             }
         }
+        if let Some(voice) = &mut cpu_voice {
+            let probability =
+                voice.process(&mid, &mut outb, if cpu { f32::from_bits(s) } else { 0.0 });
+            mid.copy_from_slice(&outb);
+            rider.process(&mut mid, probability, &rider_cfg, RATE);
+            l.rider_gain
+                .store(rider.gain_db().to_bits(), Ordering::Relaxed);
+        }
         crate::pluginhost::process(lane, &mut mid, false);
+        let aligned_raw = if cpu_voice.is_some() {
+            &raw_delayed
+        } else {
+            &inb
+        };
         if CAPTURE_LANE.load(Ordering::Relaxed) == lane {
-            capture_frame(lane, 1, &inb, &mid);
+            capture_frame(lane, 1, aligned_raw, &mid);
         }
         // Compare: the raw mic, just as late, so switching back and forth doesn't jump.
-        for (pair, &sample) in stereo_out
-            .chunks_exact_mut(2)
-            .zip(if bypass { &inb } else { &mid })
+        for (pair, &sample) in
+            stereo_out
+                .chunks_exact_mut(2)
+                .zip(if bypass { aligned_raw } else { &mid })
         {
             pair.fill(sample);
         }
         l.outq.push(&stereo_out);
+        raw_delayed.copy_from_slice(&inb);
     }
 }
 
@@ -923,7 +1064,7 @@ fn capture_frame(lane: usize, channels: u16, raw: &[f32], processed: &[f32]) {
 }
 
 pub fn clear_take() {
-    let mut take = MIC_TAKE.lock().unwrap();
+    let mut take = MIC_TAKE.locked();
     CAPTURE_LANE.store(usize::MAX, Ordering::Relaxed);
     *take = None;
 }
@@ -952,7 +1093,7 @@ pub fn record_take(app: &AppHandle, id: &str) -> Result<(), String> {
     };
     let frames = rate as usize * 4 * channels as usize;
     {
-        let mut take = MIC_TAKE.lock().unwrap();
+        let mut take = MIC_TAKE.locked();
         if CAPTURE_LANE.load(Ordering::Relaxed) != usize::MAX {
             return Err("A mic comparison is already recording.".into());
         }
@@ -970,7 +1111,7 @@ pub fn record_take(app: &AppHandle, id: &str) -> Result<(), String> {
     }
     loop {
         std::thread::sleep(Duration::from_millis(50));
-        let mut guard = MIC_TAKE.lock().unwrap();
+        let mut guard = MIC_TAKE.locked();
         let take = guard
             .as_mut()
             .filter(|t| t.started == started)
@@ -1021,7 +1162,7 @@ fn level_match_take(take: &mut MicTake) {
 
 pub fn play_take(output: &str, processed: bool) -> Result<(), String> {
     let (channels, rate, samples) = {
-        let take = MIC_TAKE.lock().unwrap();
+        let take = MIC_TAKE.locked();
         let take = take
             .as_ref()
             .filter(|t| t.raw.len() == t.frames)
@@ -1097,6 +1238,8 @@ struct Chain {
     aec: bool,
     stereo: bool,
     plugins: Vec<Value>,
+    cpu: bool,
+    rider: crate::voice::RiderConfig,
 }
 
 fn strip_index(target: &str) -> Option<usize> {
@@ -1174,6 +1317,8 @@ fn chains(m: &Value) -> Vec<Chain> {
                 aec: c["aec"].as_bool().unwrap_or(false),
                 stereo: c["stereo"].as_bool().unwrap_or(false),
                 plugins: c["plugins"].as_array().cloned().unwrap_or_default(),
+                cpu: c["engine"] == "cpu",
+                rider: crate::voice::RiderConfig::from_json(&c["rider"]),
             }
         })
         .collect()
@@ -1188,11 +1333,12 @@ struct Cfg {
     states: Value,
     /// Listening EQ and leveller per channel (soundfx.rs).
     sound: Value,
+    ducking: Value,
 }
 
 fn cfg(app: &AppHandle) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let m = &s["micFx"];
     let aec_bus = m["aecRef"]
         .as_str()
@@ -1204,6 +1350,7 @@ fn cfg(app: &AppHandle) -> Cfg {
         live: s["micFxLive"].clone(),
         states: s["vstState"].clone(),
         sound: s["soundFx"].clone(),
+        ducking: s["ducking"].clone(),
     }
 }
 
@@ -1221,7 +1368,7 @@ static REG_MODE: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::ne
 /// `{ available, message, chains: { id: { running, off, message, latencyMs, underruns } },
 /// plugins }` for Settings.
 pub fn status() -> Value {
-    let mut s = STATUS.lock().unwrap().clone();
+    let mut s = STATUS.locked().clone();
     if s.is_null() {
         s = json!({ "available": available(), "message": "", "chains": {} });
     }
@@ -1235,7 +1382,7 @@ pub fn api_state(app: &AppHandle) -> Value {
     let c = cfg(app);
     let mut out = serde_json::Map::new();
     for ch in &c.chains {
-        let set = ch.on || ch.aec || !ch.plugins.is_empty();
+        let set = ch.on || ch.aec || ch.rider.on || !ch.plugins.is_empty();
         if set {
             out.insert(ch.target.clone(), json!({ "on": !is_off(&c.live, &ch.id) }));
         }
@@ -1248,7 +1395,7 @@ pub fn api_state(app: &AppHandle) -> Value {
 fn save_live(app: &AppHandle, live: Value) {
     {
         let st = app.state::<Settings>();
-        st.0.lock().unwrap()["micFxLive"] = live;
+        st.0.locked()["micFxLive"] = live;
     }
     app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
     let _ = app.emit("micfx-live", ());
@@ -1262,7 +1409,7 @@ pub fn toggle(app: &AppHandle, target: &str) -> Result<bool, String> {
         .chains
         .iter()
         .filter(|ch| target.is_empty() || ch.target == target)
-        .filter(|ch| ch.on || ch.aec || !ch.plugins.is_empty())
+        .filter(|ch| ch.on || ch.aec || ch.rider.on || !ch.plugins.is_empty())
         .collect();
     if hit.is_empty() {
         show_osd_text(app, "Mic clean-up", "Not set up", false, "mic");
@@ -1294,6 +1441,106 @@ pub fn toggle(app: &AppHandle, target: &str) -> Result<bool, String> {
 }
 
 /// What scenes save: each mic's chain off or on, and NVIDIA's strength. Keyed by input.
+pub fn partial_scene_snapshot(app: &AppHandle) -> Value {
+    let st = app.state::<Settings>();
+    let s = st.0.locked();
+    let mut out = serde_json::Map::new();
+    for chain in chains_json(&s["micFx"]) {
+        let Some(target) = chain["target"].as_str() else {
+            continue;
+        };
+        let id = chain["id"].as_str().unwrap_or("");
+        let mut states = serde_json::Map::new();
+        for plugin in chain["plugins"].as_array().into_iter().flatten() {
+            if let Some(pid) = plugin["id"].as_str() {
+                if let Some(state) = s["vstState"].get(pid) {
+                    states.insert(pid.into(), state.clone());
+                }
+            }
+        }
+        out.insert(
+            target.into(),
+            json!({"chain":chain,"live":s["micFxLive"][id],"states":states}),
+        );
+    }
+    Value::Object(out)
+}
+
+/// Restore the selected chains as raw configuration so CPU/rider and future settings survive.
+pub fn partial_scene_apply(app: &AppHandle, saved: &Value) {
+    let Some(map) = saved.as_object() else { return };
+    let next = {
+        let st = app.state::<Settings>();
+        let mut s = st.0.locked();
+        let mut chains = chains_json(&s["micFx"]);
+        if !s["micFxLive"].is_object() {
+            s["micFxLive"] = json!({});
+        }
+        if !s["vstState"].is_object() {
+            s["vstState"] = json!({});
+        }
+        for (target, entry) in map {
+            if entry.get("chain") == Some(&Value::Null) {
+                chains.retain(|c| c["target"].as_str() != Some(target));
+                continue;
+            }
+            let Some(mut chain) = entry["chain"].as_object().cloned().map(Value::Object) else {
+                continue;
+            };
+            if chain["target"].as_str() != Some(target) {
+                continue;
+            }
+            if let Some(i) = chains
+                .iter()
+                .position(|c| c["target"].as_str() == Some(target))
+            {
+                chain["id"] = chains[i]["id"].clone();
+                chains[i] = chain.clone();
+            } else {
+                let mut n = 1;
+                while chains.iter().any(|c| c["id"] == format!("scene{n}")) {
+                    n += 1;
+                }
+                chain["id"] = json!(format!("scene{n}"));
+                chains.push(chain.clone());
+            }
+            if let Some(id) = chain["id"].as_str() {
+                s["micFxLive"][id] = entry["live"].clone();
+            }
+            for plugin in chain["plugins"].as_array().into_iter().flatten() {
+                if let Some(id) = plugin["id"].as_str() {
+                    if let Some(state) = entry["states"].get(id) {
+                        s["vstState"][id] = state.clone();
+                    }
+                }
+            }
+        }
+        if !s["micFx"].is_object() {
+            s["micFx"] = json!({});
+        }
+        s["micFx"]["chains"] = json!(chains);
+        s.clone()
+    };
+    app.state::<SettingsDirty>().0.store(true, Ordering::SeqCst);
+    let _ = app.emit("settings-changed", next);
+    let _ = app.emit("micfx-live", ());
+    // Plugin sync ignores state-only changes, so explicitly restore already loaded plugins.
+    // Newly loaded plugins receive the same persisted state from the manager.
+    for entry in map.values() {
+        for plugin in entry["chain"]["plugins"].as_array().into_iter().flatten() {
+            if let Some(id) = plugin["id"].as_str() {
+                if let Some(state) = entry["states"].get(id) {
+                    let _ = crate::pluginhost::set_state(
+                        id.into(),
+                        state["c"].as_str().unwrap_or("").into(),
+                        state["e"].as_str().unwrap_or("").into(),
+                    );
+                }
+            }
+        }
+    }
+}
+
 pub fn scene_snapshot(app: &AppHandle) -> Value {
     let c = cfg(app);
     let mut out = serde_json::Map::new();
@@ -1349,7 +1596,7 @@ pub fn listen(app: &AppHandle, id: &str, on: bool) -> Result<bool, String> {
         .api
         .clone()
         .ok_or("Voicemeeter isn't running")?;
-    let mut held = LISTEN.lock().unwrap();
+    let mut held = LISTEN.locked();
     // Whatever was on before goes back first.
     if let Some(t) = held.take() {
         let _ = api.set_float(&format!("{t}.A1"), 0.0);
@@ -1405,7 +1652,7 @@ fn keep_state(app: &AppHandle, ev: &Value) {
     if ev["event"] == "quarantine" {
         let additions = {
             let settings = app.state::<Settings>();
-            let mut s = settings.0.lock().unwrap();
+            let mut s = settings.0.locked();
             let ids = ev["ids"].as_array().cloned().unwrap_or_default();
             let old = s["vstQuarantine"].as_array().cloned().unwrap_or_default();
             let mut additions = Vec::new();
@@ -1433,7 +1680,7 @@ fn keep_state(app: &AppHandle, ev: &Value) {
     }
     let Some(id) = ev["id"].as_str() else { return };
     let st = app.state::<Settings>();
-    let mut s = st.0.lock().unwrap();
+    let mut s = st.0.locked();
     if !s["vstState"].is_object() {
         s["vstState"] = json!({});
     }
@@ -1443,7 +1690,7 @@ fn keep_state(app: &AppHandle, ev: &Value) {
 
 fn prune_states(app: &AppHandle) {
     let st = app.state::<Settings>();
-    let mut s = st.0.lock().unwrap();
+    let mut s = st.0.locked();
     let ids: std::collections::HashSet<String> = chains_json(&s["micFx"])
         .iter()
         .flat_map(|c| c["plugins"].as_array().into_iter().flatten())
@@ -1462,8 +1709,9 @@ pub fn spawn(app: AppHandle) {
     let Some(api) = app.state::<Vm>().api.clone() else {
         return;
     };
-    let quarantine = app.state::<Settings>().0.lock().unwrap()["vstQuarantine"].clone();
+    let quarantine = app.state::<Settings>().0.locked()["vstQuarantine"].clone();
     crate::pluginhost::restore_quarantine(&quarantine);
+    spawn_speech();
     {
         let app = app.clone();
         crate::pluginhost::on_event(Box::new(move |ev| keep_state(&app, &ev)));
@@ -1521,6 +1769,24 @@ pub fn spawn(app: AppHandle) {
 
             let callback_ok = api.has_audio_callback();
             let vm_up = edition.is_some();
+            let speech_wanted = c.ducking["on"] == true && c.ducking["voiceAware"] == true;
+            let mut any_speech = false;
+            for (strip, speech) in sh.speech.iter().enumerate() {
+                let target = format!("Strip[{strip}]");
+                let wanted = speech_wanted
+                    && (c.ducking["trigger"].as_str().unwrap_or("Strip[0]") == target
+                        || c.ducking["also"]
+                            .as_array()
+                            .is_some_and(|a| a.iter().any(|v| v == &target)));
+                let slot = wanted.then(|| insert_slot(&target, &layout)).flatten();
+                let channel = if vm_up && callback_ok && rate == RATE {
+                    slot.map_or(usize::MAX, |(c, _)| c)
+                } else {
+                    usize::MAX
+                };
+                speech.channel.store(channel, Ordering::Release);
+                any_speech |= channel != usize::MAX;
+            }
             let out_free = out_blocked
                 .as_ref()
                 .is_none_or(|(_, t)| t.elapsed() > Duration::from_secs(30));
@@ -1582,14 +1848,20 @@ pub fn spawn(app: AppHandle) {
                 } else {
                     channel
                 };
-                let nv_wanted = !stereo && (ch.on || ch.aec);
+                let nv_wanted = !stereo && ((ch.on && !ch.cpu) || ch.aec);
                 if nv_wanted && !available() {
                     notes.push("NVIDIA's Audio Effects runtime isn't installed (it needs an NVIDIA RTX graphics card).".into());
                 } else if nv_wanted && rate != RATE {
                     notes.push(format!("NVIDIA's effects need 48 kHz, and Voicemeeter runs at {} kHz: in Voicemeeter, open Menu → System Settings and set Preferred Main SampleRate to 48000.", rate as f32 / 1000.0));
                 }
                 let nv_can = !stereo && available() && rate == RATE;
-                let mut nv_ok = ch.on && nv_can;
+                let mut nv_ok = ch.on && !ch.cpu && nv_can;
+                let cpu_ok = !stereo && ch.on && ch.cpu && rate == RATE;
+                let mut rider_cfg = ch.rider.clone();
+                rider_cfg.on &= !stereo && rate == RATE;
+                if !stereo && rate != RATE && ((ch.on && ch.cpu) || ch.rider.on) {
+                    notes.push("CPU noise removal and mic level riding need 48 kHz. In Voicemeeter's System Settings set Preferred Main SampleRate to 48000.".into());
+                }
                 let mut aec_ok = ch.aec && nv_can;
                 if aec_ok && !ref_ok {
                     aec_ok = false;
@@ -1616,7 +1888,7 @@ pub fn spawn(app: AppHandle) {
                     && channel != usize::MAX
                     && callback_ok
                     && vm_up
-                    && (nv_ok || aec_ok || plugins_on > 0);
+                    && (nv_ok || aec_ok || cpu_ok || rider_cfg.on || plugins_on > 0);
 
                 // (Re)start the worker for this chain.
                 let key = WorkerKey {
@@ -1626,6 +1898,8 @@ pub fn spawn(app: AppHandle) {
                     stereo,
                     channel,
                     output,
+                    cpu: cpu_ok,
+                    rider: rider_cfg,
                 };
                 if !need {
                     workers[lane] = None;
@@ -1695,6 +1969,12 @@ pub fn spawn(app: AppHandle) {
                         format!("{plugins_on} plugins")
                     });
                 }
+                if key.cpu {
+                    what.push("CPU noise removal (RNNoise)".into());
+                }
+                if key.rider.on {
+                    what.push("automatic mic level riding".into());
+                }
                 let message = if off {
                     "Switched off (by a shortcut, the Stream Deck, the phone, chat or a scene)."
                         .to_string()
@@ -1717,7 +1997,8 @@ pub fn spawn(app: AppHandle) {
                         "running": running,
                         "off": off,
                         "message": message,
-                        "latencyMs": if running { (latency_ms(sh, l) * 10.0).round() / 10.0 } else { 0.0 },
+                        "latencyMs": if running { ((latency_ms(sh, l) + if key.cpu || key.rider.on { 10.0 } else { 0.0 }) * 10.0).round() / 10.0 } else { 0.0 },
+                        "riderGainDb": if running && key.rider.on { f32::from_bits(l.rider_gain.load(Ordering::Relaxed)) } else { 0.0 },
                         "underruns": l.underruns.load(Ordering::Relaxed),
                     }),
                 );
@@ -1726,13 +2007,13 @@ pub fn spawn(app: AppHandle) {
             // Join (or leave) Voicemeeter's inserts: inputs for anything on an input, outputs for
             // echo removal, plugins on outputs, and EQ or levelling on an output.
             let mut global = String::new();
-            let need_in =
-                (any_in
-                    || any_aec
-                    || fx_in
-                    || crate::replay::tracks_want_insert()
-                    || crate::coach::want_insert())
-                    && vm_up;
+            let need_in = (any_in
+                || any_speech
+                || any_aec
+                || fx_in
+                || crate::replay::tracks_want_insert()
+                || crate::coach::want_insert())
+                && vm_up;
             let need_out = (any_out || any_aec || (fx_out && out_free)) && vm_up;
             let want_mode = (if need_in {
                 crate::vm::AUDIOCALLBACK_IN
@@ -1830,11 +2111,16 @@ pub fn spawn(app: AppHandle) {
                     json!({ "running": running, "message": message }),
                 );
             }
-            *STATUS.lock().unwrap() = json!({
+            *STATUS.locked() = json!({
                 "available": available(),
                 "message": global,
                 "chains": Value::Object(chain_status),
                 "soundFx": Value::Object(fx_status),
+                "speech": (0..layout.strips()).map(|i| {
+                    let p = speech_level(i);
+                    (format!("Strip[{i}]"), json!({"available":p.is_some(),"probability":p,
+                        "message": if !speech_wanted { "Voice-aware ducking is off" } else if rate != RATE { "Voice detection needs 48 kHz" } else if !global.is_empty() { &global } else { "Waiting for speech analysis audio" }}))
+                }).collect::<serde_json::Map<String, Value>>(),
             });
         }
     });

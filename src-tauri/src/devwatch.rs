@@ -5,6 +5,8 @@
 //! watches the devices Voicemeeter is set to use; when one of them returns to Windows, it
 //! waits a moment for Windows to finish setting it up and restarts the engine for you.
 
+use crate::LockExt;
+
 use crate::{outputs, settings, Settings, Vm};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -46,7 +48,7 @@ fn effective_fallbacks(s: &Value) -> Value {
 }
 
 pub fn fallback_status(app: &AppHandle, bus: usize) -> Result<String, String> {
-    let config = effective_fallbacks(&app.state::<Settings>().0.lock().unwrap());
+    let config = effective_fallbacks(&app.state::<Settings>().0.locked());
     let Some(chain) = config[bus.to_string()].as_array().filter(|c| !c.is_empty()) else {
         return Ok("No fallback policy is configured for this output.".into());
     };
@@ -318,7 +320,7 @@ fn endpoint_devices() -> Vec<String> {
 
 /// The devices Voicemeeter is set to use, from the latest mixer snapshot.
 pub fn assigned_devices(app: &AppHandle) -> Vec<String> {
-    let snap = app.state::<Vm>().last.lock().unwrap().clone();
+    let snap = app.state::<Vm>().last.locked().clone();
     if !snap["connected"].as_bool().unwrap_or(false) {
         return Vec::new();
     }
@@ -346,7 +348,7 @@ pub fn spawn(app: AppHandle) {
             std::thread::sleep(EVERY);
             let (restart_on, auto, fallbacks) = {
                 let state = app.state::<Settings>();
-                let s = state.0.lock().unwrap();
+                let s = state.0.locked();
                 (
                     settings::flag_or(&s, "autoRestart", true),
                     outputs::auto_devices(&s),
@@ -417,10 +419,10 @@ pub fn spawn(app: AppHandle) {
                     // An output profile that wants this device: switch the outputs to it first.
                     let mut switched = false;
                     if let Some((profile, _)) = auto.iter().find(|(_, d)| *d == name) {
-                        let current = app.state::<Vm>().last.lock().unwrap().clone();
+                        let current = app.state::<Vm>().last.locked().clone();
                         let already = {
                             let state = app.state::<Settings>();
-                            let s = state.0.lock().unwrap();
+                            let s = state.0.locked();
                             outputs::current(&s, &current).as_deref() == Some(profile.as_str())
                         };
                         if !already {

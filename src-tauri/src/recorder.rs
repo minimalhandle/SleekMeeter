@@ -4,6 +4,8 @@
 //! "playing" / "recording" isn't documented, so Sleekmeeter keeps its own state and only
 //! trusts Voicemeeter's once it has seen it report something.
 
+use crate::LockExt;
+
 use crate::vm::Api;
 use crate::Vm;
 use serde_json::{json, Value};
@@ -154,14 +156,14 @@ pub fn command(app: &AppHandle, api: &Api, action: &str) -> Result<Value, String
     }
     log_info!("Recorder: {action}");
     let vm = app.state::<Vm>();
-    let mut rec = vm.rec.lock().unwrap();
+    let mut rec = vm.rec.locked();
     rec.apply(action);
     Ok(rec.view())
 }
 
 /// Start recording, or stop when already recording (shortcut). Returns true when recording.
 pub fn toggle_record(app: &AppHandle, api: &Api) -> Result<bool, String> {
-    let recording = app.state::<Vm>().rec.lock().unwrap().mode == "recording";
+    let recording = app.state::<Vm>().rec.locked().mode == "recording";
     command(app, api, if recording { "stop" } else { "record" })?;
     Ok(!recording)
 }
@@ -169,7 +171,7 @@ pub fn toggle_record(app: &AppHandle, api: &Api) -> Result<bool, String> {
 /// Add the recorder's state to a mixer snapshot.
 pub fn dress(app: &AppHandle, snap: &mut Value, mut rec: Value) {
     let vm = app.state::<Vm>();
-    let mut state = vm.rec.lock().unwrap();
+    let mut state = vm.rec.locked();
     state.follow(rec["recording"].as_bool(), rec["playing"].as_bool());
     if let (Value::Object(r), Value::Object(v)) = (&mut rec, state.view()) {
         r.extend(v);

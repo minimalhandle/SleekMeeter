@@ -1,5 +1,7 @@
 //! Temporary audition and pre-fader metering for the mic tune-up wizard.
 
+use crate::LockExt;
+
 use crate::{api, fades, layers::LAYERS, vm::Api, Layout, Vm};
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -119,7 +121,7 @@ pub fn change(
             "Set Faders set to All outputs before applying a microphone fader level.".into(),
         );
     }
-    let mut active = PREVIEW.lock().unwrap();
+    let mut active = PREVIEW.locked();
     if active.is_some() {
         return Err("Stop the current preview first.".into());
     }
@@ -296,7 +298,7 @@ fn finish_locked(
 }
 
 pub fn finish(app: &AppHandle, keep: bool, immediate: bool) -> Result<bool, String> {
-    let mut active = PREVIEW.lock().unwrap();
+    let mut active = PREVIEW.locked();
     if active.is_none() {
         return Ok(false);
     }

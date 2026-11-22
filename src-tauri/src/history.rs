@@ -1,6 +1,8 @@
 //! Level history: how loud each channel was over the last few hours, one reading a second.
 //! Kept in memory only (it starts fresh each time Sleekmeeter starts).
 
+use crate::LockExt;
+
 use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::sync::Mutex;
@@ -85,7 +87,7 @@ impl Recorder {
         if self.due() {
             self.since = Instant::now();
             let db = std::mem::take(&mut self.peak);
-            let mut store = STORE.lock().unwrap();
+            let mut store = STORE.locked();
             if store.inputs != inputs {
                 store.samples.clear(); // a different Voicemeeter edition: channels no longer match
                 store.inputs = inputs;
@@ -99,7 +101,7 @@ impl Recorder {
 }
 
 pub fn clear() {
-    STORE.lock().unwrap().samples.clear();
+    STORE.locked().samples.clear();
 }
 
 /// The last `minutes` minutes, thinned to about 360 points per channel (the loudest in each
@@ -108,7 +110,7 @@ pub fn get(minutes: u64) -> Value {
     let minutes = minutes.clamp(1, 180);
     let now = now_secs();
     let from = now.saturating_sub(minutes * 60);
-    let store = STORE.lock().unwrap();
+    let store = STORE.locked();
     let inputs = store.inputs;
     let channels = store.samples.back().map(|s| s.db.len()).unwrap_or(0);
     let keys: Vec<String> = (0..channels)

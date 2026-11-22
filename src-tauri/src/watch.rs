@@ -7,6 +7,8 @@
 //! It also remembers when the stream output last had sound, for the go-live check.
 //! Runs on the poll thread (it reads meters), ten times a second.
 
+use crate::LockExt;
+
 use crate::vm::{Api, Layout};
 use crate::{brb, fades, obs, settings, show_osd_alert, show_osd_text, Settings, Vm};
 use serde_json::{json, Value};
@@ -116,7 +118,7 @@ struct Cfg {
 
 fn cfg(app: &AppHandle, layout: &Layout) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let t = &s["mutedTalk"];
     let target = t["target"].as_str().unwrap_or("Strip[0]");
     let under_ptt = s["hotkeys"]
@@ -158,14 +160,14 @@ fn alert(app: &AppHandle, kind: &str, name: &str, text: &str, icon: &str) {
 /// Called on every poll tick while Voicemeeter is connected (poll thread only).
 pub fn tick(app: &AppHandle, api: &Arc<Api>, layout: &Layout) {
     let now = Instant::now();
-    let mut guard = W.lock().unwrap();
+    let mut guard = W.locked();
     let w = guard.get_or_insert_with(Watch::default);
     if w.last_run.map(|t| now - t < EVERY).unwrap_or(false) {
         return;
     }
     w.last_run = Some(now);
     let c = cfg(app, layout);
-    let snap = app.state::<Vm>().last.lock().unwrap().clone();
+    let snap = app.state::<Vm>().last.locked().clone();
     let o = obs::status();
     let (live, recording) = (
         o["live"].as_bool().unwrap_or(false),
@@ -267,7 +269,7 @@ fn stream_output(
 /// restart in the middle still puts them back.
 fn engaged(app: &AppHandle) -> Vec<String> {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let list = s["musicGuardEngaged"]
         .as_array()
         .map(|l| {
@@ -281,7 +283,7 @@ fn engaged(app: &AppHandle) -> Vec<String> {
 
 fn set_engaged(app: &AppHandle, routes: &[String]) {
     let state = app.state::<Settings>();
-    let mut s = state.0.lock().unwrap();
+    let mut s = state.0.locked();
     s["musicGuardEngaged"] = json!(routes);
     let _ = settings::save(&s);
 }
@@ -385,7 +387,7 @@ fn music_guard(
 pub fn toggle_guard(app: &AppHandle) -> Result<bool, String> {
     let ready = {
         let state = app.state::<Settings>();
-        let s = state.0.lock().unwrap();
+        let s = state.0.locked();
         let g = &s["musicGuard"];
         g["on"].as_bool().unwrap_or(false) && g["strip"].as_str().and_then(strip_index).is_some()
     };
@@ -394,7 +396,7 @@ pub fn toggle_guard(app: &AppHandle) -> Result<bool, String> {
         return Err("Choose your music channel in Settings → Going live first".into());
     }
     let want = !guard_active(app);
-    let mut guard = W.lock().unwrap();
+    let mut guard = W.locked();
     let w = guard.get_or_insert_with(Watch::default);
     w.manual = Some(want);
     // Act on the next tick straight away.

@@ -6,6 +6,8 @@
 //! Per the SDK docs every call is thread-safe and non-blocking, except GetLevel, which
 //! must only be called from one thread (our poll thread).
 
+use crate::LockExt;
+
 use libloading::Library;
 use serde_json::{json, Value};
 use std::ffi::{c_char, CString};
@@ -330,7 +332,7 @@ impl Api {
         // A Potato input whose layers Sleekmeeter moves: its main level is the one Sleekmeeter
         // keeps, because Voicemeeter's own Gain isn't written then.
         if let Some(i) = strip_gain(name) {
-            if let Some((s, _)) = self.layer_state.lock().unwrap().get(&i) {
+            if let Some((s, _)) = self.layer_state.locked().get(&i) {
                 return Some(s.shown(v).unwrap_or(v));
             }
         }
@@ -348,7 +350,7 @@ impl Api {
         let gain = self
             .get_float_raw(&format!("Strip[{i}].Gain"))
             .unwrap_or(main);
-        self.layer_state.lock().unwrap().insert(
+        self.layer_state.locked().insert(
             i,
             (
                 crate::layers::Strip::adopt(main, layers, gain),
@@ -368,7 +370,7 @@ impl Api {
         {
             return lines.to_vec();
         }
-        let mut state = self.layer_state.lock().unwrap();
+        let mut state = self.layer_state.locked();
         let mut touched = std::collections::HashSet::new();
         let mut out = Vec::with_capacity(lines.len());
         for line in lines {

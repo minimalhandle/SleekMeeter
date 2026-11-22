@@ -12,6 +12,8 @@
 //! VST3 only (the VST3 SDK is MIT-licensed); plugins are never bundled or downloaded. A plugin
 //! that crashes takes Sleekmeeter with it, so plugins load only once added in Settings.
 
+use crate::LockExt;
+
 use base64::Engine as _;
 use serde_json::{json, Value};
 use std::cell::RefCell;
@@ -131,10 +133,10 @@ impl Class for Message {
 
 impl IMessageTrait for Message {
     unsafe fn getMessageID(&self) -> sb::FIDString {
-        self.id.lock().unwrap().as_ptr()
+        self.id.locked().as_ptr()
     }
     unsafe fn setMessageID(&self, id: sb::FIDString) {
-        *self.id.lock().unwrap() = if id.is_null() {
+        *self.id.locked() = if id.is_null() {
             CString::default()
         } else {
             CStr::from_ptr(id).to_owned()
@@ -173,11 +175,11 @@ unsafe fn key(id: vs::IAttributeList_::AttrID) -> Vec<u8> {
 
 impl IAttributeListTrait for Attrs {
     unsafe fn setInt(&self, id: vs::IAttributeList_::AttrID, value: i64) -> sb::tresult {
-        self.map.lock().unwrap().insert(key(id), Attr::Int(value));
+        self.map.locked().insert(key(id), Attr::Int(value));
         OK
     }
     unsafe fn getInt(&self, id: vs::IAttributeList_::AttrID, value: *mut i64) -> sb::tresult {
-        match self.map.lock().unwrap().get(&key(id)) {
+        match self.map.locked().get(&key(id)) {
             Some(Attr::Int(v)) => {
                 *value = *v;
                 OK
@@ -186,11 +188,11 @@ impl IAttributeListTrait for Attrs {
         }
     }
     unsafe fn setFloat(&self, id: vs::IAttributeList_::AttrID, value: f64) -> sb::tresult {
-        self.map.lock().unwrap().insert(key(id), Attr::Float(value));
+        self.map.locked().insert(key(id), Attr::Float(value));
         OK
     }
     unsafe fn getFloat(&self, id: vs::IAttributeList_::AttrID, value: *mut f64) -> sb::tresult {
-        match self.map.lock().unwrap().get(&key(id)) {
+        match self.map.locked().get(&key(id)) {
             Some(Attr::Float(v)) => {
                 *value = *v;
                 OK
@@ -211,7 +213,7 @@ impl IAttributeListTrait for Attrs {
                 k += 1;
             }
         }
-        self.map.lock().unwrap().insert(key(id), Attr::Str(v));
+        self.map.locked().insert(key(id), Attr::Str(v));
         OK
     }
     unsafe fn getString(
@@ -220,7 +222,7 @@ impl IAttributeListTrait for Attrs {
         string: *mut vs::TChar,
         size_in_bytes: u32,
     ) -> sb::tresult {
-        match self.map.lock().unwrap().get(&key(id)) {
+        match self.map.locked().get(&key(id)) {
             Some(Attr::Str(v)) if !string.is_null() && size_in_bytes >= 2 => {
                 let room = size_in_bytes as usize / 2 - 1;
                 let n = v.len().min(room);
@@ -244,7 +246,7 @@ impl IAttributeListTrait for Attrs {
         } else {
             std::slice::from_raw_parts(data as *const u8, size_in_bytes as usize).to_vec()
         };
-        self.map.lock().unwrap().insert(key(id), Attr::Bin(v));
+        self.map.locked().insert(key(id), Attr::Bin(v));
         OK
     }
     unsafe fn getBinary(
@@ -253,7 +255,7 @@ impl IAttributeListTrait for Attrs {
         data: *mut *const c_void,
         size_in_bytes: *mut u32,
     ) -> sb::tresult {
-        match self.map.lock().unwrap().get(&key(id)) {
+        match self.map.locked().get(&key(id)) {
             Some(Attr::Bin(v)) => {
                 // Points into the list, which lives as long as the message (as in the SDK).
                 *data = v.as_ptr() as *const c_void;
@@ -277,7 +279,7 @@ impl Class for Stream {
 
 impl IBStreamTrait for Stream {
     unsafe fn read(&self, buffer: *mut c_void, num: i32, read: *mut i32) -> sb::tresult {
-        let mut d = self.data.lock().unwrap();
+        let mut d = self.data.locked();
         let (data, pos) = &mut *d;
         let n = (num.max(0) as usize).min(data.len().saturating_sub(*pos));
         if n > 0 && !buffer.is_null() {
@@ -290,7 +292,7 @@ impl IBStreamTrait for Stream {
         OK
     }
     unsafe fn write(&self, buffer: *mut c_void, num: i32, written: *mut i32) -> sb::tresult {
-        let mut d = self.data.lock().unwrap();
+        let mut d = self.data.locked();
         let (data, pos) = &mut *d;
         let n = num.max(0) as usize;
         if buffer.is_null() {
@@ -307,7 +309,7 @@ impl IBStreamTrait for Stream {
         OK
     }
     unsafe fn seek(&self, pos: i64, mode: i32, result: *mut i64) -> sb::tresult {
-        let mut d = self.data.lock().unwrap();
+        let mut d = self.data.locked();
         let (data, at) = &mut *d;
         let base = match mode {
             m if m == sb::IBStream_::IStreamSeekMode_::kIBSeekCur as i32 => *at as i64,
@@ -322,7 +324,7 @@ impl IBStreamTrait for Stream {
     }
     unsafe fn tell(&self, pos: *mut i64) -> sb::tresult {
         if !pos.is_null() {
-            *pos = self.data.lock().unwrap().1 as i64;
+            *pos = self.data.locked().1 as i64;
         }
         OK
     }
@@ -354,7 +356,7 @@ impl IComponentHandlerTrait for Handler {
         OK
     }
     unsafe fn performEdit(&self, id: vs::ParamID, value: vs::ParamValue) -> sb::tresult {
-        let mut p = self.pending.lock().unwrap();
+        let mut p = self.pending.locked();
         match p.iter_mut().find(|(k, _)| *k == id) {
             Some(e) => e.1 = value,
             None => p.push((id, value)),
@@ -997,7 +999,7 @@ fn load(
 
 /// The plugin's settings now: (processor, editor).
 fn capture(inst: &Instance) -> (Vec<u8>, Vec<u8>) {
-    let take = |s: &ComWrapper<Stream>| std::mem::take(&mut s.data.lock().unwrap().0);
+    let take = |s: &ComWrapper<Stream>| std::mem::take(&mut s.data.locked().0);
     unsafe {
         let c = stream(Vec::new());
         let cs = if inst.component.getState(stream_ptr(&c)) == OK {
@@ -1050,7 +1052,7 @@ fn restore(
             // No saved settings: the editor starts from the plugin's own defaults.
             let s = stream(Vec::new());
             if component.getState(stream_ptr(&s)) == OK {
-                s.data.lock().unwrap().1 = 0;
+                s.data.locked().1 = 0;
                 c.setComponentState(stream_ptr(&s));
             }
         }
@@ -1066,7 +1068,7 @@ fn restore(
 fn unload(ui: &mut Ui, id: &str, keep_state: bool) {
     // Off the audio side first, so the worker never calls a plugin being shut down.
     let proc = {
-        let mut chain = CHAIN.lock().unwrap();
+        let mut chain = CHAIN.locked();
         chain
             .iter()
             .position(|p| p.id == id)
@@ -1185,7 +1187,7 @@ static STATUS: Mutex<Value> = Mutex::new(Value::Null);
 
 /// Load, unload and order plugins to match Settings (`want`, in order) at `rate` Hz.
 pub fn sync(want: Vec<Want>, rate: u32) {
-    if want.is_empty() && STATUS.lock().unwrap().is_null() {
+    if want.is_empty() && STATUS.locked().is_null() {
         return; // never started: don't spin up the plugin thread for nothing
     }
     let r = run(move |ui| {
@@ -1229,7 +1231,7 @@ pub fn sync(want: Vec<Want>, rate: u32) {
         }
         // Order and on/off, as Settings lists them.
         {
-            let mut chain = CHAIN.lock().unwrap();
+            let mut chain = CHAIN.locked();
             let mut all: Vec<Proc> = chain.drain(..).chain(fresh).collect();
             for w in &want {
                 if let Some(i) = all.iter().position(|p| p.id == w.id) {
@@ -1263,14 +1265,14 @@ pub fn sync(want: Vec<Want>, rate: u32) {
         Value::Object(st)
     });
     match r {
-        Ok(v) => *STATUS.lock().unwrap() = v,
+        Ok(v) => *STATUS.locked() = v,
         Err(e) => log_warn!("Plugins: {e}"),
     }
 }
 
 /// `{ id: { loaded, error, editor } }` for Settings.
 pub fn status() -> Value {
-    let s = STATUS.lock().unwrap().clone();
+    let s = STATUS.locked().clone();
     if s.is_null() {
         json!({})
     } else {
@@ -1344,7 +1346,7 @@ pub fn open_editor(id: String) -> Result<(), String> {
 
 /// Quitting: save every plugin's settings and switch them off.
 pub fn shutdown() {
-    if STATUS.lock().unwrap().is_null() {
+    if STATUS.locked().is_null() {
         return;
     }
     let _ = run(|ui| {
@@ -1660,7 +1662,7 @@ mod tests {
             on: true,
             stereo: false,
         };
-        *STATUS.lock().unwrap() = json!({}); // as if the thread were already in use
+        *STATUS.locked() = json!({}); // as if the thread were already in use
         sync(vec![want.clone()], 48_000);
         let st = status();
         println!("{st}");
@@ -1673,7 +1675,7 @@ mod tests {
         assert!(buf.iter().zip(&orig).all(|(a, b)| (a - b).abs() < 1e-6));
 
         // A knob move from the editor reaches the audio.
-        CHAIN.lock().unwrap()[0]
+        CHAIN.locked()[0]
             .pending
             .lock()
             .unwrap()
@@ -1696,7 +1698,7 @@ mod tests {
         process(0, &mut quiet, false, &std::sync::atomic::AtomicU32::new(0));
         assert_eq!(quiet, orig);
         sync(vec![], 48_000);
-        assert!(CHAIN.lock().unwrap().is_empty());
+        assert!(CHAIN.locked().is_empty());
         assert!(status().as_object().unwrap().is_empty());
     }
 }

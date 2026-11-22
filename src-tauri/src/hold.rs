@@ -9,6 +9,8 @@
 //! Windows tells us when the keys go down and when they come up. The key-repeat while holding
 //! is switched off by the shortcut library, but a repeat is ignored here anyway.
 
+use crate::LockExt;
+
 use crate::{fades, Settings, Vm};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
@@ -67,7 +69,7 @@ pub fn press(app: &AppHandle, id: &str, talk: bool, target: &str) {
     let Some(api) = vm.api.clone() else { return };
     let was_muted = shown_mute(app, &api, target);
     {
-        let mut holds = vm.holds.lock().unwrap();
+        let mut holds = vm.holds.locked();
         if holds.held.contains_key(id) {
             return; // still held, a repeat
         }
@@ -90,7 +92,7 @@ pub fn press(app: &AppHandle, id: &str, talk: bool, target: &str) {
 pub fn release(app: &AppHandle, id: &str) {
     let vm = app.state::<Vm>();
     let (held, ticket) = {
-        let mut holds = vm.holds.lock().unwrap();
+        let mut holds = vm.holds.locked();
         let Some(held) = holds.held.remove(id) else {
             return;
         };
@@ -105,13 +107,13 @@ pub fn release(app: &AppHandle, id: &str) {
     }
     let Some(api) = vm.api.clone() else { return };
     if held.talk {
-        let tail = tail_ms(&app.state::<Settings>().0.lock().unwrap());
+        let tail = tail_ms(&app.state::<Settings>().0.locked());
         let app = app.clone();
         std::thread::spawn(move || {
             std::thread::sleep(Duration::from_millis(tail));
             let vm = app.state::<Vm>();
             let overtaken = {
-                let holds = vm.holds.lock().unwrap();
+                let holds = vm.holds.locked();
                 holds.tickets.get(&held.target).copied() != Some(ticket)
                     || holds
                         .held
@@ -179,7 +181,7 @@ fn talk_targets(hotkeys: &serde_json::Value) -> HashSet<String> {
 
 /// Forget which channels were closed, so the next `arm` closes them again (Voicemeeter reconnected).
 pub fn forget_armed(app: &AppHandle) {
-    app.state::<Vm>().holds.lock().unwrap().armed.clear();
+    app.state::<Vm>().holds.locked().armed.clear();
 }
 
 /// Close the channels that have a push-to-talk shortcut, once, so the mic starts out closed.
@@ -189,7 +191,7 @@ pub fn forget_armed(app: &AppHandle) {
 pub fn arm(app: &AppHandle, hotkeys: &serde_json::Value) {
     let vm = app.state::<Vm>();
     let Some(api) = vm.api.clone() else { return };
-    if !vm.last.lock().unwrap()["connected"]
+    if !vm.last.locked()["connected"]
         .as_bool()
         .unwrap_or(false)
     {
@@ -197,7 +199,7 @@ pub fn arm(app: &AppHandle, hotkeys: &serde_json::Value) {
     }
     let wanted = talk_targets(hotkeys);
     let fresh: Vec<String> = {
-        let mut holds = vm.holds.lock().unwrap();
+        let mut holds = vm.holds.locked();
         holds.armed.retain(|t| wanted.contains(t));
         wanted
             .iter()
@@ -216,6 +218,6 @@ pub fn arm(app: &AppHandle, hotkeys: &serde_json::Value) {
                 }
             }
         }
-        vm.holds.lock().unwrap().armed.insert(target);
+        vm.holds.locked().armed.insert(target);
     }
 }

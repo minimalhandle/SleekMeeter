@@ -9,6 +9,8 @@
 //! Faders pick up: one that's far from the channel's level does nothing until it passes it, so
 //! the level never jumps when you first touch it.
 
+use crate::LockExt;
+
 use crate::{actions, fades, Settings, Vm};
 use serde_json::{json, Value};
 use std::collections::HashMap;
@@ -76,7 +78,7 @@ pub fn parse(m: u32) -> Option<Control> {
     }
 }
 
-/// The mixer's fader curve (app.js TAPER): a fader position 0..1 to dB, so a hardware fader
+/// The mixer's fader curve (src/app/01-core.js TAPER): a fader position 0..1 to dB, so a hardware fader
 /// halfway up sits where the on-screen one does.
 const TAPER: [(f32, f32); 6] = [
     (-60.0, 0.0),
@@ -167,7 +169,7 @@ static STATUS: Mutex<Value> = Mutex::new(Value::Null);
 
 /// `{ on, devices: [{ name, open, error }] }` for Settings.
 pub fn status() -> Value {
-    let s = STATUS.lock().unwrap().clone();
+    let s = STATUS.locked().clone();
     if s.is_null() {
         json!({ "on": false, "devices": [] })
     } else {
@@ -182,7 +184,7 @@ pub fn learn(on: bool) {
 
 pub fn spawn(app: AppHandle) {
     let (tx, rx) = channel();
-    *TX.lock().unwrap() = Some(tx);
+    *TX.locked() = Some(tx);
     let devices_app = app.clone();
     std::thread::spawn(move || device_loop(devices_app));
     std::thread::spawn(move || handle_loop(app, rx));
@@ -199,7 +201,7 @@ fn device_loop(app: AppHandle) {
         loop {
             let (on, wanted_devs) = {
                 let state = app.state::<Settings>();
-                let s = state.0.lock().unwrap();
+                let s = state.0.locked();
                 let on = s["midi"]["on"].as_bool().unwrap_or(false);
                 (on, maps(&s).into_iter().map(|m| m.dev).collect::<Vec<_>>())
             };
@@ -208,7 +210,7 @@ fn device_loop(app: AppHandle) {
                 // Plugged in or out: indexes may have moved, so open everything again.
                 open.clear();
                 errors.clear();
-                *NAMES.lock().unwrap() = names.clone();
+                *NAMES.locked() = names.clone();
                 names_seen = names.clone();
             }
             let learning = LEARNING.load(Ordering::Relaxed);
@@ -249,7 +251,7 @@ fn device_loop(app: AppHandle) {
                     })
                 })
                 .collect();
-            *STATUS.lock().unwrap() = json!({ "on": on, "devices": devices });
+            *STATUS.locked() = json!({ "on": on, "devices": devices });
             // Look again every second: for new devices, settings and learning.
             std::thread::sleep(Duration::from_secs(1));
         }
@@ -287,7 +289,7 @@ fn handle_loop(app: AppHandle, rx: Receiver<(usize, u32)>) {
         }
         if cached.0.elapsed() > Duration::from_millis(500) {
             let state = app.state::<Settings>();
-            let s = state.0.lock().unwrap();
+            let s = state.0.locked();
             cached = (
                 Instant::now(),
                 if s["midi"]["on"].as_bool().unwrap_or(false) {

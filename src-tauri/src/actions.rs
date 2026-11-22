@@ -1,6 +1,8 @@
 //! Things Sleekmeeter can do on request, shared by shortcuts, Twitch chat commands and the
 //! Sleekmeeter Remote: "mute the mic", "be right back", "load a scene", "play a sound".
 
+use crate::LockExt;
+
 use crate::{
     brb, fades, outputs, partmute, recorder, replay, settings, show_osd_text, sounds, watch,
     Settings, Vm,
@@ -112,7 +114,7 @@ pub fn perform(app: &AppHandle, kind: &str, target: &str) -> Result<(), String> 
         "duck" => {
             let on = {
                 let st = app.state::<Settings>();
-                let mut s = st.0.lock().unwrap();
+                let mut s = st.0.locked();
                 let on = !s["ducking"]["on"].as_bool().unwrap_or(false);
                 if !s["ducking"].is_object() {
                     s["ducking"] = settings::defaults()["ducking"].clone();

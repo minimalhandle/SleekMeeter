@@ -12,6 +12,8 @@
 //! clean-up also uses (micfx.rs calls `tap`). A save then makes a folder with the stream mix
 //! and one WAV per input, all the same length, ready to drop into a video editor.
 
+use crate::LockExt;
+
 use crate::{settings, show_osd_text, Settings, Vm};
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -121,16 +123,16 @@ fn idle(message: &str) -> Value {
 /// `{ running, message, device, tracks }` for Settings and the go-live check. `tracks` says
 /// how separate tracks are doing ("" when they're off or fine).
 pub fn status() -> Value {
-    let mut s = STATUS.lock().unwrap().clone();
+    let mut s = STATUS.locked().clone();
     if s.is_null() {
         s = idle("Off");
     }
-    s["tracks"] = json!(TRACKS_MESSAGE.lock().unwrap().clone());
+    s["tracks"] = json!(TRACKS_MESSAGE.locked().clone());
     s
 }
 
 fn set_status(v: Value) {
-    *STATUS.lock().unwrap() = v;
+    *STATUS.locked() = v;
 }
 
 #[derive(PartialEq, Clone)]
@@ -148,7 +150,7 @@ struct Cfg {
 
 fn cfg(app: &AppHandle) -> Cfg {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let r = &s["replay"];
     let layout = crate::vm::Layout::for_edition(s["edition"].as_i64().unwrap_or(2) as i32);
     let stream_j = crate::watch::stream_bus(&s, &layout);
@@ -270,7 +272,7 @@ fn wav(samples: &[i16], rate: u32, channels: u16) -> Vec<u8> {
 /// Save what's held right now. Returns the file's path.
 pub fn save(app: &AppHandle) -> Result<String, String> {
     let (samples, rate, channels) = {
-        let ring = RING.lock().unwrap();
+        let ring = RING.locked();
         let r = ring.as_ref().ok_or_else(|| {
             show_osd_text(app, "Instant replay", "Not on", false, "record");
             "Turn on Instant replay in Settings → Instant replay first".to_string()
@@ -358,7 +360,7 @@ pub fn spawn(app: AppHandle) {
         loop {
             let c = cfg(&app);
             if !c.on {
-                *RING.lock().unwrap() = None;
+                *RING.locked() = None;
                 set_status(idle("Off"));
                 last_error.clear();
                 std::thread::sleep(Duration::from_secs(1));
@@ -371,7 +373,7 @@ pub fn spawn(app: AppHandle) {
                 all.iter().find(|d| **d == c.device).cloned()
             };
             let Some(device) = device else {
-                *RING.lock().unwrap() = None;
+                *RING.locked() = None;
                 let msg = if c.device.is_empty() {
                     "Couldn't find Voicemeeter's outputs in Windows. Is Voicemeeter installed?"
                         .to_string()
@@ -390,7 +392,7 @@ pub fn spawn(app: AppHandle) {
                         log_warn!("Instant replay: {e}");
                         last_error = e.clone();
                     }
-                    *RING.lock().unwrap() = None;
+                    *RING.locked() = None;
                     set_status(idle(&e));
                     std::thread::sleep(Duration::from_secs(3));
                 }
@@ -407,19 +409,19 @@ fn sync_tracks(app: &AppHandle, c: &Cfg) {
     }
     let rate = crate::micfx::insert_rate();
     if !crate::micfx::input_insert_on() || rate == 0 {
-        *TRACKS.lock().unwrap() = None;
-        *TRACKS_MESSAGE.lock().unwrap() =
+        *TRACKS.locked() = None;
+        *TRACKS_MESSAGE.locked() =
             "Separate tracks are waiting for Voicemeeter's audio insert. If another app is using it, close that app. Replays save the stream mix only until then.".into();
         return;
     }
-    TRACKS_MESSAGE.lock().unwrap().clear();
+    TRACKS_MESSAGE.locked().clear();
     let stale = TRACKS
         .lock()
         .unwrap()
         .as_ref()
         .map_or(true, |t| t.rate != rate);
     if stale {
-        let snap = app.state::<Vm>().last.lock().unwrap().clone();
+        let snap = app.state::<Vm>().last.locked().clone();
         let len = rate as usize * 2 * c.secs as usize;
         let list = c
             .tracks
@@ -445,7 +447,7 @@ fn sync_tracks(app: &AppHandle, c: &Cfg) {
                 }
             })
             .collect();
-        *TRACKS.lock().unwrap() = Some(Tracks { rate, list });
+        *TRACKS.locked() = Some(Tracks { rate, list });
         log_info!("Instant replay: keeping {} separate tracks", c.tracks.len());
     }
     let Some(api) = app.state::<Vm>().api.clone() else {
@@ -473,7 +475,7 @@ fn sync_tracks(app: &AppHandle, c: &Cfg) {
             }
         })
         .collect();
-    if let Some(t) = TRACKS.lock().unwrap().as_mut() {
+    if let Some(t) = TRACKS.locked().as_mut() {
         for (tr, g) in t.list.iter_mut().zip(gains) {
             tr.gain = g;
         }
@@ -527,8 +529,8 @@ fn listen(app: &AppHandle, c: &Cfg, device: &str) -> Result<(), String> {
             std::thread::sleep(Duration::from_millis(250));
         }
         WANT_TRACKS.store(false, Ordering::Relaxed);
-        *TRACKS.lock().unwrap() = None;
-        TRACKS_MESSAGE.lock().unwrap().clear();
+        *TRACKS.locked() = None;
+        TRACKS_MESSAGE.locked().clear();
         drop(stream);
         if BROKEN.load(Ordering::Relaxed) {
             return Err(format!("Lost {device}"));
@@ -544,6 +546,7 @@ fn listen(app: &AppHandle, c: &Cfg, device: &str) -> Result<(), String> {
 
 #[cfg(windows)]
 mod imp {
+    use crate::LockExt;
     use super::{Ring, BROKEN, RING};
     use rodio::cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use rodio::cpal::{SampleFormat, Stream};
@@ -566,7 +569,7 @@ mod imp {
     /// Keep the first two channels of each frame (an output set to 8 channels is still saved
     /// as stereo, and uses a quarter of the memory).
     fn write(data: impl Iterator<Item = i16>, channels: usize) {
-        if let Some(r) = RING.lock().unwrap().as_mut() {
+        if let Some(r) = RING.locked().as_mut() {
             for (n, s) in data.enumerate() {
                 if channels <= 2 || n % channels < 2 {
                     r.push(s);
@@ -585,7 +588,7 @@ mod imp {
         let (rate, ch) = (cfg.sample_rate().0, cfg.channels() as usize);
         let kept = ch.min(2);
         let len = (rate as usize) * kept * (secs as usize);
-        *RING.lock().unwrap() = Some(Ring {
+        *RING.locked() = Some(Ring {
             data: vec![0; len.max(kept)],
             pos: 0,
             filled: false,

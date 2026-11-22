@@ -10,6 +10,8 @@
 //!
 //! Nothing here changes anything until you press a button.
 
+use crate::LockExt;
+
 use crate::endpoints::{self, Endpoint};
 use crate::{btwatch, micfx, Vm};
 use serde_json::{json, Value};
@@ -145,7 +147,7 @@ fn parse_plan(text: &str) -> Option<String> {
 pub fn run(app: &AppHandle) -> Vec<Value> {
     let mut out = Vec::new();
     let vm = app.state::<Vm>();
-    let snap = vm.last.lock().unwrap().clone();
+    let snap = vm.last.locked().clone();
     let api = vm.api.clone();
     if !snap["connected"].as_bool().unwrap_or(false) {
         out.push(item(
@@ -317,6 +319,7 @@ pub fn open_page(page: &str) -> Result<(), String> {
         "recording" => ("control", "mmsys.cpl,,1"),
         "power" => ("control", "powercfg.cpl"),
         "bluetooth" => ("explorer", "ms-settings:bluetooth"),
+        "network" => ("explorer", "ms-settings:network-status"),
         _ => return Err("Unknown page".into()),
     };
     std::process::Command::new(exe)

@@ -35,7 +35,7 @@
  *   onThemeAuto(cb)   an app rule wants a theme ({theme}, "" = back to the chosen one)
  *   healthCheck() -> [{state: ok|warn|bad, label, detail, action?}]   "Check my setup"
  *   crackleCheck() -> same shape as healthCheck (action "set" adds {button, param, value}; action "page" adds {button, page})   crackle doctor
- *   openWindowsPage(page)   page: playback | recording | power | bluetooth
+ *   openWindowsPage(page)   page: playback | recording | power | bluetooth | network
  *   btStatus() -> {users: [{device, app}]} / onBtCallMode(cb) cb(same): Bluetooth headsets an app switched to call quality
  *   coachStart(target) / coachStop() / coachStatus() -> {running, target, secs, speechSecs, enough, level, noise, message, tips: [{id, title, detail, fix}]}   Mic coach
  *   goLiveCheck() -> same shape (action "set" adds {button, param, value}) / onGoLive(cb) cb({items}) when OBS went live and something's wrong
@@ -89,9 +89,9 @@
     ],
     startWithWindows: false, startInTray: false, launchVoicemeeter: false, hideVoicemeeter: false,
     osdOn: true, overlay: true, alwaysOnTop: false, mini: false, hideSoloMono: true, streamerMode: true, lockArrangement: false,
-    sceneRules: [], checkUpdates: true, betaUpdates: false, skippedVersion: "", streamDeckOffered: "", usagePing: null, oled: false,
+    sceneRules: [], checkUpdates: false, betaUpdates: false, skippedVersion: "", streamDeckOffered: "", usagePing: null, oled: false,
     fades: { on: true, muteMs: 250, sceneMs: 1200 },
-    ducking: { on: false, trigger: "Strip[0]", targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700 },
+    ducking: { on: false, trigger: "Strip[0]", also: [], targets: [], amount: 12, threshold: -40, attackMs: 150, releaseMs: 800, holdMs: 700, voiceAware: false, speechThreshold: 0.6 },
     autoRestart: true, btWarn: true, keepWindowsOutput: false, overlayScreen: "",
     panelLayout: "rows", panelScale: 100, panelOpacity: 100, panelIcons: true, panelMute: true, panelMeters: true,
     outputProfiles: [],
@@ -104,7 +104,7 @@
     clipWarn: { on: false, target: "Strip[0]" },
     soundboard: { device: "", volume: 100, sounds: [] },
     twitch: { on: false, channel: "", who: "mods", cooldown: 3, commands: [], rewards: [] },
-    remote: { on: false, port: 8787, key: "" },
+    remote: { on: false, port: 8787, key: "", scope: "network" },
     history: { on: false },
     streamBus: "",
     mutedTalk: { on: false, target: "Strip[0]", threshold: -35, ptt: false },
@@ -114,7 +114,7 @@
     replay: { on: false, device: "", secs: 60, tracks: [] },
     loudness: { on: false, target: -14 },
     midi: { on: false, maps: [] },
-    micFx: { aecRef: "Bus[0]", chains: [{ id: "c1", target: "Strip[0]", on: false, effect: "denoiser", strength: 100, aec: false, plugins: [] }] },
+    micFx: { aecRef: "Bus[0]", chains: [{ id: "c1", target: "Strip[0]", on: false, engine: "cpu", effect: "denoiser", strength: 100, aec: false, plugins: [] }] },
     vstPresets: [],
     appRoutes: {},
   };
@@ -146,7 +146,7 @@
     showWindow() { return this.invoke("vm_show_window"); }
     devices() { return this.invoke("vm_devices"); }
     listScenes() { return this.invoke("scene_list"); }
-    saveScene(name) { return this.invoke("scene_save", { name }); }
+    saveScene(name, scope = null) { return this.invoke("scene_save", { name, scope }); }
     loadScene(name) { return this.invoke("scene_load", { name }); }
     scenePreview(name) { return this.invoke("scene_preview", { name }); }
     deleteScene(name) { return this.invoke("scene_delete", { name }); }
@@ -263,6 +263,10 @@
     fixAudio() { return this.invoke("fix_audio"); }
     onWindowsOutput(cb) { return this.listen("windows-output", (e) => cb(e.payload)); }
     settingsExport() { return this.invoke("settings_export"); }
+    setupExport() { return this.invoke("setup_export"); }
+    setupPreview() { return this.invoke("setup_preview"); }
+    setupApply(mappings, enableControls = false) { return this.invoke("setup_apply", { mappings, enableControls }); }
+    onSetupImported(cb) { return this.listen("setup-imported", (e) => cb(e.payload)); }
     settingsImport() { return this.invoke("settings_import"); }
     resetLayout() { return this.invoke("reset_layout"); }
     onEngineRestart(cb) { return this.listen("engine-restarted", (e) => cb(e.payload)); }
@@ -509,36 +513,46 @@
       });
     }
     listScenes() { return Promise.resolve([...this.scenes]); }
-    sceneMics() {
+    sceneMics(partial = false) {
       return Object.fromEntries((this.settings.micFx?.chains || []).map((c) => [
-        c.target, { off: !!this._micLive?.[c.id]?.off, strength: this._micLive?.[c.id]?.strength ?? c.strength }
+        c.target, partial ? { chain: structuredClone(c), live: structuredClone(this._micLive?.[c.id] || {}), states: {} } : { off: !!this._micLive?.[c.id]?.off, strength: this._micLive?.[c.id]?.strength ?? c.strength }
       ]));
     }
-    saveScene(name) {
+    saveScene(name, scope = null) {
       if (!this.scenes.includes(name)) this.scenes.push(name);
       const channels = {};
       for (const [list, prefix] of [["strips", "Strip"], ["buses", "Bus"]]) {
         this.state[list].forEach((ch, i) => {
-          channels[`${prefix}[${i}]`] = structuredClone({ gain: ch.gain, mute: ch.mute, a: ch.a, b: ch.b, layers: ch.layers });
+          const key = `${prefix}[${i}]`;
+          if (scope && !scope.channels.includes(key)) return;
+          channels[key] = structuredClone({
+            ...(!scope || scope.levels ? { gain: ch.gain, layers: ch.layers } : {}),
+            ...(!scope || scope.mutes ? { mute: ch.mute } : {}),
+            ...(!scope || scope.routes ? { a: ch.a, b: ch.b } : {})
+          });
         });
       }
-      this.sceneMixes.set(name, { channels, mics: this.sceneMics() });
+      this.sceneMixes.set(name, { channels, scope, partial: !!scope, mics: !scope || scope.micProcessing ? Object.fromEntries(Object.entries(this.sceneMics(!!scope)).filter(([k]) => !scope || scope.channels.includes(k))) : {} });
       return Promise.resolve();
     }
     loadScene(name) {
-      const { channels, mics } = this.sceneMixes.get(name) || {};
+      const { channels, mics, partial } = this.sceneMixes.get(name) || {};
       if (channels) {
         for (const [list, prefix] of [["strips", "Strip"], ["buses", "Bus"]]) {
           this.state[list].forEach((ch, i) => Object.assign(ch, structuredClone(channels[`${prefix}[${i}]`])));
         }
         this._micLive ||= {};
-        for (const c of this.settings.micFx?.chains || []) if (mics[c.target]) this._micLive[c.id] = { ...mics[c.target] };
+        for (const c of this.settings.micFx?.chains || []) if (mics[c.target]) {
+          const saved = mics[c.target];
+          if (partial) { const id = c.id; Object.assign(c, structuredClone(saved.chain), { id }); this._micLive[id] = structuredClone(saved.live || {}); }
+          else this._micLive[c.id] = { ...saved };
+        }
         this.emit();
       }
       return Promise.resolve();
     }
     scenePreview(name) {
-      return Promise.resolve({ ...structuredClone(this.sceneMixes.get(name)), currentMics: this.sceneMics() });
+      return Promise.resolve({ ...structuredClone(this.sceneMixes.get(name)), currentMics: this.sceneMics(!!this.sceneMixes.get(name)?.partial) });
     }
     deleteScene(name) { this.sceneMixes.delete(name); this.scenes = this.scenes.filter((s) => s !== name); return Promise.resolve(); }
     getSettings() { return Promise.resolve(JSON.parse(JSON.stringify(this.settings))); }
@@ -765,7 +779,11 @@
     onTwitchStatus(cb) { this._twitchCb = cb; return Promise.resolve(); }
     remoteStatus() {
       const r = this.settings && this.settings.remote;
-      return Promise.resolve(r && r.on && r.key ? { running: true, message: "On", urls: [`http://192.168.1.23:${r.port}/?k=${r.key}`] } : { running: false, message: r && r.on ? "Make a key first" : "Off", urls: [] });
+      // The preview pretends this PC is on a network Windows calls Public.
+      const pcOnly = !!r && (r.scope === "pc" || r.scope === "private");
+      return Promise.resolve(r && r.on && r.key
+        ? { running: true, message: "On", pcOnly, publicNetwork: true, urls: [`http://${pcOnly ? "localhost" : "192.168.1.23"}:${r.port}/?k=${r.key}`] }
+        : { running: false, message: r && r.on ? "Make a key first" : "Off", urls: [] });
     }
     historyGet(minutes) {
       const n = 360, bucket = Math.ceil(minutes * 60 / n), now = Math.floor(Date.now() / 1000);
@@ -1002,9 +1020,11 @@
         const on = ps.filter((p) => p.on !== false).length;
         const nv = [];
         if (c.aec) nv.push("speaker echo removal");
-        if (c.on) nv.push(names[c.effect] || names.denoiser);
+        if (c.on && c.engine !== "cpu") nv.push(names[c.effect] || names.denoiser);
         const what = [];
         if (nv.length) what.push(`${nv.join(" and ")} on your NVIDIA GPU`);
+        if (c.on && c.engine === "cpu") what.push("CPU noise removal (RNNoise)");
+        if (c.rider?.on) what.push("automatic mic level riding");
         if (on) what.push(on === 1 ? "1 plugin" : `${on} plugins`);
         const bus = /^Bus/.test(c.target || "");
         const label = bus ? (["Headphones", "Speakers", "Output A3", "Stream mic", "Stream mix"][i] || "Output " + (i + 1))
@@ -1018,7 +1038,9 @@
       for (const [target, v] of Object.entries(this.settings.soundFx || {})) {
         if ((v.eq && v.eq !== "off") || (v.level && v.level !== "off")) soundFx[target] = { running: true, message: "" };
       }
-      return Promise.resolve({ available: true, message: "", chains, plugins, soundFx });
+      const speech = Object.fromEntries(Object.entries(this._demoSpeech || {}).map(([key, probability]) =>
+        [key, { available: true, probability, message: "Simulated speech detection" }]));
+      return Promise.resolve({ available: true, message: "", chains, plugins, soundFx, speech });
     }
     micFxToggle(target) {
       const m = this.settings.micFx || {};
@@ -1098,6 +1120,10 @@
     }
     replayOpenFolder() { return Promise.resolve(); }
     settingsExport() { return Promise.resolve("Sleekmeeter settings.json"); }
+    setupExport() { return Promise.resolve("Sleekmeeter setup.json"); }
+    setupPreview() { return Promise.resolve(null); }
+    setupApply() { return Promise.resolve("migration-backups/demo"); }
+    onSetupImported() { return Promise.resolve(() => {}); }
     settingsImport() { return Promise.resolve(null); }
     resetLayout() { return Promise.resolve(); }
     appInfo() { return Promise.resolve({ version: "preview", logDir: null }); }
@@ -1145,15 +1171,21 @@
       const raw = st.strips.map((_, i) => (i < hs ? hwSignal[i] : virtSignal[i - hs]));
       // Talk-over ducking, simulated: the trigger's level lowers the targets while it's loud.
       const duck = this.settings.ducking || {};
-      const trig = /^Strip\[(\d)\]$/.exec(duck.trigger || "");
-      const ti = trig ? +trig[1] : -1;
-      const talking = !!duck.on && ti >= 0 && ti < st.strips.length && !st.strips[ti].mute
-        && raw[ti] + st.strips[ti].gain >= (duck.threshold ?? -40);
+      const triggerIndices = [duck.trigger, ...(duck.also || [])].map((key) => {
+        const m = /^Strip\[(\d+)\]$/.exec(key || "");
+        return m ? +m[1] : -1;
+      }).filter((i) => i >= 0 && i < st.strips.length);
+      // Demo probabilities follow synthetic speech; live mode uses local audio inference.
+      this._demoSpeech = Object.fromEntries(triggerIndices.map((i) =>
+        [`Strip[${i}]`, st.strips[i].mute ? 0 : (i === 0 ? Math.min(1, speech * 1.8) : (raw[i] > -35 ? 0.85 : 0.1))]));
+      const talking = !!duck.on && triggerIndices.some((i) => !st.strips[i].mute
+        && raw[i] + st.strips[i].gain >= (duck.threshold ?? -40)
+        && (!duck.voiceAware || this._demoSpeech[`Strip[${i}]`] >= (duck.speechThreshold ?? 0.6)));
       if (talking) this.loudAt = t;
       const ducking = !!duck.on && this.loudAt !== undefined && t - this.loudAt < (duck.holdMs ?? 700) / 1000;
       let duckChanged = false;
       st.strips.forEach((s, i) => {
-        const on = ducking && (duck.targets || []).includes(`Strip[${i}]`) && i !== ti;
+        const on = ducking && (duck.targets || []).includes(`Strip[${i}]`) && !triggerIndices.includes(i);
         if (!!s.ducked !== on) { s.ducked = on; duckChanged = true; }
       });
       if (duckChanged) this.emit();

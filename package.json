@@ -2,11 +2,12 @@
   "name": "sleekmeeter",
   "private": true,
   "license": "MIT",
-  "version": "0.21.3",
+  "version": "0.22.0-beta.1",
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build --no-bundle",
     "package": "powershell -ExecutionPolicy Bypass -File scripts/package.ps1",
+    "package:dev": "powershell -ExecutionPolicy Bypass -File scripts/package-dev.ps1",
     "preview": "python -m http.server 8000 --directory src"
   },
   "devDependencies": {

@@ -5,6 +5,8 @@
 //! channel to play (music). Press again and everything goes back exactly how it was. All of it
 //! fades, so nothing cuts off.
 
+use crate::LockExt;
+
 use crate::{fades, show_osd_text, Settings, Vm};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
@@ -76,9 +78,9 @@ fn restore(app: &AppHandle, api: &crate::vm::Api, s: &Saved) -> Result<(), Strin
     let vm = app.state::<Vm>();
     let muted_now = {
         let actual = api.get_bool(&format!("{}.Mute", s.key));
-        vm.smooth.lock().unwrap().is_muted(&s.key, actual)
+        vm.smooth.locked().is_muted(&s.key, actual)
     };
-    let managed = vm.smooth.lock().unwrap().is_managed(&s.key);
+    let managed = vm.smooth.locked().is_managed(&s.key);
     if muted_now {
         // Silent right now, so move the fader straight to its old level (nobody hears it),
         // then unmute with the normal fade-in if it wasn't muted before.
@@ -101,7 +103,7 @@ fn restore(app: &AppHandle, api: &crate::vm::Api, s: &Saved) -> Result<(), Strin
 }
 
 pub fn is_on(app: &AppHandle) -> bool {
-    app.state::<Vm>().brb.lock().unwrap().saved.is_some()
+    app.state::<Vm>().brb.locked().saved.is_some()
 }
 
 /// Add "brb": true to a mixer snapshot while Be right back is on.
@@ -113,7 +115,7 @@ pub fn dress(app: &AppHandle, snap: &mut Value) {
 pub fn toggle(app: &AppHandle) -> Result<bool, String> {
     let vm = app.state::<Vm>();
     let api = vm.api.clone().ok_or("Voicemeeter isn't running")?;
-    let saved = vm.brb.lock().unwrap().saved.take();
+    let saved = vm.brb.locked().saved.take();
     if let Some(list) = saved {
         for s in &list {
             if let Err(e) = restore(app, &api, s) {
@@ -121,7 +123,7 @@ pub fn toggle(app: &AppHandle) -> Result<bool, String> {
             }
         }
         log_info!("Be right back: off");
-        let overlay = config(&app.state::<Settings>().0.lock().unwrap()).overlay;
+        let overlay = config(&app.state::<Settings>().0.locked()).overlay;
         if overlay {
             show_osd_text(app, "Stream mode", "Back live", false, "mic");
         }
@@ -129,8 +131,8 @@ pub fn toggle(app: &AppHandle) -> Result<bool, String> {
         return Ok(false);
     }
 
-    let cfg = config(&app.state::<Settings>().0.lock().unwrap());
-    let snap = vm.last.lock().unwrap().clone();
+    let cfg = config(&app.state::<Settings>().0.locked());
+    let snap = vm.last.locked().clone();
     if !snap["connected"].as_bool().unwrap_or(false) {
         return Err("Voicemeeter isn't connected".into());
     }
@@ -184,7 +186,7 @@ pub fn toggle(app: &AppHandle) -> Result<bool, String> {
             log_warn!("Be right back: couldn't mute {k}: {e}");
         }
     }
-    vm.brb.lock().unwrap().saved = Some(saved);
+    vm.brb.locked().saved = Some(saved);
     log_info!("Be right back: on");
     if cfg.overlay {
         show_osd_text(app, "Stream mode", "Be right back", true, "mic");

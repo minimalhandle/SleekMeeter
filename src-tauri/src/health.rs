@@ -1,5 +1,7 @@
 //! "Check my setup": a list of things that commonly go wrong, each with a plain explanation.
 
+use crate::LockExt;
+
 use crate::{devwatch, obs, winout, Hotkeys, Settings, Vm};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Manager};
@@ -12,8 +14,8 @@ fn item(state: &str, label: &str, detail: &str) -> Value {
 pub fn run(app: &AppHandle) -> Vec<Value> {
     let mut out = Vec::new();
     let vm = app.state::<Vm>();
-    let snap = vm.last.lock().unwrap().clone();
-    let settings = app.state::<Settings>().0.lock().unwrap().clone();
+    let snap = vm.last.locked().clone();
+    let settings = app.state::<Settings>().0.locked().clone();
 
     // Voicemeeter's remote library and the program itself
     if vm.api.is_none() {
@@ -146,7 +148,7 @@ pub fn run(app: &AppHandle) -> Vec<Value> {
                 .count()
         })
         .unwrap_or(0);
-    let working = app.state::<Hotkeys>().0.lock().unwrap().len();
+    let working = app.state::<Hotkeys>().0.locked().len();
     if wanted == working {
         out.push(item(
             "ok",

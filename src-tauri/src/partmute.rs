@@ -6,6 +6,8 @@
 //! (`{ "strip-0": ["B1", "B2"] }`), so unmuting turns back on exactly those, also after a restart.
 //! Sending the input to that output again any other way ends the mute for that output.
 
+use crate::LockExt;
+
 use crate::vm::Api;
 use crate::{fades, settings, Settings};
 use serde_json::{json, Value};
@@ -64,7 +66,7 @@ pub fn list(s: &Value, i: usize) -> Vec<String> {
 fn store(app: &AppHandle, i: usize, outs: &[String]) {
     let map = {
         let state = app.state::<Settings>();
-        let mut s = state.0.lock().unwrap();
+        let mut s = state.0.locked();
         if !s["partMute"].is_object() {
             s["partMute"] = json!({});
         }
@@ -95,7 +97,7 @@ pub fn set(
     }
     fades::route_mute(app, api, i, out, mute)?;
     touch(i);
-    let mut outs = list(&app.state::<Settings>().0.lock().unwrap(), i);
+    let mut outs = list(&app.state::<Settings>().0.locked(), i);
     outs.retain(|o| o != out);
     if mute {
         outs.push(out.to_string());
@@ -111,7 +113,7 @@ pub fn toggle(app: &AppHandle, api: &Arc<Api>, i: usize, outs: &[String]) -> Res
     if outs.is_empty() {
         return Err("Choose at least one output".into());
     }
-    let now = list(&app.state::<Settings>().0.lock().unwrap(), i);
+    let now = list(&app.state::<Settings>().0.locked(), i);
     let muted: Vec<&&String> = outs.iter().filter(|o| now.contains(o)).collect();
     if !muted.is_empty() {
         for o in muted {
@@ -159,7 +161,7 @@ pub fn dress(app: &AppHandle, snap: &mut Value) {
     let Some(strips) = snap["strips"].as_array_mut() else {
         return;
     };
-    let s = app.state::<Settings>().0.lock().unwrap().clone();
+    let s = app.state::<Settings>().0.locked().clone();
     for (i, ch) in strips.iter_mut().enumerate() {
         let outs = list(&s, i);
         let kept: Vec<String> = if settled(i) {

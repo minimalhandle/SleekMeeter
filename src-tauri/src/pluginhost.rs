@@ -9,6 +9,8 @@
 //!
 //! The child is the same exe; main() hands over to `child_main` before Tauri starts.
 
+use crate::LockExt;
+
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
@@ -88,15 +90,15 @@ pub fn on_event(f: Events) {
 }
 
 pub fn restore_quarantine(saved: &Value) {
-    *BYPASSED.lock().unwrap() = saved
+    *BYPASSED.locked() = saved
         .as_array()
         .into_iter()
         .flatten()
         .filter_map(Value::as_str)
         .map(str::to_owned)
         .collect();
-    if !BYPASSED.lock().unwrap().is_empty() {
-        *RECOVERY_MESSAGE.lock().unwrap() =
+    if !BYPASSED.locked().is_empty() {
+        *RECOVERY_MESSAGE.locked() =
             "Previously bypassed plugins are still isolated. Select a plugin to retry it.".into();
     }
 }
@@ -109,17 +111,17 @@ fn save_quarantine(ids: &[String]) {
 
 fn start() -> Result<Arc<Host>, String> {
     static START: Mutex<()> = Mutex::new(());
-    let _starting = START.lock().unwrap();
-    if let Some(h) = HOST.lock().unwrap().as_ref() {
+    let _starting = START.locked();
+    if let Some(h) = HOST.locked().as_ref() {
         if ALIVE.load(Ordering::Acquire) {
             return Ok(h.clone());
         }
     }
     {
-        let mut c = CRASHES.lock().unwrap();
+        let mut c = CRASHES.locked();
         c.retain(|t| t.elapsed() < Duration::from_secs(120));
         if c.len() >= 3 {
-            return Err(LAST_ERROR.lock().unwrap().clone());
+            return Err(LAST_ERROR.locked().clone());
         }
     }
     if lanes().len() != LANES {
@@ -152,8 +154,8 @@ fn start() -> Result<Arc<Host>, String> {
         next: AtomicU64::new(1),
         stopping: AtomicBool::new(false),
     });
-    *SENT.lock().unwrap() = None;
-    *HOST.lock().unwrap() = Some(host.clone());
+    *SENT.locked() = None;
+    *HOST.locked() = Some(host.clone());
     ALIVE.store(true, Ordering::Release);
     log_info!("Plugins: started the plugin host");
 
@@ -168,7 +170,7 @@ fn start() -> Result<Arc<Host>, String> {
                     continue;
                 };
                 if let Some(id) = v["id"].as_u64() {
-                    if let Some(tx) = reader.pending.lock().unwrap().remove(&id) {
+                    if let Some(tx) = reader.pending.locked().remove(&id) {
                         let r = match v.get("err").and_then(Value::as_str) {
                             Some(e) => Err(e.to_string()),
                             None => Ok(v["ok"].clone()),
@@ -195,14 +197,14 @@ fn start() -> Result<Arc<Host>, String> {
                 record_crash(loading);
                 let msg = "The plugin host stopped, probably because a plugin crashed. Your mic carries on without plugins; Sleekmeeter tries them again.".to_string();
                 log_warn!("Plugins: the plugin host stopped (exit code {code:?})");
-                CRASHES.lock().unwrap().push(Instant::now());
-                *LAST_ERROR.lock().unwrap() = "The plugin host stopped 3 times in 2 minutes, so plugins are off for now. Switch off or remove the plugin that crashes; they start again 2 minutes after the last crash.".to_string();
+                CRASHES.locked().push(Instant::now());
+                *LAST_ERROR.locked() = "The plugin host stopped 3 times in 2 minutes, so plugins are off for now. Switch off or remove the plugin that crashes; they start again 2 minutes after the last crash.".to_string();
                 set_error(&msg);
             }
-            if HOST.lock().unwrap().as_ref().is_some_and(|h| Arc::ptr_eq(h, &reader)) {
+            if HOST.locked().as_ref().is_some_and(|h| Arc::ptr_eq(h, &reader)) {
                 ALIVE.store(false, Ordering::Release);
             }
-            for (_, tx) in reader.pending.lock().unwrap().drain() {
+            for (_, tx) in reader.pending.locked().drain() {
                 let _ = tx.send(Err("The plugin host stopped".into()));
             }
         })
@@ -211,7 +213,7 @@ fn start() -> Result<Arc<Host>, String> {
 }
 
 fn set_error(msg: &str) {
-    let mut s = STATUS.lock().unwrap();
+    let mut s = STATUS.locked();
     if let Some(m) = s.as_object_mut() {
         for v in m.values_mut() {
             *v = json!({ "loaded": false, "error": msg, "editor": false });
@@ -227,20 +229,20 @@ fn request(cmd: Value, timeout: Duration) -> Result<Value, String> {
 fn request_on(host: &Host, cmd: Value, timeout: Duration) -> Result<Value, String> {
     let id = host.next.fetch_add(1, Ordering::Relaxed);
     let (tx, rx) = channel();
-    host.pending.lock().unwrap().insert(id, tx);
+    host.pending.locked().insert(id, tx);
     let mut msg = cmd;
     msg["id"] = json!(id);
     {
-        let mut w = host.stdin.lock().unwrap();
+        let mut w = host.stdin.locked();
         if writeln!(w, "{msg}").and_then(|_| w.flush()).is_err() {
-            host.pending.lock().unwrap().remove(&id);
+            host.pending.locked().remove(&id);
             return Err("The plugin host stopped".into());
         }
     }
     match rx.recv_timeout(timeout) {
         Ok(r) => r,
         Err(_) => {
-            host.pending.lock().unwrap().remove(&id);
+            host.pending.locked().remove(&id);
             Err("The plugin host took too long to answer".into())
         }
     }
@@ -249,12 +251,12 @@ fn request_on(host: &Host, cmd: Value, timeout: Duration) -> Result<Value, Strin
 /// Load, unload and order plugins on every mic to match Settings, at `rate` Hz.
 /// Called twice a second; only sends the list (with saved settings) when it changed.
 pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
-    *CANDIDATES.lock().unwrap() = want
+    *CANDIDATES.locked() = want
         .iter()
         .map(|w| (w.id.clone(), w.name.clone()))
         .collect();
     {
-        let mut bypassed = BYPASSED.lock().unwrap();
+        let mut bypassed = BYPASSED.locked();
         let before = bypassed.len();
         bypassed.retain(|id| want.iter().any(|w| &w.id == id));
         if bypassed.len() != before {
@@ -262,9 +264,9 @@ pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
         }
         want.retain(|w| !bypassed.contains(&w.id));
     }
-    let running = HOST.lock().unwrap().is_some() && ALIVE.load(Ordering::Acquire);
+    let running = HOST.locked().is_some() && ALIVE.load(Ordering::Acquire);
     if want.is_empty() && !running {
-        *STATUS.lock().unwrap() = json!({});
+        *STATUS.locked() = json!({});
         return;
     }
     // (Re)start first: a new host has nothing loaded, so it must get the whole list.
@@ -278,7 +280,7 @@ pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
                     json!({ "loaded": false, "error": e, "editor": false }),
                 );
             }
-            *STATUS.lock().unwrap() = Value::Object(st);
+            *STATUS.locked() = Value::Object(st);
             return;
         }
     };
@@ -290,7 +292,7 @@ pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
             ..w.clone()
         })
         .collect();
-    let changed = SENT.lock().unwrap().as_ref() != Some(&(bare.clone(), rate));
+    let changed = SENT.locked().as_ref() != Some(&(bare.clone(), rate));
     let due = SENT_AT
         .lock()
         .unwrap()
@@ -305,9 +307,9 @@ pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
     };
     match request_on(&host, cmd, Duration::from_secs(90)) {
         Ok(st) => {
-            *STATUS.lock().unwrap() = st;
-            *SENT.lock().unwrap() = Some((bare, rate));
-            *SENT_AT.lock().unwrap() = Some(Instant::now());
+            *STATUS.locked() = st;
+            *SENT.locked() = Some((bare, rate));
+            *SENT_AT.locked() = Some(Instant::now());
         }
         Err(e) => {
             let mut st = serde_json::Map::new();
@@ -317,7 +319,7 @@ pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
                     json!({ "loaded": false, "error": e, "editor": false }),
                 );
             }
-            *STATUS.lock().unwrap() = Value::Object(st);
+            *STATUS.locked() = Value::Object(st);
         }
     }
     if want.is_empty() {
@@ -327,32 +329,32 @@ pub fn sync(mut want: Vec<crate::vst::Want>, rate: u32) {
 
 /// `{ id: { loaded, error, editor } }` for Settings.
 pub fn status() -> Value {
-    let mut s = STATUS.lock().unwrap().clone();
+    let mut s = STATUS.locked().clone();
     if s.is_null() {
         s = json!({});
     }
-    for id in BYPASSED.lock().unwrap().iter() {
+    for id in BYPASSED.locked().iter() {
         s[id] = json!({ "loaded": false, "error": "Bypassed for recovery", "editor": false, "bypassed": true });
     }
     s
 }
 
 pub fn recovery() -> Value {
-    json!({ "message": RECOVERY_MESSAGE.lock().unwrap().clone() })
+    json!({ "message": RECOVERY_MESSAGE.locked().clone() })
 }
 
 pub fn recover_plugin(id: &str, bypass: bool) -> Result<(), String> {
-    if !CANDIDATES.lock().unwrap().iter().any(|(key, _)| key == id) {
+    if !CANDIDATES.locked().iter().any(|(key, _)| key == id) {
         return Err("This plugin is no longer in the mic chain".into());
     }
-    let mut list = BYPASSED.lock().unwrap();
+    let mut list = BYPASSED.locked();
     list.retain(|key| key != id);
     if bypass {
         list.push(id.to_owned());
     }
     save_quarantine(&list);
     drop(list);
-    CRASHES.lock().unwrap().clear();
+    CRASHES.locked().clear();
     Ok(())
 }
 
@@ -366,7 +368,7 @@ pub(crate) fn plugin_token(id: &str) -> u32 {
 
 fn record_crash(loading: Option<String>) {
     let mut suspects: Vec<String> = loading.into_iter().collect();
-    let candidates = CANDIDATES.lock().unwrap();
+    let candidates = CANDIDATES.locked();
     for lane in lanes() {
         let token = unsafe { (*lane.shm).processing.swap(0, Ordering::AcqRel) };
         if token == 0 {
@@ -386,12 +388,12 @@ fn record_crash(loading: Option<String>) {
         .filter(|(id, _)| suspects.contains(id))
         .map(|(_, name)| name.as_str())
         .collect();
-    *RECOVERY_MESSAGE.lock().unwrap() = if names.is_empty() {
+    *RECOVERY_MESSAGE.locked() = if names.is_empty() {
         "The host stopped outside a tracked load or audio call. You can bypass a plugin before retrying.".into()
     } else {
         format!("The host stopped while these plugins were loading or processing. Bypassed for recovery: {}.", names.join(", "))
     };
-    let mut bypassed = BYPASSED.lock().unwrap();
+    let mut bypassed = BYPASSED.locked();
     for id in suspects {
         if !bypassed.contains(&id) {
             bypassed.push(id);
@@ -417,7 +419,7 @@ pub fn open_editor(id: String) -> Result<(), String> {
     // Sleekmeeter is in front (Edit was just clicked); let the host bring its window forward,
     // which Windows otherwise stops a background process from doing.
     if let Ok(h) = start() {
-        let pid = h.child.lock().unwrap().id();
+        let pid = h.child.locked().id();
         sys::allow_foreground(pid);
     }
     request(
@@ -444,7 +446,7 @@ pub fn set_state(id: String, c: String, e: String) -> Result<(), String> {
 
 /// Close the plugin host (plugins save their settings first).
 fn stop() {
-    let Some(host) = HOST.lock().unwrap().clone() else {
+    let Some(host) = HOST.locked().clone() else {
         return;
     };
     QUITTING.store(true, Ordering::Release);
@@ -452,11 +454,11 @@ fn stop() {
     if ALIVE.load(Ordering::Acquire) {
         let _ = request_on(&host, json!({ "cmd": "shutdown" }), Duration::from_secs(10));
     }
-    if let Some(h) = HOST.lock().unwrap().take() {
-        let _ = h.child.lock().unwrap().kill();
+    if let Some(h) = HOST.locked().take() {
+        let _ = h.child.locked().kill();
     }
     ALIVE.store(false, Ordering::Release);
-    *SENT.lock().unwrap() = None;
+    *SENT.locked() = None;
     QUITTING.store(false, Ordering::Release);
     log_info!("Plugins: closed the plugin host");
 }
@@ -508,7 +510,7 @@ pub fn child_main(parent: u32) -> ! {
     let send = {
         let out = out.clone();
         move |v: Value| {
-            let mut o = out.lock().unwrap();
+            let mut o = out.locked();
             let _ = writeln!(o, "{v}");
             let _ = o.flush();
         }
@@ -582,11 +584,11 @@ pub fn child_main(parent: u32) -> ! {
                             ..w
                         })
                         .collect();
-                    *last_want.lock().unwrap() = (bare, rate);
+                    *last_want.locked() = (bare, rate);
                     Ok(crate::vst::status())
                 }
                 "tick" => {
-                    let (w, rate) = last_want.lock().unwrap().clone();
+                    let (w, rate) = last_want.locked().clone();
                     crate::vst::sync(w, rate);
                     Ok(crate::vst::status())
                 }

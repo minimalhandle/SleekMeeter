@@ -5,6 +5,8 @@
 //! Voicemeeter's virtual inputs have their session on those devices, so this works for them too:
 //! it turns the app down before Voicemeeter ever hears it, on top of the strip's own fader.
 
+use crate::LockExt;
+
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::sync::Mutex;
@@ -15,7 +17,7 @@ static SNAPSHOT: Mutex<Option<Snapshot>> = Mutex::new(None);
 
 /// UI readers share one recent scan, including requests that arrive while it runs.
 pub fn snapshot() -> Result<Vec<Value>, String> {
-    let mut cached = SNAPSHOT.lock().unwrap();
+    let mut cached = SNAPSHOT.locked();
     if let Some((at, rows)) = cached.as_ref() {
         if at.elapsed() < Duration::from_millis(900) {
             return Ok(rows.clone());
@@ -27,7 +29,7 @@ pub fn snapshot() -> Result<Vec<Value>, String> {
 }
 
 pub fn invalidate_snapshot() {
-    *SNAPSHOT.lock().unwrap() = None;
+    *SNAPSHOT.locked() = None;
 }
 
 /// Programs that are part of the audio setup itself; turning them down would only confuse.

@@ -6,6 +6,8 @@
 //! An empty name means "no device on this output". With `auto` on, the profile is applied when
 //! one of its devices shows up in Windows (see devwatch.rs).
 
+use crate::LockExt;
+
 use crate::devwatch::same_device;
 use crate::vm::{Api, Layout};
 use crate::{show_osd_text, Settings, Vm};
@@ -82,7 +84,7 @@ pub fn capture(api: &Api, edition: i32) -> Vec<Value> {
 /// Put the profile's devices on the outputs. Returns how many outputs changed.
 pub fn apply(app: &AppHandle, api: &Api, profile: &Value, because: &str) -> Result<usize, String> {
     let name = profile["name"].as_str().unwrap_or("?");
-    let edition = app.state::<Vm>().last.lock().unwrap()["edition"]
+    let edition = app.state::<Vm>().last.locked()["edition"]
         .as_i64()
         .unwrap_or(2) as i32;
     let hw_buses = Layout::for_edition(edition).hw_buses;
@@ -120,7 +122,7 @@ pub fn apply(app: &AppHandle, api: &Api, profile: &Value, because: &str) -> Resu
 }
 
 fn find(app: &AppHandle, name: &str) -> Option<Value> {
-    let settings = app.state::<Settings>().0.lock().unwrap().clone();
+    let settings = app.state::<Settings>().0.locked().clone();
     profiles(&settings)
         .into_iter()
         .find(|p| p["name"].as_str() == Some(name))
@@ -164,15 +166,15 @@ pub fn current(settings: &Value, snap: &Value) -> Option<String> {
 
 /// Add the active profile's name to a mixer snapshot.
 pub fn dress(app: &AppHandle, snap: &mut Value) {
-    let active = current(&app.state::<Settings>().0.lock().unwrap(), snap);
+    let active = current(&app.state::<Settings>().0.locked(), snap);
     snap["outputProfile"] = json!(active);
 }
 
 /// Switch to the next profile (shortcut).
 pub fn cycle(app: &AppHandle) {
     let (list, snap) = {
-        let s = app.state::<Settings>().0.lock().unwrap().clone();
-        (profiles(&s), app.state::<Vm>().last.lock().unwrap().clone())
+        let s = app.state::<Settings>().0.locked().clone();
+        (profiles(&s), app.state::<Vm>().last.locked().clone())
     };
     if list.is_empty() {
         show_osd_text(app, "Outputs", "No profiles", false, "headphones");

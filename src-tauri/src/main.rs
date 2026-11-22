@@ -6,6 +6,20 @@
 // First, so its log_info!/log_warn!/log_error! macros work in every module below.
 #[macro_use]
 mod logs;
+
+/// `lock()` that keeps going after a panic. A thread that panics while holding a std Mutex
+/// "poisons" it, and `lock().unwrap()` then panics in every other thread that touches it, so one
+/// bug in a background job could take the whole app down. The data behind these locks is
+/// always left consistent between statements, so carrying on with it is safe.
+pub trait LockExt<T> {
+    fn locked(&self) -> std::sync::MutexGuard<'_, T>;
+}
+
+impl<T> LockExt<T> for std::sync::Mutex<T> {
+    fn locked(&self) -> std::sync::MutexGuard<'_, T> {
+        self.lock().unwrap_or_else(|e| e.into_inner())
+    }
+}
 mod actions;
 mod apps;
 mod appvol;
@@ -29,14 +43,16 @@ mod layers;
 mod loudness;
 mod mic_tune;
 mod micfx;
-mod soundfx;
 mod micpreset;
 mod midi;
+mod migration;
 mod notes;
 mod obs;
 mod outputs;
+mod partial_scene;
 mod partmute;
 mod pluginhost;
+mod policy;
 mod recorder;
 mod recover;
 mod remote;
@@ -44,12 +60,14 @@ mod replay;
 mod routing;
 mod selftest;
 mod settings;
+mod soundfx;
 mod sounds;
 mod streamdeck;
 mod twitch;
 mod update;
 mod usage;
 mod vm;
+mod voice;
 #[cfg_attr(not(windows), path = "vst_off.rs")]
 mod vst;
 mod watch;
@@ -93,6 +111,8 @@ struct Vm {
 struct Settings(Mutex<Value>);
 /// The theme an app rule asked for right now ("" = the one you chose). Not saved.
 static AUTO_THEME: Mutex<String> = Mutex::new(String::new());
+/// Serializes setup import with ordinary saves, including native shortcut registration.
+static SETTINGS_WRITE_LOCK: Mutex<()> = Mutex::new(());
 struct Hotkeys(Mutex<Vec<(Shortcut, Value)>>);
 struct NormalSize(Mutex<Option<LogicalSize<f64>>>);
 /// Last size the tray panel asked for (logical px), so it reopens at the right size.
@@ -109,7 +129,7 @@ fn whats_new(state: State<'_, WhatsNew>, all: bool) -> Value {
     if all {
         return json!({ "version": update::CURRENT, "sections": notes::recent() });
     }
-    let sections = std::mem::take(&mut *state.0.lock().unwrap());
+    let sections = std::mem::take(&mut *state.0.locked());
     json!({ "version": update::CURRENT, "sections": sections })
 }
 /// Window size/position changed and settings.json needs saving (written at most once a second).
@@ -141,7 +161,7 @@ fn api<'a>(vm: &'a State<'_, Vm>) -> Result<&'a Arc<Api>, String> {
 
 #[tauri::command]
 fn vm_snapshot(vm: State<'_, Vm>) -> Value {
-    vm.last.lock().unwrap().clone()
+    vm.last.locked().clone()
 }
 
 #[tauri::command]
@@ -203,7 +223,7 @@ fn bt_status() -> Value {
 /// Mic coach: start listening to an input ("Strip[0]").
 #[tauri::command]
 fn coach_start(app: AppHandle, target: String) -> Result<(), String> {
-    let edition = app.state::<Vm>().last.lock().unwrap()["edition"]
+    let edition = app.state::<Vm>().last.locked()["edition"]
         .as_i64()
         .unwrap_or(2) as i32;
     coach::start(&Layout::for_edition(edition), &target)
@@ -399,7 +419,7 @@ fn recorder_load(app: AppHandle, path: String) -> Result<String, String> {
 /// The outputs' devices as they are now, for saving as a profile.
 #[tauri::command]
 fn outputs_capture(vm: State<'_, Vm>, s: State<'_, Settings>) -> Result<Vec<Value>, String> {
-    let edition = last_edition(&s.0.lock().unwrap());
+    let edition = last_edition(&s.0.locked());
     Ok(outputs::capture(api(&vm)?, edition))
 }
 
@@ -453,7 +473,7 @@ async fn app_route_defaults() -> Result<Option<(String, String)>, String> {
 #[tauri::command]
 async fn app_route_set(pids: Vec<u32>, device: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let result = routing::set(&pids, &device);
+        let result = routing::set(&pids, &device).map(|_| ());
         appvol::invalidate_snapshot();
         result
     })
@@ -474,7 +494,7 @@ fn vm_set_string(vm: State<'_, Vm>, name: String, value: String) -> Result<(), S
 
 #[tauri::command]
 fn vm_launch(vm: State<'_, Vm>, s: State<'_, Settings>) -> Result<(), String> {
-    let edition = last_edition(&s.0.lock().unwrap());
+    let edition = last_edition(&s.0.locked());
     api(&vm)?.run(edition)
 }
 
@@ -493,7 +513,7 @@ fn vm_devices(vm: State<'_, Vm>) -> Result<Value, String> {
 
 #[tauri::command]
 fn vm_show_window(vm: State<'_, Vm>) -> Result<(), String> {
-    *vm.hide_vm_until.lock().unwrap() = None;
+    *vm.hide_vm_until.locked() = None;
     win::show_voicemeeter();
     api(&vm)?.set_float("Command.Show", 1.0)
 }
@@ -538,18 +558,74 @@ fn scene_list() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-fn scene_save(app: AppHandle, vm: State<'_, Vm>, name: String) -> Result<(), String> {
+fn scene_save(
+    app: AppHandle,
+    vm: State<'_, Vm>,
+    name: String,
+    scope: Option<Value>,
+) -> Result<(), String> {
+    static SAVING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _saving = SAVING.lock().map_err(|e| e.to_string())?;
     let path = scene_path(&name)?;
-    api(&vm)?
-        .set_string("Command.Save", &path.to_string_lossy())
-        .inspect_err(|e| log_error!("Saving scene {name:?} failed: {e}"))?;
+    if let Some(scope) = scope {
+        let snap = vm.last.locked().clone();
+        let scene = partial_scene::capture(&scope, &snap, micfx::partial_scene_snapshot(&app))?;
+        // Validate all captured values before replacing an existing scene.
+        partial_scene::script(&scene, &snap)?;
+        partial_scene::replace_files(
+            &path,
+            b"<!-- Sleekmeeter partial scene: see .partial.json -->",
+            Some(scene.to_string().as_bytes()),
+            None,
+            None,
+        )?;
+        return Ok(());
+    }
+    // Voicemeeter may create its XML after Command.Save returns. Capture into an isolated
+    // staging folder and wait for complete, stable bytes before replacing any existing scene.
+    let capture_dir = scenes_dir()?.join(format!(
+        ".scene-capture-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos()
+    ));
+    std::fs::create_dir(&capture_dir).map_err(|e| e.to_string())?;
+    let capture_path = capture_dir.join("setup.xml");
+    let result = (|| -> Result<(), String> {
+        api(&vm)?.set_string("Command.Save", &capture_path.to_string_lossy())?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
+        let mut previous = Vec::new();
+        let contents = loop {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            if let Ok(bytes) = std::fs::read(&capture_path) {
+                if !bytes.is_empty() && bytes == previous {
+                    break bytes;
+                }
+                previous = bytes;
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(
+                    "Voicemeeter did not finish saving the scene; existing scene files were kept"
+                        .into(),
+                );
+            }
+        };
+        let levels = fades::levels_snapshot(&app).to_string();
+        let mics = micfx::scene_snapshot(&app).to_string();
+        partial_scene::replace_files(
+            &path,
+            &contents,
+            None,
+            Some(levels.as_bytes()),
+            Some(mics.as_bytes()),
+        )
+    })();
+    let _ = std::fs::remove_file(&capture_path);
+    let _ = std::fs::remove_dir(&capture_dir);
+    result.inspect_err(|e| log_error!("Saving scene {name:?} failed: {e}"))?;
     log_info!("Saved scene {name:?}");
-    fades::save_levels(&app, &path);
-    // Each mic's clean-up on or off, and NVIDIA's strength (Voicemeeter's file can't hold them).
-    let _ = std::fs::write(
-        path.with_extension("micfx.json"),
-        micfx::scene_snapshot(&app).to_string(),
-    );
     Ok(())
 }
 
@@ -562,6 +638,40 @@ fn scene_preview(app: AppHandle, name: String) -> Result<Value, String> {
     let read = |p: std::path::PathBuf| -> Option<Value> {
         serde_json::from_slice(&std::fs::read(p).ok()?).ok()
     };
+    if partial_scene::path(&path).exists() {
+        let mut saved = read(partial_scene::path(&path)).ok_or("Couldn't read partial scene")?;
+        partial_scene::script(&saved, &app.state::<Vm>().last.locked())?;
+        let scope = saved["scope"].clone();
+        let keys = scope["channels"].as_array().cloned().unwrap_or_default();
+        if let Some(channels) = saved["channels"].as_object_mut() {
+            channels.retain(|k, v| {
+                if !keys.contains(&json!(k)) {
+                    return false;
+                }
+                if let Some(fields) = v.as_object_mut() {
+                    fields.retain(|field, _| {
+                        let category = match field.as_str() {
+                            "gain" | "layers" => "levels",
+                            "mute" => "mutes",
+                            "a" | "b" => "routes",
+                            _ => return false,
+                        };
+                        scope[category].as_bool().unwrap_or(false)
+                    });
+                }
+                true
+            });
+        }
+        if !scope["micProcessing"].as_bool().unwrap_or(false) {
+            saved["mics"] = json!({});
+        }
+        if let Some(mics) = saved["mics"].as_object_mut() {
+            mics.retain(|k, _| keys.contains(&json!(k)));
+        }
+        saved["partial"] = json!(true);
+        saved["currentMics"] = micfx::partial_scene_snapshot(&app);
+        return Ok(saved);
+    }
     Ok(json!({
         "channels": read(fades::levels_path(&path)),
         "mics": read(path.with_extension("micfx.json")),
@@ -593,15 +703,17 @@ fn scene_delete(name: String) -> Result<(), String> {
 
 #[tauri::command]
 fn settings_get(s: State<'_, Settings>) -> Value {
-    let mut v = s.0.lock().unwrap().clone();
+    let mut v = s.0.locked().clone();
     v["startWithWindows"] = json!(win::autostart_enabled());
-    v["autoTheme"] = json!(AUTO_THEME.lock().unwrap().clone());
+    v["autoTheme"] = json!(AUTO_THEME.locked().clone());
     v
 }
 
 /// Save settings and apply the parts that live outside the window. Returns problems to show.
 #[tauri::command]
 fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
+    let _write = SETTINGS_WRITE_LOCK.locked();
+    migration::check_epoch(&app.state::<Settings>().0.locked(), &value)?;
     let mut problems: Vec<String> = Vec::new();
     let want_autostart = settings::flag(&value, "startWithWindows");
     if want_autostart != win::autostart_enabled() {
@@ -622,7 +734,7 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
         m.remove("autoTheme"); // transient, set by app rules
     }
     let state = app.state::<Settings>();
-    let mut current = state.0.lock().unwrap();
+    let mut current = state.0.locked();
     if !current["edition"].is_null() {
         value["edition"] = current["edition"].clone();
     }
@@ -685,7 +797,7 @@ fn mix_preference_set(app: AppHandle, key: String, value: String) -> Result<(), 
         return Err("Invalid output mix preference.".into());
     }
     let state = app.state::<Settings>();
-    let mut current = state.0.lock().unwrap();
+    let mut current = state.0.locked();
     let mut next = current.clone();
     next[&key] = json!(value);
     settings::save(&next)?;
@@ -708,7 +820,7 @@ fn window_mini(
 ) -> Result<(), String> {
     let w = app.get_webview_window("main").ok_or("No main window")?;
     // Mark mini mode first, so the resize below isn't remembered as the normal window size.
-    app.state::<Settings>().0.lock().unwrap()["mini"] = json!(mini);
+    app.state::<Settings>().0.locked()["mini"] = json!(mini);
     let saved = app.state::<NormalSize>();
     if mini {
         let scale = w.scale_factor().unwrap_or(1.0);
@@ -716,7 +828,7 @@ fn window_mini(
             let logical = size.to_logical::<f64>(scale);
             // Only remember the full-size window, not an earlier mini size.
             if logical.height > 400.0 {
-                *saved.0.lock().unwrap() = Some(logical);
+                *saved.0.locked() = Some(logical);
             }
         }
         // The page measures the height its channels need; the row count is only a fallback.
@@ -736,14 +848,14 @@ fn window_mini(
         // Back to the full size: the one from before mini mode, else the remembered one.
         let remembered = {
             let st = app.state::<Settings>();
-            let guard = st.0.lock().unwrap();
+            let guard = st.0.locked();
             let g = &guard["window"];
             match (g["width"].as_f64(), g["height"].as_f64()) {
                 (Some(wd), Some(ht)) => LogicalSize::new(wd, ht),
                 _ => LogicalSize::new(1400.0, 800.0),
             }
         };
-        let size = saved.0.lock().unwrap().unwrap_or(remembered);
+        let size = saved.0.locked().unwrap_or(remembered);
         let _ = w.set_min_size(Some(LogicalSize::new(760.0, 520.0)));
         w.set_size(size).map_err(|e| e.to_string())?;
     }
@@ -773,7 +885,7 @@ fn apply_hotkeys(app: &AppHandle, list: &Value) -> Vec<String> {
             Err(_) => problems.push(format!("{keys} isn't a shortcut Windows can register")),
         }
     }
-    *app.state::<Hotkeys>().0.lock().unwrap() = map;
+    *app.state::<Hotkeys>().0.locked() = map;
     hold::arm(app, list);
     problems
 }
@@ -823,7 +935,7 @@ fn run_hotkey(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {
 /// Move the overlay to the bottom centre of the chosen screen: the mixer's (the default), the
 /// main one, or a named one (Settings → Volume overlay).
 fn place_osd(app: &AppHandle, osd: &WebviewWindow) {
-    let wanted = app.state::<Settings>().0.lock().unwrap()["overlayScreen"]
+    let wanted = app.state::<Settings>().0.locked()["overlayScreen"]
         .as_str()
         .unwrap_or("")
         .to_string();
@@ -866,7 +978,7 @@ pub fn show_osd_alert(app: &AppHandle, name: &str, text: &str, icon: &str) {
 
 /// Is the volume overlay switched on at all (Settings → Appearance → Volume overlay)?
 fn osd_on(app: &AppHandle) -> bool {
-    settings::flag_or(&app.state::<Settings>().0.lock().unwrap(), "osdOn", true)
+    settings::flag_or(&app.state::<Settings>().0.locked(), "osdOn", true)
 }
 
 fn osd_words(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str, color: &str, ms: u64) {
@@ -877,8 +989,8 @@ fn osd_words(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str, colo
         return;
     };
     place_osd(app, &osd);
-    let theme = settings::theme(&app.state::<Settings>().0.lock().unwrap());
-    let fresh = app.state::<Vm>().osd_until.lock().unwrap().is_none();
+    let theme = settings::theme(&app.state::<Settings>().0.locked());
+    let fresh = app.state::<Vm>().osd_until.locked().is_none();
     let _ = app.emit_to(
         "osd",
         "osd",
@@ -886,7 +998,7 @@ fn osd_words(app: &AppHandle, name: &str, text: &str, on: bool, icon: &str, colo
                 "color": color }),
     );
     let _ = osd.show();
-    *app.state::<Vm>().osd_until.lock().unwrap() = Some(Instant::now() + Duration::from_millis(ms));
+    *app.state::<Vm>().osd_until.locked() = Some(Instant::now() + Duration::from_millis(ms));
 }
 
 /// What changed between two snapshots: ("strip" | "bus", index) for gain or mute changes.
@@ -918,7 +1030,7 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
         &snap["buses"][i]
     };
     let look =
-        app.state::<Settings>().0.lock().unwrap()["appearance"][format!("{kind}-{i}")].clone();
+        app.state::<Settings>().0.locked()["appearance"][format!("{kind}-{i}")].clone();
     let edition = snap["edition"].as_i64().unwrap_or(2) as i32;
     let l = Layout::for_edition(edition);
     let fallback = if kind == "strip" {
@@ -946,9 +1058,9 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
     };
 
     place_osd(app, &osd);
-    let theme = settings::theme(&app.state::<Settings>().0.lock().unwrap());
+    let theme = settings::theme(&app.state::<Settings>().0.locked());
     // Only a newly shown overlay fades in; updates while it's up don't replay the fade.
-    let fresh = app.state::<Vm>().osd_until.lock().unwrap().is_none();
+    let fresh = app.state::<Vm>().osd_until.locked().is_none();
     let _ = app.emit_to(
         "osd",
         "osd",
@@ -963,7 +1075,7 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
         }),
     );
     let _ = osd.show();
-    *app.state::<Vm>().osd_until.lock().unwrap() =
+    *app.state::<Vm>().osd_until.locked() =
         Some(Instant::now() + Duration::from_millis(1600));
 }
 
@@ -974,7 +1086,7 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
 /// Whether the level history is being recorded (Settings).
 fn keep_history(app: &AppHandle) -> bool {
     let state = app.state::<Settings>();
-    let s = state.0.lock().unwrap();
+    let s = state.0.locked();
     let on = s["history"]["on"].as_bool().unwrap_or(true);
     on
 }
@@ -1017,9 +1129,9 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     reread_until = Instant::now() + Duration::from_secs(3);
                     arm_pending = true;
                     hold::forget_armed(&app);
-                    let s = app.state::<Settings>().0.lock().unwrap().clone();
+                    let s = app.state::<Settings>().0.locked().clone();
                     if settings::flag(&s, "hideVoicemeeter") {
-                        *app.state::<Vm>().hide_vm_until.lock().unwrap() =
+                        *app.state::<Vm>().hide_vm_until.locked() =
                             Some(Instant::now() + Duration::from_secs(10));
                     }
                 }
@@ -1050,7 +1162,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                 }
                 if arm_pending && !settling {
                     arm_pending = false;
-                    let hotkeys = app.state::<Settings>().0.lock().unwrap()["hotkeys"].clone();
+                    let hotkeys = app.state::<Settings>().0.locked()["hotkeys"].clone();
                     hold::arm(&app, &hotkeys);
                 }
                 if window_visible(&app, "main")
@@ -1082,7 +1194,10 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
 /// Show the overlay when one or two channels change while the mixer isn't in front.
 /// Bigger jumps (scene loads, startup) are skipped.
 fn maybe_osd(app: &AppHandle, prev: &Value, next: &Value, settling: bool) {
-    if settling || !osd_on(app) || !settings::flag(&app.state::<Settings>().0.lock().unwrap(), "overlay") {
+    if settling
+        || !osd_on(app)
+        || !settings::flag(&app.state::<Settings>().0.locked(), "overlay")
+    {
         return;
     }
     let focused = ["main", FLYOUT].iter().any(|label| {
@@ -1100,7 +1215,7 @@ fn maybe_osd(app: &AppHandle, prev: &Value, next: &Value, settling: bool) {
     // Channels switched off for the overlay in their settings are skipped.
     let shown = {
         let st = app.state::<Settings>();
-        let s = st.0.lock().unwrap();
+        let s = st.0.locked();
         changes
             .into_iter()
             .find(|(kind, i)| s["appearance"][format!("{kind}-{i}")]["osd"] != json!(false))
@@ -1114,7 +1229,7 @@ fn maybe_osd(app: &AppHandle, prev: &Value, next: &Value, settling: bool) {
 fn housekeeping(app: &AppHandle) {
     let vm = app.state::<Vm>();
     let now = Instant::now();
-    let mut osd = vm.osd_until.lock().unwrap();
+    let mut osd = vm.osd_until.locked();
     if osd.map(|t| now >= t).unwrap_or(false) {
         *osd = None;
         if let Some(w) = app.get_webview_window("osd") {
@@ -1122,7 +1237,7 @@ fn housekeeping(app: &AppHandle) {
         }
     }
     drop(osd);
-    let mut hide = vm.hide_vm_until.lock().unwrap();
+    let mut hide = vm.hide_vm_until.locked();
     if let Some(t) = *hide {
         if now >= t {
             *hide = None;
@@ -1135,7 +1250,7 @@ fn housekeeping(app: &AppHandle) {
 /// Emit state only when it changed, and keep it for vm_snapshot.
 fn publish(app: &AppHandle, state: Value) {
     let vm = app.state::<Vm>();
-    let mut last = vm.last.lock().unwrap();
+    let mut last = vm.last.locked();
     if *last != state {
         *last = state.clone();
         drop(last);
@@ -1172,10 +1287,10 @@ fn toggle_main(app: &AppHandle) {
 
 /// Panel height in logical pixels, matching the mini-row layout in styles.css.
 fn flyout_size(app: &AppHandle) -> (f64, f64) {
-    if let Some(size) = *app.state::<PanelSize>().0.lock().unwrap() {
+    if let Some(size) = *app.state::<PanelSize>().0.locked() {
         return size;
     }
-    let s = app.state::<Settings>().0.lock().unwrap().clone();
+    let s = app.state::<Settings>().0.locked().clone();
     let shown = |key: &str, n: usize| {
         (0..n)
             .filter(|i| {
@@ -1185,7 +1300,7 @@ fn flyout_size(app: &AppHandle) -> (f64, f64) {
             })
             .count() as f64
     };
-    let edition = app.state::<Vm>().last.lock().unwrap()["edition"]
+    let edition = app.state::<Vm>().last.locked()["edition"]
         .as_i64()
         .unwrap_or(2) as i32;
     let l = Layout::for_edition(edition);
@@ -1234,7 +1349,7 @@ fn dock_spot(x: i32, y: i32, pw: i32, ph: i32) -> Option<(i32, i32)> {
 
 /// Windows' window shadow keeps the panel opaque, so it only has one while it's solid.
 fn flyout_shadow(app: &AppHandle, w: &WebviewWindow) {
-    let opacity = app.state::<Settings>().0.lock().unwrap()["panelOpacity"]
+    let opacity = app.state::<Settings>().0.locked()["panelOpacity"]
         .as_f64()
         .unwrap_or(100.0);
     let _ = w.set_shadow(opacity >= 100.0);
@@ -1269,7 +1384,7 @@ fn place_flyout(app: &AppHandle, w: &WebviewWindow, anchor: Option<PhysicalPosit
     ));
     let (docked, saved) = {
         let st = app.state::<Settings>();
-        let g = st.0.lock().unwrap();
+        let g = st.0.locked();
         (
             settings::flag_or(&g, "panelDocked", true),
             (
@@ -1353,7 +1468,7 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
 fn panel_dock(app: AppHandle, docked: bool) {
     let snapshot = {
         let st = app.state::<Settings>();
-        let mut s = st.0.lock().unwrap();
+        let mut s = st.0.locked();
         s["panelDocked"] = json!(docked);
         let _ = settings::save(&s);
         s.clone()
@@ -1381,7 +1496,7 @@ fn open_mix_window(app: &AppHandle) {
         let _ = w.set_focus();
         return;
     }
-    let saved = app.state::<Settings>().0.lock().unwrap()["mixWin"].clone();
+    let saved = app.state::<Settings>().0.locked()["mixWin"].clone();
     let built = WebviewWindowBuilder::new(app, MIXWIN, WebviewUrl::App("index.html".into()))
         .title("Sleekmeeter output mix")
         .initialization_script("window.SLEEK_MIXWIN = true;")
@@ -1407,7 +1522,7 @@ fn open_mix_window(app: &AppHandle) {
 /// Remembered so the window comes back at the next start, wherever it was left.
 fn set_mix_window_open(app: &AppHandle, open: bool) {
     let st = app.state::<Settings>();
-    let mut s = st.0.lock().unwrap();
+    let mut s = st.0.locked();
     if s["mixWinOpen"].as_bool() != Some(open) {
         s["mixWinOpen"] = json!(open);
         let _ = settings::save(&s);
@@ -1461,7 +1576,7 @@ fn panel_fit(
     let width = width
         .unwrap_or(inner.width as f64 / scale)
         .clamp(200.0, 1800.0);
-    *app.state::<PanelSize>().0.lock().unwrap() = Some((width, height));
+    *app.state::<PanelSize>().0.locked() = Some((width, height));
     let dh = (height * scale).round() as i32 - inner.height as i32;
     let dw = (width * scale).round() as i32 - inner.width as i32;
     if dh.abs() <= 1 && dw.abs() <= 1 {
@@ -1478,7 +1593,7 @@ fn panel_fit(
         .map_err(|e| e.to_string())?;
     // Docked: stay snug in the corner at the new size.
     let docked = settings::flag_or(
-        &app.state::<Settings>().0.lock().unwrap(),
+        &app.state::<Settings>().0.locked(),
         "panelDocked",
         true,
     );
@@ -1517,7 +1632,7 @@ fn ui_ready(window: WebviewWindow, show: State<'_, ShowOnReady>) {
 /// Save the running edition so "Start Voicemeeter" launches the right one next time.
 fn remember_edition(app: &AppHandle, edition: i32) {
     let state = app.state::<Settings>();
-    let mut s = state.0.lock().unwrap();
+    let mut s = state.0.locked();
     if s["edition"].as_i64() != Some(edition as i64) {
         s["edition"] = json!(edition);
         let _ = settings::save(&s);
@@ -1528,7 +1643,7 @@ fn remember_edition(app: &AppHandle, edition: i32) {
 
 #[tauri::command]
 async fn check_update(app: AppHandle) -> Result<Value, String> {
-    let beta = settings::flag(&app.state::<Settings>().0.lock().unwrap(), "betaUpdates");
+    let beta = settings::flag(&app.state::<Settings>().0.locked(), "betaUpdates");
     let result = tauri::async_runtime::spawn_blocking(move || update::latest(beta))
         .await
         .map_err(|e| e.to_string())?;
@@ -1924,7 +2039,7 @@ async fn vst_preset_save(app: AppHandle, id: String, name: String) -> Result<Val
     }
     let cid = {
         let s = app.state::<Settings>();
-        let s = s.0.lock().unwrap();
+        let s = s.0.locked();
         plugin_entry(&s, &id)
             .and_then(|p| p["cid"].as_str().map(str::to_string))
             .ok_or("That plugin isn't on a mic any more")?
@@ -1933,7 +2048,7 @@ async fn vst_preset_save(app: AppHandle, id: String, name: String) -> Result<Val
         .await
         .map_err(|e| e.to_string())??;
     let s = app.state::<Settings>();
-    let mut s = s.0.lock().unwrap();
+    let mut s = s.0.locked();
     if !s["vstPresets"].is_array() {
         s["vstPresets"] = json!([]);
     }
@@ -1951,7 +2066,7 @@ async fn vst_preset_save(app: AppHandle, id: String, name: String) -> Result<Val
 async fn vst_preset_apply(app: AppHandle, id: String, name: String) -> Result<(), String> {
     let (c, e) = {
         let s = app.state::<Settings>();
-        let s = s.0.lock().unwrap();
+        let s = s.0.locked();
         let cid = plugin_entry(&s, &id)
             .and_then(|p| p["cid"].as_str().map(str::to_string))
             .ok_or("That plugin isn't on a mic any more")?;
@@ -1977,7 +2092,7 @@ async fn vst_preset_apply(app: AppHandle, id: String, name: String) -> Result<()
 #[tauri::command]
 fn vst_preset_delete(app: AppHandle, cid: String, name: String) -> Value {
     let s = app.state::<Settings>();
-    let mut s = s.0.lock().unwrap();
+    let mut s = s.0.locked();
     if let Some(list) = s["vstPresets"].as_array_mut() {
         list.retain(|p| !(p["cid"] == cid.as_str() && p["name"] == name.as_str()));
     }
@@ -2109,7 +2224,7 @@ async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
             .await
             .map_err(|e| e.to_string())?;
     let Some(path) = picked else { return Ok(None) };
-    let mut value = app.state::<Settings>().0.lock().unwrap().clone();
+    let mut value = app.state::<Settings>().0.locked().clone();
     if let Value::Object(m) = &mut value {
         for k in [
             "window",
@@ -2132,6 +2247,42 @@ async fn settings_export(app: AppHandle) -> Result<Option<String>, String> {
     std::fs::write(&path, text).map_err(|e| format!("Couldn't save the backup: {e}"))?;
     log_info!("Exported settings to {path}");
     Ok(Some(path))
+}
+
+#[tauri::command]
+async fn setup_export(app: AppHandle) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(path) = files::pick_save("Sleekmeeter setup.json") else {
+            return Ok(None);
+        };
+        migration::export(&app, &path)?;
+        Ok(Some(path))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn setup_preview(app: AppHandle) -> Result<Option<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(path) = files::pick_open() else {
+            return Ok(None);
+        };
+        migration::preview(&app, &path).map(Some)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn setup_apply(
+    app: AppHandle,
+    mappings: std::collections::BTreeMap<String, String>,
+    enable_controls: bool,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || migration::apply(&app, mappings, enable_controls))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Restore settings from a backup. Returns the file, or null if cancelled. The page reloads after.
@@ -2162,7 +2313,7 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
     }
     {
         let state = app.state::<Settings>();
-        let cur = state.0.lock().unwrap();
+        let cur = state.0.locked();
         for k in [
             "window",
             "panelPos",
@@ -2172,6 +2323,9 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
             "edition",
         ] {
             value[k] = cur[k].clone();
+        }
+        if let Some(epoch) = cur.get("migrationEpoch") {
+            value["migrationEpoch"] = epoch.clone();
         }
         // Backups don't carry the OBS password: keep the one this PC has.
         let mine = cur["obs"]["password"].as_str().unwrap_or("").to_string();
@@ -2185,7 +2339,7 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
     }
     settings_set(app.clone(), value)?;
     log_info!("Restored settings from {path}");
-    let now = app.state::<Settings>().0.lock().unwrap().clone();
+    let now = app.state::<Settings>().0.locked().clone();
     let _ = app.emit("settings-changed", now);
     Ok(Some(path))
 }
@@ -2195,7 +2349,7 @@ async fn settings_import(app: AppHandle) -> Result<Option<String>, String> {
 fn reset_layout(app: AppHandle) -> Result<(), String> {
     let snapshot = {
         let st = app.state::<Settings>();
-        let mut s = st.0.lock().unwrap();
+        let mut s = st.0.locked();
         s["window"] = Value::Null;
         s["panelPos"] = Value::Null;
         s["mixWin"] = Value::Null;
@@ -2216,7 +2370,7 @@ fn reset_layout(app: AppHandle) -> Result<(), String> {
         let _ = w.set_size(LogicalSize::new(1180.0, 520.0));
         let _ = w.center();
     }
-    *app.state::<NormalSize>().0.lock().unwrap() = None;
+    *app.state::<NormalSize>().0.locked() = None;
     log_info!("Layout reset");
     let _ = app.emit("settings-changed", snapshot);
     Ok(())
@@ -2260,13 +2414,13 @@ fn enter_rule(app: &AppHandle, r: &Rule, saved_outputs: &mut Option<Option<Strin
     }
     if !r.outputs.is_empty() {
         if saved_outputs.is_none() {
-            let settings = app.state::<Settings>().0.lock().unwrap().clone();
-            let snap = app.state::<Vm>().last.lock().unwrap().clone();
+            let settings = app.state::<Settings>().0.locked().clone();
+            let snap = app.state::<Vm>().last.locked().clone();
             *saved_outputs = Some(outputs::current(&settings, &snap));
         }
         outputs::switch_with_osd(app, &r.outputs, &format!("{} started", r.app));
     }
-    *AUTO_THEME.lock().unwrap() = r.theme.clone();
+    *AUTO_THEME.locked() = r.theme.clone();
     let _ = app.emit("theme-auto", json!({ "theme": r.theme }));
 }
 
@@ -2283,7 +2437,7 @@ fn leave_rules(
     if let Some(Some(name)) = saved_outputs.take() {
         outputs::switch_with_osd(app, &name, &format!("{because} closed"));
     }
-    AUTO_THEME.lock().unwrap().clear();
+    AUTO_THEME.locked().clear();
     let _ = app.emit("theme-auto", json!({ "theme": "" }));
 }
 
@@ -2297,7 +2451,7 @@ fn spawn_scene_rules(app: AppHandle) {
         let mut saved_outputs: Option<Option<String>> = None;
         loop {
             std::thread::sleep(Duration::from_secs(2));
-            let rules: Vec<Rule> = app.state::<Settings>().0.lock().unwrap()["sceneRules"]
+            let rules: Vec<Rule> = app.state::<Settings>().0.locked()["sceneRules"]
                 .as_array()
                 .cloned()
                 .unwrap_or_default()
@@ -2374,7 +2528,7 @@ fn remember_window(window: &tauri::Window) {
 fn remember_geometry(window: &tauri::Window, key: &str) {
     let app = window.app_handle();
     let state = app.state::<Settings>();
-    let mut s = state.0.lock().unwrap();
+    let mut s = state.0.locked();
     if (key == "window" && settings::flag(&s, "mini")) || window.is_minimized().unwrap_or(false) {
         return;
     }
@@ -2684,6 +2838,9 @@ fn main() {
             windows_output,
             fix_audio,
             settings_export,
+            setup_export,
+            setup_preview,
+            setup_apply,
             settings_import,
             reset_layout
         ])
@@ -2739,7 +2896,7 @@ fn main() {
                         } => {
                             let clicks = app.state::<TrayClicks>();
                             clicks.gen.fetch_add(1, Ordering::SeqCst);
-                            *clicks.last_double.lock().unwrap() = Some(Instant::now());
+                            *clicks.last_double.locked() = Some(Instant::now());
                             toggle_flyout(&app, Some(position));
                         }
                         _ => {}
@@ -2792,7 +2949,7 @@ fn main() {
                     .0
                     .swap(false, Ordering::SeqCst)
                 {
-                    let s = saver.state::<Settings>().0.lock().unwrap().clone();
+                    let s = saver.state::<Settings>().0.locked().clone();
                     let _ = settings::save(&s);
                 }
             });
@@ -2815,6 +2972,7 @@ fn main() {
                 winout::spawn(handle.clone());
                 usage::spawn(handle.clone());
                 routing::spawn(handle.clone());
+                routing::watch_sessions();
                 backups::spawn(handle.clone());
                 btwatch::spawn(handle.clone());
                 devwatch::spawn(handle);
@@ -2852,7 +3010,7 @@ fn main() {
             WindowEvent::Moved(pos) if window.label() == FLYOUT => {
                 let app = window.app_handle();
                 let st = app.state::<Settings>();
-                let mut s = st.0.lock().unwrap();
+                let mut s = st.0.locked();
                 if !settings::flag_or(&s, "panelDocked", true)
                     && window.is_visible().unwrap_or(false)
                 {
@@ -2882,7 +3040,7 @@ fn main() {
                 .0
                 .swap(false, Ordering::SeqCst)
             {
-                let s = _handle.state::<Settings>().0.lock().unwrap().clone();
+                let s = _handle.state::<Settings>().0.locked().clone();
                 let _ = settings::save(&s);
             }
         }

@@ -11,6 +11,8 @@
 //! Like mic clean-up, it only runs while Sleekmeeter is open; without it Voicemeeter plays the
 //! channel untouched.
 
+use crate::LockExt;
+
 use serde_json::Value;
 use std::sync::Mutex;
 
@@ -333,7 +335,7 @@ pub fn sync(wants: &[Want], rate: u32) {
             level: Leveller::new(&w.level, r),
         })
         .collect();
-    *BANK.lock().unwrap() = Some(Bank { rate, key, targets });
+    *BANK.locked() = Some(Bank { rate, key, targets });
 }
 
 /// Is anything set up for inputs / outputs? (Which of Voicemeeter's inserts to join.)

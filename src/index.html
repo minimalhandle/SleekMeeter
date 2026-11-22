@@ -16,6 +16,7 @@
     <span class="brand">
       <svg class="brand-mark" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="6" fill="var(--panel-hi)"/><rect x="6" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="6" y="12" width="2.2" height="7" rx="1.1" fill="var(--amber)"/><rect x="11" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="11" y="8" width="2.2" height="11" rx="1.1" fill="var(--amber)"/><rect x="16" y="5" width="2.2" height="14" rx="1.1" fill="var(--track)"/><rect x="16" y="10" width="2.2" height="9" rx="1.1" fill="var(--cyan)"/></svg>
       <span class="brand-name">Sleekmeeter</span>
+      <span class="dev-badge" id="devBadge" hidden></span>
     </span>
     <button class="status full-only" id="status" type="button" data-state="connecting" title="Check my setup">
       <span class="dot" aria-hidden="true"></span><span id="statusText">Looking for Voicemeeter…</span>
@@ -224,6 +225,10 @@
       <button class="btn" value="close">Close</button>
     </form>
     <p class="hint">See recent device, routing and plugin changes. Select an event to open its controls.</p>
+    <div class="cutout" id="cutOut">
+      <button type="button" class="btn primary" id="cutOutBtn">My sound just cut out</button>
+      <div id="cutOutResult" role="status" hidden></div>
+    </div>
     <div class="btn-row">
       <label for="audioEventFilter" class="sr-only">Filter audio events</label>
       <select id="audioEventFilter">
@@ -275,7 +280,7 @@
         <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </form>
-    <p class="hint">A scene saves your whole Voicemeeter setup — faders, routing, devices — so you can switch setups in one click.</p>
+    <p class="hint">Save a whole setup, or choose only the channels and controls to restore.</p>
     <ul class="scene-list" id="sceneList"></ul>
     <section class="inspect-panel" id="scenePreview" hidden aria-labelledby="scenePreviewTitle">
       <h3 id="scenePreviewTitle"></h3>
@@ -285,6 +290,16 @@
         <button class="btn" id="scenePreviewCancel" type="button">Cancel preview</button>
       </div>
     </section>
+    <label class="check"><input type="checkbox" id="scenePartial"><span>Save selected controls only</span></label>
+    <fieldset id="sceneScope" hidden>
+      <legend>Controls to save</legend>
+      <label class="check"><input type="checkbox" id="sceneLevels" checked><span>Levels (including output gain layers)</span></label>
+      <label class="check"><input type="checkbox" id="sceneMutes" checked><span>Mutes</span></label>
+      <label class="check"><input type="checkbox" id="sceneRoutes" checked><span>Routes</span></label>
+      <label class="check"><input type="checkbox" id="sceneMics"><span>Mic processing and plugin settings</span></label>
+      <p class="hint">Select channels. Devices and unrelated settings stay as they are.</p>
+      <div id="sceneChannels"></div>
+    </fieldset>
     <form class="scene-save" id="sceneSave">
       <label for="sceneName" class="sr-only">Scene name</label>
       <input id="sceneName" type="text" placeholder="Name this mix, e.g. Streaming" maxlength="48" autocomplete="off" required>
@@ -462,7 +477,7 @@
       </button>
     </form>
     <ul class="health-list" id="healthList"></ul>
-    <div class="btn-row"><button class="btn" id="healthAgain" type="button">Check again</button><button class="btn" id="healthEvents" type="button">Audio Event History…</button></div>
+    <div class="btn-row"><button class="btn" id="healthAgain" type="button">Check again</button><button class="btn" id="healthEvents" type="button">Audio Event History…</button><button class="btn" id="healthCutOut" type="button">My sound just cut out…</button></div>
   </dialog>
 
   <dialog class="dlg health-dlg" id="crackleDlg" aria-labelledby="crackleTitle">
@@ -959,6 +974,14 @@
         <h3>Talk-over ducking</h3>
         <label class="check"><input type="checkbox" id="setDuck"><span>Turn other audio down while you talk</span></label>
         <div class="duck-opts" data-needs="duck">
+          <label class="check"><input type="checkbox" id="duckVoiceAware"><span>Detect speech before turning audio down</span></label>
+          <p class="hint field-hint" id="duckSpeechStatus" role="status">Local speech detection requires a 48 kHz Voicemeeter engine. It works with noise removal off.</p>
+          <div class="field wide" id="duckSpeechField">
+            <label for="duckSpeechThreshold">Speech confidence</label>
+            <input type="range" id="duckSpeechThreshold" min="0.1" max="1" step="0.05">
+            <output for="duckSpeechThreshold"></output>
+          </div>
+          <p class="hint field-hint" id="duckSpeechHint">Lower confidence detects more speech; higher confidence rejects more noise. Each trigger must also reach the level below. Unavailable detection releases ducking.</p>
           <div class="field wide">
             <label for="duckTrigger">When this talks</label>
             <select id="duckTrigger"></select>
@@ -981,7 +1004,12 @@
             <input type="range" id="duckThreshold" class="level-range" min="-70" max="-5" step="1">
             <output for="duckThreshold"></output>
           </div>
-          <p class="hint field-hint">The bar lights up with your voice. Ducking starts when it reaches the knob, so set the knob just under your speaking level.</p>
+          <p class="hint field-hint">The bar shows the trigger audio level. Set the knob just under your speaking level. With speech detection on, speech confidence must also pass.</p>
+          <div class="field wide">
+            <label for="duckAttack">Fade down</label>
+            <input type="range" id="duckAttack" min="10" max="3000" step="10">
+            <output for="duckAttack"></output>
+          </div>
           <div class="field wide">
             <label for="duckHold">Back after</label>
             <input type="range" id="duckHold" min="200" max="3000" step="50">
@@ -1150,7 +1178,8 @@
             <p class="hint" id="micFxStereoHint" hidden>Stereo mode keeps left and right separate for capture cards and other hardware sources. Use VST3 effects with stereo input and output. NVIDIA mic effects are available in mono mode.</p>
             <p class="hint" id="micFxOutHint" hidden>Plugins on an output change what everyone listening to it hears, like a spatial audio plugin on your headphones. They add a little delay, so keep outputs your stream or recording uses free of them unless you want the effect there too.</p>
             <p class="hint" id="micFxVirtHint" hidden>Voice clean-up treats this input's left and right as one voice, which suits voice chat. Pick Stereo for music or games.</p>
-            <label class="check"><input type="checkbox" id="micFxOn"><span id="micFxOnText">Remove background noise from this mic with NVIDIA's AI, running on the graphics card</span></label>
+            <div class="field wide" id="micFxEngineRow"><label for="micFxEngine">Noise removal engine</label><select id="micFxEngine"><option value="cpu">CPU · RNNoise (any graphics card)</option><option value="nvidia">NVIDIA RTX</option></select></div>
+            <label class="check"><input type="checkbox" id="micFxOn"><span id="micFxOnText">Remove background noise from this mic</span></label>
             <p class="hint" id="micFxMissing" hidden>NVIDIA's clean-up needs an NVIDIA RTX graphics card and NVIDIA's free <b>Audio Effects SDK</b> runtime, which isn't installed. Get it from NVIDIA's Maxine Audio Effects page, then come back here.</p>
             <div class="fold-body" data-needs="micfx">
               <div class="field wide"><label for="micFxEffect">Remove</label><select id="micFxEffect"></select></div>
@@ -1158,6 +1187,18 @@
             </div>
             <label class="check"><input type="checkbox" id="micFxAec"><span>Remove my speakers from this mic, for when you don't wear headphones (NVIDIA)</span></label>
             <div class="field wide" data-needs="micaec"><label for="micFxAecRef">Speakers on</label><select id="micFxAecRef"></select></div>
+            <div id="micRiderSection">
+              <h4 class="fold-sub">Automatic mic level riding</h4>
+              <label class="check"><input type="checkbox" id="micRiderOn"><span>Keep my speaking level steady as I move towards or away from the mic</span></label>
+              <p class="hint">Uses speech detection at 48 kHz, with no GPU required. Adjusts audio before plugins without moving your fader. Quiet room noise does not request extra gain. Start with a correctly set mic gain; this cannot repair distortion at the mic.</p>
+              <div id="micRiderOptions" class="fold-body">
+                <div class="field wide"><label for="micRiderTarget">Speech target</label><input type="range" id="micRiderTarget" min="-30" max="-12" step="1"><output for="micRiderTarget"></output></div>
+                <div class="field wide"><label for="micRiderBoost">Maximum boost</label><input type="range" id="micRiderBoost" min="0" max="12" step="1"><output for="micRiderBoost"></output></div>
+                <div class="field wide"><label for="micRiderCut">Maximum reduction</label><input type="range" id="micRiderCut" min="0" max="18" step="1"><output for="micRiderCut"></output></div>
+                <div class="field wide"><label for="micRiderSpeed">Adjustment speed</label><input type="range" id="micRiderSpeed" min="0.5" max="6" step="0.5"><output for="micRiderSpeed"></output></div>
+              </div>
+              <p class="hint" id="micRiderStatus" role="status"></p>
+            </div>
             <h4 class="fold-sub">VST3 plugins</h4>
             <div class="inspect-panel" id="vstRecovery" hidden>
               <p class="hint" id="vstRecoveryMessage" role="status"></p>
@@ -1167,7 +1208,7 @@
                 <button class="btn" id="vstRetry" type="button">Retry plugin</button>
               </div>
             </div>
-            <p class="hint" id="vstEmpty">Add effects such as an EQ or compressor. They run in the order shown, after any NVIDIA mic effects.</p>
+            <p class="hint" id="vstEmpty">Add effects such as an EQ or compressor. They run in the order shown, after noise removal and automatic level riding.</p>
             <div class="rule-list" id="vstList"></div>
             <div class="vst-pick" id="vstPick" hidden>
               <select id="vstChoice" aria-label="Plugin to add"></select>
@@ -1287,6 +1328,12 @@
             <label class="check"><input type="checkbox" id="remoteOn"><span>Use Sleekmeeter from a phone or tablet, the Stream Deck plugin and the OBS overlay on this network</span></label>
             <div class="fold-body" id="remoteOpts">
               <p class="hint">Open the address below on a phone or tablet on the same Wi-Fi, or paste it into the Stream Deck plugin. The long code in it is the password: anyone on your network who has the address can use the remote, so don't share it. Nothing goes over the internet. Windows may ask once to allow Sleekmeeter on your network; choose private networks.</p>
+              <div class="field wide"><label for="remoteScope">Who can connect</label><select id="remoteScope">
+                <option value="network">Phones and tablets on this network</option>
+                <option value="private">This network, but only this PC on public networks</option>
+                <option value="pc">This PC only (Stream Deck and the OBS overlay)</option>
+              </select></div>
+              <p class="hint" id="remotePublic" hidden>Windows calls the network this PC is on <b>Public</b>. If it's your home network, mark it Private in Windows so it's treated as trusted. On café, hotel or school Wi-Fi, choose "only this PC on public networks". <button class="btn" id="remoteNetworkPage" type="button">Open network settings</button></p>
               <div class="field wide"><label for="remotePort">Port</label><input type="number" id="remotePort" min="1024" max="65535"></div>
               <div class="remote-url" id="remoteUrl" hidden><code id="remoteUrlText"></code><button class="btn" id="remoteCopy" type="button">Copy</button></div>
               <p class="hint obs-status" id="remoteStatusText" role="status"></p>
@@ -1306,6 +1353,18 @@
             <div class="btn-row">
               <button class="btn" id="exportSettings" type="button">Save a backup…</button>
               <button class="btn" id="importSettings" type="button">Restore from a backup…</button>
+            </div>
+            <h4 class="sub-h">Move your complete setup</h4>
+            <p class="hint">One JSON package includes settings, scenes and sidecars, current Voicemeeter XML, and soundboard clips up to 16 MB each (64 MB total). Preview compatibility and map devices before restoring. External controls, automatic scene rules, shortcuts and plugins start disabled. Current Voicemeeter XML becomes a “Migrated setup” scene for you to load explicitly; XML device names stay as captured.</p>
+            <div class="row"><button class="btn" id="exportSetup" type="button">Export complete setup…</button> <button class="btn" id="previewSetup" type="button">Import complete setup…</button></div>
+            <div id="setupMigrationPreview" hidden>
+              <p id="setupMigrationSummary" class="hint"></p>
+              <ul id="setupMigrationWarnings" class="hint"></ul>
+              <div id="setupMigrationDevices"></div>
+              <label class="row"><input type="checkbox" id="setupEnableControls"> Enable imported shortcuts and app/scene automation</label>
+              <p class="hint">Leave unchecked to preserve these definitions without activating them. Import the package again with this option checked when ready to enable them. MIDI mappings and matched local plugin presets/state are retained; MIDI and plugins stay off until reviewed. Phone, OBS and Twitch controls stay off.</p>
+              <p class="hint">Settings and affected files are backed up locally before replacement. Review input/output assignments and edition compatibility before loading any imported XML scene. All open mixer windows refresh after applying.</p>
+              <button class="btn" id="applySetup" type="button">Apply reviewed setup</button> <button class="btn" id="cancelSetup" type="button">Cancel</button>
             </div>
             <h4 class="sub-h">Voicemeeter backups</h4>
             <p class="hint">Sleekmeeter saves a copy of Voicemeeter's whole setup once a day, and before loading a scene, running the setup guide or restoring a backup. Restoring puts that setup back; your current one is saved first.</p>
@@ -1437,6 +1496,19 @@
 
   <script src="icons.js"></script>
   <script src="engine.js"></script>
-  <script src="app.js"></script>
+  <script src="app/01-core.js"></script>
+  <script src="app/02-drawer.js"></script>
+  <script src="app/03-mix-views.js"></script>
+  <script src="app/04-header-settings.js"></script>
+  <script src="app/05-controls-scenes.js"></script>
+  <script src="app/06-updates.js"></script>
+  <script src="app/07-outputs.js"></script>
+  <script src="app/08-apps.js"></script>
+  <script src="app/09-panel-recorder.js"></script>
+  <script src="app/10-streaming.js"></script>
+  <script src="app/11-history.js"></script>
+  <script src="app/12-mic.js"></script>
+  <script src="app/13-tools.js"></script>
+  <script src="app/14-start.js"></script>
 </body>
 </html>
