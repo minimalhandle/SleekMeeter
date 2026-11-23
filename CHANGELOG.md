@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.22.0-beta.2
+- **Three new premium themes:** **Graphite** (machined dark aluminium with brushed fader caps, backlit keys that light up in their colour and glowing LED meters), **Halo** (dark and restrained: an eclipse ring over near-black, smoked-glass cards with a beam tracing each edge, and fader caps that are rings of light) and **Nordic** (sage wool-felt channels, linen keys, oak fader knobs and an oak shelf under each group). Each has its own logo, Settings card, mini mode, tray panel and volume overlay look, and follows Theme motion.
+- **Graphite is the new default theme, and Console is retired.** Console looked too much like Graphite, so anyone using it moves to Graphite.
+- **OLED black is redesigned:** pure black with a single hairline around each channel that glows in its colour at the top, meters and a fader track that light up in the channel’s colour, outline keys that light their rim when on, and white primary buttons.
+- **Darkroom is more detailed:** sprocket holes glow as if the film sits on a light box, faders are enlarger knobs with knurled rims, meters step like an exposure test strip, and each level shows on a red darkroom-timer display.
+- **Glass is brighter and more colourful,** so it stands apart from Halo: a wider spectrum of moving light, clearer panes with prism rims, spectrum-coloured meters and prism-bead icons.
+- **Overclock is more detailed:** carbon-fibre weave under a glass sheen, an RGB light pipe along the edge and foot of each channel, segmented RGB meters, glowing lit keys, HUD-framed readouts and an RGB line under the top bar.
+- **Groovy is more detailed:** walnut-veneer TV cabinets with a warm screen glow, 70s ring wallpaper, bolder rainbow arcs, four-colour stripes, lava-lamp fader caps with a metal cap and base, and chunky meter blocks. Headings now sit on pills so they stay readable over the rainbow, and the B keys have darker labels.
+- **Neon is more detailed:** each channel is a neon sign on a dark acrylic board, outlined by a glass tube with a white-hot core and held on by little clips, over a dark brick wall washed in pink and cyan light. Fader caps are hollow tube capsules, the track lights up to the cap like a tube, meters run cyan to violet to pink, keys light as filled tubes, the top bar has a neon tube along its foot, and a muted channel’s sign switches off. With Theme motion the tubes hum, and in Full a couple of signs buzz now and then. The volume overlay matches.
+- **Peaches & Cream, Greenhouse and Cassette are retired.** They overlapped with Bubblegum, Nordic and Groovy, so anyone using one moves to that theme automatically. There are 14 themes in all.
+- **Fixed text you couldn’t read in some themes:** the Sleekmeeter Remote addresses in Block (black on black), Block’s bus tags (A1, B2…) on a header of the same colour, the “Connected to OBS” text on light themes, and white text on pale pressed keys in Transit.
+
 ## 0.22.0-beta.1
 - **CPU noise removal:** bundled RNNoise speech clean-up at 48 kHz, without an NVIDIA GPU or runtime download; adjustable strength and aligned raw comparison.
 - **Partial scenes:** save selected channels and level, mute, routing or mic-processing categories; preview and restore only those controls. Existing scenes remain full setups.

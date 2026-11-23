@@ -7,7 +7,8 @@
     @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-SemiBold.woff") format("woff"); font-weight: 600; font-display: block; }
     @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-Bold.woff") format("woff"); font-weight: 700; font-display: block; }
     @font-face { font-family: "Rajdhani"; src: url("fonts/Rajdhani-700.woff2") format("woff2"); font-weight: 700; font-display: block; }
-    /* Matches the mixer's theme (data-theme on body); Console is the default */
+    @font-face { font-family: "Orbitron"; src: url("fonts/Orbitron-600.woff2") format("woff2"); font-weight: 600; font-display: block; }
+    /* Matches the mixer's theme (data-theme on body); Graphite is the default */
     :root {
       --mod-a: #202027; --mod-b: #18181d; --edge: rgba(255,255,255,.07); --line: #2a2a31; --ink: #eeedf2; --muted: #7f7e89;
       --well: #070709; --red: #ff5a5a; --glow: 1;
@@ -24,12 +25,12 @@
     body[data-theme="bubblegum"] { --mod-a: #ffffff; --mod-b: #fff4f9; --edge: #fff; --line: #ffc2de; --ink: #5a1d41; --muted: #a2567b; --well: #ffd3e6; --red: #bd235b; --key: #ffe0ee; --glow: .5; color-scheme: light; }
     body[data-theme="block"] { --mod-a: #fff; --mod-b: #fff; --edge: transparent; --line: #111; --ink: #111; --muted: #5a5646; --well: #eee7d2; --red: #b82340; --key: #fff4c9; --glow: 0; color-scheme: light; }
     body[data-theme="arcade"] { --mod-a: #2a1260; --mod-b: #2a1260; --edge: transparent; --line: #ffffff; --ink: #ffffff; --muted: #9a85d8; --well: #0a0420; --red: #ff3b3b; --key: #170a35; --glow: .4; }
-    body[data-theme="peach"] { --mod-a: #fffaf6; --mod-b: #fff1ea; --edge: #fff; --line: #ffcabb; --ink: #6b2a3a; --muted: #995764; --well: #ffdcd0; --red: #a82d4f; --key: #ffe3d9; --glow: .5; color-scheme: light; }
     body[data-theme="oled"] { --mod-a: #000; --mod-b: #000; --edge: transparent; --line: #1f1f24; --well: #000; --glow: .6; --key: #000; }
     body[data-theme="overclock"] { --mod-a: #14161d; --mod-b: #0e1015; --edge: transparent; --line: #262a36; --ink: #eef1f7; --muted: #8b93a7; --well: #0a0b10; --key: #1c2029; --red: #ff3b5c; --glow: .8; --c-violet: #7b5cff; --c-cyan: #00e5ff; --c-green: #2bff9a; --c-rose: #ff2bd6; }
     body[data-theme="darkroom"] { --mod-a: #1b0d0a; --mod-b: #120807; --edge: #ff6a4a1f; --line: #3c1812; --ink: #f6cdb8; --muted: #ad7461; --well: #070303; --red: #ffdcc6; --key: #26120e; --c-amber: #ffb04a; --c-coral: #ff7a4a; }
-    body[data-theme="cassette"] { --mod-a: #3a3a46; --mod-b: #1f1f27; --edge: #ffffff2e; --line: #3e3e4a; --ink: #ecebf2; --muted: #9897a5; --well: #0a0a0d; --red: #e63b2e; --key: #2c2c36; --c-amber: #ffc93c; --c-coral: #ff7a1a; --c-cyan: #1fb5a8; }
-    body[data-theme="greenhouse"] { --mod-a: #f7fbf6; --mod-b: #e6f0e4; --edge: #fff; --line: #b3cab1; --ink: #1d3a29; --muted: #557260; --well: #c4d6c2; --red: #4f8fc9; --key: #ffffff; --glow: .4; --c-green: #3d9a4e; color-scheme: light; }
+    body[data-theme="graphite"] { --mod-a: #2b2f36; --mod-b: #191c20; --edge: #ffffff26; --line: #2a2e35; --ink: #e9eef3; --muted: #7f8a96; --well: #07080a; --red: #ff5470; --key: #252930; --glow: .9; --c-amber: #ffc23f; --c-cyan: #3fe0ff; --c-green: #2bff9e; --c-violet: #9d85ff; --c-blue: #4d9bff; --c-rose: #ff5c9a; }
+    body[data-theme="halo"] { --mod-a: #15151ef5; --mod-b: #0b0b11f7; --edge: #ffffff1f; --line: #ffffff17; --ink: #f3f2fa; --muted: #8e8ca3; --well: #ffffff0a; --red: #ff5d86; --key: #ffffff0d; --glow: .8; --c-slate: #b9b8cc; --c-amber: #ffc98a; --c-coral: #ff9a8a; --c-rose: #ff8ac0; --c-violet: #b6a8ff; --c-blue: #8fb4ff; --c-cyan: #9fd8ff; --c-green: #8ff0c4; }
+    body[data-theme="nordic"] { --mod-a: #71807a; --mod-b: #4b5853; --edge: #ffffff2e; --line: #5d6a65; --ink: #f5f2ec; --muted: #cdd6d1; --well: #3c4743; --red: #e58a5e; --key: #5d6a65; --glow: .3; --c-slate: #a6b3ae; --c-amber: #e8b35c; --c-coral: #e58a5e; --c-rose: #e48aa0; --c-violet: #b3a1dc; --c-blue: #8fb1d9; --c-cyan: #8ccaca; --c-green: #a9cc9a; }
     body[data-theme="darkroom"] { font-stretch: condensed; }
     [data-color="slate"] { --acc: var(--c-slate); } [data-color="amber"] { --acc: var(--c-amber); }
     [data-color="coral"] { --acc: var(--c-coral); } [data-color="rose"] { --acc: var(--c-rose); }
@@ -64,7 +65,10 @@
     .muted .fill { background: var(--muted); }
     .muted .value { color: var(--red); }
     body[data-theme="glass"] .card { border-radius: 22px; }
-    body:is([data-theme="bubblegum"], [data-theme="peach"]) .card { border-radius: 18px; }
+    body:is([data-theme="halo"], [data-theme="nordic"]) .card { border-radius: 18px; }
+    body[data-theme="graphite"] .card { border-radius: 14px; box-shadow: inset 0 1px 0 #ffffff29, 0 0 0 1px #07080a, 0 10px 20px #000a; }
+    body[data-theme="halo"] .card { background: linear-gradient(180deg, #15151ef5, #0b0b11f7); box-shadow: inset 0 1px 0 #ffffff1f, 0 0 0 1px #b6a8ff26, 0 0 24px #b6a8ff26; }
+    body[data-theme="bubblegum"] .card { border-radius: 18px; }
     body:is([data-theme="glass"], [data-theme="bubblegum"]) .chip { border-radius: 50%; }
     body:is([data-theme="glass"]) .bar {
       -webkit-mask: none; mask: none; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line);
@@ -72,11 +76,21 @@
     body:is([data-theme="terminal"], [data-theme="block"], [data-theme="arcade"]) :is(.card, .chip, .bar) { border-radius: 0; }
     body[data-theme="terminal"] { font-family: Consolas, monospace; }
     body:is([data-theme="block"]) .card { box-shadow: 0 0 0 1px var(--line), 2px 2px var(--line); }
-    body:is([data-theme="block"], [data-theme="bubblegum"], [data-theme="peach"]) .chip { color: color-mix(in srgb, var(--ink) 68%, var(--acc)); }
-    body:is([data-theme="block"], [data-theme="bubblegum"], [data-theme="peach"]) .card:not(.muted) .fill { background: color-mix(in srgb, var(--acc) 58%, var(--ink)); }
+    body:is([data-theme="block"], [data-theme="bubblegum"]) .chip { color: color-mix(in srgb, var(--ink) 68%, var(--acc)); }
+    body:is([data-theme="block"], [data-theme="bubblegum"]) .card:not(.muted) .fill { background: color-mix(in srgb, var(--acc) 58%, var(--ink)); }
     /* Finishing touches: each theme's signature light or edge */
-    body[data-theme="neon"] .card { box-shadow: 0 0 0 1px var(--line), 0 0 18px #ff2e9759, inset 0 0 22px #ff2e971f; }
-    body[data-theme="neon"] .value { color: var(--acc); text-shadow: 0 0 10px var(--acc); }
+    /* Neon: a little sign with a glass tube round it, tube lettering and a pink-violet-cyan bar */
+    body[data-theme="neon"] .card { --core: color-mix(in srgb, var(--acc) 42%, #fff); border-radius: 12px; background: linear-gradient(115deg, transparent 32%, #ffffff09 42%, transparent 52%), linear-gradient(180deg, #130b31f5, #0a0620f7);
+      box-shadow: inset 0 0 0 1px var(--core), inset 0 0 0 2.5px var(--acc), inset 0 0 16px color-mix(in srgb, var(--acc) 30%, transparent), 0 0 0 1px color-mix(in srgb, var(--acc) 60%, transparent), 0 0 4px var(--acc); }
+    body[data-theme="neon"] .chip { border-radius: 9px; background: #0c0720; color: var(--core); box-shadow: inset 0 0 0 1px var(--core), 0 0 0 1px var(--acc), 0 0 8px color-mix(in srgb, var(--acc) 70%, transparent); }
+    body[data-theme="neon"] .chip svg { filter: drop-shadow(0 0 3px var(--acc)); }
+    body[data-theme="neon"] .name { font-family: "Orbitron", sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--core); text-shadow: 0 0 2px var(--acc), 0 0 8px var(--acc); }
+    body[data-theme="neon"] .value { font-family: "Rajdhani", "Saira SC", sans-serif; font-size: 20px; color: var(--core); text-shadow: 0 0 3px var(--acc), 0 0 12px var(--acc); }
+    body[data-theme="neon"] .bar { background: #05020f; box-shadow: inset 0 0 0 1px #2c1f5c; -webkit-mask: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px); mask: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px); }
+    body[data-theme="neon"] .card:not(.muted) .fill { background: linear-gradient(90deg, #19f0ff, #b46bff 55%, var(--acc)); }
+    body[data-theme="neon"] .muted :is(.name, .value) { text-shadow: none; }
+    body[data-theme="neon"] .muted .name { color: #c2b6e6; }
+    body[data-theme="neon"] .muted .value { color: var(--red); }
     body[data-theme="glass"] .card { background: linear-gradient(160deg, #5a2bd8d0, #0a7fc4b0 65%, #8a1560b0); box-shadow: inset 0 1px 0 #ffffffd0, 0 0 0 1px #ffffff60, 0 0 24px #b18bff66; }
     body[data-theme="glass"] .value { text-shadow: 0 0 12px var(--acc); }
     body[data-theme="groovy"] .card { border-radius: 20px; box-shadow: inset 0 0 0 2px #e0a52699, 0 8px 16px #000a; }

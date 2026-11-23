@@ -82,21 +82,21 @@ Channels use a consistent width to keep the mixer tidy, and the input and output
 
 ### Themes
 
-Choose from fifteen themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 15 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** sets how much every theme moves: Off, Subtle, or Full. Windows reduced motion takes priority.
+Choose from fourteen themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 14 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** sets how much every theme moves: Off, Subtle, or Full. Windows reduced motion takes priority.
 
 <table>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/console.webp" alt="The Console theme" width="260"><br><sub><b>Console</b> (default)</sub></td>
-<td align="center" valign="top"><img src="site/img/themes/oled.webp" alt="The OLED black theme" width="260"><br><sub><b>OLED black</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/darkroom.webp" alt="Darkroom with a red safelight and film-strip channels" width="260"><br><sub><b>Darkroom</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/graphite.webp" alt="Graphite with machined aluminium panels, backlit keys and glowing LED meters" width="260"><br><sub><b>Graphite</b> (default)</sub></td>
+<td align="center" valign="top"><img src="site/img/themes/oled.webp" alt="OLED black with hairline outlines and meters lit in each channel’s colour" width="260"><br><sub><b>OLED black</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/halo.webp" alt="Halo with smoked-glass cards under an eclipse ring and ring-shaped fader caps" width="260"><br><sub><b>Halo</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with frosted panes and rainbow rims over vivid moving light" width="260"><br><sub><b>Glass</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/overclock.webp" alt="Overclock with carbon-fibre panels, RGB edge lights and angled faders" width="260"><br><sub><b>Overclock</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/cassette.webp" alt="Cassette with smoked plastic, label cards and piano keys" width="260"><br><sub><b>Cassette</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/darkroom.webp" alt="Darkroom with backlit film-strip channels, enlarger-knob faders and red timer readouts" width="260"><br><sub><b>Darkroom</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with clear panes, prism rims and spectrum meters over bright moving light" width="260"><br><sub><b>Glass</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/overclock.webp" alt="Overclock with carbon-fibre panels, RGB light pipes, RGB meters and angled faders" width="260"><br><sub><b>Overclock</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/groovy.webp" alt="Groovy with TV-screen strips, rainbow stripes and lava-lamp faders" width="260"><br><sub><b>Groovy</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/groovy.webp" alt="Groovy with walnut TV-cabinet channels, rainbow stripes and lava-lamp faders" width="260"><br><sub><b>Groovy</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/neon.webp" alt="The Neon theme" width="260"><br><sub><b>Neon</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
 </tr>
@@ -106,9 +106,8 @@ Choose from fifteen themes in **Settings → Appearance & layout → Appearance*
 <td align="center" valign="top"><img src="site/img/themes/transit.webp" alt="Transit with line-coloured channels and interchange-marker faders" width="260"><br><sub><b>Transit</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/greenhouse.webp" alt="Greenhouse with misted glass panes and terracotta faders" width="260"><br><sub><b>Greenhouse</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/nordic.webp" alt="Nordic with sage felt channels, linen keys and oak fader knobs" width="260"><br><sub><b>Nordic</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/bubblegum.webp" alt="The Bubblegum theme" width="260"><br><sub><b>Bubblegum</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/peach.webp" alt="The Peaches &amp; Cream theme" width="260"><br><sub><b>Peaches &amp; Cream</b></sub></td>
 </tr>
 </table>
 

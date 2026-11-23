@@ -1,7 +1,7 @@
 /*
- * Sleekmeeter — "Console": a premium hardware desk. Each channel is a raised module in a recessed
+ * Sleekmeeter base styles: each channel is a raised module in a recessed
  * bay, meters are wells of LEDs, faders ride in slots with machined caps, and buttons light up
- * when they're on. The other themes override these colour and material tokens in themes.css.
+ * when they're on. Every theme overrides these colour and material tokens in themes.css.
  *
  * Performance: meters and fader caps only ever change `transform` (see app.js), so they are
  * composited on the GPU and never trigger layout or repaint.
@@ -12,9 +12,9 @@
 @font-face { font-family: "Saira SC"; src: url("fonts/SairaSemiCondensed-Bold.woff") format("woff"); font-weight: 700; font-display: block; }
 
 /* ---------- tokens ---------- */
-/* Console, the default theme. Every theme below overrides the same tokens; a theme can be set
+/* Base tokens. Every theme in themes.css overrides these; a theme can be set
    on any element (the theme picker's preview cards use that). */
-:root, [data-theme="console"] {
+:root {
   --bg: #111114;
   --bay: #0b0b0e;                 /* recessed sections the modules sit in */
   --bay-edge: rgba(255, 255, 255, .035);
@@ -510,7 +510,7 @@ body.hide-solo-mono .strip .modes .tog:not([aria-pressed="true"]) { visibility: 
 .recorder[data-state="playing"] .clock { color: var(--led-g); }
 .recorder[data-state="paused"] .clock { color: var(--amber); }
 .deck-state { color: var(--muted); font-size: var(--s-1); text-align: right; letter-spacing: .06em; padding-bottom: 6px; }
-.rec-level { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 8px 6px 9px; border-radius: 6px; background: var(--well); }
+.rec-level { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 8px 6px 9px; border-radius: 6px; background: var(--field); box-shadow: inset 0 0 0 1px var(--line); }
 .rec-meter {
   position: relative; flex: 1; height: 8px; overflow: hidden; border-radius: 2px;
   -webkit-mask: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px); mask: repeating-linear-gradient(to right, #000 0 3px, transparent 3px 5px);
@@ -519,8 +519,8 @@ body.hide-solo-mono .strip .modes .tog:not([aria-pressed="true"]) { visibility: 
 .rec-meter .unlit { background: linear-gradient(to right, var(--led-g-off) 0, var(--led-g-off) var(--p-yellow), var(--led-y-off) var(--p-yellow), var(--led-y-off) var(--p-zero), var(--led-r-off) var(--p-zero)); }
 .rec-meter .lit { overflow: hidden; transform: translateX(-100%); will-change: transform; }
 .rec-meter .lit b { transform: translateX(100%); will-change: transform; background: linear-gradient(to right, var(--led-g) 0, var(--led-g) var(--p-yellow), var(--led-y) var(--p-yellow), var(--led-y) var(--p-zero), var(--led-r) var(--p-zero)); }
-.rec-level-db { width: 52px; text-align: right; font-size: var(--s-1); font-weight: 600; color: #c9c8d1; } /* sits on the dark meter window in every theme */
-.rec-level.over .rec-level-db { color: #ff6b6b; }
+.rec-level-db { width: 52px; text-align: right; font-size: var(--s-1); font-weight: 600; color: var(--ink); }
+.rec-level.over .rec-level-db { color: var(--red); }
 .rec-warn { grid-column: 1 / -1; margin: 6px 0 0; font-size: var(--s-1); line-height: 17px; color: var(--muted); min-height: 0; }
 .rec-warn:empty { display: none; }
 .rec-warn.over { color: var(--red); font-weight: 600; }
@@ -1016,7 +1016,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .field select { grid-column: 2 / -1; height: 32px; }
 .field input:focus { box-shadow: inset 0 0 0 1px var(--amber); }
 .obs-status { color: var(--muted); }
-.obs-status[data-ok="1"] { color: var(--led-g); }
+.obs-status[data-ok="1"] { color: color-mix(in srgb, var(--led-g) 70%, var(--ink)); }
 .rule-head.obs-head, .obs-rule { grid-template-columns: 1.25fr 1fr 1fr 32px; }
 .obs-rule { display: grid; gap: 6px; width: 100%; align-items: center; color: var(--ink-2); }
 .obs-rule select, .rule select { min-width: 0; }
@@ -1116,7 +1116,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .sound-del { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
   background: var(--red); color: #fff; border: 0; padding: 0; }
 .remote-url { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
-.remote-url code { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 6px; background: var(--well); overflow-wrap: anywhere; user-select: all; font-size: var(--s-1); }
+.remote-url code { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 6px; background: var(--field); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); overflow-wrap: anywhere; user-select: all; font-size: var(--s-1); }
 .twitch-head, .twitch-rule { grid-template-columns: .8fr 1.2fr 1fr 32px; }
 /* Mic plugins: on, name (and why it didn't load), editor, move up/down, remove. */
 .vst-rule { grid-template-columns: 22px minmax(0, 1fr) auto 32px 32px 32px; }
@@ -1144,7 +1144,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .hist-bar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .hist-seg { display: flex; gap: 5px; }
 .hist-seg .tog { height: 30px; padding: 0 12px; font-size: var(--s0); }
-#histCanvas { width: 100%; height: 240px; display: block; border-radius: 8px; background: var(--well); }
+#histCanvas { width: 100%; height: 240px; display: block; border-radius: 8px; background: var(--field); box-shadow: inset 0 0 0 1px var(--line); }
 .hist-keys { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .hist-key { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 13px; font-size: var(--s-1);
   background: var(--key); color: var(--ink); border: 1px solid var(--line, rgba(255,255,255,.12)); }
@@ -1201,7 +1201,7 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 .setup-nav .setup-skip { margin-right: auto; background: none; box-shadow: none; color: var(--muted); padding-inline: 4px; }
 .setup-nav .setup-skip:hover { color: var(--ink); background: none; }
 .setup-choices { display: grid; gap: 8px; margin: 6px 0 10px; }
-.setup-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-sm, 8px); background: var(--well); cursor: pointer; }
+.setup-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-sm, 8px); background: var(--field); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
 .setup-choice small { display: block; color: var(--muted); margin-top: 2px; }
 .setup-plan { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
 .setup-plan b { color: var(--ink); font-weight: 600; }
@@ -1209,11 +1209,11 @@ body.is-mixwin .mx-track { flex: 1; height: auto; min-height: 80px; }
 
 /* Soundboard groups, hotkeys, packs */
 .sound-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
-.sound-tab { border: 0; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12px; background: var(--well); color: var(--muted); cursor: pointer; }
+.sound-tab { border: 0; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12px; background: var(--key); color: var(--key-ink); cursor: pointer; }
 .sound-tab[aria-selected="true"] { background: var(--accent, #5aa9ff); color: var(--accent-ink, #04121f); }
 .sound-key { display: block; font-size: 10px; opacity: .7; margin-top: 2px; }
 .sound-extra { display: flex; gap: 4px; margin-top: 4px; }
-.sound-extra .sound-tabname { flex: 1; min-width: 0; font: inherit; font-size: 11px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line, transparent); background: var(--well); color: inherit; }
+.sound-extra .sound-tabname { flex: 1; min-width: 0; font: inherit; font-size: 11px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line, transparent); background: var(--field); color: var(--ink); }
 .sound-extra .keys { font-size: 11px; padding: 3px 8px; }
 
 /* Voicemeeter options */
@@ -1255,7 +1255,6 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .app-stack svg { width: 12px; height: 12px; }
 /* On themes with very round channels, sit further in along the top edge so the corner doesn't clip it. */
 :is([data-theme="glass"], [data-theme="bubblegum"]) .app-stack { top: 4px; right: 13px; }
-[data-theme="peach"] .app-stack { top: 5px; right: 14px; }
 body.no-streamer .streamer { display: none !important; }
 .app-stack svg { opacity: .85; }
 /* In the list, each app takes the channel's colour. */

@@ -51,7 +51,7 @@ try {
   await send('Runtime.enable'); await send('Page.enable');
   await send('Page.navigate', { url: `http://127.0.0.1:${port}/index.html?edition=3` });
   await sleep(1200);
-  await run(`localStorage.setItem('sleekmeeter-preview-settings', JSON.stringify({usagePing:false,setupGuide:'done',theme:'console',themeMotion:'off'})); location.reload()`);
+  await run(`localStorage.setItem('sleekmeeter-preview-settings', JSON.stringify({usagePing:false,setupGuide:'done',theme:'graphite',themeMotion:'off'})); location.reload()`);
   await sleep(1500);
   await run(`document.querySelectorAll('dialog[open]').forEach(d=>d.close()); document.querySelector('#settingsBtn').click();
     document.querySelector('#settingsSearch').value='Clean-up'; document.querySelector('#settingsSearch').dispatchEvent(new Event('input',{bubbles:true})); document.querySelector('#micFxFold').open=true;`);

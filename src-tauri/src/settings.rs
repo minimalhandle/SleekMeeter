@@ -287,16 +287,23 @@ pub fn save(s: &Value) -> Result<(), String> {
 /// The chosen theme. Before themes there was only "Pure black for OLED" (`oled`).
 pub fn theme(s: &Value) -> String {
     match s["theme"].as_str() {
-        // Retired themes fall back to Console.
+        // Retired themes fall back to Graphite, the default.
         Some("midnight") | Some("minimal") | Some("analog") | Some("clean") | Some("studio")
         | Some("ink") | Some("deco") | Some("haunted") | Some("cosmic") | Some("rack")
         | Some("titanium") | Some("afterburner") | Some("opal") | Some("onyx")
         | Some("afterhours") | Some("caldera") | Some("blueprint") | Some("letterpress")
         | Some("eventhorizon") | Some("lunar") | Some("observatory") | Some("mission")
-        | Some("sumi") => "console".into(),
+        | Some("sumi") | Some("console") => "graphite".into(),
+        Some("hyrule") => "overclock".into(),
+        Some("hadal") => "glass".into(),
+        Some("sticker") => "block".into(),
+        // Retired in 0.22: each moves to the closest theme that stays.
+        Some("peach") => "bubblegum".into(),
+        Some("greenhouse") => "nordic".into(),
+        Some("cassette") => "groovy".into(),
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
-        _ => "console".into(),
+        _ => "graphite".into(),
     }
 }
 
@@ -325,5 +332,19 @@ mod tests {
         assert!(read_object(&p).is_err());
         assert!(read_object(&dir.join("missing.json")).unwrap().is_none());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn retired_themes_move_to_the_closest_one_that_stays() {
+        let t = |name: &str| theme(&serde_json::json!({ "theme": name }));
+        assert_eq!(t("peach"), "bubblegum");
+        assert_eq!(t("greenhouse"), "nordic");
+        assert_eq!(t("cassette"), "groovy");
+        assert_eq!(t("hyrule"), "overclock");
+        assert_eq!(t("sumi"), "graphite");
+        assert_eq!(t("console"), "graphite");
+        assert_eq!(theme(&serde_json::json!({})), "graphite");
+        assert_eq!(t("halo"), "halo");
+        assert_eq!(theme(&serde_json::json!({ "oled": true })), "oled");
     }
 }

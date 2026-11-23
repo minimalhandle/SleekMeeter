@@ -74,7 +74,7 @@ export const featureGroups = [
   },
   {
     id: 'workspace', name: 'Appearance & workspace', items: [
-      ['15 themes', 'Choose Console, OLED black, Darkroom, Glass, Overclock, Cassette, Groovy, Neon, Terminal, Arcade, Block, Transit, Greenhouse, Bubblegum or Peaches & Cream.'],
+      ['14 themes', 'Choose Graphite, OLED black, Halo, Darkroom, Glass, Overclock, Groovy, Neon, Terminal, Arcade, Block, Transit, Nordic or Bubblegum.'],
       ['Theme motion', 'Set Off, Subtle or Full motion for every theme. Windows reduced-motion settings take priority.'],
       ['Channel personalization', 'Rename strips, pick icons and colors, reorder or hide channels, lock the arrangement and show or hide device names.'],
       ['Focused mixer', 'Show faders, meters, Mute and active sends. Open the full controls for each input as needed.'],
@@ -99,12 +99,11 @@ export const featureGroups = [
 ];
 
 export const themes = [
-  ['console', 'Console', '#b48d54'], ['oled', 'OLED black', '#73746d'],
+  ['graphite', 'Graphite', '#3fe0ff'], ['oled', 'OLED black', '#73746d'],
+  ['halo', 'Halo', '#b6a8ff'],
   ['darkroom', 'Darkroom', '#ff5a3c'], ['glass', 'Glass', '#b18bff'],
-  ['overclock', 'Overclock', '#00e5ff'], ['cassette', 'Cassette', '#ff7a1a'],
-  ['groovy', 'Groovy', '#e8702a'], ['neon', 'Neon', '#ec48be'],
+  ['overclock', 'Overclock', '#00e5ff'], ['groovy', 'Groovy', '#e8702a'], ['neon', 'Neon', '#ec48be'],
   ['terminal', 'Terminal', '#76d48e'], ['arcade', 'Arcade', '#b271f3'],
   ['block', 'Block', '#ffe358'], ['transit', 'Transit', '#0a7ad1'],
-  ['greenhouse', 'Greenhouse', '#6fae6a'], ['bubblegum', 'Bubblegum', '#f1a4c9'],
-  ['peach', 'Peaches & Cream', '#efb886'],
+  ['nordic', 'Nordic', '#71807a'], ['bubblegum', 'Bubblegum', '#f1a4c9'],
 ];
