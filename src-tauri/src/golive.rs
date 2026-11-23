@@ -292,6 +292,14 @@ pub fn run(app: &AppHandle) -> Vec<Value> {
 
 /// OBS just went live: run the check a few seconds later (so the stream output has had time to
 /// get sound) and speak up if something's wrong.
+/// A go-live result that arrived while the mixer window was freed.
+static PENDING: std::sync::Mutex<Option<Value>> = std::sync::Mutex::new(None);
+
+/// The go-live result waiting for the mixer window, if any (taken once).
+pub fn take_pending() -> Option<Value> {
+    PENDING.lock().unwrap_or_else(|e| e.into_inner()).take()
+}
+
 pub fn on_live(app: &AppHandle) {
     let wanted = app.state::<Settings>().0.locked()["goLive"]["onLive"]
         .as_bool()
@@ -314,7 +322,13 @@ pub fn on_live(app: &AppHandle) {
             format!("{problems} things to check")
         };
         show_osd_alert(&app, "Go-live check", &text, "stream");
-        let _ = app.emit_to("main", "golive", json!({ "items": items }));
+        let payload = json!({ "items": items });
+        if app.get_webview_window("main").is_some() {
+            let _ = app.emit_to("main", "golive", &payload);
+        } else {
+            // The mixer window was freed while hidden: show the result when it opens again.
+            *PENDING.lock().unwrap_or_else(|e| e.into_inner()) = Some(payload);
+        }
     });
 }
 

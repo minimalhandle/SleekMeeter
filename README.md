@@ -92,22 +92,22 @@ Choose from fifteen themes in **Settings → Appearance & layout → Appearance*
 </tr>
 <tr>
 <td align="center" valign="top"><img src="site/img/themes/abyss.webp" alt="Abyss with dark glass channels lit by bioluminescent rims, plankton meters and glowing lure faders" width="260"><br><sub><b>Abyss</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/darkroom.webp" alt="Darkroom with backlit film-strip channels, enlarger-knob faders and red timer readouts" width="260"><br><sub><b>Darkroom</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/glass.webp" alt="Glass with clear panes, prism rims and spectrum meters over bright moving light" width="260"><br><sub><b>Glass</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/overclock.webp" alt="Overclock with carbon-fibre panels, RGB light pipes, RGB meters and angled faders" width="260"><br><sub><b>Overclock</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/overclock.webp" alt="Overclock with carbon-fibre panels, RGB light pipes, RGB meters and angled faders" width="260"><br><sub><b>Overclock</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/groovy.webp" alt="Groovy with walnut TV-cabinet channels, rainbow stripes and lava-lamp faders" width="260"><br><sub><b>Groovy</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/neon.webp" alt="The Neon theme" width="260"><br><sub><b>Neon</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/arcade.webp" alt="The Arcade theme" width="260"><br><sub><b>Arcade</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/block.webp" alt="The Block theme" width="260"><br><sub><b>Block</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/transit.webp" alt="Transit with line-coloured channels and interchange-marker faders" width="260"><br><sub><b>Transit</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/transit.webp" alt="Transit with line-coloured channels and interchange-marker faders" width="260"><br><sub><b>Transit</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/nordic.webp" alt="Nordic with sage felt channels, linen keys and oak fader knobs" width="260"><br><sub><b>Nordic</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/watercolour.webp" alt="Watercolour with pigment washes on paper, ink-line channels, wet-paint meters and paint-blot faders" width="260"><br><sub><b>Watercolour</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/bubblegum.webp" alt="The Bubblegum theme" width="260"><br><sub><b>Bubblegum</b></sub></td>
 </tr>
 </table>

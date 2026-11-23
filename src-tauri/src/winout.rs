@@ -13,8 +13,10 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
-/// Time between checks.
+/// Time between checks without Windows' device notifications.
 const EVERY: Duration = Duration::from_secs(2);
+/// With them: a check this often anyway, for Voicemeeter connecting or settings changing.
+const IDLE: Duration = Duration::from_secs(15);
 /// Windows may still be settling on a device that just arrived.
 const SETTLE: Duration = Duration::from_millis(2500);
 /// Automatic fixes allowed in [`WINDOW`]; past that, someone is choosing the device on purpose.
@@ -176,8 +178,16 @@ pub fn spawn(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<(String, String)> = None;
         let mut fixes: Vec<Instant> = Vec::new();
+        let mut seen = crate::devnotify::now();
+        let mut first_pass = true;
         loop {
-            std::thread::sleep(EVERY);
+            // The first check waits the usual 2 s, so Voicemeeter has time to connect.
+            if first_pass {
+                std::thread::sleep(EVERY);
+                first_pass = false;
+            } else {
+                crate::devnotify::wait(&mut seen, IDLE, EVERY);
+            }
             let ids = default_ids().filter(|_| connected(&app));
             if ids == last {
                 continue;

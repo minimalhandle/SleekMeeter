@@ -821,69 +821,6 @@ body[data-theme="block"] {
 @keyframes theme-boing { from { transform: scale(.86); } }
 [data-theme="bubblegum"] { --c-rose: #ff3f93; --c-violet: #a35cff; --c-cyan: #2fd0d2; }
 
-/* ====================================================================== New themes (0.21)
- * Darkroom. It uses fonts every Windows 10 and 11 PC has
- * (Bahnschrift, Segoe Print, Ink Free, Sitka, Consolas). */
-
-body:is([data-theme="darkroom"]) { isolation: isolate; }
-body:is([data-theme="darkroom"]):not(.is-mini, .is-panel, .is-mixwin) .theme-light {
-  display: block; background: var(--ambient-base);
-}
-@media (prefers-reduced-motion: no-preference) {
-  body:is([data-theme-motion="subtle"], [data-theme-motion="full"]):is([data-theme="darkroom"]) .theme-light::before {
-    animation: ambient-drift var(--ambient-time) ease-in-out infinite alternate;
-  }
-}
-
-/* ------------------------------------------------------------------ Darkroom */
-[data-theme="darkroom"] {
-  --bg: #0b0605; --bay: #0f0807b3; --bay-edge: #3a17114d; --bay-shadow: inset 0 2px 10px #000c;
-  --mod-a: #1b0d0a; --mod-b: #120807; --mod-edge: #ff6a4a1f; --mod-shadow: 0 8px 18px #000b;
-  --key: #26120e; --key-hi: #341813; --key-edge: transparent; --key-ink: #cf917c; --key-shadow: 0 1px 0 #000a;
-  --well: #070303; --flyout: #170b09; --line: #3c1812;
-  --ink: #f6cdb8; --ink-2: #dca48f; --muted: #ad7461;
-  --amber: #ff4b2b; --cyan: #ffa53d; --red: #ffdcc6; --solo: #e0a6ff; --on-ink: #1a0503;
-  --focus: #ffa53d; --panel-hi: #341813; --track: #0a0403;
-  --led-g: #e0452a; --led-y: #ff9a3a; --led-r: #ffe9b0;
-  --led-g-off: #200b07; --led-y-off: #22120a; --led-r-off: #241d15;
-  --glow: 1; --scroll: #3c1812; --scroll-hi: #5a2219;
-  --field: #070303; --rail: #070303; --switch: #26120e;
-  --cap-w: 30px; --cap-h: 30px;
-  --cap-metal: radial-gradient(circle at 35% 30%, #57433d, #120a08 72%); --cap-ridge: transparent;
-  --cap-shadow: 0 3px 8px #000c, 0 0 0 1px #4a1d15; --cap-ink: #ff4b2b;
-  --c-slate: #c9a497; --c-amber: #ffb04a; --c-coral: #ff7a4a; --c-rose: #ff6a7d;
-  --c-violet: #d38cff; --c-blue: #8fb0ff; --c-cyan: #6fd6d0; --c-green: #9bd66a;
-  --font: Bahnschrift, "Saira SC", "Segoe UI", sans-serif;
-  --warning-ink: #ffd27a;
-}
-/* Strips are lengths of film: sprocket holes down both edges. */
-[data-theme="darkroom"] :is(.strip, .tc-mod) {
-  border-radius: 3px; padding-inline: 16px;
-  background:
-    repeating-linear-gradient(to bottom, #050202 0 6px, transparent 6px 11px) left 5px top 10px / 5px calc(100% - 20px) no-repeat,
-    repeating-linear-gradient(to bottom, #050202 0 6px, transparent 6px 11px) right 5px top 10px / 5px calc(100% - 20px) no-repeat,
-    linear-gradient(180deg, var(--mod-a), var(--mod-b));
-}
-[data-theme="darkroom"] .tc-mod { padding-inline: 8px; background-size: 3px calc(100% - 8px), 3px calc(100% - 8px), auto; background-position: left 2px top 4px, right 2px top 4px, 0 0; }
-[data-theme="darkroom"] :is(.name, .mini-name, .brand-name, .group-head h2) { font-stretch: condensed; text-transform: uppercase; letter-spacing: .07em; }
-[data-theme="darkroom"] .name { font-size: 16px; }
-[data-theme="darkroom"] .readout { font-family: "Courier New", Courier, monospace; font-weight: 700; }
-[data-theme="darkroom"] :is(.btn, .tog, .route, .chip) { border-radius: 3px; }
-/* Muted: a light leak fogs the film. */
-[data-theme="darkroom"] .strip.muted { box-shadow: inset 0 0 46px #ff8a5a33, inset 0 1px 0 var(--mod-edge), var(--mod-shadow); }
-[data-theme="darkroom"] .tog.mute[aria-pressed="true"] { background: var(--red); color: #3d0e05; box-shadow: 0 0 18px #ffc8a88c, inset 0 1px 0 #fff8; }
-/* Fader caps are enlarger knobs with a red index line. */
-[data-theme="darkroom"] :is(.thumb, .tc-cap) { border-radius: 50%; }
-[data-theme="darkroom"] .thumb::after { left: calc(50% - 1px); right: auto; width: 2px; top: 3px; height: 9px; background: var(--amber); box-shadow: 0 0 6px var(--amber); }
-[data-theme="darkroom"] .fader.h { --cap-w: 30px; }
-[data-theme="darkroom"] .groove { background: #050202; box-shadow: inset 0 0 0 1px #3c1812; }
-[data-theme="darkroom"] .theme-light {
-  --ambient-base: radial-gradient(ellipse 80% 55% at 50% -14%, #ff3a1c47, transparent 70%), var(--bg);
-  --ambient-accent: radial-gradient(ellipse 50% 30% at 50% 10%, #ff3a1c38, transparent);
-}
-.theme-card[data-theme="darkroom"] .tc-desk { background: radial-gradient(ellipse at 50% -20%, #ff3a1c3a, transparent 70%), #0b0605; }
-.theme-card[data-theme="darkroom"] .tc-cap { width: 13px; height: 13px; margin-left: -6.5px; }
-
 /* ====================================================================== Theme makeover (0.21)
  * Every theme, polished: the shiny ones shine harder, the matte ones get deeper and punchier,
  * and every theme moves. Motion follows Settings → Appearance → Theme motion (Off stops it,
@@ -891,7 +828,7 @@ body:is([data-theme="darkroom"]):not(.is-mini, .is-panel, .is-mixwin) .theme-lig
  * Fonts are bundled in fonts/theme-fonts.css. The themed logos are drawn by app.js (THEME_LOGOS).
  * This block comes last, so it builds on the older rules above. */
 
-/* Every theme has its ambient light layer now (Console's lamp, Darkroom's safelight...). */
+/* Every theme has its ambient light layer now (Graphite's light, Neon's wall...). */
 body[data-theme]:not(.is-mini, .is-panel, .is-mixwin) .theme-light { display: block; background: var(--ambient-base, transparent); }
 body[data-theme] { isolation: isolate; }
 /* Particles (bubbles, stars, droplets, sparkles): app.js fills .theme-fx for the themes that use them. */
@@ -929,33 +866,6 @@ body:not([data-theme-motion="off"]) :is(.btn, .route, .tog):active { transform: 
 :root body[data-theme="oled"] .strip { position: relative; overflow: hidden; }
 :root body[data-theme="oled"] .strip::after { content: ""; position: absolute; top: 0; left: -40%; width: 40%; height: 1px; background: linear-gradient(90deg, transparent, var(--acc), transparent); pointer-events: none; }
 
-/* darkroom */
-:root body[data-theme="darkroom"] { --mod-a: #1c0805; --mod-b: #0e0302; --key: #2a0c07; --key-ink: #e08f78; --ink: #ffd5c2; --muted: #b0624c; --amber: #ff2a12; --cyan: #ff8a1c; --red: #fff0e2; --on-ink: #1a0300; --well: #040101; --led-g: #e8301a; --led-y: #ff9426; --led-r: #fff1c4; --led-g-off: #220805; --led-y-off: #24110a; --led-r-off: #2a2318; --cap-w: 30px; --cap-h: 30px; --font: "Saira SC", sans-serif; background: #060101; }
-:root body[data-theme="darkroom"] :is(.strip, .mini-row) { background: repeating-linear-gradient(to bottom, #030000 0 6px, transparent 6px 11px) left 5px top 10px / 5px calc(100% - 20px) no-repeat, repeating-linear-gradient(to bottom, #030000 0 6px, transparent 6px 11px) right 5px top 10px / 5px calc(100% - 20px) no-repeat, linear-gradient(180deg, var(--mod-a), var(--mod-b)); border-radius: 3px; box-shadow: 0 10px 24px #000; }
-:root body[data-theme="darkroom"] :is(.strip .name, .mini-name, .brand-name) { font-family: "Bebas Neue", Bahnschrift, sans-serif; }
-:root body[data-theme="darkroom"] .strip .name { font-size: 19px; font-weight: 400; letter-spacing: .06em; font-stretch: normal; }
-:root body[data-theme="darkroom"] .strip .sub { color: var(--muted); }
-:root body[data-theme="darkroom"] .strip .head .chip { background: #2a0c07; color: var(--acc); border-radius: 8px; box-shadow: none; }
-:root body[data-theme="darkroom"] :is(.strip-routes .route, .strip .tog, .bar .btn, .bar .keys, .route-expand) { border-radius: 3px; background: #2a0c07; color: var(--key-ink); box-shadow: none; }
-:root body[data-theme="darkroom"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="darkroom"] .strip :is(.modes .tog, .tog.mono, .tog.solo)[aria-pressed="true"] { background: #ff2a12; color: #1a0300; box-shadow: 0 0 16px #ff2a12cc; }
-:root body[data-theme="darkroom"] .strip-routes .route.b[aria-pressed="true"] { background: #ff8a1c; color: #1a0800; box-shadow: 0 0 12px #ff8a1c99; }
-:root body[data-theme="darkroom"] .strip .tog.mute[aria-pressed="true"] { background: #fff0e2; color: #4a0f04; box-shadow: 0 0 22px #ffc8a8aa; }
-:root body[data-theme="darkroom"] .strip .well { background: var(--well); border-radius: 4px; box-shadow: none; }
-:root body[data-theme="darkroom"] .fader .groove { width: 6px; margin-left: calc(6px / -2); border-radius: 4px; background: #050202; box-shadow: inset 0 0 0 1px #3c1812; border: 0; }
-:root body[data-theme="darkroom"] .fader .groove::before { display: none; }
-:root body[data-theme="darkroom"] .fader .thumb { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5e4842, #120705 72%); box-shadow: 0 4px 10px #000, 0 0 0 1px #521a10; filter: none; clip-path: none; }
-:root body[data-theme="darkroom"] .fader .thumb::before { content: none; }
-:root body[data-theme="darkroom"] .fader .thumb::after { content: ""; display: block; position: absolute; left: 4px; right: 4px; width: auto; top: calc(50% - 1px); height: 2px; margin: 0; border-radius: 1px; background: var(--acc); box-shadow: none; font-size: 0; transform: none; }
-:root body[data-theme="darkroom"] .strip .readout { font-family: "Courier Prime", "Courier New", monospace; color: var(--ink); background: transparent; }
-:root body[data-theme="darkroom"] .theme-light { --ambient-base: radial-gradient(ellipse 80% 55% at 50% -14%, #ff2a125c, transparent 70%), #060101; --ambient-accent: radial-gradient(ellipse 50% 30% at 50% 10%, #ff2a1240, transparent); }
-:root body[data-theme="darkroom"] { counter-reset: frame; }
-:root body[data-theme="darkroom"] .strip { padding-inline: 17px; padding-bottom: 22px; counter-increment: frame; position: relative; }
-:root body[data-theme="darkroom"] .strip::after { content: "SLEEK 400 ▸ " counter(frame) "A"; position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font: 700 9px/1 "Courier Prime", monospace; letter-spacing: .14em; color: #ff7a2a; opacity: .8; pointer-events: none; }
-:root body[data-theme="darkroom"] .brand-name { font-weight: 400; font-size: 24px; letter-spacing: .08em; }
-:root body[data-theme="darkroom"] .fader .thumb::after { left: calc(50% - 1px); right: auto; width: 2px; top: 3px; height: 10px; background: #ff2a12; box-shadow: 0 0 6px #ff2a12; }
-:root body[data-theme="darkroom"] .strip.muted { box-shadow: inset 0 0 50px #ff8a5a40, 0 10px 24px #000; }
-:root body[data-theme="darkroom"] .theme-light::after { content: ""; position: absolute; inset: -4px; opacity: 0; background: radial-gradient(#fff 0.6px, transparent 0.8px) 0 0 / 3px 3px; }
-
 /* glass: vivid light that keeps moving behind real frosted panes. Five colour blobs drift on their own
    paths and blend; each pane has a slowly turning rainbow rim and a reflection that sweeps across it now
    and then; caps are clear glass beads. Theme motion: Full moves everything, Subtle slows the light and
@@ -974,7 +884,7 @@ body:not([data-theme-motion="off"]) :is(.btn, .route, .tog):active { transform: 
 :root body[data-theme="glass"] .glass-aurora b:nth-child(5) { width: 35%; height: 30%; right: 0; bottom: 5%; background: #3a6bff; opacity: .5; }
 :root body[data-theme="glass"] .theme-light { display: none; }
 /* Panes. */
-:root body[data-theme="glass"] :is(.strip, .mini-row) { background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); border-radius: 26px; backdrop-filter: blur(16px) saturate(190%); box-shadow: inset 0 1px 0 #ffffffe0, inset 0 -1px 0 #ffffff40, 0 18px 40px #05061e70; }
+:root body[data-theme="glass"] :is(.strip, .mini-row) { background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); border-radius: 26px; box-shadow: inset 0 1px 0 #ffffffe0, inset 0 -1px 0 #ffffff40, 0 18px 40px #05061e70; }
 :root body[data-theme="glass"] :is(.strip, .mini-row):hover { box-shadow: inset 0 1px 0 #ffffff, inset 0 -1px 0 #ffffff55, 0 18px 40px #05061e70; }
 :root body[data-theme="glass"] .strip::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 0;
   background: conic-gradient(from var(--glass-rim), #7cf3ff, #b18bff, #ff7ad9, #ffb36b, #d6ff7a, #7cf3ff);
@@ -1003,8 +913,7 @@ body:not([data-theme-motion="off"]) :is(.btn, .route, .tog):active { transform: 
 :root body[data-theme="glass"] .fader .groove::before { display: none; }
 :root body[data-theme="glass"] .fader .thumb { border-radius: 50%; clip-path: none; filter: none;
   background: radial-gradient(circle at 34% 26%, #fff 0 12%, transparent 30%), conic-gradient(from 200deg, #7cf3ff99, #b18bff99, #ff7ad999, #ffb36b99, #7cf3ff99), rgba(255, 255, 255, .35);
-  box-shadow: inset 0 1px 1px #fff, inset 0 -3px 6px #ffffff50, 0 6px 16px #05061e80, 0 0 0 1.5px #ffffffd0, 0 0 18px color-mix(in srgb, var(--acc) 60%, transparent);
-  backdrop-filter: blur(4px) saturate(200%); }
+  box-shadow: inset 0 1px 1px #fff, inset 0 -3px 6px #ffffff50, 0 6px 16px #05061e80, 0 0 0 1.5px #ffffffd0, 0 0 18px color-mix(in srgb, var(--acc) 60%, transparent); }
 :root body[data-theme="glass"] .fader .thumb::before { content: none; }
 :root body[data-theme="glass"] .fader .thumb::after { display: none; }
 :root body[data-theme="glass"] .fader.dragging .thumb { box-shadow: inset 0 1px 1px #fff, 0 0 0 3px color-mix(in srgb, var(--acc) 70%, #fff), 0 0 26px var(--acc), 0 8px 18px #05061e90; }
@@ -1033,7 +942,7 @@ body:not([data-theme-motion="off"]) :is(.btn, .route, .tog):active { transform: 
   body[data-theme="glass"] .glass-aurora b:nth-child(4) { --glass-path: glass-b4; --glass-time: 15s; }
   body[data-theme="glass"] .glass-aurora b:nth-child(5) { --glass-path: glass-b5; --glass-time: 23s; }
   body[data-theme="glass"][data-theme-motion="subtle"] .glass-aurora b { animation-duration: 45s !important; }
-  body[data-theme="glass"]:is([data-theme-motion="subtle"], [data-theme-motion="full"]) .strip::before { animation: glass-rim 24s linear infinite; }
+  body[data-theme="glass"][data-theme-motion="full"] .strip::before { animation: glass-rim 24s linear infinite; }
   body[data-theme="glass"][data-theme-motion="full"] .strip::before { animation-duration: 8s; }
   body[data-theme="glass"][data-theme-motion="full"] .strip::after { animation: glass-sweep 7s ease-in-out infinite; }
   body[data-theme="glass"][data-theme-motion="full"] .strip:nth-child(3n + 2)::after { animation-delay: -2.3s; }
@@ -1412,13 +1321,13 @@ body[data-theme="transit"] {
 
 /* Motion for Transit: the little train runs up each line (slower in Subtle). */
 @media (prefers-reduced-motion: no-preference) {
-  body[data-theme="transit"]:not([data-theme-motion="off"]) .strip:not(.muted) .fader .groove::after {
+  body[data-theme="transit"][data-theme-motion="full"] .strip:not(.muted) .fader .groove::after {
     content: ""; position: absolute; left: -1px; width: 8px; height: 14px; bottom: 0; border-radius: 4px 4px 2px 2px; pointer-events: none;
     background: #1b1b1b; box-shadow: inset 0 3px 0 #ffffff55, 0 0 0 1.5px #fff; animation: transit-train 9s ease-in-out infinite;
   }
   body[data-theme="transit"][data-theme-motion="full"] .strip:not(.muted) .fader .groove::after { animation-duration: 6s; }
-  body[data-theme="transit"]:not([data-theme-motion="off"]) .strip:nth-child(3n + 2) .fader .groove::after { animation-delay: -2s; }
-  body[data-theme="transit"]:not([data-theme-motion="off"]) .strip:nth-child(3n + 3) .fader .groove::after { animation-delay: -4s; }
+  body[data-theme="transit"][data-theme-motion="full"] .strip:nth-child(3n + 2) .fader .groove::after { animation-delay: -2s; }
+  body[data-theme="transit"][data-theme-motion="full"] .strip:nth-child(3n + 3) .fader .groove::after { animation-delay: -4s; }
 }
 @keyframes transit-train {
   0% { bottom: 0; opacity: 0; } 8% { opacity: 1; }
@@ -1526,11 +1435,10 @@ body[data-theme="groovy"] {
 /* ------------------------------------------------------------------ Motion */
 @media (prefers-reduced-motion: no-preference) {
   /* Subtle and Full */
-  body:not([data-theme-motion="off"]):is([data-theme="darkroom"], [data-theme="glass"]) :is(.theme-light, .glass-aurora)::before { animation: ambient-drift 30s ease-in-out infinite alternate; }
-  body[data-theme="oled"]:not([data-theme-motion="off"]) .strip::after { animation: mk-sweep 5s linear infinite; }
-  body[data-theme="darkroom"]:not([data-theme-motion="off"]) .brand-mark { animation: mk-breathe 6s ease-in-out infinite alternate; }
-  body[data-theme="neon"]:not([data-theme-motion="off"]) .theme-light::after { animation: mk-floor 2.6s linear infinite; }
-  body[data-theme="terminal"]:not([data-theme-motion="off"]) .theme-light::after { animation: mk-roll 6s linear infinite; }
+  body:not([data-theme-motion="off"])[data-theme="glass"] :is(.theme-light, .glass-aurora)::before { animation: ambient-drift 30s ease-in-out infinite alternate; }
+  body[data-theme="oled"][data-theme-motion="full"] .strip::after { animation: mk-sweep 5s linear infinite; }
+  body[data-theme="neon"][data-theme-motion="full"] .theme-light::after { animation: mk-floor 2.6s linear infinite; }
+  body[data-theme="terminal"][data-theme-motion="full"] .theme-light::after { animation: mk-roll 6s linear infinite; }
   body[data-theme="arcade"]:not([data-theme-motion="off"]) .route[aria-pressed="true"] { animation: mk-coin 1.4s steps(2) infinite; }
   body[data-theme="arcade"]:not([data-theme-motion="off"]) .theme-fx b { animation: mk-fall var(--d) steps(24) infinite; animation-delay: var(--dl); }
   body[data-theme="block"]:not([data-theme-motion="off"]) .strip:hover { animation: mk-wobble .5s ease; }
@@ -1538,8 +1446,6 @@ body[data-theme="groovy"] {
   body[data-theme="bubblegum"]:not([data-theme-motion="off"]) .tog.mute[aria-pressed="true"] { animation: mk-pop 1.6s ease-in-out infinite; }
   body[data-theme="glass"]:not([data-theme-motion="off"]) .route[aria-pressed="true"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, #ffffff9a 50%, transparent 70%); animation: mk-sheen 5s ease-in-out infinite; pointer-events: none; }
   /* Full only */
-  /* film grain stays still: jittering it across the whole window read as the background flashing */
-  body[data-theme="darkroom"][data-theme-motion="full"] .theme-light::after { opacity: .06; }
   body[data-theme="neon"][data-theme-motion="full"] .brand-name { animation: mk-flicker 6s steps(1) infinite; }
   body[data-theme="block"][data-theme-motion="full"] .theme-light::after { animation: mk-halftone 16s linear infinite; }
 }
@@ -1570,9 +1476,6 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 :root body[data-theme] .fader.h .db { background: none; }
 :root body[data-theme="oled"] .fader.h .db { color: var(--ink); }
 /* Round caps stay round: the sideways track is 30px tall. */
-:root body[data-theme="darkroom"] .fader.h { --cap-w: 30px; }
-:root body[data-theme="darkroom"] .fader.h .thumb { top: 0; bottom: 0; }
-:root body[data-theme="darkroom"] .fader.h .db { color: var(--ink); font-size: 11px; padding: 0; }
 :root body[data-theme="transit"] .fader.h { --cap-w: 30px; }
 :root body[data-theme="transit"] .fader.h .thumb { top: 0; bottom: 0; }
 /* No headroom above a sideways pot for its seedling. */
@@ -1754,7 +1657,6 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 /* Cards. */
 :root body[data-theme="halo"] :is(.strip, .mini-row) {
   border-radius: 18px; background: linear-gradient(180deg, var(--mod-a), var(--mod-b));
-  backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5);
   box-shadow: inset 0 1px 0 #ffffff24, 0 0 0 1px #ffffff12, var(--mod-shadow);
 }
 :root body[data-theme="halo"] .mini-row { border-radius: 12px; }
@@ -1959,10 +1861,9 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
   body[data-theme="graphite"][data-theme-motion="full"] .strip::after { animation: gr-catch 9s ease-in-out infinite; }
   body[data-theme="graphite"][data-theme-motion="full"] .strip:nth-child(3n + 2)::after { animation-delay: -3s; }
   body[data-theme="graphite"][data-theme-motion="full"] .strip:nth-child(3n + 3)::after { animation-delay: -6s; }
-  body[data-theme="graphite"]:not([data-theme-motion="off"]) .tog.mute[aria-pressed="true"] { animation: gr-pipe 2.4s ease-in-out infinite; }
+  body[data-theme="graphite"][data-theme-motion="full"] .tog.mute[aria-pressed="true"] { animation: gr-pipe 2.4s ease-in-out infinite; }
   body[data-theme="graphite"]:not([data-theme-motion="off"]) .theme-light::before { animation: ambient-drift 34s ease-in-out infinite alternate; }
   /* Halo: the light drifts, and the beams trace each card. */
-  body[data-theme="halo"][data-theme-motion="subtle"] .strip::before { animation: halo-beam 20s linear infinite; }
   body[data-theme="halo"][data-theme-motion="full"] .strip::before { animation: halo-beam 7s linear infinite; }
   body[data-theme="halo"] .strip:nth-child(4n + 2)::before { animation-delay: -1.75s; }
   body[data-theme="halo"] .strip:nth-child(4n + 3)::before { animation-delay: -3.5s; }
@@ -2186,104 +2087,6 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 .theme-card[data-theme="halo"] .tc-cap { width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: #0c0c12; box-shadow: inset 0 0 0 1.5px #d9d2ff, 0 0 6px #b6a8ff; }
 .theme-card[data-theme="halo"] .tc-slot::before { width: 2px; margin-left: -1px; background: linear-gradient(to top, #6e5ff0, #d9d2ff); }
 
-/* ---------------------------------------------------------------- Darkroom */
-/* A darkroom under the safelight. Channels are lengths of 35 mm film on a light box, so their
-   sprocket holes glow; faders are enlarger knobs with knurled rims, meters are exposure test
-   strips, and the level readout is the red display of a darkroom timer. */
-[data-theme="darkroom"], :root body[data-theme="darkroom"] {
-  --bg: #070202; --mod-a: #1d0a07; --mod-b: #110504; --mod-edge: #ff6a4a24;
-  --key: #2b0f0a; --key-hi: #3a150e; --key-ink: #e6a08a; --ink: #ffd9c6; --ink-2: #e7ae98; --muted: #b97a66;
-  --amber: #ff3b1f; --cyan: #ff9a2e; --red: #fff0e2; --on-ink: #1a0300;
-  --well: #050101; --field: #0a0303; --line: #45190f; --flyout: #160806f7;
-  --led-g: #c92a16; --led-y: #ff7a26; --led-r: #ffe7c2; --led-g-off: #1e0705; --led-y-off: #241007; --led-r-off: #2a2118;
-  --cap-w: 32px; --cap-h: 32px;
-  --pop-shadow: 0 0 0 1px #45190f, 0 24px 60px #000e, 0 0 40px #ff3b1f1f;
-}
-:root body[data-theme="darkroom"] { background: #070202; }
-/* The safelight: a red lamp hanging over the bench, a dim falloff and fine grain. */
-:root body[data-theme="darkroom"] .theme-light {
-  --ambient-base: radial-gradient(circle at 50% -6%, #ff5a3a66, #ff2a1233 12%, transparent 30%), radial-gradient(ellipse 85% 60% at 50% -10%, #ff2a1240, transparent 72%), radial-gradient(ellipse 120% 80% at 50% 120%, #000, transparent 70%), #080202;
-  --ambient-accent: radial-gradient(ellipse 40% 22% at 50% 4%, #ff3b1f33, transparent);
-}
-:root body[data-theme="darkroom"] .theme-light::after { opacity: 1; inset: 0; background: var(--sm-noise); mix-blend-mode: overlay; opacity: .28; }
-:root body[data-theme="darkroom"] .group { background: #0c0403b3; box-shadow: inset 0 2px 12px #000d, inset 0 0 0 1px #2a0e09; border-radius: 6px; }
-:root body[data-theme="darkroom"] .group-head h2 { color: #ff8a5c; letter-spacing: .2em; }
-/* Film: a dark base, sprocket holes lit from the light box behind, and a frame line. */
-:root body[data-theme="darkroom"] :is(.strip, .mini-row) {
-  border-radius: 3px;
-  background:
-    repeating-linear-gradient(to bottom, #ff5a3a38 0 6px, transparent 6px 11px) left 5px top 10px / 5px calc(100% - 20px) no-repeat,
-    repeating-linear-gradient(to bottom, #ff5a3a38 0 6px, transparent 6px 11px) right 5px top 10px / 5px calc(100% - 20px) no-repeat,
-    linear-gradient(90deg, #00000080 0 13px, transparent 13px calc(100% - 13px), #00000080 calc(100% - 13px)),
-    linear-gradient(180deg, var(--mod-a), var(--mod-b));
-  box-shadow: inset 0 1px 0 #ff6a4a1f, inset 0 0 0 1px #2a0c08, 0 12px 26px #000;
-}
-:root body[data-theme="darkroom"] .mini-row { background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); }
-:root body[data-theme="darkroom"] .strip:hover { background:
-    repeating-linear-gradient(to bottom, #ff6a4a5c 0 6px, transparent 6px 11px) left 5px top 10px / 5px calc(100% - 20px) no-repeat,
-    repeating-linear-gradient(to bottom, #ff6a4a5c 0 6px, transparent 6px 11px) right 5px top 10px / 5px calc(100% - 20px) no-repeat,
-    linear-gradient(90deg, #00000080 0 13px, transparent 13px calc(100% - 13px), #00000080 calc(100% - 13px)),
-    linear-gradient(180deg, #250d09, #150605); }
-/* Muted: a light leak fogs the film. */
-:root body[data-theme="darkroom"] .strip.muted { box-shadow: inset 0 0 60px #ff8a5a40, inset 0 -30px 40px -20px #ffb08a26, inset 0 0 0 1px #2a0c08, 0 12px 26px #000; }
-:root body[data-theme="darkroom"] .strip::after { color: #ff7a3a; opacity: .75; text-shadow: 0 0 6px #ff3b1f66; }
-:root body[data-theme="darkroom"] .strip .head .chip { border-radius: 4px; color: var(--acc); background: #0a0302; box-shadow: inset 0 0 0 1px #45190f, 0 0 10px color-mix(in srgb, var(--acc) 20%, transparent); }
-:root body[data-theme="darkroom"] .strip .name { color: #ffe2d2; text-shadow: 0 0 10px #ff3b1f40; }
-/* Keys: bakelite timer buttons. Lit keys glow like indicator lamps. */
-:root body[data-theme="darkroom"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) {
-  border-radius: 3px; color: var(--key-ink); background: linear-gradient(180deg, #34130d, #220a07);
-  box-shadow: inset 0 1px 0 #ff8a6a26, 0 0 0 1px #0a0202, 0 2px 0 #0a0202;
-}
-:root body[data-theme="darkroom"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { color: #ffe2d2; background: linear-gradient(180deg, #45180f, #2b0c08); }
-:root body[data-theme="darkroom"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="darkroom"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono, .tog.solo, .tog.eq)[aria-pressed="true"] {
-  color: #1a0300; background: radial-gradient(ellipse 80% 90% at 50% 35%, #ff8a6a, #ff3b1f 65%, #c81e0c); box-shadow: inset 0 1px 0 #ffc0a880, 0 0 0 1px #3a0802, 0 0 16px #ff3b1fa6;
-}
-:root body[data-theme="darkroom"] .strip-routes .route.b[aria-pressed="true"] {
-  color: #1a0800; background: radial-gradient(ellipse 80% 90% at 50% 35%, #ffc27a, #ff9a2e 65%, #d9701a); box-shadow: inset 0 1px 0 #ffe2b880, 0 0 0 1px #3a1802, 0 0 14px #ff9a2e8c;
-}
-/* Mute switches on the white light, which would fog the paper. */
-:root body[data-theme="darkroom"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #4a0f04; background: radial-gradient(ellipse 80% 90% at 50% 35%, #fff, #ffe9d8 60%, #ffc8a8); box-shadow: 0 0 0 1px #5a2010, 0 0 22px #ffd8bfb0; }
-:root body[data-theme="darkroom"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: #1a0300; background: linear-gradient(180deg, #ff7a5a, #ff3b1f); box-shadow: inset 0 1px 0 #ffc0a880, 0 0 14px #ff3b1f73; }
-:root body[data-theme="darkroom"] .bar { background: linear-gradient(180deg, #120504f2, #0a0302f2); box-shadow: inset 0 -1px 0 #3a120b, 0 1px 12px #ff2a1214; }
-/* Meters: an exposure test strip, stepping from deep red to blown-out cream. */
-:root body[data-theme="darkroom"] .strip .well { border-radius: 2px; background: #040101; box-shadow: inset 0 0 0 1px #2e0e09, inset 0 2px 4px #000; }
-:root body[data-theme="darkroom"] .strip .meter { -webkit-mask: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 7px); mask: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 7px); }
-:root body[data-theme="darkroom"] .meter .lit b { background: linear-gradient(to top, #7a1408, #c92a16 30%, #ff4a24 var(--p-yellow), #ff9a3a calc(var(--p-yellow) + 12%), #ffd2a0 var(--p-zero), #fff4e4 var(--p-zero)); }
-:root body[data-theme="darkroom"] .fader.h .meter .lit b { background: linear-gradient(to right, #7a1408, #c92a16 30%, #ff4a24 var(--p-yellow), #ff9a3a calc(var(--p-yellow) + 12%), #ffd2a0 var(--p-zero), #fff4e4 var(--p-zero)); }
-:root body[data-theme="darkroom"] .meter .lit { filter: drop-shadow(0 0 3px #ff3b1f80); }
-/* Fader: a slot with timer ticks, and an enlarger knob with a knurled rim and a lit index. */
-:root body[data-theme="darkroom"] .fader .groove { width: 4px; margin-left: -2px; border-radius: 2px; background: #030000; box-shadow: inset 0 0 0 1px #3c1812, 0 1px 0 #ff6a4a14; }
-:root body[data-theme="darkroom"] .fader:not(.h) .groove::before { display: block; content: ""; position: absolute; left: -9px; width: 5px; top: 0; bottom: 0; background: repeating-linear-gradient(to bottom, #ff6a4a40 0 1px, transparent 1px 8px); }
-:root body[data-theme="darkroom"] .fader .thumb {
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, #6a4c44, #2a1611 46%, #140806 62%, transparent 63%), repeating-conic-gradient(#1a0a07 0 7deg, #4e3029 7deg 14deg);
-  box-shadow: 0 0 0 1px #000, 0 6px 12px #000, 0 0 14px #ff2a1226;
-}
-:root body[data-theme="darkroom"] .fader .thumb::after { left: calc(50% - 1px); right: auto; width: 2px; top: 5px; height: 10px; border-radius: 1px; background: #ff3b1f; box-shadow: 0 0 6px #ff3b1f; }
-:root body[data-theme="darkroom"] .muted .fader .thumb::after { background: #8a5a4c; box-shadow: none; }
-:root body[data-theme="darkroom"] .fader.dragging .thumb { box-shadow: 0 0 0 1px #000, 0 0 0 3px #ff3b1f80, 0 0 22px #ff3b1f73, 0 6px 12px #000; }
-:root body[data-theme="darkroom"] .unity { background: #ff7a3a; opacity: .5; }
-:root body[data-theme="darkroom"] .scale span { color: #a8604c; font-family: "Courier Prime", monospace; font-size: 10px; }
-:root body[data-theme="darkroom"] .scale span.zero { color: #ffb08a; }
-/* The level readout: the darkroom timer's red display. */
-:root body[data-theme="darkroom"] .strip .readout {
-  font-family: "Courier Prime", "Courier New", monospace; font-weight: 700; font-size: 18px; letter-spacing: .04em;
-  color: #ff4b2b; background: #070101; border-radius: 3px; padding-inline: 8px;
-  box-shadow: inset 0 0 0 1px #3a120b, inset 0 2px 6px #000; text-shadow: 0 0 8px #ff3b1fb3;
-}
-:root body[data-theme="darkroom"] .strip .readout:hover { color: #ff8a5c; }
-:root body[data-theme="darkroom"] .strip.muted .readout { color: #8a5a4c; text-shadow: none; }
-/* Mini mode and the tray panel. */
-:root body[data-theme="darkroom"] .fader.h .track { background: #050101; box-shadow: inset 0 0 0 1px #3c1812; }
-:root body[data-theme="darkroom"] .fader.h .thumb { border-radius: 4px; background: linear-gradient(180deg, #4a2a22, #1c0a07); box-shadow: inset 0 1px 0 #ff8a6a33, 0 0 0 1px #000, 0 3px 6px #000; }
-:root body[data-theme="darkroom"] .fader.h .thumb::after { display: none; }
-:root body[data-theme="darkroom"] .fader.h .db { color: #ffd9c6; }
-:root body[data-theme="darkroom"] :is(.dlg, .menu) { border-radius: 6px; background: linear-gradient(180deg, #ff3b1f0d, transparent 30%), var(--flyout); box-shadow: inset 0 1px 0 #ff6a4a1f, var(--pop-shadow); }
-/* Theme-picker sample. */
-.theme-card[data-theme="darkroom"] .tc-desk { background: radial-gradient(circle at 50% -10%, #ff5a3a66, transparent 45%), #080202; }
-.theme-card[data-theme="darkroom"] .tc-mod { background-image: repeating-linear-gradient(to bottom, #ff5a3a4d 0 3px, transparent 3px 6px), repeating-linear-gradient(to bottom, #ff5a3a4d 0 3px, transparent 3px 6px), linear-gradient(180deg, #1d0a07, #110504); }
-.theme-card[data-theme="darkroom"] .tc-cap { background: radial-gradient(circle, #3a1e17 0 50%, transparent 52%), repeating-conic-gradient(#1a0a07 0 20deg, #5a3a30 20deg 40deg); box-shadow: 0 0 0 .5px #000; }
-
 /* ---------------------------------------------------------------- Glass */
 /* The bright, colourful one (Halo is the dark one): a full spectrum of light keeps moving behind
    clear panes. Each pane has a prism rim, a highlight where the light catches it, and a soft tint
@@ -2304,7 +2107,6 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 /* Panes: clear glass with a soft indigo tint behind the text, and a highlight where the light hits. */
 :root body[data-theme="glass"] :is(.strip, .mini-row) {
   background: radial-gradient(120% 50% at 20% 0%, #ffffff33, transparent 60%), linear-gradient(180deg, #ffffff24, #ffffff08 45%, #ffffff0d), #140c4a66;
-  backdrop-filter: blur(20px) saturate(210%); -webkit-backdrop-filter: blur(20px) saturate(210%);
   box-shadow: inset 0 1px 0 #fffffff0, inset 0 -1px 0 #ffffff47, inset 0 0 24px #ffffff12, 0 20px 44px #05061e80;
 }
 :root body[data-theme="glass"] :is(.strip, .mini-row):hover { background: radial-gradient(120% 50% at 20% 0%, #ffffff40, transparent 60%), linear-gradient(180deg, #ffffff2e, #ffffff0d 45%, #ffffff14), #140c4a4d; }
@@ -2661,7 +2463,6 @@ body[data-theme="groovy"] {
 :root body[data-theme="abyss"] :is(.strip, .mini-row) {
   border-radius: 20px;
   background: radial-gradient(120% 34% at 50% 0%, color-mix(in srgb, var(--acc) 13%, transparent), transparent 72%), linear-gradient(180deg, var(--mod-a), var(--mod-b));
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   box-shadow: inset 0 0 0 1px #7fe9ff0f, 0 -10px 34px -22px var(--acc), var(--mod-shadow);
 }
 :root body[data-theme="abyss"] .mini-row { border-radius: 14px; }
@@ -2694,7 +2495,7 @@ body[data-theme="groovy"] {
 :root body[data-theme="abyss"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { color: #032128; background: linear-gradient(180deg, #e6ffff, #7cf7ff); box-shadow: inset 0 1px 0 #fff, 0 0 16px #7cf7ff80; }
 :root body[data-theme="abyss"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #33040f; background: linear-gradient(180deg, #ffb3b0, #ff5f7e); box-shadow: inset 0 1px 0 #fff8, 0 0 16px #ff5f7e66; }
 :root body[data-theme="abyss"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: #01201c; background: linear-gradient(180deg, #a6fff0, #3ff2d6); box-shadow: inset 0 1px 0 #fff, 0 0 16px #3ff2d659; }
-:root body[data-theme="abyss"] .bar { background: #030b15cc; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: inset 0 -1px 0 #7fe9ff14; }
+:root body[data-theme="abyss"] .bar { background: #030b15e6; box-shadow: inset 0 -1px 0 #7fe9ff14; }
 /* Meters: columns of glowing plankton, deep teal rising to aqua and white, and coral past 0 dB. */
 :root body[data-theme="abyss"] .strip .well { border-radius: 999px; background: #01060c; box-shadow: inset 0 1px 3px #000, inset 0 0 0 1px #7fe9ff0d; }
 :root body[data-theme="abyss"] .meter { -webkit-mask: repeating-linear-gradient(to top, #000 0 3px, #0006 3px 4px); mask: repeating-linear-gradient(to top, #000 0 3px, #0006 3px 4px); border-radius: 999px; }
@@ -2767,3 +2568,171 @@ body[data-theme="groovy"] {
 @keyframes ab-sway { from { transform: translateX(-3%) skewX(-2deg); opacity: .7; } to { transform: translateX(3%) skewX(2deg); opacity: 1; } }
 @keyframes ab-snow { from { transform: translate(0, 0); } 50% { transform: translate(10px, 55vh); } to { transform: translate(-4px, 112vh); } }
 @keyframes ab-mute { 50% { box-shadow: inset 0 1px 0 #fff8, 0 0 4px #ff5f7e33; } }
+
+/* ---------------------------------------------------------------- Watercolour */
+/* Painted by hand on cold-press paper. Each channel is a loose wash of its own pigment, drawn
+   round with a slightly wobbly ink line; meters are wet paint that pools darker at its edge, fader
+   caps are blots of pigment, and pressed keys fill with a wash. Names and levels are set in an
+   italic book face (Sitka, which every Windows 10 and 11 PC has). Theme motion: the light drifts
+   across the paper (Subtle and Full) and the washes bloom slowly (Full). No SVG filters, so the
+   meters stay cheap to draw. */
+[data-theme="watercolour"] {
+  --bg: #f7f2e7; --bay: transparent; --bay-edge: transparent; --bay-shadow: none;
+  --mod-a: #fffdf8; --mod-b: #fbf6ec; --mod-edge: #2b283340; --mod-shadow: 0 1px 0 #2b28330f;
+  --key: #fffdf8b3; --key-hi: #ffffff; --key-edge: transparent; --key-ink: #2b2833; --key-shadow: inset 0 0 0 1.2px #2b283373;
+  --well: #2b28330d; --flyout: #fffdf8f7; --line: #2b283326;
+  --ink: #2b2833; --ink-2: #463f52; --muted: #665f72;
+  --amber: #30638e; --cyan: #4f8f6e; --red: #c23b4e; --solo: #b07d1c; --on-ink: #1f1c26;
+  --focus: #30638e; --panel-hi: #f1eadc; --track: #2b28331a;
+  --led-g: #6a994e; --led-y: #d9962a; --led-r: #c23b4e;
+  --led-g-off: #2b28330a; --led-y-off: #2b28330a; --led-r-off: #2b28330a;
+  --glow: 0; --scroll: #d8cfbf; --scroll-hi: #bfb4a1;
+  --field: #fffdf8; --rail: #2b283326; --switch: #d8cfbf;
+  --cap-w: 28px; --cap-h: 22px;
+  --pop-shadow: 0 0 0 1.2px #2b283359, 0 18px 40px #4a3c2826;
+  --cap-metal: radial-gradient(circle at 40% 38%, #ffffffb3, transparent 40%), #30638e; --cap-ridge: transparent;
+  --cap-shadow: none; --cap-ink: #1f1c26;
+  --c-slate: #6f7f91; --c-amber: #d9962a; --c-coral: #df6a4e; --c-rose: #d1495b;
+  --c-violet: #7b5ea7; --c-blue: #30638e; --c-cyan: #00798c; --c-green: #6a994e;
+  --font: "Sitka Text", "Sitka Small", Georgia, "Segoe UI", serif;
+  --wc-display: "Sitka Banner", "Sitka Heading", "Sitka Text", Georgia, serif;
+  --wc-paper: #fbf8f1;
+  --wc-line: 16px 11px 19px 12px / 12px 18px 11px 17px;
+  --warning-ink: #8a4b12;
+  color-scheme: light;
+}
+:root body[data-theme="watercolour"] { background: #f7f2e7; }
+/* The paper: warm white with a cold-press tooth, lit from the top left, with two faint old washes. */
+:root body[data-theme="watercolour"] .theme-light {
+  --ambient-base: radial-gradient(ellipse 45% 55% at 8% 18%, #edae4920, transparent 70%), radial-gradient(ellipse 50% 60% at 94% 86%, #00798c17, transparent 70%), radial-gradient(ellipse 90% 70% at 20% -10%, #fffdf8, transparent 70%), linear-gradient(180deg, #fbf8f1, #f3ede1);
+  --ambient-accent: radial-gradient(ellipse 50% 40% at 25% 8%, #fff6e0b3, transparent);
+}
+:root body[data-theme="watercolour"] .theme-light::after { content: ""; position: absolute; inset: 0; background: var(--sm-noise); opacity: .55; mix-blend-mode: multiply; }
+:root body[data-theme="watercolour"] .glass-aurora { display: none; }
+:root body[data-theme="watercolour"] .group { border-radius: 0; background: transparent; box-shadow: none; }
+:root body[data-theme="watercolour"] .group-head h2 { font-family: var(--wc-display); font-style: italic; font-weight: 600; font-size: 16px; letter-spacing: .01em; text-transform: none; color: var(--ink-2); }
+:root body[data-theme="watercolour"] .linkish { color: #30638e; }
+:root body[data-theme="watercolour"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-family: var(--wc-display); font-style: italic; font-weight: 700; letter-spacing: 0; }
+:root body[data-theme="watercolour"] .strip .name { font-size: 18px; }
+:root body[data-theme="watercolour"] .brand-name { font-size: 21px; }
+:root body[data-theme="watercolour"] .strip .sub { color: var(--muted); }
+:root body[data-theme="watercolour"] .strip .bus-tag { color: color-mix(in srgb, var(--acc) 70%, #1f1c26); }
+/* Channels: a loose wash of the channel's pigment, darker where it pooled, inside a sketched ink line. */
+:root body[data-theme="watercolour"] :is(.strip, .mini-row) {
+  position: relative; border-radius: var(--wc-line);
+  background:
+    radial-gradient(60% 34% at 46% 14%, color-mix(in srgb, var(--acc) 34%, transparent), transparent 72%),
+    radial-gradient(70% 40% at 58% 64%, color-mix(in srgb, var(--acc) 20%, transparent), transparent 74%),
+    radial-gradient(90% 18% at 50% 98%, color-mix(in srgb, var(--acc) 26%, transparent), transparent 70%),
+    #fffdf866;
+  box-shadow: inset 0 0 0 1.2px #2b2833a6, inset 0 0 18px color-mix(in srgb, var(--acc) 10%, transparent);
+}
+/* A second, looser pass of the pen, slightly off the first. */
+:root body[data-theme="watercolour"] .strip::after {
+  content: ""; position: absolute; inset: -2px 1px 1px -1px; pointer-events: none; z-index: 0;
+  border: 1px solid #2b283347; border-radius: 12px 19px 13px 18px / 18px 12px 17px 11px; transform: rotate(-.35deg);
+}
+:root body[data-theme="watercolour"] .mini-row { border-radius: 12px 9px 14px 10px / 10px 14px 9px 13px; background: radial-gradient(70% 90% at 30% 40%, color-mix(in srgb, var(--acc) 20%, transparent), transparent 75%), #fffdf880; }
+:root body[data-theme="watercolour"] :is(.strip, .mini-row):hover { box-shadow: inset 0 0 0 1.4px #2b2833d9, inset 0 0 24px color-mix(in srgb, var(--acc) 16%, transparent); }
+/* Muted: the wash is lifted off with a damp brush and only a grey stain is left. */
+:root body[data-theme="watercolour"] :is(.strip, .mini-row).muted { background: radial-gradient(60% 34% at 46% 14%, #6f7f911f, transparent 72%), radial-gradient(70% 40% at 58% 64%, #6f7f9114, transparent 74%), #fffdf866; box-shadow: inset 0 0 0 1.2px #2b283373; }
+/* The channel icon: a little pigment puddle with the glyph inked on top. */
+:root body[data-theme="watercolour"] :is(.strip .head .chip, .mini-row .chip) {
+  border-radius: 46% 54% 52% 48% / 55% 45% 55% 45%; color: color-mix(in srgb, var(--acc) 62%, #1f1c26);
+  background: radial-gradient(circle at 45% 40%, color-mix(in srgb, var(--acc) 22%, #fffdf8), color-mix(in srgb, var(--acc) 38%, #fffdf8) 80%);
+  box-shadow: inset 0 0 0 1.2px #2b283380;
+}
+:root body[data-theme="watercolour"] .strip.muted .head .chip { color: #665f72; background: #ece6da; }
+/* Keys: pen-drawn outlines on the paper. Pressed keys fill with a wash; the label stays in ink. */
+:root body[data-theme="watercolour"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) {
+  border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px; background: var(--key); color: var(--key-ink); font-weight: 600; box-shadow: var(--key-shadow);
+}
+:root body[data-theme="watercolour"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { background: #ffffff; box-shadow: inset 0 0 0 1.4px #2b2833d9; }
+:root body[data-theme="watercolour"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="watercolour"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono, .tog.eq)[aria-pressed="true"] {
+  color: #142235; background: radial-gradient(90% 120% at 40% 30%, #9fbdd8, #6e98c0 70%, #5683ae); box-shadow: inset 0 0 0 1.2px #2b2833b3;
+}
+:root body[data-theme="watercolour"] .strip-routes .route.b[aria-pressed="true"] { color: #15281d; background: radial-gradient(90% 120% at 40% 30%, #b5d6bd, #86b796 70%, #6ea582); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
+:root body[data-theme="watercolour"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { color: #2e1f05; background: radial-gradient(90% 120% at 40% 30%, #f6d58f, #e8b454 70%, #d9962a); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
+:root body[data-theme="watercolour"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #2e0b12; background: radial-gradient(90% 120% at 40% 30%, #f0a3ad, #e0707f 70%, #d1495b); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
+:root body[data-theme="watercolour"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: #fffdf8; background: radial-gradient(90% 120% at 40% 30%, #3f78a8, #30638e 70%, #244d70); box-shadow: inset 0 0 0 1.2px #1f1c26; }
+:root body[data-theme="watercolour"] .bar { background: #fbf8f1e6; box-shadow: inset 0 -1.2px 0 #2b283340; }
+:root body[data-theme="watercolour"] .bar :is(.btn, .keys) { box-shadow: inset 0 0 0 1.1px #2b283366; }
+:root body[data-theme="watercolour"] .bar :is(#pinBtn, #dockBtn)[aria-pressed="true"] { background: #30638e; color: #fffdf8; }
+/* Meters: wet pigment in the channel's colour, deepening as it rises, alizarin past 0 dB, and
+   darker where it pools at its edge (the .lit layer's top or right edge is the level). */
+:root body[data-theme="watercolour"] .strip .well { border-radius: 6px 4px 7px 5px; background: #2b28330a; box-shadow: inset 0 0 0 1px #2b28332e; }
+:root body[data-theme="watercolour"] .meter { -webkit-mask: none; mask: none; border-radius: 4px 4px 3px 3px; }
+:root body[data-theme="watercolour"] .meter .unlit { background: #2b28330a; }
+:root body[data-theme="watercolour"] .meter .lit b { background: linear-gradient(to top, color-mix(in srgb, var(--acc) 45%, #fffdf8), color-mix(in srgb, var(--acc) 80%, #fffdf8) var(--p-yellow), var(--acc) var(--p-zero), #c23b4e var(--p-zero)); }
+:root body[data-theme="watercolour"] .fader.h .meter .lit b { background: linear-gradient(to right, color-mix(in srgb, var(--acc) 45%, #fffdf8), color-mix(in srgb, var(--acc) 80%, #fffdf8) var(--p-yellow), var(--acc) var(--p-zero), #c23b4e var(--p-zero)); }
+:root body[data-theme="watercolour"] .meter .lit::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--acc) 75%, #1f1c26); opacity: .75; }
+:root body[data-theme="watercolour"] .fader.h .meter .lit::after { top: 0; bottom: 0; left: auto; right: 0; width: 3px; height: auto; }
+:root body[data-theme="watercolour"] .muted .meter .lit { filter: saturate(0) brightness(1.05); opacity: .6; }
+:root body[data-theme="watercolour"] .meter .pk i { background: #2b2833; height: 1.5px; border-radius: 1px; opacity: .7; }
+:root body[data-theme="watercolour"] .fader.h .meter .pk i { width: 1.5px; height: auto; }
+/* Fader: a pencil rail, washed in the channel's colour up to the cap, and a cap that is a blot of pigment. */
+:root body[data-theme="watercolour"] .fader .groove::before { display: none; }
+:root body[data-theme="watercolour"] .fader:not(.h) .groove {
+  width: 4px; margin-left: -2px; border: 0; border-radius: 3px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--acc) 30%, transparent), color-mix(in srgb, var(--acc) 55%, transparent) calc(var(--cap-h) / 2 + var(--p, 0) * (100% - var(--cap-h))), transparent 0) center / 4px 100% no-repeat, linear-gradient(#2b28338c, #2b28338c) center / 1.2px 100% no-repeat;
+  box-shadow: none;
+}
+:root body[data-theme="watercolour"] .muted .fader:not(.h) .groove { background: linear-gradient(#2b283366, #2b283366) center / 1.2px 100% no-repeat; }
+:root body[data-theme="watercolour"] .fader .thumb {
+  border-radius: 52% 48% 60% 40% / 45% 55% 45% 55%; clip-path: none; filter: none;
+  background: radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--acc) 40%, #fffdf8) 0, var(--acc) 58%, color-mix(in srgb, var(--acc) 72%, #1f1c26) 100%);
+  box-shadow: inset 0 0 0 1px #2b283359, 0 2px 0 color-mix(in srgb, var(--acc) 25%, transparent);
+}
+:root body[data-theme="watercolour"] .fader .thumb::before { content: none; }
+:root body[data-theme="watercolour"] .fader:not(.h) .thumb::after { display: none; }
+:root body[data-theme="watercolour"] .muted .fader .thumb { background: radial-gradient(circle at 38% 34%, #e4ded2, #a8a2ae 60%, #7e7888); }
+:root body[data-theme="watercolour"] .fader.dragging .thumb { box-shadow: inset 0 0 0 1.4px #2b2833, 0 0 0 5px color-mix(in srgb, var(--acc) 22%, transparent); }
+:root body[data-theme="watercolour"] .unity { background: #2b2833; opacity: .35; }
+:root body[data-theme="watercolour"] .scale span { color: #6b6577; font-size: 10px; font-family: var(--font); font-style: italic; }
+:root body[data-theme="watercolour"] .scale span.zero { color: var(--ink); font-weight: 700; }
+/* The level readout: written with a nib in the italic book face. */
+:root body[data-theme="watercolour"] .strip .readout { font-family: var(--wc-display); font-style: italic; font-weight: 700; font-size: 22px; color: var(--ink); background: transparent; letter-spacing: 0; }
+:root body[data-theme="watercolour"] .strip .readout:hover { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+:root body[data-theme="watercolour"] .muted .readout { color: #a3364a; }
+/* Mini mode and the tray panel: the sideways cap is a pale wash so the level printed on it reads. */
+:root body[data-theme="watercolour"] .fader.h { --cap-w: 46px; }
+:root body[data-theme="watercolour"] .fader.h .track { border-radius: 7px 5px 8px 6px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 22%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), #2b28330a; box-shadow: inset 0 0 0 1px #2b283340; }
+:root body[data-theme="watercolour"] .fader.h .thumb { top: 0; bottom: 0; border-radius: 12px 9px 13px 10px / 10px 13px 9px 12px; color: #1f1c26; background: radial-gradient(90% 120% at 40% 30%, color-mix(in srgb, var(--acc) 22%, #fffdf8), color-mix(in srgb, var(--acc) 42%, #fffdf8)); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
+:root body[data-theme="watercolour"] .muted .fader.h .thumb { background: #ece6da; }
+:root body[data-theme="watercolour"] .fader.h .db { color: #1f1c26; font-family: var(--wc-display); font-style: italic; font-weight: 700; font-size: 12px; padding: 0; }
+:root body[data-theme="watercolour"] .duck-tag { color: var(--ink); }
+/* Dialogs, menus and window buttons. */
+:root body[data-theme="watercolour"] :is(.dlg, .menu) { border-radius: 18px 13px 20px 14px / 14px 20px 13px 18px; background: var(--sm-noise), var(--flyout); background-blend-mode: multiply, normal; box-shadow: var(--pop-shadow); }
+:root body[data-theme="watercolour"] .dlg::backdrop { background: rgba(60, 50, 40, .22); backdrop-filter: blur(3px); }
+:root body[data-theme="watercolour"] .wc { border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px; }
+:root body[data-theme="watercolour"] .wc:hover { background: #2b283314; }
+:root body[data-theme="watercolour"] .wc.close:hover { background: #d1495b; color: #fffdf8; }
+/* Theme-picker sample. */
+.theme-card[data-theme="watercolour"] .tc-desk { background: radial-gradient(ellipse 50% 60% at 15% 30%, #edae4933, transparent 70%), radial-gradient(ellipse 55% 60% at 90% 85%, #00798c26, transparent 70%), #fbf8f1; box-shadow: inset 0 0 0 1px #2b28331f; }
+.theme-card[data-theme="watercolour"] .tc-mod { border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px; background: radial-gradient(70% 45% at 45% 25%, #30638e40, transparent 75%), radial-gradient(80% 30% at 50% 95%, #30638e2e, transparent 70%), #fffdf8; box-shadow: inset 0 0 0 1px #2b2833a6; }
+.theme-card[data-theme="watercolour"] .tc-mod:nth-child(2) { background: radial-gradient(70% 45% at 45% 25%, #d1495b40, transparent 75%), radial-gradient(80% 30% at 50% 95%, #d1495b2e, transparent 70%), #fffdf8; }
+.theme-card[data-theme="watercolour"] .tc-mod:nth-child(3) { background: radial-gradient(70% 45% at 45% 25%, #6a994e47, transparent 75%), radial-gradient(80% 30% at 50% 95%, #6a994e33, transparent 70%), #fffdf8; }
+.theme-card[data-theme="watercolour"] :is(.tc-keys i, .tc-mute) { border-radius: 3px; background: #fffdf8; box-shadow: inset 0 0 0 .8px #2b283399; }
+.theme-card[data-theme="watercolour"] .tc-keys i.on.a { background: #6e98c0; box-shadow: inset 0 0 0 .8px #2b283399; }
+.theme-card[data-theme="watercolour"] .tc-keys i.on.b { background: #86b796; box-shadow: inset 0 0 0 .8px #2b283399; }
+.theme-card[data-theme="watercolour"] .tc-mute.on { background: #e0707f; box-shadow: inset 0 0 0 .8px #2b283399; }
+.theme-card[data-theme="watercolour"] .tc-well { background: #2b28330d; border-radius: 3px; }
+.theme-card[data-theme="watercolour"] .tc-well b { background: linear-gradient(to top, #6e98c066, #30638e); border-radius: 2px 2px 1px 1px; box-shadow: inset 0 2px 0 #244d70; }
+.theme-card[data-theme="watercolour"] .tc-cap { width: 11px; height: 9px; margin-left: -5.5px; border-radius: 52% 48% 60% 40% / 45% 55% 45% 55%; background: radial-gradient(circle at 38% 34%, #9fbdd8, #30638e 60%, #244d70); box-shadow: none; }
+.theme-card[data-theme="watercolour"] .tc-slot::before { width: 1px; margin-left: -.5px; background: #2b283380; }
+/* Theme motion: light drifts across the paper (Subtle and Full); the washes bloom slowly (Full). */
+@media (prefers-reduced-motion: no-preference) {
+  body[data-theme="watercolour"]:not([data-theme-motion="off"]) .theme-light::before { animation: ambient-drift 44s ease-in-out infinite alternate; }
+  body[data-theme="watercolour"][data-theme-motion="full"] .strip:not(.muted) { animation: wc-bloom 9s ease-in-out infinite alternate; }
+  body[data-theme="watercolour"][data-theme-motion="full"] .strip:nth-child(3n + 2) { animation-delay: -3s; animation-duration: 11s; }
+  body[data-theme="watercolour"][data-theme-motion="full"] .strip:nth-child(3n + 3) { animation-delay: -6s; animation-duration: 8s; }
+}
+@keyframes wc-bloom {
+  from { background-size: 100% 100%, 100% 100%, 100% 100%, auto; background-position: 0 0, 0 0, 0 0, 0 0; }
+  to { background-size: 112% 108%, 106% 112%, 104% 100%, auto; background-position: 40% 0, 60% 30%, 50% 100%, 0 0; }
+}
+
+/* Performance comes first: while Sleekmeeter isn't the window in front, every looping theme
+   effect stops, so a game or stream in front gets the GPU. One-shot entrances (the drawer, dialogs)
+   still play so they don't freeze half-drawn. */
+body.is-idle :not(.drawer, .dlg), body.is-idle ::before, body.is-idle ::after { animation-play-state: paused !important; }

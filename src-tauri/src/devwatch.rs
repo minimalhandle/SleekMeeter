@@ -13,8 +13,10 @@ use std::collections::BTreeMap;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
-/// Time between checks.
+/// Time between checks without Windows' device notifications, or while something is timed.
 const EVERY: Duration = Duration::from_millis(1500);
+/// With them and nothing pending: a check this often anyway, for settings or Voicemeeter changes.
+const IDLE: Duration = Duration::from_secs(15);
 /// Give Windows this long to finish setting up a device that just arrived.
 const SETTLE: Duration = Duration::from_millis(2500);
 /// Never restart more often than this.
@@ -343,9 +345,15 @@ pub fn spawn(app: AppHandle) {
         let mut watch: BTreeMap<String, bool> = BTreeMap::new();
         let mut due: Option<(Instant, String)> = None;
         let mut last_restart: Option<Instant> = None;
-        let mut fallback_watches = BTreeMap::new();
+        let mut fallback_watches: BTreeMap<usize, FallbackWatch> = BTreeMap::new();
+        let mut seen = crate::devnotify::now();
         loop {
-            std::thread::sleep(EVERY);
+            let timed = due.is_some() || fallback_watches.values().any(|w| w.candidate.is_some());
+            if timed {
+                std::thread::sleep(EVERY);
+            } else {
+                crate::devnotify::wait(&mut seen, IDLE, EVERY);
+            }
             let (restart_on, auto, fallbacks) = {
                 let state = app.state::<Settings>();
                 let s = state.0.locked();

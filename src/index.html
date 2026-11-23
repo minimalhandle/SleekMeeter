@@ -1178,7 +1178,8 @@
             <p class="hint" id="micFxStereoHint" hidden>Stereo mode keeps left and right separate for capture cards and other hardware sources. Use VST3 effects with stereo input and output. NVIDIA mic effects are available in mono mode.</p>
             <p class="hint" id="micFxOutHint" hidden>Plugins on an output change what everyone listening to it hears, like a spatial audio plugin on your headphones. They add a little delay, so keep outputs your stream or recording uses free of them unless you want the effect there too.</p>
             <p class="hint" id="micFxVirtHint" hidden>Voice clean-up treats this input's left and right as one voice, which suits voice chat. Pick Stereo for music or games.</p>
-            <div class="field wide" id="micFxEngineRow"><label for="micFxEngine">Noise removal engine</label><select id="micFxEngine"><option value="cpu">CPU · RNNoise (any graphics card)</option><option value="nvidia">NVIDIA RTX</option></select></div>
+            <div class="field wide" id="micFxEngineRow"><label for="micFxEngine">Noise removal engine</label><select id="micFxEngine"><option value="cpu">CPU · RNNoise (any PC, best for gaming)</option><option value="nvidia">NVIDIA RTX (uses the graphics card)</option></select></div>
+            <p class="hint" id="micFxGpuHint" hidden>NVIDIA’s clean-up runs on your graphics card, so it takes some of the GPU from your games. CPU · RNNoise uses very little and is the better pick while you play.</p>
             <label class="check"><input type="checkbox" id="micFxOn"><span id="micFxOnText">Remove background noise from this mic</span></label>
             <p class="hint" id="micFxMissing" hidden>NVIDIA's clean-up needs an NVIDIA RTX graphics card and NVIDIA's free <b>Audio Effects SDK</b> runtime, which isn't installed. Get it from NVIDIA's Maxine Audio Effects page, then come back here.</p>
             <div class="fold-body" data-needs="micfx">

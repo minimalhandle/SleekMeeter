@@ -72,13 +72,14 @@ test('embedded dashboard data cannot close the JSON script element', () => {
 
 test('rejects anything that is not the expected ping', async () => {
   const env = d1();
-  for (const bad of [{}, { id: 'x', version: '0.15.0', edition: 'banana' }, { id: id(1), version: '1', edition: 'banana' }, { id: id(1), version: '0.15.0', edition: 'mine' }]) {
+  for (const bad of [{}, { id: 'x', version: '0.15.0', edition: 'banana' }, { id: id(1), version: '1', edition: 'banana' }, { id: id(1), version: '0.22.0-<b>', edition: 'banana' },{ id: id(1), version: '0.15.0', edition: 'mine' }]) {
     assert.equal((await ping(env, bad)).status, 400);
   }
   assert.equal((await ping(env, null, 'GET')).status, 405);
   assert.equal((await worker.fetch(new Request('https://sleekmeeter.app/api/other'), env)).status, 404);
   assert.equal(env.db.prepare('SELECT COUNT(*) AS n FROM pings').get().n, 0);
   assert.equal(valid({ id: id(3), version: '0.15.0', edition: 'standard', extra: 1 }), true, 'extra fields are ignored, not stored');
+  assert.equal(valid({ id: id(4), version: '0.22.0-beta.2', edition: 'banana' }), true, 'beta builds are counted');
 });
 
 test('the daily clean-up removes rows older than 400 days', async () => {

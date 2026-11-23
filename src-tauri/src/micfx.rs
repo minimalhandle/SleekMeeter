@@ -109,6 +109,9 @@ struct SpeechInput {
     channel: AtomicUsize,
     probability: AtomicU32,
     updated: AtomicU64,
+    /// Signalled when audio arrives or the channel changes, so the analysis thread sleeps
+    /// until there's work instead of checking on a timer.
+    wake: usize,
 }
 
 impl SpeechInput {
@@ -118,6 +121,7 @@ impl SpeechInput {
             channel: AtomicUsize::new(usize::MAX),
             probability: AtomicU32::new(0),
             updated: AtomicU64::new(0),
+            wake: sys::new_event(),
         }
     }
 }
@@ -157,12 +161,13 @@ fn spawn_speech() {
                     voice = (channel != usize::MAX).then(crate::voice::CpuVoice::new);
                     previous = channel;
                 }
+                // Off (voice-aware ducking unused): sleep until the channel changes.
                 let Some(model) = &mut voice else {
-                    std::thread::sleep(Duration::from_millis(20));
+                    sys::wait(s.wake, 5000);
                     continue;
                 };
                 if !s.queue.pop(&mut input) {
-                    std::thread::sleep(Duration::from_millis(4));
+                    sys::wait(s.wake, 100);
                     continue;
                 }
                 // Discard a backlog rather than publishing a stale speech decision.
@@ -209,6 +214,7 @@ fn tap_speech(sh: &Shared, b: &AudioBuffer) {
             }
             s.queue.push(&mono[..count]);
         }
+        sys::signal(s.wake);
     }
 }
 
@@ -1784,7 +1790,9 @@ pub fn spawn(app: AppHandle) {
                 } else {
                     usize::MAX
                 };
-                speech.channel.store(channel, Ordering::Release);
+                if speech.channel.swap(channel, Ordering::AcqRel) != channel {
+                    sys::signal(speech.wake);
+                }
                 any_speech |= channel != usize::MAX;
             }
             let out_free = out_blocked

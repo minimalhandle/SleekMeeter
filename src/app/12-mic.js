@@ -483,6 +483,7 @@ function syncMicFx() {
   const cpu = c.engine === "cpu";
   $("#micFxEngine").value = cpu ? "cpu" : "nvidia";
   $("#micFxEngineRow").hidden = !!c.stereo;
+  $("#micFxGpuHint").hidden = !!c.stereo || cpu;
   $("#micFxOnText").textContent = cpu ? "Remove background noise with CPU RNNoise (48 kHz, no GPU required)" : "Remove background noise with NVIDIA RTX";
   $("#micFxEffect").closest(".field").hidden = cpu;
   $("#micRiderSection").hidden = !!c.stereo || kind !== "hw";

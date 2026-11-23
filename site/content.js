@@ -74,7 +74,7 @@ export const featureGroups = [
   },
   {
     id: 'workspace', name: 'Appearance & workspace', items: [
-      ['15 themes', 'Choose Graphite, OLED black, Halo, Abyss, Darkroom, Glass, Overclock, Groovy, Neon, Terminal, Arcade, Block, Transit, Nordic or Bubblegum.'],
+      ['15 themes', 'Choose Graphite, OLED black, Halo, Abyss, Glass, Overclock, Groovy, Neon, Terminal, Arcade, Block, Transit, Nordic, Watercolour or Bubblegum.'],
       ['Theme motion', 'Set Off, Subtle or Full motion for every theme. Windows reduced-motion settings take priority.'],
       ['Channel personalization', 'Rename strips, pick icons and colors, reorder or hide channels, lock the arrangement and show or hide device names.'],
       ['Focused mixer', 'Show faders, meters, Mute and active sends. Open the full controls for each input as needed.'],
@@ -101,9 +101,9 @@ export const featureGroups = [
 export const themes = [
   ['graphite', 'Graphite', '#3fe0ff'], ['oled', 'OLED black', '#73746d'],
   ['halo', 'Halo', '#b6a8ff'], ['abyss', 'Abyss', '#3ff2d6'],
-  ['darkroom', 'Darkroom', '#ff5a3c'], ['glass', 'Glass', '#b18bff'],
+  ['glass', 'Glass', '#b18bff'],
   ['overclock', 'Overclock', '#00e5ff'], ['groovy', 'Groovy', '#e8702a'], ['neon', 'Neon', '#ec48be'],
   ['terminal', 'Terminal', '#76d48e'], ['arcade', 'Arcade', '#b271f3'],
   ['block', 'Block', '#ffe358'], ['transit', 'Transit', '#0a7ad1'],
-  ['nordic', 'Nordic', '#71807a'], ['bubblegum', 'Bubblegum', '#f1a4c9'],
+  ['nordic', 'Nordic', '#71807a'], ['watercolour', 'Watercolour', '#30638e'], ['bubblegum', 'Bubblegum', '#f1a4c9'],
 ];

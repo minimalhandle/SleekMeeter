@@ -30,6 +30,7 @@ mod btwatch;
 mod chat_balance;
 mod coach;
 mod crackle;
+mod devnotify;
 mod devwatch;
 mod endpoints;
 mod fades;
@@ -769,6 +770,7 @@ fn settings_set(app: AppHandle, value: Value) -> Result<Value, String> {
     if let Some(w) = app.get_webview_window(FLYOUT) {
         flyout_shadow(&app, &w);
     }
+    flyout_match_opacity(&app);
     if usage_changed {
         usage::nudge();
     }
@@ -1083,6 +1085,8 @@ fn show_osd(app: &AppHandle, snap: &Value, kind: &str, i: usize) {
 
 /// Polls Voicemeeter ~30 times a second, as the SDK recommends:
 /// IsParametersDirty() for changes (and connection state), GetLevel() for meters.
+/// With every window hidden and nothing timing-critical going on, it slows to 10 times a
+/// second: the volume overlay then appears up to 0.1 s later, and the PC gets the time back.
 /// Whether the level history is being recorded (Settings).
 fn keep_history(app: &AppHandle) -> bool {
     let state = app.state::<Settings>();
@@ -1093,7 +1097,8 @@ fn keep_history(app: &AppHandle) -> bool {
 
 fn spawn_poller(app: AppHandle, api: Arc<Api>) {
     std::thread::spawn(move || {
-        let tick = Duration::from_millis(33);
+        let fast_tick = Duration::from_millis(33);
+        let idle_tick = Duration::from_millis(100);
         let mut connected = false;
         let mut edition = 2;
         let mut last_full = Instant::now();
@@ -1105,6 +1110,8 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
 
         loop {
             let started = Instant::now();
+            // Set below while connected. Voicemeeter not running is checked 10 times a second.
+            let mut fast = false;
             let dirty = api.is_dirty();
 
             if dirty < 0 {
@@ -1165,17 +1172,31 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
                     let hotkeys = app.state::<Settings>().0.locked()["hotkeys"].clone();
                     hold::arm(&app, &hotkeys);
                 }
-                if window_visible(&app, "main")
-                    || window_visible(&app, FLYOUT)
+                let flyout_shown = window_visible(&app, FLYOUT);
+                let main_shown = window_visible(&app, "main");
+                fast = main_shown
+                    || flyout_shown
                     || remote::meters_wanted()
-                {
+                    || settling
+                    || fades::wants_fast(&app)
+                    || mic_tune::auditioning()
+                    || window_visible(&app, MIXWIN);
+                if main_shown || flyout_shown || remote::meters_wanted() {
                     let mut levels = api.levels(&layout);
                     remote::set_levels(&levels);
                     if keep_history(&app) {
                         levels_log.feed(&levels);
                     }
                     mic_tune::sample(&api, &layout, &mut levels);
-                    let _ = app.emit("vm-levels", levels);
+                    // 30 times a second, so only to the windows that use them: not the overlay,
+                    // and not the flyout or output mix window while they're hidden.
+                    let _ = app.emit_to("main", "vm-levels", &levels);
+                    if flyout_shown {
+                        let _ = app.emit_to(FLYOUT, "vm-levels", &levels);
+                    }
+                    if window_visible(&app, MIXWIN) {
+                        let _ = app.emit_to(MIXWIN, "vm-levels", &levels);
+                    }
                 } else if levels_log.due() && keep_history(&app) {
                     // Hidden in the tray: read the meters once a second, just for the history.
                     levels_log.feed(&api.levels(&layout));
@@ -1184,6 +1205,7 @@ fn spawn_poller(app: AppHandle, api: Arc<Api>) {
 
             housekeeping(&app);
 
+            let tick = if fast { fast_tick } else { idle_tick };
             if let Some(rest) = tick.checked_sub(started.elapsed()) {
                 std::thread::sleep(rest);
             }
@@ -1270,6 +1292,8 @@ fn show_main(app: &AppHandle) {
         let _ = w.unminimize();
         let _ = w.set_focus();
         recover::check_main_draws(app);
+    } else {
+        rebuild_main(app);
     }
 }
 
@@ -1280,7 +1304,112 @@ fn toggle_main(app: &AppHandle) {
         } else {
             show_main(app);
         }
+    } else {
+        rebuild_main(app);
     }
+}
+
+/* ---------------- freeing hidden windows ---------------- */
+
+/// A window hidden this long is closed to free its memory (each one is a whole web page,
+/// tens of MB or more). Opening it again builds it afresh in about a second.
+const FREE_HIDDEN_AFTER: Duration = Duration::from_secs(20);
+const FREE_CHECK_EVERY: Duration = Duration::from_secs(5);
+
+/// Set while a freed mixer window is being built again, so a double click builds one.
+static MAIN_BUILDING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Builds the mixer window again after it was freed. It appears once its page has drawn
+/// (ui_ready), like at startup, or after 3 s at the latest.
+fn rebuild_main(app: &AppHandle) {
+    if MAIN_BUILDING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let handle = app.clone();
+    // Through the event loop: building a window inside a command that runs on the main
+    // thread deadlocks on Windows.
+    let queued = app.run_on_main_thread(move || {
+        let app = &handle;
+        let built = app
+            .config()
+            .app
+            .windows
+            .iter()
+            .find(|c| c.label == "main")
+            .cloned()
+            .ok_or_else(|| "no main window in the config".to_string())
+            .and_then(|c| {
+                tauri::WebviewWindowBuilder::from_config(app, &c)
+                    .and_then(|b| b.build())
+                    .map_err(|e| e.to_string())
+            });
+        MAIN_BUILDING.store(false, Ordering::SeqCst);
+        let w = match built {
+            Ok(w) => w,
+            Err(e) => {
+                log_error!("Couldn't open the mixer window again: {e}");
+                return;
+            }
+        };
+        recover::watch(&w);
+        let s = app.state::<Settings>().0.locked().clone();
+        let _ = w.set_always_on_top(settings::flag(&s, "alwaysOnTop"));
+        if !settings::flag(&s, "mini") {
+            restore_window(&w, &s);
+        }
+        app.state::<ShowOnReady>().0.store(true, Ordering::SeqCst);
+        let late = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_secs(3));
+            if late.state::<ShowOnReady>().0.swap(false, Ordering::SeqCst) {
+                if let Some(w) = late.get_webview_window("main") {
+                    let _ = w.show();
+                    let _ = w.set_focus();
+                }
+            }
+        });
+    });
+    if queued.is_err() {
+        MAIN_BUILDING.store(false, Ordering::SeqCst);
+    }
+}
+
+/// Whether the mixer window must stay alive while hidden: its page is measuring how the
+/// voice sits against the game for the loudness dialog, or showing the window is pending.
+fn main_needed_hidden(app: &AppHandle) -> bool {
+    let loudness = app.state::<Settings>().0.locked()["loudness"]["on"]
+        .as_bool()
+        .unwrap_or(false);
+    loudness || app.state::<ShowOnReady>().0.load(Ordering::SeqCst)
+}
+
+/// Frees the mixer window and the tray panel once they've been hidden for a while.
+fn spawn_window_janitor(app: AppHandle) {
+    std::thread::spawn(move || {
+        let mut hidden_since: [Option<Instant>; 2] = [None, None];
+        loop {
+            std::thread::sleep(FREE_CHECK_EVERY);
+            for (k, label) in ["main", FLYOUT].into_iter().enumerate() {
+                let Some(w) = app.get_webview_window(label) else {
+                    hidden_since[k] = None;
+                    continue;
+                };
+                // Minimized windows are left alone: they're expected back at once.
+                let hidden = !w.is_visible().unwrap_or(true);
+                let keep = label == "main" && main_needed_hidden(&app);
+                if !hidden || keep {
+                    hidden_since[k] = None;
+                    continue;
+                }
+                let since = *hidden_since[k].get_or_insert_with(Instant::now);
+                if since.elapsed() >= FREE_HIDDEN_AFTER {
+                    hidden_since[k] = None;
+                    log_info!("Freed the hidden {label} window to save memory");
+                    let _ = w.destroy();
+                }
+            }
+        }
+    });
 }
 
 /* ---------------- tray volume panel ("flyout") ---------------- */
@@ -1347,12 +1476,35 @@ fn dock_spot(x: i32, y: i32, pw: i32, ph: i32) -> Option<(i32, i32)> {
     Some((px, py))
 }
 
+/// Whether Settings → Tray volume panel → Opacity is below 100%.
+fn flyout_see_through(app: &AppHandle) -> bool {
+    app.state::<Settings>().0.locked()["panelOpacity"]
+        .as_f64()
+        .unwrap_or(100.0)
+        < 100.0
+}
+
+/// Whether the panel that exists now was made see-through.
+static FLYOUT_BUILT_SEE_THROUGH: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 /// Windows' window shadow keeps the panel opaque, so it only has one while it's solid.
 fn flyout_shadow(app: &AppHandle, w: &WebviewWindow) {
-    let opacity = app.state::<Settings>().0.locked()["panelOpacity"]
-        .as_f64()
-        .unwrap_or(100.0);
-    let _ = w.set_shadow(opacity >= 100.0);
+    let _ = w.set_shadow(!flyout_see_through(app));
+}
+
+/// A see-through window costs more to draw on every frame, so the panel is only made
+/// see-through when its opacity is below 100%. Transparency can't change on a window that
+/// already exists, so a hidden panel made the other way is closed and rebuilt on next open.
+fn flyout_match_opacity(app: &AppHandle) {
+    use std::sync::atomic::Ordering;
+    if let Some(w) = app.get_webview_window(FLYOUT) {
+        if FLYOUT_BUILT_SEE_THROUGH.load(Ordering::Relaxed) != flyout_see_through(app)
+            && !w.is_visible().unwrap_or(true)
+        {
+            let _ = w.destroy();
+        }
+    }
 }
 
 /// Size the panel and put it next to the tray icon (or bottom-right when opened another way).
@@ -1441,6 +1593,8 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         return;
     }
     let (lw, lh) = flyout_size(app);
+    let see_through = flyout_see_through(app);
+    FLYOUT_BUILT_SEE_THROUGH.store(see_through, std::sync::atomic::Ordering::Relaxed);
     let built = WebviewWindowBuilder::new(app, FLYOUT, WebviewUrl::App("index.html".into()))
         .title("Sleekmeeter volume")
         .initialization_script("window.SLEEK_FLYOUT = true;")
@@ -1449,8 +1603,9 @@ fn toggle_flyout(app: &AppHandle, anchor: Option<PhysicalPosition<f64>>) {
         .maximizable(false)
         .minimizable(false)
         .decorations(false)
-        // See-through, so Settings → Tray volume panel → Opacity works.
-        .transparent(true)
+        // See-through only when Settings → Tray volume panel → Opacity is below 100%.
+        .transparent(see_through)
+        .background_color(tauri::window::Color(17, 17, 20, if see_through { 0 } else { 255 }))
         .always_on_top(true)
         .skip_taskbar(true)
         .visible(false)
@@ -1626,6 +1781,12 @@ fn ui_ready(window: WebviewWindow, show: State<'_, ShowOnReady>) {
     }
     if window.label() == "main" && show.0.swap(false, Ordering::SeqCst) {
         let _ = window.show();
+        let _ = window.set_focus();
+    }
+    if window.label() == "main" {
+        if let Some(p) = golive::take_pending() {
+            let _ = window.emit("golive", p);
+        }
     }
 }
 
@@ -2969,6 +3130,8 @@ fn main() {
                 loudness::spawn(handle.clone());
                 midi::spawn(handle.clone());
                 micfx::spawn(handle.clone());
+                devnotify::start();
+                spawn_window_janitor(handle.clone());
                 winout::spawn(handle.clone());
                 usage::spawn(handle.clone());
                 routing::spawn(handle.clone());
@@ -3024,6 +3187,11 @@ fn main() {
         .expect("failed to start Sleekmeeter");
 
     app.run(move |_handle, event| {
+        // Freeing hidden windows must never quit the app. Quit from the tray (app.exit) has a code.
+        if let RunEvent::ExitRequested { code: None, api, .. } = &event {
+            api.prevent_exit();
+            return;
+        }
         if let RunEvent::Exit = event {
             log_info!("Sleekmeeter quitting");
             let _ = mic_tune::finish(_handle, false, true);

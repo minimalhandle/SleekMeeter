@@ -14,7 +14,8 @@ const json = (body, status = 200, extra = {}) =>
 export function valid(p) {
   return !!p && typeof p === 'object'
     && typeof p.id === 'string' && /^[0-9a-f]{32}$/i.test(p.id)
-    && typeof p.version === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(p.version)
+    // 0.22.0, or a pre-release such as 0.22.0-beta.2.
+    && typeof p.version === 'string' && /^\d{1,3}\.\d{1,3}\.\d{1,3}(-[0-9a-z.]{1,20})?$/i.test(p.version)
     && EDITIONS.includes(p.edition);
 }
 

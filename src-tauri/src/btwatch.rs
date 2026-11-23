@@ -26,7 +26,11 @@ pub struct User {
 
 static USERS: Mutex<Vec<User>> = Mutex::new(Vec::new());
 
+/// How often apps on a Bluetooth headset's mic are checked, while there is one.
 const EVERY: Duration = Duration::from_secs(3);
+/// With no Bluetooth headset mic, nothing is checked until Windows says a device changed
+/// (or this long passes, as a safety net).
+const IDLE: Duration = Duration::from_secs(60);
 
 /// `{ users: [{ device, app }] }`: who has a Bluetooth headset in call mode right now.
 pub fn status() -> Value {
@@ -153,13 +157,23 @@ mod sessions {
     }
 }
 
-/// Who's using a Bluetooth headset's mic right now.
+/// The Bluetooth headset mics Windows has right now.
 #[cfg(windows)]
-fn scan() -> Vec<User> {
-    let mics: Vec<crate::endpoints::Endpoint> = crate::endpoints::list()
+fn bluetooth_mics() -> Vec<crate::endpoints::Endpoint> {
+    crate::endpoints::list()
         .into_iter()
         .filter(|e| e.capture && e.active && e.is_bluetooth())
-        .collect();
+        .collect()
+}
+
+#[cfg(not(windows))]
+fn bluetooth_mics() -> Vec<crate::endpoints::Endpoint> {
+    Vec::new()
+}
+
+/// Who's using a Bluetooth headset's mic right now.
+#[cfg(windows)]
+fn scan(mics: &[crate::endpoints::Endpoint]) -> Vec<User> {
     if mics.is_empty() {
         return Vec::new();
     }
@@ -190,41 +204,48 @@ fn scan() -> Vec<User> {
 }
 
 #[cfg(not(windows))]
-fn scan() -> Vec<User> {
+fn scan(_: &[crate::endpoints::Endpoint]) -> Vec<User> {
     Vec::new()
 }
 
 pub fn spawn(app: AppHandle) {
-    std::thread::spawn(move || loop {
-        let now = scan();
-        let before = std::mem::replace(&mut *USERS.locked(), now.clone());
-        let warn = crate::settings::flag_or(
-            &app.state::<crate::Settings>().0.locked(),
-            "btWarn",
-            true,
-        );
-        for u in arrived(&before, &now) {
-            log_info!("{} opened the mic of Bluetooth headset {}", u.app, u.device);
-            crate::audio_events::record(
-                &app,
-                "device",
-                "Bluetooth headset switched to call quality",
-                &format!("{} is using the mic of {}", u.app, u.device),
-                "crackle",
+    std::thread::spawn(move || {
+        let mut seen = crate::devnotify::now();
+        let mut mics = bluetooth_mics();
+        loop {
+            let now = scan(&mics);
+            let before = std::mem::replace(&mut *USERS.locked(), now.clone());
+            let warn = crate::settings::flag_or(
+                &app.state::<crate::Settings>().0.locked(),
+                "btWarn",
+                true,
             );
-            if warn {
-                crate::show_osd_alert(
+            for u in arrived(&before, &now) {
+                log_info!("{} opened the mic of Bluetooth headset {}", u.app, u.device);
+                crate::audio_events::record(
                     &app,
-                    &u.device,
-                    &format!("{} switched it to call quality", u.app),
-                    "headphones",
+                    "device",
+                    "Bluetooth headset switched to call quality",
+                    &format!("{} is using the mic of {}", u.app, u.device),
+                    "crackle",
                 );
+                if warn {
+                    crate::show_osd_alert(
+                        &app,
+                        &u.device,
+                        &format!("{} switched it to call quality", u.app),
+                        "headphones",
+                    );
+                }
+            }
+            if before != now {
+                let _ = app.emit("bt-callmode", status());
+            }
+            let wait = if mics.is_empty() { IDLE } else { EVERY };
+            if crate::devnotify::wait(&mut seen, wait, EVERY) {
+                mics = bluetooth_mics();
             }
         }
-        if before != now {
-            let _ = app.emit("bt-callmode", status());
-        }
-        std::thread::sleep(EVERY);
     });
 }
 
@@ -273,5 +294,5 @@ mod tests {
 
 #[cfg(test)]
 pub fn scan_for_test() -> Vec<User> {
-    scan()
+    scan(&bluetooth_mics())
 }

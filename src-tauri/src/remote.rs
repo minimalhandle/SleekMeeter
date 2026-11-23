@@ -11,7 +11,8 @@ use crate::{actions, fades, Settings, Vm};
 use serde_json::{json, Value};
 use std::io::{Read, Write};
 use std::net::{IpAddr, TcpListener, TcpStream, UdpSocket};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -526,7 +527,6 @@ fn serve(app: &AppHandle, c: &Cfg) -> Result<(), String> {
                 c.port
             )
         })?;
-    listener.set_nonblocking(true).map_err(|e| e.to_string())?;
     let host = if pc_only {
         "localhost".to_string()
     } else {
@@ -542,29 +542,45 @@ fn serve(app: &AppHandle, c: &Cfg) -> Result<(), String> {
         "urls": [format!("http://{host}:{}/?k={}", c.port, c.key)],
     }));
     log_info!("Sleekmeeter Remote listening on port {}", c.port);
-    let mut idle_ticks = 0u32;
+    // accept() waits without using any CPU. A watcher checks the settings once a second and the
+    // network every 10 s; when either changes it connects to the listener to wake it up.
+    let stop = Arc::new(AtomicBool::new(false));
+    {
+        let (app, c, stop) = (app.clone(), c.clone(), stop.clone());
+        let port = c.port;
+        std::thread::spawn(move || {
+            let mut ticks = 0u32;
+            while !stop.load(Ordering::Acquire) {
+                std::thread::sleep(Duration::from_secs(1));
+                ticks += 1;
+                // A network that becomes (or stops being) Public changes who may connect.
+                let network_changed =
+                    c.scope == "private" && ticks % 10 == 0 && on_public_network() != public;
+                if cfg(&app) != c || network_changed {
+                    stop.store(true, Ordering::Release);
+                    let _ = std::net::TcpStream::connect_timeout(
+                        &std::net::SocketAddr::from(([127, 0, 0, 1], port)),
+                        Duration::from_secs(1),
+                    );
+                }
+            }
+        });
+    }
     loop {
-        match listener.accept() {
+        let accepted = listener.accept();
+        if stop.load(Ordering::Acquire) {
+            return Ok(());
+        }
+        match accepted {
             Ok((mut stream, _)) => {
                 let app = app.clone();
                 let c = c.clone();
-                std::thread::spawn(move || {
-                    let _ = stream.set_nonblocking(false);
-                    handle(&app, &c, &mut stream);
-                });
+                std::thread::spawn(move || handle(&app, &c, &mut stream));
             }
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                std::thread::sleep(Duration::from_millis(50));
-                idle_ticks += 1;
-                if idle_ticks % 20 == 0 && cfg(app) != *c {
-                    return Ok(());
-                }
-                // A network that becomes (or stops being) Public changes who may connect.
-                if c.scope == "private" && idle_ticks % 200 == 0 && on_public_network() != public {
-                    return Ok(());
-                }
+            Err(e) => {
+                stop.store(true, Ordering::Release);
+                return Err(format!("Sleekmeeter Remote stopped: {e}"));
             }
-            Err(e) => return Err(format!("Sleekmeeter Remote stopped: {e}")),
         }
     }
 }

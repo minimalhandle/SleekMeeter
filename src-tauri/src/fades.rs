@@ -422,6 +422,12 @@ pub fn route_mute(
 }
 
 /// Runs on every poll tick while Voicemeeter is connected (poll thread only: reads levels).
+/// Whether the poller must run at full speed: ducking listens for the trigger, or a fade
+/// or a timed mute is still going.
+pub fn wants_fast(app: &AppHandle) -> bool {
+    ducking(&app.state::<Settings>().0.locked()).on || !app.state::<Vm>().smooth.locked().is_idle()
+}
+
 pub fn tick(app: &AppHandle, api: &Api, layout: &Layout) {
     let now = Instant::now();
     let d = ducking(&app.state::<Settings>().0.locked());

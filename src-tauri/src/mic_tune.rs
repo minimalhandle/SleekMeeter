@@ -306,6 +306,11 @@ pub fn finish(app: &AppHandle, keep: bool, immediate: bool) -> Result<bool, Stri
     finish_locked(app, api(&vm)?, &mut active, keep, immediate)
 }
 
+/// A before/after preview is playing.
+pub fn auditioning() -> bool {
+    AUDITIONING.load(Ordering::Acquire)
+}
+
 pub fn tick(app: &AppHandle, api: &Api) {
     if !AUDITIONING.load(Ordering::Acquire) {
         return;

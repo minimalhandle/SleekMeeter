@@ -4,3 +4,6 @@ preview/
 src-tauri/gen/
 src-tauri/target/
 site/dist/
+
+# Local tool settings
+.claude/

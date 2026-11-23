@@ -1075,9 +1075,14 @@ const writeMeter = (ch, c, p, pk, mini) => {
 };
 function wakeMeters() {
   lastLevels = performance.now();
+  if (MIXWIN) return; // the output mix window has no meters to draw
   if (!running) { running = true; lastT = performance.now(); requestAnimationFrame(frame); }
 }
 function frame(t) {
+  // At most ~60-80 draws a second, even on 144 Hz+ screens: levels only arrive 30 times a second.
+  if (t - lastT < 12) { requestAnimationFrame(frame); return; }
+  // Hidden in the tray: nothing to draw. The next levels to arrive wake the loop again.
+  if (document.hidden) { running = false; return; }
   const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
   const mini = document.body.classList.contains("is-mini");
   const show = !MIXWIN && !(PANEL && document.body.classList.contains("panel-no-meters"));

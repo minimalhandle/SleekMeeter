@@ -85,6 +85,11 @@ impl Smooth {
         }
     }
 
+    /// Nothing is fading, ducked or waiting to be muted.
+    pub fn is_idle(&self) -> bool {
+        self.chans.is_empty() && !self.ducked
+    }
+
     /// The level a channel is at or heading to.
     pub fn current(&self, key: &str, actual: f32, now: Instant) -> f32 {
         if let Some(c) = self.chans.get(key) {

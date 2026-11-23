@@ -195,9 +195,11 @@ body:not(.is-mini, .is-panel) .bar { flex-wrap: wrap; }
   body:not(.is-panel) .bar .brand-name, .bar .scene-now { display: none; }
 }
 .status .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
-.status[data-state="online"] .dot { background: var(--led-g); box-shadow: 0 0 calc(8px * var(--glow)) var(--led-g); animation: breathe 2.6s ease-in-out infinite; }
-/* the slow pulse: a soft ring grows out of the LED and fades (transform/opacity only) */
-.status[data-state="online"] .dot::after {
+.status[data-state="online"] .dot { background: var(--led-g); box-shadow: 0 0 calc(8px * var(--glow)) var(--led-g); }
+/* The slow pulse only runs with Theme motion on Full: a looping animation here would keep the
+   window drawing frames all day just for a status light. */
+body[data-theme-motion="full"] .status[data-state="online"] .dot { animation: breathe 2.6s ease-in-out infinite; }
+body[data-theme-motion="full"] .status[data-state="online"] .dot::after {
   content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--led-g);
   animation: ring 2.6s ease-out infinite;
 }

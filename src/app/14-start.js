@@ -13,7 +13,6 @@ const THEMES = [
   ["oled", "OLED black", "Pure black with hairline outlines, and meters and faders lit in each channel’s colour"],
   ["halo", "Halo", "An eclipse ring over near-black, smoked-glass cards and fader caps that are rings of light"],
   ["abyss", "Abyss", "The deep sea at night: bioluminescent rims, plankton meters and glowing lure faders"],
-  ["darkroom", "Darkroom", "Film strips on a red-lit light box, enlarger-knob faders and a darkroom-timer readout"],
   ["glass", "Glass", "Clear panes with prism rims over a bright, ever-moving spectrum of light"],
   ["overclock", "Overclock", "Carbon-fibre gaming rig with RGB light pipes, RGB meters and angled faders"],
   ["groovy", "Groovy", "70s lounge: walnut TV cabinets, rainbow stripes and lava-lamp faders"],
@@ -23,6 +22,7 @@ const THEMES = [
   ["block", "Block", "Thick outlines, hard shadows and bright colour blocks"],
   ["transit", "Transit", "Station signage: line-coloured channels, interchange faders and a little train"],
   ["nordic", "Nordic", "Sage wool felt, linen keys, oak knobs and an oak shelf under each group"],
+  ["watercolour", "Watercolour", "Pigment washes on cold-press paper, ink-line channels, wet-paint meters and paint-blot faders"],
   ["bubblegum", "Bubblegum", "Pink, sparkly and cute, with heart faders and emoji icons"],
 ];
 // Before themes there was only "Pure black for OLED" (settings.oled).
@@ -37,13 +37,21 @@ const RETIRED = {
   hyrule: "overclock", hadal: "glass", sticker: "block",
   // Retired in 0.22: each moves to the closest theme that stays.
   peach: "bubblegum", greenhouse: "nordic", cassette: "groovy", console: "graphite",
+  darkroom: "watercolour",
 };
 const currentTheme = () => {
   const t = RETIRED[settings.theme] || settings.theme;
   return THEMES.some((x) => x[0] === t) ? t : settings.oled ? "oled" : "graphite";
 };
 let autoTheme = "";
-const themeMotion = () => ["off", "subtle", "full"].includes(settings.themeMotion) ? settings.themeMotion : "full";
+// Theme effects are opt-in: performance comes first, so motion is off until it is chosen.
+const themeMotion = () => ["off", "subtle", "full"].includes(settings.themeMotion) ? settings.themeMotion : "off";
+// While the window is not in front, looping theme effects pause (themes.css, body.is-idle).
+const syncIdle = () => document.body.classList.toggle("is-idle", document.hidden || !document.hasFocus());
+window.addEventListener("focus", syncIdle);
+window.addEventListener("blur", syncIdle);
+document.addEventListener("visibilitychange", syncIdle);
+syncIdle();
 $("#themeMotion").addEventListener("change", (e) => {
   settings.themeMotion = e.target.value;
   document.body.dataset.themeMotion = themeMotion();
@@ -60,7 +68,7 @@ const markBars = (f1, f2, f3, track, rx = 1.1, x = [6, 11, 16], top = 5, h = 14)
 const BASE_MARK = '<rect x="1" y="1" width="22" height="22" rx="6" fill="var(--panel-hi)"/>' + markBars("var(--amber)", "var(--amber)", "var(--cyan)", "var(--track)");
 const THEME_LOGOS = {
   oled: '<rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="#000" stroke="#2c2c33"/>' + markBars("#ffb000", "#ffb000", "#00d5ff", "#111116"),
-  darkroom: '<defs><radialGradient id="bm-dr" cx=".4" cy=".35"><stop stop-color="#ff9b7d"/><stop offset=".55" stop-color="#ff2a12"/><stop offset="1" stop-color="#6a0a02"/></radialGradient></defs><circle cx="12" cy="12" r="11" fill="url(#bm-dr)"/>' + markBars("#ffe9d0", "#ffe9d0", "#ffb36a", "#5a0d04"),
+  watercolour: '<defs><radialGradient id="bm-wc" cx=".42" cy=".38" r=".7"><stop stop-color="#9fbdd8"/><stop offset=".7" stop-color="#5683ae"/><stop offset="1" stop-color="#30638e"/></radialGradient></defs><rect x="1.2" y="1.2" width="21.6" height="21.6" rx="6.5" fill="#fbf8f1" stroke="#2b2833" stroke-width=".9"/><path d="M4.2 8.5c1.5-3.6 6.6-4.8 10.4-3.6 3.9 1.2 5.9 4.5 5 8.2-.9 3.9-4.6 6.6-8.8 6-4.5-.6-8.4-5-6.6-10.6z" fill="url(#bm-wc)" opacity=".55"/>' + markBars("#2b2833", "#2b2833", "#d1495b", "#2b283326"),
   glass: '<circle cx="12" cy="12" r="11" fill="#ffffff3a" stroke="#ffffffcc" stroke-width=".8"/><ellipse cx="9" cy="6" rx="6" ry="3" fill="#ffffff70"/>' + markBars("#fff", "#fff", "#cfefff", "#ffffff40"),
   overclock: '<path d="M5 1h18v17l-5 5H1V5z" fill="#12141b" stroke="#2c3240" stroke-width=".7"/><path d="M1.6 5.5v17" stroke="#00e5ff" stroke-width="1.4"/>' + markBars("#00e5ff", "#7b5cff", "#2bff9a", "#1a1d26", 0),
   transit: '<rect x="1" y="1" width="22" height="22" rx="5" fill="#1b1b1b"/><path d="M7.1 5v14M12.1 5v14M17.1 5v14" stroke="#ffffff30" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="2 2"/><path d="M7.1 19v-7M12.1 19V8M17.1 19v-5" stroke-width="2.2" stroke-linecap="round"/><circle cx="7.1" cy="12" r="2.2" fill="#fff" stroke="#e8502e" stroke-width="1.2"/><circle cx="12.1" cy="8" r="2.2" fill="#fff" stroke="#0a7ad1" stroke-width="1.2"/><circle cx="17.1" cy="14" r="2.2" fill="#fff" stroke="#00985f" stroke-width="1.2"/>',

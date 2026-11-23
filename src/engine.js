@@ -95,7 +95,7 @@
     autoRestart: true, btWarn: true, keepWindowsOutput: false, overlayScreen: "",
     panelLayout: "rows", panelScale: 100, panelOpacity: 100, panelIcons: true, panelMute: true, panelMeters: true,
     outputProfiles: [],
-    outputFallbacks: {}, outputFallbackLinks: {}, themeMotion: "subtle",
+    outputFallbacks: {}, outputFallbackLinks: {}, themeMotion: "off",
     faderGroups: [],
     panelDocked: true, panelPos: null,
     hold: { releaseMs: 250 },

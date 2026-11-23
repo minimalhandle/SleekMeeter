@@ -301,6 +301,7 @@ pub fn theme(s: &Value) -> String {
         Some("peach") => "bubblegum".into(),
         Some("greenhouse") => "nordic".into(),
         Some("cassette") => "groovy".into(),
+        Some("darkroom") => "watercolour".into(),
         Some(t) if !t.is_empty() => t.to_string(),
         _ if flag(s, "oled") => "oled".into(),
         _ => "graphite".into(),
@@ -340,12 +341,14 @@ mod tests {
         assert_eq!(t("peach"), "bubblegum");
         assert_eq!(t("greenhouse"), "nordic");
         assert_eq!(t("cassette"), "groovy");
+        assert_eq!(t("darkroom"), "watercolour");
         assert_eq!(t("hyrule"), "overclock");
         assert_eq!(t("sumi"), "graphite");
         assert_eq!(t("console"), "graphite");
         assert_eq!(theme(&serde_json::json!({})), "graphite");
         assert_eq!(t("halo"), "halo");
         assert_eq!(t("abyss"), "abyss");
+        assert_eq!(t("watercolour"), "watercolour");
         assert_eq!(theme(&serde_json::json!({ "oled": true })), "oled");
     }
 }
