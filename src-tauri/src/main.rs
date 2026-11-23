@@ -1326,10 +1326,15 @@ fn rebuild_main(app: &AppHandle) {
         return;
     }
     let handle = app.clone();
-    // Through the event loop: building a window inside a command that runs on the main
-    // thread deadlocks on Windows.
-    let queued = app.run_on_main_thread(move || {
+    // On a thread of its own. Commands like open_mixer run on the main thread inside
+    // WebView2's message callback, and a new webview can't finish building there: Windows
+    // deadlocks. run_on_main_thread doesn't help, because called from the main thread it
+    // runs the closure straight away. build() from another thread waits on the event loop
+    // instead, like mix_window does.
+    std::thread::spawn(move || {
         let app = &handle;
+        // Before the page loads, so its ui_ready can't come first and leave it hidden.
+        app.state::<ShowOnReady>().0.store(true, Ordering::SeqCst);
         let built = app
             .config()
             .app
@@ -1347,31 +1352,26 @@ fn rebuild_main(app: &AppHandle) {
         let w = match built {
             Ok(w) => w,
             Err(e) => {
+                app.state::<ShowOnReady>().0.store(false, Ordering::SeqCst);
                 log_error!("Couldn't open the mixer window again: {e}");
                 return;
             }
         };
+        log_info!("Opened the mixer window again");
         recover::watch(&w);
         let s = app.state::<Settings>().0.locked().clone();
         let _ = w.set_always_on_top(settings::flag(&s, "alwaysOnTop"));
         if !settings::flag(&s, "mini") {
             restore_window(&w, &s);
         }
-        app.state::<ShowOnReady>().0.store(true, Ordering::SeqCst);
-        let late = app.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_secs(3));
-            if late.state::<ShowOnReady>().0.swap(false, Ordering::SeqCst) {
-                if let Some(w) = late.get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.set_focus();
-                }
+        std::thread::sleep(Duration::from_secs(3));
+        if app.state::<ShowOnReady>().0.swap(false, Ordering::SeqCst) {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.set_focus();
             }
-        });
+        }
     });
-    if queued.is_err() {
-        MAIN_BUILDING.store(false, Ordering::SeqCst);
-    }
 }
 
 /// Whether the mixer window must stay alive while hidden: its page is measuring how the
