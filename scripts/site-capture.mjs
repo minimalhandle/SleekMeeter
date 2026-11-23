@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const BASE = (process.argv[2] || "http://localhost:8000").replace(/\/$/, "");
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "site", "img");
 const EDGE = process.env.EDGE || "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
-const THEMES = ["graphite", "oled", "halo", "darkroom", "glass", "overclock", "groovy", "neon", "terminal", "arcade", "block", "transit", "nordic", "bubblegum"];
+const THEMES = ["graphite", "oled", "halo", "abyss", "darkroom", "glass", "overclock", "groovy", "neon", "terminal", "arcade", "block", "transit", "nordic", "bubblegum"];
 const ONLY = process.argv.slice(3);
 const W = 1440, H = 812;
 

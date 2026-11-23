@@ -12,6 +12,7 @@ const THEMES = [
   ["graphite", "Graphite", "Machined dark aluminium with brushed caps, backlit keys and glowing LED meters"],
   ["oled", "OLED black", "Pure black with hairline outlines, and meters and faders lit in each channel’s colour"],
   ["halo", "Halo", "An eclipse ring over near-black, smoked-glass cards and fader caps that are rings of light"],
+  ["abyss", "Abyss", "The deep sea at night: bioluminescent rims, plankton meters and glowing lure faders"],
   ["darkroom", "Darkroom", "Film strips on a red-lit light box, enlarger-knob faders and a darkroom-timer readout"],
   ["glass", "Glass", "Clear panes with prism rims over a bright, ever-moving spectrum of light"],
   ["overclock", "Overclock", "Carbon-fibre gaming rig with RGB light pipes, RGB meters and angled faders"],
@@ -71,6 +72,7 @@ const THEME_LOGOS = {
   bubblegum: '<defs><linearGradient id="bm-bg" x2="0" y2="1"><stop stop-color="#ff9ed2"/><stop offset="1" stop-color="#ff3d9a"/></linearGradient></defs><path d="M12 22C4 16.5 1 12.5 1 8.3 1 4.8 3.6 2.4 6.7 2.4c2.1 0 3.9 1.1 5.3 2.9 1.4-1.8 3.2-2.9 5.3-2.9 3.1 0 5.7 2.4 5.7 5.9 0 4.2-3 8.2-11 13.7z" fill="url(#bm-bg)"/><ellipse cx="6.5" cy="6.4" rx="2.4" ry="1.4" fill="#ffffffaa" transform="rotate(-25 6.5 6.4)"/>' + markBars("#fff", "#fff", "#e9dcff", "#ffffff40", 1.1, [7.4, 11, 14.6], 7.5, 10),
   graphite: '<defs><linearGradient id="bm-gr" x2="0" y2="1"><stop stop-color="#3a3f47"/><stop offset="1" stop-color="#16181c"/></linearGradient><linearGradient id="bm-grc" x2="0" y2="1"><stop stop-color="#ffffffa0"/><stop offset=".5" stop-color="#ffffff10"/><stop offset="1" stop-color="#3fe0ff90"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="6" fill="url(#bm-gr)" stroke="url(#bm-grc)" stroke-width=".8"/>' + markBars("#3fe0ff", "#3fe0ff", "#2bff9e", "#07080a", .6),
   halo: '<defs><linearGradient id="bm-ha" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8b6cff"/><stop offset=".55" stop-color="#2fa6ff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs><rect x="1" y="1" width="22" height="22" rx="7" fill="url(#bm-ha)"/><rect x="1.6" y="1.6" width="20.8" height="20.8" rx="6.4" fill="none" stroke="#ffffff70" stroke-width=".6"/>' + markBars("#fff", "#fff", "#fff", "#ffffff40"),
+  abyss: '<defs><radialGradient id="bm-ab" cx=".5" cy=".1" r="1"><stop stop-color="#0f4a66"/><stop offset=".6" stop-color="#06182a"/><stop offset="1" stop-color="#020812"/></radialGradient></defs><rect x="1" y="1" width="22" height="22" rx="7" fill="url(#bm-ab)" stroke="#3ff2d666" stroke-width=".6"/>' + markBars("#3ff2d6", "#3ff2d6", "#7fb8ff", "#7fe9ff1f") + '<circle cx="18.6" cy="4.4" r=".8" fill="#e6fffb" opacity=".8"/><circle cx="4.8" cy="7.2" r=".5" fill="#e6fffb" opacity=".5"/>',
   nordic: '<defs><radialGradient id="bm-no" cx=".5" cy="0" r="1.1"><stop stop-color="#71807a"/><stop offset="1" stop-color="#4b5853"/></radialGradient></defs><rect x="1" y="1" width="22" height="22" rx="7" fill="url(#bm-no)"/>' + markBars("#f5f2ec", "#f5f2ec", "#d9774b", "#0000003a"),
 };
 let markFor = "";
@@ -81,8 +83,8 @@ function paintBrandMark(theme) {
   const [vb, inner] = Array.isArray(logo) ? logo : ["0 0 24 24", logo || BASE_MARK];
   document.querySelectorAll(".brand-mark").forEach((svg) => { svg.setAttribute("viewBox", vb); svg.innerHTML = inner; });
 }
-// Drifting particles: [count, shortest and longest loop in seconds]. Stars start above the window.
-const THEME_FX = { arcade: [30, 4, 9], bubblegum: [16, 2.5, 5] };
+// Drifting particles: [count, shortest and longest loop in seconds]. Stars and marine snow start above the window.
+const THEME_FX = { arcade: [30, 4, 9], bubblegum: [16, 2.5, 5], abyss: [40, 22, 48] };
 let fxFor = "";
 function fillThemeFx(theme) {
   if (theme === fxFor) return;
@@ -96,7 +98,7 @@ function fillThemeFx(theme) {
   for (let k = 0; k < n; k++) {
     const b = document.createElement("b");
     b.style.setProperty("--x", (Math.random() * 100).toFixed(1) + "%");
-    b.style.setProperty("--y", theme === "arcade" ? (-10 - Math.random() * 100).toFixed(1) + "%" : theme === "bubblegum" ? (8 + Math.random() * 84).toFixed(1) + "%" : "0");
+    b.style.setProperty("--y", theme === "abyss" ? (-2 - Math.random() * 8).toFixed(1) + "%" : theme === "arcade" ? (-10 - Math.random() * 100).toFixed(1) + "%" : theme === "bubblegum" ? (8 + Math.random() * 84).toFixed(1) + "%" : "0");
     b.style.setProperty("--d", (d0 + Math.random() * (d1 - d0)).toFixed(1) + "s");
     b.style.setProperty("--dl", (-Math.random() * d1).toFixed(1) + "s");
     layer.appendChild(b);

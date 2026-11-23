@@ -345,6 +345,7 @@ mod tests {
         assert_eq!(t("console"), "graphite");
         assert_eq!(theme(&serde_json::json!({})), "graphite");
         assert_eq!(t("halo"), "halo");
+        assert_eq!(t("abyss"), "abyss");
         assert_eq!(theme(&serde_json::json!({ "oled": true })), "oled");
     }
 }

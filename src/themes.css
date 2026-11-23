@@ -1544,7 +1544,7 @@ body[data-theme="groovy"] {
   body[data-theme="block"][data-theme-motion="full"] .theme-light::after { animation: mk-halftone 16s linear infinite; }
 }
 /* Particles only show in the themes and motion levels that animate them. */
-body:not([data-theme="arcade"], [data-theme="bubblegum"]) .theme-fx { display: none; }
+body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) .theme-fx { display: none; }
 @media (prefers-reduced-motion: reduce) { .theme-fx { display: none !important; } }
 
 @keyframes mk-sweep { from { left: -40%; } to { left: 100%; } }
@@ -2610,3 +2610,160 @@ body[data-theme="groovy"] {
 }
 @keyframes nn-hum { from { opacity: .82; } to { opacity: 1; } }
 @keyframes nn-buzz { 0%, 88%, 89.5%, 92%, 100% { opacity: 1; } 88.5% { opacity: .25; } 90.5% { opacity: .55; } 91.2% { opacity: .2; } }
+
+/* ---------------------------------------------------------------- Abyss */
+/* The deep sea at night: ink-blue water fading to black, faint shafts of light from far above and
+   marine snow drifting down through them. Channels are dark pressure-glass panels with a
+   bioluminescent rim lit in the channel's colour, meters are columns of glowing plankton, readouts
+   are depth gauges, and fader caps are glowing lures. Theme motion: the rims pulse slowly and the
+   light shafts sway (Subtle and Full); marine snow falls (Full, slower in Subtle). */
+[data-theme="abyss"] {
+  --bg: #020812; --bay: #04101c66; --bay-edge: #7fe9ff0d; --bay-shadow: inset 0 1px 0 #7fe9ff0a;
+  --mod-a: #0c2133e6; --mod-b: #040b14f2; --mod-edge: #7fe9ff1f; --mod-shadow: 0 26px 46px -18px #000;
+  --key: #0b1d2ecc; --key-hi: #12304a; --key-edge: #7fe9ff1a; --key-ink: #8fb3c9; --key-shadow: none;
+  --well: #01060c; --flyout: #061220f5; --line: #7fe9ff17;
+  --ink: #e3f6ff; --ink-2: #b8d4e3; --muted: #6f8ea3;
+  --amber: #3ff2d6; --cyan: #5fa8ff; --red: #ff5f7e; --solo: #7cf7ff; --on-ink: #01201c;
+  --focus: #3ff2d6; --panel-hi: #0f2537; --track: #ffffff0d;
+  --led-g: #1fb8c9; --led-y: #7df9e3; --led-r: #ff6a7d;
+  --led-g-off: #06202a; --led-y-off: #08262a; --led-r-off: #2a0c14;
+  --glow: 1; --scroll: #12304a; --scroll-hi: #1b4564;
+  --field: #030c17; --rail: #0b1d2e; --switch: #12304a;
+  --cap-w: 26px; --cap-h: 26px;
+  --pop-shadow: 0 0 0 1px #7fe9ff1a, 0 30px 70px #000, 0 0 50px #3ff2d612;
+  --cap-metal: radial-gradient(circle, #fff, #7df9e3 60%); --cap-ridge: transparent;
+  --cap-shadow: 0 6px 12px #000c; --cap-ink: #01201c;
+  --c-slate: #9db6c8; --c-amber: #ffcf6e; --c-coral: #ff8a6e; --c-rose: #ff7fc8;
+  --c-violet: #a68bff; --c-blue: #5fa8ff; --c-cyan: #3ff2d6; --c-green: #8bff9e;
+  --font: "Inter", "Segoe UI", system-ui, sans-serif;
+  --ab-gauge: "IBM Plex Mono", Consolas, monospace;
+  --warning-ink: #ffd27a;
+}
+:root body[data-theme="abyss"] { background: #020812; }
+/* The water: a faint glow far above, fading to black; shafts of light sway in it (::before). */
+:root body[data-theme="abyss"] .theme-light {
+  --ambient-base: radial-gradient(ellipse 75% 45% at 50% -12%, #0f4a6699, transparent 72%), radial-gradient(ellipse 60% 40% at 15% 115%, #3ff2d60d, transparent 70%), linear-gradient(180deg, #06182a, #030c18 45%, #01040a);
+  --ambient-accent: repeating-linear-gradient(104deg, transparent 0 6%, #8fe9ff1c 8%, transparent 11%, transparent 15%, #8fe9ff12 16.5%, transparent 19%);
+}
+:root body[data-theme="abyss"] .theme-light::before { inset: -20% -10% 25%; }
+:root body[data-theme="abyss"] .theme-light::after { content: ""; position: absolute; inset: 0; background: var(--sm-noise); opacity: .16; mix-blend-mode: overlay; }
+:root body[data-theme="abyss"] .glass-aurora { display: none; }
+:root body[data-theme="abyss"] .theme-fx b { width: 2px; height: 2px; border-radius: 50%; background: #cfefff; opacity: .45; }
+:root body[data-theme="abyss"] .theme-fx b:nth-child(3n) { width: 3px; height: 3px; opacity: .25; filter: blur(.5px); }
+:root body[data-theme="abyss"] .theme-fx b:nth-child(7n) { background: #7df9e3; opacity: .8; box-shadow: 0 0 6px #3ff2d6; }
+:root body[data-theme="abyss"] .group-head h2 { color: #5fd9c8; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; font-size: 11px; }
+:root body[data-theme="abyss"] .linkish { color: #7df9e3; }
+:root body[data-theme="abyss"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-family: var(--font); font-weight: 600; letter-spacing: -.01em; }
+:root body[data-theme="abyss"] .strip .name { font-size: 15px; }
+:root body[data-theme="abyss"] .brand-name { background: linear-gradient(90deg, #e3f6ff, #7df9e3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+:root body[data-theme="abyss"] .brand-mark { filter: drop-shadow(0 0 6px #3ff2d680); }
+/* Pressure glass: a dark, slightly clear panel with a glow pooling under the rim. */
+:root body[data-theme="abyss"] :is(.strip, .mini-row) {
+  border-radius: 20px;
+  background: radial-gradient(120% 34% at 50% 0%, color-mix(in srgb, var(--acc) 13%, transparent), transparent 72%), linear-gradient(180deg, var(--mod-a), var(--mod-b));
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px #7fe9ff0f, 0 -10px 34px -22px var(--acc), var(--mod-shadow);
+}
+:root body[data-theme="abyss"] .mini-row { border-radius: 14px; }
+:root body[data-theme="abyss"] :is(.strip, .mini-row):hover { background: radial-gradient(120% 34% at 50% 0%, color-mix(in srgb, var(--acc) 20%, transparent), transparent 72%), linear-gradient(180deg, #0f283de8, #050d17f2); }
+/* The bioluminescent rim: bright in the channel's colour along the top, fading down the sides. */
+:root body[data-theme="abyss"] .strip::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.3px; pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 85%, #fff), color-mix(in srgb, var(--acc) 35%, transparent) 14%, transparent 40%, transparent 85%, #7fe9ff14);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--acc) 70%, transparent));
+}
+:root body[data-theme="abyss"] .strip.muted::before { background: linear-gradient(180deg, #ff5f7e99, #ff5f7e1f 14%, transparent 40%, transparent 85%, #7fe9ff0d); filter: none; opacity: .7; }
+:root body[data-theme="abyss"] .strip.muted { background: linear-gradient(180deg, #0a1826e0, #03080ff2); box-shadow: inset 0 0 0 1px #7fe9ff0a, var(--mod-shadow); }
+/* The channel icon: a dark bulb with its glyph glowing in the channel's colour. */
+:root body[data-theme="abyss"] :is(.strip .head .chip, .mini-row .chip) {
+  border-radius: 50%; color: color-mix(in srgb, var(--acc) 70%, #fff);
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--acc) 30%, #04101c), #04101c 72%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 45%, transparent), 0 0 14px color-mix(in srgb, var(--acc) 35%, transparent);
+}
+:root body[data-theme="abyss"] .strip.muted .head .chip { color: #6f8ea3; background: #04101c; box-shadow: inset 0 0 0 1px #7fe9ff1a; }
+:root body[data-theme="abyss"] .strip .sub { color: var(--muted); }
+:root body[data-theme="abyss"] .strip .bus-tag { color: #7df9e3; }
+/* Keys: dark water glass; switched-on keys glow like bioluminescence, with dark labels. */
+:root body[data-theme="abyss"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) { border-radius: 9px; background: var(--key); color: var(--key-ink); box-shadow: inset 0 0 0 1px var(--key-edge); }
+:root body[data-theme="abyss"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { background: var(--key-hi); color: var(--ink); box-shadow: inset 0 0 0 1px #7fe9ff33; }
+:root body[data-theme="abyss"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="abyss"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono, .tog.eq)[aria-pressed="true"] {
+  color: #01201c; background: linear-gradient(180deg, #a6fff0, #3ff2d6); box-shadow: inset 0 1px 0 #fffa, 0 0 14px #3ff2d673;
+}
+:root body[data-theme="abyss"] .strip-routes .route.b[aria-pressed="true"] { color: #031a33; background: linear-gradient(180deg, #cfe6ff, #6fb2ff); box-shadow: inset 0 1px 0 #fffa, 0 0 14px #5fa8ff73; }
+:root body[data-theme="abyss"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { color: #032128; background: linear-gradient(180deg, #e6ffff, #7cf7ff); box-shadow: inset 0 1px 0 #fff, 0 0 16px #7cf7ff80; }
+:root body[data-theme="abyss"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #33040f; background: linear-gradient(180deg, #ffb3b0, #ff5f7e); box-shadow: inset 0 1px 0 #fff8, 0 0 16px #ff5f7e66; }
+:root body[data-theme="abyss"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: #01201c; background: linear-gradient(180deg, #a6fff0, #3ff2d6); box-shadow: inset 0 1px 0 #fff, 0 0 16px #3ff2d659; }
+:root body[data-theme="abyss"] .bar { background: #030b15cc; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: inset 0 -1px 0 #7fe9ff14; }
+/* Meters: columns of glowing plankton, deep teal rising to aqua and white, and coral past 0 dB. */
+:root body[data-theme="abyss"] .strip .well { border-radius: 999px; background: #01060c; box-shadow: inset 0 1px 3px #000, inset 0 0 0 1px #7fe9ff0d; }
+:root body[data-theme="abyss"] .meter { -webkit-mask: repeating-linear-gradient(to top, #000 0 3px, #0006 3px 4px); mask: repeating-linear-gradient(to top, #000 0 3px, #0006 3px 4px); border-radius: 999px; }
+:root body[data-theme="abyss"] .fader.h .meter { -webkit-mask: repeating-linear-gradient(to right, #000 0 3px, #0006 3px 4px); mask: repeating-linear-gradient(to right, #000 0 3px, #0006 3px 4px); }
+:root body[data-theme="abyss"] .meter .unlit { background: #7fe9ff08; }
+:root body[data-theme="abyss"] .meter .lit b { background: linear-gradient(to top, #0a6f8a, #1fb8c9 30%, #3ff2d6 var(--p-yellow), #e6fffb var(--p-zero), #ff6a7d var(--p-zero)); }
+:root body[data-theme="abyss"] .fader.h .meter .lit b { background: linear-gradient(to right, #0a6f8a, #1fb8c9 30%, #3ff2d6 var(--p-yellow), #e6fffb var(--p-zero), #ff6a7d var(--p-zero)); }
+:root body[data-theme="abyss"] .meter .lit { filter: drop-shadow(0 0 4px #3ff2d699); }
+:root body[data-theme="abyss"] .muted .meter .lit { filter: saturate(.15) brightness(.6); }
+:root body[data-theme="abyss"] .fader:not(.h) .meter .pk i { background: #e6fffb; box-shadow: 0 0 6px #7df9e3; height: 2px; border-radius: 1px; }
+/* Fader: a fine stalk lit in the channel's colour up to the cap, and a cap that is a glowing lure. */
+:root body[data-theme="abyss"] .fader .groove::before { display: none; }
+:root body[data-theme="abyss"] .fader:not(.h) .groove {
+  width: 2px; margin-left: -1px; border: 0; border-radius: 2px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--acc) 20%, transparent), color-mix(in srgb, var(--acc) 85%, #fff) calc(var(--cap-h) / 2 + var(--p, 0) * (100% - var(--cap-h))), #7fe9ff12 0);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--acc) 35%, transparent);
+}
+:root body[data-theme="abyss"] .muted .fader:not(.h) .groove { background: linear-gradient(to top, #ffffff0d, #ffffff33 calc(var(--cap-h) / 2 + var(--p, 0) * (100% - var(--cap-h))), #7fe9ff0d 0); box-shadow: none; }
+:root body[data-theme="abyss"] .fader .thumb {
+  border-radius: 50%; clip-path: none; filter: none;
+  background: radial-gradient(circle, #fff 0 13%, color-mix(in srgb, var(--acc) 80%, #fff) 24%, color-mix(in srgb, var(--acc) 50%, transparent) 44%, #06121e 66%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc) 45%, #ffffff30), 0 0 16px color-mix(in srgb, var(--acc) 60%, transparent), 0 0 38px color-mix(in srgb, var(--acc) 22%, transparent), 0 6px 12px #000c;
+}
+:root body[data-theme="abyss"] .fader .thumb::before { content: none; }
+:root body[data-theme="abyss"] .fader:not(.h) .thumb::after { display: none; }
+:root body[data-theme="abyss"] .muted .fader .thumb { background: radial-gradient(circle, #8aa3b4 0 12%, #3a5366 30%, #06121e 64%); box-shadow: inset 0 0 0 1.5px #ffffff1f, 0 6px 12px #000c; }
+:root body[data-theme="abyss"] .fader.dragging .thumb { box-shadow: inset 0 0 0 2px #fff, 0 0 0 6px color-mix(in srgb, var(--acc) 22%, transparent), 0 0 30px var(--acc), 0 6px 12px #000c; }
+:root body[data-theme="abyss"] .unity { background: #7df9e3; opacity: .3; }
+:root body[data-theme="abyss"] .scale span { color: #4f6d82; font-size: 10px; }
+:root body[data-theme="abyss"] .scale span.zero { color: #b8d4e3; }
+/* The level readout: a depth gauge. */
+:root body[data-theme="abyss"] .strip .readout { font-family: var(--ab-gauge); font-weight: 600; font-size: 18px; letter-spacing: -.02em; color: #e3f6ff; background: transparent; text-shadow: 0 0 12px color-mix(in srgb, var(--acc) 45%, transparent); }
+:root body[data-theme="abyss"] .strip .readout:hover { background: #7fe9ff12; }
+:root body[data-theme="abyss"] .muted .readout { color: #ff9aab; text-shadow: none; }
+/* Mini mode and the tray panel. */
+:root body[data-theme="abyss"] .fader.h { --cap-w: 44px; }
+:root body[data-theme="abyss"] .fader.h .track { border-radius: 999px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 18%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), #01060c; box-shadow: inset 0 0 0 1px #7fe9ff12; }
+:root body[data-theme="abyss"] .fader.h .thumb { border-radius: 999px; color: #fff; background: radial-gradient(60% 90% at 50% 50%, color-mix(in srgb, var(--acc) 35%, #06121e), #06121e); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc) 75%, #fff), 0 0 14px color-mix(in srgb, var(--acc) 50%, transparent); }
+:root body[data-theme="abyss"] .muted .fader.h .thumb { background: #06121e; box-shadow: inset 0 0 0 1.5px #ffffff26; }
+:root body[data-theme="abyss"] .fader.h .db { color: #fff; font-family: var(--ab-gauge); }
+/* Dialogs, menus and window buttons. */
+:root body[data-theme="abyss"] :is(.dlg, .menu) { border-radius: 18px; background: var(--flyout); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); box-shadow: inset 0 1px 0 #7fe9ff1a, var(--pop-shadow); }
+:root body[data-theme="abyss"] .dlg::backdrop { background: rgba(1, 6, 14, .6); backdrop-filter: blur(6px); }
+:root body[data-theme="abyss"] .wc { border-radius: 9px; }
+:root body[data-theme="abyss"] .wc:hover { background: var(--key-hi); }
+:root body[data-theme="abyss"] .wc.close:hover { background: #ff5f7e; color: #33040f; }
+/* Theme-picker sample. */
+.theme-card[data-theme="abyss"] .tc-desk { background: repeating-linear-gradient(104deg, transparent 0 14%, #8fe9ff12 17%, transparent 21%), radial-gradient(ellipse 80% 50% at 50% -10%, #0f4a66, transparent 75%), linear-gradient(180deg, #06182a, #01040a); }
+.theme-card[data-theme="abyss"] .tc-mod { border-radius: 8px; background: linear-gradient(180deg, #0c2133, #040b14); box-shadow: inset 0 1px 0 #3ff2d6, inset 0 0 0 1px #7fe9ff1a, 0 -3px 10px -4px #3ff2d6; }
+.theme-card[data-theme="abyss"] :is(.tc-keys i, .tc-mute) { border-radius: 3px; background: #12304a; }
+.theme-card[data-theme="abyss"] .tc-keys i.on.a { background: #3ff2d6; box-shadow: 0 0 5px #3ff2d6; }
+.theme-card[data-theme="abyss"] .tc-keys i.on.b { background: #6fb2ff; box-shadow: 0 0 5px #5fa8ff; }
+.theme-card[data-theme="abyss"] .tc-mute.on { background: #ff5f7e; }
+.theme-card[data-theme="abyss"] .tc-well { background: #01060c; border-radius: 99px; }
+.theme-card[data-theme="abyss"] .tc-well b { background: linear-gradient(to top, #0a6f8a, #3ff2d6); border-radius: 99px; box-shadow: 0 0 4px #3ff2d6; }
+.theme-card[data-theme="abyss"] .tc-cap { width: 9px; height: 9px; margin-left: -4.5px; border-radius: 50%; background: radial-gradient(circle, #fff 0 20%, #7df9e3 40%, #06121e 75%); box-shadow: 0 0 7px #3ff2d6; }
+.theme-card[data-theme="abyss"] .tc-slot::before { width: 2px; margin-left: -1px; background: linear-gradient(to top, #0a6f8a, #7df9e3); }
+/* Theme motion: the rims pulse slowly, each in its own time, and the light shafts sway.
+   Marine snow falls through the water (Full; slower in Subtle). */
+@media (prefers-reduced-motion: no-preference) {
+  body[data-theme="abyss"]:not([data-theme-motion="off"]) .strip:not(.muted)::before { animation: ab-pulse 6s ease-in-out infinite alternate; }
+  body[data-theme="abyss"]:not([data-theme-motion="off"]) .strip:nth-child(3n + 2)::before { animation-delay: -2s; animation-duration: 7.5s; }
+  body[data-theme="abyss"]:not([data-theme-motion="off"]) .strip:nth-child(3n + 3)::before { animation-delay: -4s; animation-duration: 5.2s; }
+  body[data-theme="abyss"]:not([data-theme-motion="off"]) .theme-light::before { animation: ab-sway var(--ambient-time, 30s) ease-in-out infinite alternate; }
+  body[data-theme="abyss"][data-theme-motion="full"] .theme-fx b { animation: ab-snow var(--d) linear infinite; animation-delay: var(--dl); }
+  body[data-theme="abyss"][data-theme-motion="subtle"] .theme-fx b { animation: ab-snow calc(var(--d) * 1.8) linear infinite; animation-delay: var(--dl); }
+  body[data-theme="abyss"][data-theme-motion="full"] .tog.mute[aria-pressed="true"] { animation: ab-mute 2.4s ease-in-out infinite; }
+}
+@keyframes ab-pulse { from { opacity: .55; } to { opacity: 1; } }
+@keyframes ab-sway { from { transform: translateX(-3%) skewX(-2deg); opacity: .7; } to { transform: translateX(3%) skewX(2deg); opacity: 1; } }
+@keyframes ab-snow { from { transform: translate(0, 0); } 50% { transform: translate(10px, 55vh); } to { transform: translate(-4px, 112vh); } }
+@keyframes ab-mute { 50% { box-shadow: inset 0 1px 0 #fff8, 0 0 4px #ff5f7e33; } }
