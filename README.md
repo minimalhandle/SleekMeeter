@@ -13,6 +13,18 @@ A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on t
 </tr>
 </table>
 
+## New in 0.22 (beta)
+
+- **Much lighter on the GPU and CPU:** Theme motion is Off by default, theme effects pause while Sleekmeeter isn't the window in front, meters draw at most about 60–80 times a second, hidden windows free their memory, and device changes come from Windows instead of being checked every couple of seconds.
+- **CPU noise removal:** RNNoise speech clean-up that runs on any PC, the better pick while you game. Choose it as the **Noise removal engine** in **Settings → Microphone → Clean-up and plugins**.
+- **Automatic mic level riding:** keeps your speaking level steady as you move towards or away from the mic, without moving the fader. Same place, under **Automatic mic level riding**.
+- **Voice-aware ducking:** **Detect speech before turning audio down** in **Settings → Mixer & devices → Talk-over ducking**, so a cough or a keyboard doesn't duck your music.
+- **Partial scenes:** tick **Save selected controls only** when saving a scene to keep just some channels or some kinds of control.
+- **Move your complete setup:** **Export complete setup…** in **Settings → System & backup → Backup and layout** saves settings, scenes, plugin state, Voicemeeter's setup and soundboard clips in one file, and the import previews it and maps devices first.
+- **My sound just cut out:** in Audio Event History and Check my setup, it says in plain words what changed in the last two minutes.
+- **Remote: Who can connect:** choose phones on this network, this PC only, or this PC only while Windows calls the network Public.
+- **Five new themes and a lighter lineup:** Graphite (the new default), Halo, Abyss, Nordic and Watercolour. Console, Peaches & Cream, Greenhouse, Cassette and Darkroom are retired, and anyone using one moves to the closest theme.
+
 ## New in 0.21
 
 - **Setup guide:** a fresh install opens a short guide that picks your headphones and mic, sets up routing for gaming or streaming, and shows every change before it applies. Run it again any time from **⋯ → Setup guide…**.
@@ -74,7 +86,7 @@ Use **Pin** beside an action in the Stream menu to put its button on the toolbar
 
 **⋯ → Audio Event History** shows playback device changes, output fallbacks, app route recovery and VST3 quarantine. Filter the timeline and select an event to open the relevant controls. The latest 200 events are stored locally and can be cleared from the timeline.
 
-Settings search looks across all categories. On narrow windows, categories move into a grid above the settings. For a clean install, Sleekmeeter opens in the foreground, offers to start Voicemeeter if needed, opens the **Setup guide** and uses Subtle theme motion. Level history and talking-while-muted alerts are opt-in. Existing settings keep their previous choices.
+Settings search looks across all categories. On narrow windows, categories move into a grid above the settings. For a clean install, Sleekmeeter opens in the foreground, offers to start Voicemeeter if needed, opens the **Setup guide** and has Theme motion Off, so themes cost the least GPU. Level history and talking-while-muted alerts are opt-in. Existing settings keep their previous choices.
 
 **Settings → Appearance & layout → Show output names on the routing buttons** labels them with your outputs' names (*Headphones*, *Stream mix*) instead of A1 or B2. Hover over one for the full name.
 
@@ -82,7 +94,7 @@ Channels use a consistent width to keep the mixer tidy, and the input and output
 
 ### Themes
 
-Choose from fifteen themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 15 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** sets how much every theme moves: Off, Subtle, or Full. Windows reduced motion takes priority.
+Choose from fifteen themes in **Settings → Appearance & layout → Appearance**, ordered from dark to light. Use **Show all 15 themes** to browse the full lineup. The mixer, mini mode, tray panel, and volume overlay follow your selection. **Theme motion** sets how much every theme moves: Off (the default for new installs), Subtle, or Full. Subtle only uses cheap effects, effects that redraw every frame are Full only, and every theme effect pauses while Sleekmeeter isn't the window in front, so a game or stream gets the GPU. The meters keep moving. Windows reduced motion takes priority.
 
 <table>
 <tr>
@@ -159,7 +171,7 @@ A scene fades its levels first and then loads everything else (routing, devices,
 
 ### Talk-over ducking
 
-Turn other audio down while you talk, like a radio DJ. In **Settings → Mixer & devices → Talk-over ducking**, pick the channel that talks (usually your mic), the channels to turn down (music, game, desktop audio) and by how much. Under **Or when these talk** you can add more channels, such as Discord, so the game also turns down when a friend speaks. The **Starts at** slider lights up with your voice; put the knob just under your speaking level. When you stop talking, the channels fade back after the **Back after** time.
+Turn other audio down while you talk, like a radio DJ. In **Settings → Mixer & devices → Talk-over ducking**, pick the channel that talks (usually your mic), the channels to turn down (music, game, desktop audio) and by how much. Under **Or when these talk** you can add more channels, such as Discord, so the game also turns down when a friend speaks. The **Starts at** slider lights up with your voice; put the knob just under your speaking level. When you stop talking, the channels fade back after the **Back after** time. Turn on **Detect speech before turning audio down** so only speech ducks, not a cough or your keyboard; set **Speech confidence**, and the attack, hold and release times. It needs Voicemeeter running at 48 kHz.
 
 A ducked channel shows **Ducking** on its meter. Its fader stays at your level, so you can still move it while ducked, and moving it anywhere else (Voicemeeter's own window, a MIDI controller) takes it out of ducking. You can also add a shortcut that turns ducking on or off.
 
@@ -261,7 +273,13 @@ Turn on **Settings → Streaming → Instant replay** and Sleekmeeter keeps the 
 
 **Guided tune-up** is inside **⋯ → Mic Chain**, also accessible from **Settings → Microphone → Mic Chain & levels**. It measures room tone, normal speech and a loud phrase using meter readings. Choose which suggestions to apply, or preview them for eight seconds. Preview changes are heard on the input’s existing routes, including stream sends. Sleekmeeter restores the previous values unless you keep the preview.
 
-### Mic clean-up (NVIDIA)
+### Mic clean-up
+
+**Settings → Microphone → Clean-up and plugins** has two **Noise removal engine** choices. **CPU · RNNoise** works on any PC, uses very little, and is the better pick while you play. **NVIDIA** is stronger and can also remove room echo, but runs on the graphics card, so it takes some GPU from your games.
+
+**Automatic mic level riding**, in the same place, keeps your speaking level steady as you lean in or away. It only moves while you talk, stays within limits you set, and works before your plugins, without moving the fader.
+
+#### NVIDIA
 
 With an NVIDIA RTX graphics card, **Settings → Microphone → Clean-up and plugins** removes background noise (keyboard, fans, the dog), room echo, or both from your mic using NVIDIA's AI on the graphics card. It's much stronger than Voicemeeter's own denoiser. Pick the mic (one of Voicemeeter's hardware inputs) and how strong it should be; Settings shows whether it's running and how much delay it adds (about 25 ms).
 
@@ -310,7 +328,7 @@ In **Portable chain preset**, export the selected mic's NVIDIA effect settings, 
 
 **Voicemeeter backups:** once a day, and before loading a scene, running the setup assistant or restoring a backup, Sleekmeeter saves a copy of Voicemeeter's whole setup (the last 14 daily copies and 10 others are kept). **Settings → System & backup → Backup and layout** lists them; **Restore** puts one back after saving your current setup, so you can undo it.
 
-**Settings → System & backup → Backup and layout** saves your settings to a file and restores them (your scenes are the .xml files in the `scenes` folder, in `%APPDATA%\Sleekmeeter` or next to the portable exe, so copy that too), and **Reset the layout** brings the window back to its default size and unhides every channel. **Settings → System & backup → About → Check my setup** (also on the "Voicemeeter isn't running" screen) checks the things that usually go wrong: Voicemeeter and its remote library, audio devices Windows doesn't list, shortcuts that couldn't be registered, the OBS link, and whether settings can be saved.
+**Settings → System & backup → Backup and layout** saves your settings to a file and restores them (your scenes are the .xml files in the `scenes` folder, in `%APPDATA%\Sleekmeeter` or next to the portable exe, so copy that too), and **Reset the layout** brings the window back to its default size and unhides every channel. **Export complete setup…** goes further: one file with settings, scenes, plugin state and presets, Voicemeeter's current setup and soundboard clips (up to 16 MB each). **Import complete setup…** shows what's compatible and lets you map devices before anything changes, and keeps a backup to go back to. **Settings → System & backup → About → Check my setup** (also on the "Voicemeeter isn't running" screen) checks the things that usually go wrong: Voicemeeter and its remote library, audio devices Windows doesn't list, shortcuts that couldn't be registered, the OBS link, and whether settings can be saved.
 
 ### Soundboard
 
@@ -363,7 +381,7 @@ Sleekmeeter joins your chat as a silent, anonymous viewer: **no sign-in, nothing
 
 ### Sleekmeeter Remote
 
-**Sleekmeeter Remote** connects Sleekmeeter to other things on your own network: a phone or tablet and the Stream Deck plugin control it, and the OBS overlay shows its status. Turn it on under **Settings → Controls & remote → Sleekmeeter Remote**.
+**Sleekmeeter Remote** connects Sleekmeeter to other things on your own network: a phone or tablet and the Stream Deck plugin control it, and the OBS overlay shows its status. Turn it on under **Settings → Controls & remote → Sleekmeeter Remote**, and choose **Who can connect**: phones and tablets on this network, this PC only, or the network but only this PC while Windows calls the network Public. Connections from outside your own network are always refused.
 
 **On a phone or tablet:** open the address it shows on a device on the same Wi-Fi. You get faders and mute buttons for every channel, **Be right back**, your scenes, sounds and output profiles, and **Music off stream** and **Save replay** once they're set up. The long code in the address is the password, so don't share it, and **Make a new key** signs out every phone and the Stream Deck plugin. It never leaves your home network and nothing is sent to the internet. The first time, Windows asks to allow Sleekmeeter on private networks.
 
