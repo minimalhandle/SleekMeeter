@@ -1335,103 +1335,6 @@ body[data-theme="transit"] {
   92%, 100% { bottom: max(0px, calc(var(--p, 0) * 100% - 20px)); opacity: 0; }
 }
 
-/* ---------------------------------------------------------------- Groovy */
-/* A 70s lounge: chocolate-brown strips shaped like old TV screens, each topped with an orange,
-   mustard and avocado stripe, rainbow arcs in the corners and soft lava blobs drifting behind.
-   Fader caps are little lava lamps with a blob of wax inside. Mute fades the strip to sepia. */
-[data-theme="groovy"] {
-  --bg: #2b1810; --bay: transparent; --bay-edge: transparent; --bay-shadow: none;
-  --mod-a: #4a2a1a; --mod-b: #331c11; --mod-edge: #e0a52699; --mod-shadow: 0 8px 16px #000a;
-  --key: #2b1810; --key-hi: #3b2216; --key-edge: #e0a52655; --key-ink: #e6c99a; --key-shadow: none;
-  --well: #1e0f09; --flyout: #3b2216f5; --line: #5a3a22;
-  --ink: #f6e3bf; --ink-2: #e6c99a; --muted: #c9a678;
-  --amber: #e0a526; --cyan: #8a9a3a; --red: #c4332a; --solo: #e8702a; --on-ink: #2b1810;
-  --focus: #e0a526; --panel-hi: #3b2216; --track: #1e0f09;
-  --led-g: #8a9a3a; --led-y: #e0a526; --led-r: #c4332a;
-  --led-g-off: #2a170d; --led-y-off: #2a170d; --led-r-off: #2a170d;
-  --glow: .4; --scroll: #5a3a22; --scroll-hi: #7a5232;
-  --field: #1e0f09; --rail: #1e0f09; --switch: #3b2216;
-  --cap-w: 24px; --cap-h: 32px;
-  --pop-shadow: 0 0 0 2px #e0a52699, 0 20px 44px #000b;
-  --cap-metal: linear-gradient(180deg, #ff9a4a, #c4532a); --cap-ridge: transparent; --cap-shadow: none; --cap-ink: #2b1810;
-  --c-slate: #c9a678; --c-amber: #e0a526; --c-coral: #e8702a; --c-rose: #e2627a;
-  --c-violet: #a77bc4; --c-blue: #5f9bb5; --c-cyan: #5fb5a2; --c-green: #8a9a3a;
-  --font: "Young Serif", Georgia, serif;
-  --gv-mustard: #e0a526; --gv-orange: #e8702a; --gv-rust: #c4532a; --gv-avocado: #8a9a3a;
-}
-body[data-theme="groovy"] {
-  background:
-    radial-gradient(circle at 0% 100%, #e0a526 0 90px, #e8702a 90px 130px, #c4532a 130px 170px, #8a3a22 170px 210px, transparent 210px),
-    radial-gradient(circle at 100% 0%, #8a9a3a 0 56px, #e0a526 56px 92px, #e8702a 92px 128px, transparent 128px),
-    #2b1810;
-  background-attachment: fixed;
-}
-/* Lava blobs: soft warm light drifting slowly behind the mixer. */
-:root body[data-theme="groovy"] .theme-light { --ambient-base: none; --ambient-accent: none; filter: blur(34px); opacity: .55; }
-:root body[data-theme="groovy"] .theme-light::before { mask-image: none; inset: 0;
-  background: radial-gradient(circle 120px at 22% 32%, #ff8a3d, transparent 70%), radial-gradient(circle 90px at 72% 58%, #ffb347, transparent 70%), radial-gradient(circle 150px at 48% 92%, #e8702a, transparent 70%); }
-:root body[data-theme="groovy"] :is(.strip, .mini-row) { border-radius: 24px; background: linear-gradient(180deg, var(--mod-a), var(--mod-b)); box-shadow: inset 0 0 0 2px var(--mod-edge), var(--mod-shadow); }
-:root body[data-theme="groovy"] :is(.strip, .mini-row):hover { box-shadow: inset 0 0 0 2px #e0a526, var(--mod-shadow), 0 0 20px #e8702a33; }
-:root body[data-theme="groovy"] .strip { padding-top: 26px; }
-:root body[data-theme="groovy"] .strip::before { content: ""; position: absolute; left: 18px; right: 18px; top: 9px; height: 11px; border-radius: 6px; pointer-events: none;
-  background: linear-gradient(180deg, var(--gv-orange) 0 3px, transparent 3px 4px, var(--gv-mustard) 4px 7px, transparent 7px 8px, var(--gv-avocado) 8px 11px); }
-:root body[data-theme="groovy"] :is(.strip .name, .mini-name, .brand-name, .group-head h2, .dlg-head h2) { font-family: var(--font); font-weight: 400; letter-spacing: 0; }
-:root body[data-theme="groovy"] .strip .name { font-size: 16px; color: var(--ink); }
-:root body[data-theme="groovy"] .brand-name { color: var(--gv-mustard); font-size: 17px; }
-:root body[data-theme="groovy"] .group-head h2 { color: var(--gv-mustard); font-size: 14px; }
-:root body[data-theme="groovy"] .strip .sub { color: var(--muted); }
-:root body[data-theme="groovy"] .strip .head .chip { border-radius: 50%; background: var(--acc); color: var(--on-ink); box-shadow: none; }
-:root body[data-theme="groovy"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) { border-radius: 999px; background: var(--key); color: var(--key-ink); box-shadow: inset 0 0 0 1.5px var(--key-edge); }
-:root body[data-theme="groovy"] :is(.btn, .route, .tog):hover { background: var(--key-hi); color: var(--ink); }
-:root body[data-theme="groovy"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="groovy"] .strip :is(.modes .tog, .tog.mono)[aria-pressed="true"] { background: var(--acc); color: var(--on-ink); box-shadow: none; }
-:root body[data-theme="groovy"] .strip-routes .route.b[aria-pressed="true"] { background: var(--gv-avocado); color: #fff8e6; box-shadow: none; }
-:root body[data-theme="groovy"] .strip .tog.solo[aria-pressed="true"] { background: var(--gv-orange); color: var(--on-ink); box-shadow: none; }
-:root body[data-theme="groovy"] .strip .tog.mute[aria-pressed="true"] { background: var(--red); color: var(--ink); box-shadow: none; }
-:root body[data-theme="groovy"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { background: var(--gv-orange); color: var(--on-ink); box-shadow: none; }
-:root body[data-theme="groovy"] .strip.muted :is(.head, .strip-routes, .fader, .readout) { filter: sepia(.8) brightness(.55); }
-:root body[data-theme="groovy"] .bar { background: #3b2216e6; box-shadow: inset 0 -2px 0 var(--gv-mustard); }
-:root body[data-theme="groovy"] .bar :is(.btn, .keys) { background: var(--gv-orange); color: var(--on-ink); box-shadow: none; font-weight: 700; }
-:root body[data-theme="groovy"] .bar :is(.btn, .keys):hover { background: var(--gv-mustard); }
-/* Meters: chunky 70s bands of avocado, mustard, orange and red. */
-:root body[data-theme="groovy"] .strip .well { background: var(--well); border-radius: 6px; box-shadow: none; }
-:root body[data-theme="groovy"] .meter { -webkit-mask: none; mask: none; border-radius: 4px; }
-:root body[data-theme="groovy"] .meter .unlit { background: #2a170d; }
-:root body[data-theme="groovy"] .strip .meter .lit b { background: linear-gradient(to top, var(--gv-avocado) 0 45%, var(--gv-mustard) 45% var(--p-yellow), var(--gv-orange) var(--p-yellow) var(--p-zero), #c4332a var(--p-zero)); }
-/* Fader: a chunky rounded track, and a lava lamp for the cap. */
-:root body[data-theme="groovy"] .fader .groove { width: 10px; margin-left: -5px; border: 0; border-radius: 5px;
-  background: linear-gradient(to top, color-mix(in srgb, var(--acc) 85%, transparent) calc(var(--p, 0) * 100%), var(--track) 0);
-  box-shadow: inset 0 2px 3px #000a; }
-:root body[data-theme="groovy"] .fader .groove::before { display: none; }
-:root body[data-theme="groovy"] .fader .thumb { overflow: hidden; clip-path: none; filter: none; border-radius: 50% 50% 42% 42% / 62% 62% 38% 38%;
-  background: radial-gradient(circle 4px at 38% 30%, #ffffffaa, transparent 5px), var(--cap-metal);
-  box-shadow: 0 4px 8px #000b, inset 0 0 0 2px var(--on-ink); }
-:root body[data-theme="groovy"] .fader .thumb::before { content: none; }
-:root body[data-theme="groovy"] .fader .thumb::after { content: ""; display: block; position: absolute; left: calc(50% - 4px); right: auto; top: 18px; width: 8px; height: 8px; margin: 0; border-radius: 50%; background: #ffd27a; box-shadow: none; transform: none; font-size: 0; }
-:root body[data-theme="groovy"] .fader.dragging .thumb { box-shadow: 0 0 0 3px var(--gv-mustard), 0 0 18px #ff8a3d88, 0 4px 8px #000b; }
-:root body[data-theme="groovy"] .unity { background: var(--gv-mustard); opacity: .5; }
-:root body[data-theme="groovy"] .scale span { color: var(--muted); }
-:root body[data-theme="groovy"] .strip .readout { font-family: var(--font); font-weight: 400; color: var(--gv-mustard); background: transparent; }
-:root body[data-theme="groovy"] .fader.h .track { border-radius: 6px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 70%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), var(--track); box-shadow: inset 0 2px 3px #000a; }
-:root body[data-theme="groovy"] .fader.h .thumb { border-radius: 999px; background: var(--cap-metal); color: var(--on-ink); }
-:root body[data-theme="groovy"] :is(.dlg, .menu) { border-radius: 20px; box-shadow: var(--pop-shadow); }
-:root body[data-theme="groovy"] .dlg::backdrop { background: rgba(20, 10, 5, .65); }
-:root body[data-theme="groovy"] .wc:hover { background: var(--key-hi); color: var(--gv-mustard); }
-:root body[data-theme="groovy"] .wc.close:hover { background: var(--red); color: var(--ink); }
-.theme-card[data-theme="groovy"] { border-radius: 14px; }
-.theme-card[data-theme="groovy"] .tc-desk { border-radius: 12px; background: radial-gradient(circle at 0% 100%, #e0a526 0 18px, #e8702a 18px 26px, #c4532a 26px 34px, transparent 34px), radial-gradient(circle at 100% 0%, #8a9a3a 0 12px, #e0a526 12px 20px, transparent 20px), #2b1810; }
-.theme-card[data-theme="groovy"] .tc-mod { border-radius: 10px; background: linear-gradient(180deg, #4a2a1a, #331c11); box-shadow: inset 0 0 0 1.5px #e0a52699; }
-.theme-card[data-theme="groovy"] .tc-cap { border-radius: 50% 50% 42% 42% / 62% 62% 38% 38%; width: 8px; height: 11px; margin-left: -4px; background: linear-gradient(180deg, #ff9a4a, #c4532a); }
-.theme-card[data-theme="groovy"] .tc-slot::before { width: 4px; margin-left: -2px; background: #e8702a; border-radius: 2px; }
-.theme-card[data-theme="groovy"] :is(.tc-keys i, .tc-mute) { border-radius: 99px; }
-@media (prefers-reduced-motion: no-preference) {
-  body[data-theme="groovy"]:not([data-theme-motion="off"]) .theme-light::before { animation: groovy-lava 22s ease-in-out infinite alternate; }
-  body[data-theme="groovy"][data-theme-motion="full"] .theme-light::before { animation-duration: 11s; }
-  body[data-theme="groovy"][data-theme-motion="full"] .strip:not(.muted) .fader .thumb::after { animation: groovy-blob 3.6s ease-in-out infinite alternate; }
-  body[data-theme="groovy"][data-theme-motion="full"] .strip:nth-child(even):not(.muted) .fader .thumb::after { animation-delay: -1.8s; }
-}
-@keyframes groovy-lava { to { transform: translateY(-6%) scale(1.06); } }
-@keyframes groovy-blob { to { top: 6px; transform: scale(1.2, .85); } }
-
 /* ------------------------------------------------------------------ Motion */
 @media (prefers-reduced-motion: no-preference) {
   /* Subtle and Full */
@@ -1450,7 +1353,7 @@ body[data-theme="groovy"] {
   body[data-theme="block"][data-theme-motion="full"] .theme-light::after { animation: mk-halftone 16s linear infinite; }
 }
 /* Particles only show in the themes and motion levels that animate them. */
-body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) .theme-fx { display: none; }
+body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"], [data-theme="aero"]) .theme-fx { display: none; }
 @media (prefers-reduced-motion: reduce) { .theme-fx { display: none !important; } }
 
 @keyframes mk-sweep { from { left: -40%; } to { left: 100%; } }
@@ -1492,135 +1395,112 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 }
 
 /* ---------------------------------------------------------------- Graphite */
-/* Machined dark aluminium: brushed, anodized panels with a bright chamfer along their edges, brushed
-   metal fader caps with a backlit index line in the channel's colour, segmented LED meters that glow,
-   and keys whose light-pipes light up when pressed. A cool cyan light falls on the desk from above. */
+/* The default, kept calm and current: flat charcoal cards with a hairline edge, tinted icon tiles,
+   soft keys that take a wash of the channel's colour when on, smooth meters, pill-shaped fader caps
+   with the channel's colour across them, and one periwinkle accent. No textures and no glow, so it
+   is cheap to draw and easy to sit next to all day. Type is Segoe UI Variable, which Windows 11 has;
+   Windows 10 falls back to Segoe UI. */
 [data-theme="graphite"] {
-  --bg: #0a0b0d; --bay: #0e1013b3; --bay-edge: #ffffff0a; --bay-shadow: inset 0 1px 0 #ffffff08, inset 0 0 0 1px #1c1f24;
-  --mod-a: #2b2f36; --mod-b: #191c20; --mod-edge: #ffffff26; --mod-shadow: 0 0 0 1px #07080a, 0 18px 30px -12px #000c;
-  --key: #252930; --key-hi: #2f343c; --key-edge: #ffffff1a; --key-ink: #9aa5b1; --key-shadow: 0 0 0 1px #07080a, 0 3px 6px #0008;
-  --well: #07080a; --flyout: #1a1d22f7; --line: #2a2e35;
-  --ink: #e9eef3; --ink-2: #c3cad2; --muted: #7f8a96;
-  --amber: #3fe0ff; --cyan: #2bff9e; --red: #ff5470; --solo: #ffc23f; --on-ink: #021216;
-  --focus: #3fe0ff; --panel-hi: #252930; --track: #07080a;
-  --led-g: #22f08f; --led-y: #ffd84a; --led-r: #ff4560;
-  --led-g-off: #0b1c14; --led-y-off: #1f1b0b; --led-r-off: #230b11;
-  --glow: .9; --scroll: #2a2e35; --scroll-hi: #3a3f48;
-  --field: #0c0d10; --rail: #07080a; --switch: #252930;
-  --cap-w: 40px; --cap-h: 26px;
-  --pop-shadow: 0 0 0 1px #2a2e35, 0 24px 50px #000c, 0 0 40px #3fe0ff12;
-  --cap-metal: linear-gradient(180deg, #ffffff8c, transparent 28%, transparent 72%, #00000040), repeating-linear-gradient(90deg, #cfd5dc 0 1px, #a7afb8 1px 2px), #b8c0c8;
-  --cap-ridge: transparent; --cap-shadow: 0 10px 16px #000d, inset 0 1px 0 #fff, inset 0 -1px 0 #5f666e, 0 0 0 1px #050607; --cap-ink: #0b0c0e;
-  --c-slate: #a9b3bf; --c-amber: #ffc23f; --c-coral: #ff7a59; --c-rose: #ff5c9a;
-  --c-violet: #9d85ff; --c-blue: #4d9bff; --c-cyan: #3fe0ff; --c-green: #2bff9e;
-  --font: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --bg: #111215; --bay: #ffffff05; --bay-edge: #ffffff0a; --bay-shadow: none;
+  --mod-a: #1d1e23; --mod-b: #18191d; --mod-edge: #ffffff0f; --mod-shadow: 0 10px 24px -14px #000;
+  --key: #24252b; --key-hi: #2c2d34; --key-edge: transparent; --key-ink: #a4a6b2; --key-shadow: none;
+  --well: #0e0f12; --flyout: #1b1c21fa; --line: #ffffff12;
+  --ink: #ececf1; --ink-2: #c5c7d0; --muted: #868895;
+  --amber: #7b93ff; --cyan: #3ddc97; --red: #ff5c6c; --solo: #ffb455; --on-ink: #0b0d18;
+  --focus: #8ea3ff; --panel-hi: #24252b; --track: #26272d;
+  --led-g: #3ddc97; --led-y: #f5c451; --led-r: #ff5c6c;
+  --led-g-off: #26272d; --led-y-off: #26272d; --led-r-off: #2e2629;
+  --glow: .15; --scroll: #2a2b31; --scroll-hi: #3a3b43;
+  --field: #16171b; --rail: #26272d; --switch: #2c2d34;
+  --cap-w: 34px; --cap-h: 18px;
+  --pop-shadow: 0 0 0 1px #ffffff14, 0 24px 50px #000c;
+  --cap-metal: #f4f4f7; --cap-ridge: transparent; --cap-shadow: 0 2px 8px #000b, 0 0 0 1px #0006; --cap-ink: #15161a;
+  --c-slate: #a4a9b8; --c-amber: #ffb455; --c-coral: #ff8a65; --c-rose: #ff7a8a;
+  --c-violet: #a98bff; --c-blue: #7b93ff; --c-cyan: #4fd1e8; --c-green: #3ddc97;
+  --font: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif;
+  --gr-display: "Segoe UI Variable Display", "Segoe UI", Inter, system-ui, sans-serif;
   --warning-ink: #ffd27a;
 }
-:root body[data-theme="graphite"] { background: #0a0b0d; }
+:root body[data-theme="graphite"] { background: #111215; }
 :root body[data-theme="graphite"] .theme-light {
-  --ambient-base: radial-gradient(ellipse 70% 42% at 50% -14%, #3fe0ff2e, transparent 70%), radial-gradient(ellipse 50% 40% at 100% 112%, #2bff9e12, transparent 70%), linear-gradient(180deg, #15171b, #08090b);
-  --ambient-accent: radial-gradient(ellipse 46% 26% at 50% 6%, #3fe0ff1f, transparent);
+  --ambient-base: radial-gradient(ellipse 60% 40% at 50% -12%, #7b93ff17, transparent 70%), linear-gradient(180deg, #131418, #0f1013);
+  --ambient-accent: none;
 }
-:root body[data-theme="graphite"] .theme-light::after { content: ""; position: absolute; inset: 0; background: var(--sm-noise); opacity: .22; mix-blend-mode: overlay; }
-/* Panels: anodized and brushed, with a bright chamfer that fades into the channel's colour at the foot. */
+/* Cards: flat charcoal with a hairline edge and the faintest top light. */
 :root body[data-theme="graphite"] :is(.strip, .mini-row) {
-  border-radius: 16px;
-  background: linear-gradient(180deg, #ffffff12, transparent 26%), repeating-linear-gradient(90deg, #ffffff05 0 1px, transparent 1px 3px), linear-gradient(180deg, var(--mod-a), var(--mod-b));
-  box-shadow: inset 0 1px 0 #ffffff29, inset 0 -1px 0 #0009, var(--mod-shadow);
+  border-radius: 16px; background: linear-gradient(180deg, var(--mod-a), var(--mod-b));
+  box-shadow: inset 0 0 0 1px #ffffff0f, inset 0 1px 0 #ffffff0d, var(--mod-shadow);
 }
-:root body[data-theme="graphite"] .mini-row { border-radius: 11px; }
-:root body[data-theme="graphite"] .strip::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 0;
-  background: linear-gradient(180deg, #ffffff4d, transparent 32%, transparent 68%, color-mix(in srgb, var(--acc) 55%, transparent));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-}
-/* A light catch that runs along the top chamfer now and then (Full motion). */
-:root body[data-theme="graphite"] .strip::after {
-  content: ""; position: absolute; left: 14px; right: 14px; top: 0; height: 1px; pointer-events: none; z-index: 0;
-  background: linear-gradient(90deg, transparent, #fff 50%, transparent) -120% 0 / 60% 100% no-repeat; opacity: .85;
-}
-:root body[data-theme="graphite"] :is(.strip, .mini-row):hover { background: linear-gradient(180deg, #ffffff17, transparent 30%), repeating-linear-gradient(90deg, #ffffff06 0 1px, transparent 1px 3px), linear-gradient(180deg, #30353d, #1b1e23); }
-:root body[data-theme="graphite"] .strip.muted::before { background: linear-gradient(180deg, #ffffff33, transparent 32%, transparent 68%, #ff547066); }
+:root body[data-theme="graphite"] .mini-row { border-radius: 12px; }
+:root body[data-theme="graphite"] :is(.strip, .mini-row):hover { background: linear-gradient(180deg, #202127, #1a1b20); box-shadow: inset 0 0 0 1px #ffffff1a, inset 0 1px 0 #ffffff12, var(--mod-shadow); }
 :root body[data-theme="graphite"] .group { border-radius: 20px; }
-:root body[data-theme="graphite"] .group-head h2 { color: var(--amber); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; text-shadow: 0 0 10px #3fe0ff66; }
-:root body[data-theme="graphite"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-family: var(--font); font-weight: 500; letter-spacing: .01em; }
+:root body[data-theme="graphite"] .group-head h2 { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+:root body[data-theme="graphite"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-family: var(--gr-display); font-weight: 600; letter-spacing: -.01em; }
 :root body[data-theme="graphite"] .strip .name { font-size: 15px; }
 :root body[data-theme="graphite"] .strip .sub { color: var(--muted); }
-:root body[data-theme="graphite"] .brand-name { letter-spacing: .04em; }
-/* The channel icon: a machined key with a backlit glyph. */
-:root body[data-theme="graphite"] .strip .head .chip, :root body[data-theme="graphite"] .mini-row .chip {
-  border-radius: 8px; color: var(--acc); background: linear-gradient(180deg, #343a43, #1e2227);
-  box-shadow: inset 0 1px 0 #ffffff24, 0 0 0 1px #07080a, 0 2px 4px #0008;
+:root body[data-theme="graphite"] .strip.muted :is(.name, .readout) { color: #6d6f7a; }
+/* The channel icon: a tile tinted with the channel's colour. */
+:root body[data-theme="graphite"] :is(.strip .head .chip, .mini-row .chip) {
+  border-radius: 9px; color: var(--acc); background: color-mix(in srgb, var(--acc) 15%, transparent); box-shadow: none;
 }
-:root body[data-theme="graphite"] .strip .head .chip svg { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--acc) 70%, transparent)); }
-/* Keys: dark caps; a pressed key's light-pipe lights in its colour. */
+:root body[data-theme="graphite"] button.chip:hover { background: color-mix(in srgb, var(--acc) 24%, transparent); }
+:root body[data-theme="graphite"] .strip.muted .head .chip { color: #868895; background: #ffffff0d; }
+/* Keys: soft and flat. An on key takes a wash of its colour with a matching edge. */
 :root body[data-theme="graphite"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) {
-  border-radius: 8px; background: linear-gradient(180deg, #2d3239, #1c1f24); color: var(--key-ink);
-  box-shadow: inset 0 1px 0 #ffffff1a, 0 0 0 1px #07080a, 0 4px 8px #0009;
+  border-radius: 8px; background: var(--key); color: var(--key-ink); box-shadow: none; font-weight: 600;
 }
-:root body[data-theme="graphite"] :is(.btn, .route, .tog, .keys):hover { background: linear-gradient(180deg, #353b43, #22262b); color: var(--ink); }
-:root body[data-theme="graphite"] :is(.route, .tog) { font-weight: 500; letter-spacing: .08em; }
-:root body[data-theme="graphite"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="graphite"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono)[aria-pressed="true"] {
-  --lp: var(--amber); color: var(--lp); text-shadow: 0 0 8px var(--lp);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--lp) 16%, #2d3239), color-mix(in srgb, var(--lp) 8%, #1c1f24));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lp) 70%, transparent), inset 0 0 12px color-mix(in srgb, var(--lp) 22%, transparent), 0 0 16px color-mix(in srgb, var(--lp) 30%, transparent), 0 0 0 1px #07080a;
+:root body[data-theme="graphite"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { background: var(--key-hi); color: var(--ink); }
+:root body[data-theme="graphite"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="graphite"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono, .tog.eq)[aria-pressed="true"] {
+  --lp: var(--amber); color: color-mix(in srgb, var(--lp) 45%, #fff); background: color-mix(in srgb, var(--lp) 22%, var(--key)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lp) 50%, transparent);
 }
 :root body[data-theme="graphite"] .strip-routes .route.b[aria-pressed="true"] {
-  --lp: var(--cyan); color: var(--lp); text-shadow: 0 0 8px var(--lp);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--lp) 14%, #2d3239), color-mix(in srgb, var(--lp) 6%, #1c1f24));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lp) 65%, transparent), inset 0 0 12px color-mix(in srgb, var(--lp) 20%, transparent), 0 0 16px color-mix(in srgb, var(--lp) 26%, transparent), 0 0 0 1px #07080a;
+  --lp: var(--cyan); color: color-mix(in srgb, var(--lp) 45%, #fff); background: color-mix(in srgb, var(--lp) 18%, var(--key)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lp) 45%, transparent);
 }
-:root body[data-theme="graphite"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] {
-  --lp: var(--solo); color: var(--lp); text-shadow: 0 0 8px var(--lp); background: linear-gradient(180deg, #3a3220, #221d12);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lp) 70%, transparent), inset 0 0 12px color-mix(in srgb, var(--lp) 22%, transparent), 0 0 16px color-mix(in srgb, var(--lp) 28%, transparent);
-}
-:root body[data-theme="graphite"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] {
-  --lp: var(--red); color: var(--lp); text-shadow: 0 0 8px var(--lp); background: linear-gradient(180deg, #3a2028, #221217);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lp) 70%, transparent), inset 0 0 14px color-mix(in srgb, var(--lp) 26%, transparent), 0 0 18px color-mix(in srgb, var(--lp) 32%, transparent);
-}
-:root body[data-theme="graphite"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) {
-  color: var(--on-ink); background: linear-gradient(180deg, #7aeaff, #23c4e6); box-shadow: inset 0 1px 0 #ffffffa0, 0 0 0 1px #07080a, 0 0 18px #3fe0ff44;
-}
-:root body[data-theme="graphite"] .bar { background: linear-gradient(180deg, #16181ce6, #0f1114e6); box-shadow: inset 0 -1px 0 #23272d, 0 1px 0 #ffffff08; }
-/* Meters: fine segments that glow. */
-:root body[data-theme="graphite"] .strip .well { border-radius: 6px; background: var(--well); box-shadow: inset 0 1px 3px #000, 0 0 0 1px #23272d, 0 1px 0 #ffffff0d; }
-:root body[data-theme="graphite"] .meter { -webkit-mask: repeating-linear-gradient(to top, #000 0 2px, transparent 2px 4px); mask: repeating-linear-gradient(to top, #000 0 2px, transparent 2px 4px); border-radius: 1px; }
-:root body[data-theme="graphite"] .fader.h .meter { -webkit-mask: repeating-linear-gradient(to right, #000 0 2px, transparent 2px 4px); mask: repeating-linear-gradient(to right, #000 0 2px, transparent 2px 4px); }
-:root body[data-theme="graphite"] .meter .lit { filter: drop-shadow(0 0 3px #22f08f88); }
-:root body[data-theme="graphite"] .meter .pk i { background: #fff; box-shadow: 0 0 6px #fff; height: 2px; }
-/* Fader: a dark slot lit in the channel's colour up to the cap, over fine tick marks. */
+:root body[data-theme="graphite"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { color: #ffd29a; background: color-mix(in srgb, var(--solo) 20%, var(--key)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--solo) 50%, transparent); }
+:root body[data-theme="graphite"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #ff9aa4; background: color-mix(in srgb, var(--red) 18%, var(--key)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--red) 50%, transparent); }
+:root body[data-theme="graphite"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: var(--on-ink); background: var(--amber); box-shadow: none; }
+:root body[data-theme="graphite"] :is(.btn.primary, .update-btn):hover { background: #96a9ff; }
+:root body[data-theme="graphite"] .bar { background: #111215e6; box-shadow: inset 0 -1px 0 #ffffff0d; }
+/* Meters: smooth, rounded bars with a quiet track. */
+:root body[data-theme="graphite"] .strip .well { border-radius: 8px; background: var(--well); box-shadow: inset 0 0 0 1px #ffffff0a; }
+:root body[data-theme="graphite"] .meter { -webkit-mask: none; mask: none; border-radius: 3px; }
+:root body[data-theme="graphite"] .meter .pk i { background: #ffffffd9; height: 2px; border-radius: 1px; box-shadow: none; }
+/* Fader: a thin track filled in the channel's colour up to a white pill cap with a colour bar across it. */
 :root body[data-theme="graphite"] .fader .groove {
-  width: 4px; margin-left: -2px; border: 0; border-radius: 2px;
-  background: linear-gradient(to top, color-mix(in srgb, var(--acc) 55%, #000), var(--acc) calc(var(--p, 0) * 100%), var(--track) 0);
-  box-shadow: 0 0 0 1px #2a2e35, 0 0 10px color-mix(in srgb, var(--acc) 40%, transparent);
+  width: 4px; margin-left: -2px; border: 0; border-radius: 2px; box-shadow: none;
+  background: linear-gradient(to top, var(--acc) calc(var(--p, 0) * 100%), var(--track) 0);
 }
-:root body[data-theme="graphite"] .fader .groove::before { content: ""; display: block; position: absolute; left: -9px; width: 6px; top: 0; bottom: 0; background: repeating-linear-gradient(to bottom, #ffffff30 0 1px, transparent 1px 10px); }
-:root body[data-theme="graphite"] .muted .fader .groove { background: linear-gradient(to top, #3a3f48, #555b66 calc(var(--p, 0) * 100%), var(--track) 0); box-shadow: 0 0 0 1px #2a2e35; }
-:root body[data-theme="graphite"] .fader .thumb { border-radius: 6px; clip-path: none; filter: none; background: var(--cap-metal); box-shadow: var(--cap-shadow); }
+:root body[data-theme="graphite"] .fader .groove::before { display: none; }
+:root body[data-theme="graphite"] .muted .fader .groove { background: linear-gradient(to top, #4a4b54 calc(var(--p, 0) * 100%), var(--track) 0); }
+:root body[data-theme="graphite"] .fader .thumb { border-radius: 999px; clip-path: none; filter: none; background: var(--cap-metal); box-shadow: var(--cap-shadow); }
 :root body[data-theme="graphite"] .fader .thumb::before { content: none; }
-:root body[data-theme="graphite"] .fader:not(.h) .thumb::after { left: 5px; right: 5px; width: auto; top: calc(50% - 1px); height: 2px; margin: 0; border-radius: 1px; background: var(--acc); box-shadow: 0 0 8px var(--acc), 0 0 2px #fff; transform: none; font-size: 0; }
-:root body[data-theme="graphite"] .muted .fader .thumb::after { background: #5a616b; box-shadow: none; }
-:root body[data-theme="graphite"] .fader.dragging .thumb { box-shadow: 0 0 0 2px var(--acc), 0 0 22px color-mix(in srgb, var(--acc) 60%, transparent), 0 12px 20px #000d, inset 0 1px 0 #fff; }
-:root body[data-theme="graphite"] .unity { background: var(--amber); opacity: .55; box-shadow: 0 0 6px var(--amber); }
-:root body[data-theme="graphite"] .scale span { color: #6b7581; font-size: 10px; }
-:root body[data-theme="graphite"] .scale span.zero { color: var(--ink); }
-:root body[data-theme="graphite"] .strip .readout { font-family: var(--font); font-weight: 500; font-size: 20px; color: var(--ink); background: transparent; letter-spacing: .02em; }
-:root body[data-theme="graphite"] .strip .readout:hover { color: var(--amber); text-shadow: 0 0 10px #3fe0ff88; }
-:root body[data-theme="graphite"] .fader.h .track { border-radius: 6px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 30%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), #07080a; box-shadow: inset 0 1px 3px #000, 0 0 0 1px #2a2e35; }
-:root body[data-theme="graphite"] .fader.h .thumb { border-radius: 6px; background: var(--cap-metal); box-shadow: var(--cap-shadow); color: var(--cap-ink); }
-:root body[data-theme="graphite"] .fader.h .db { color: var(--cap-ink); }
+:root body[data-theme="graphite"] .fader:not(.h) .thumb::after { left: 11px; right: 11px; width: auto; top: calc(50% - 1.5px); height: 3px; margin: 0; border-radius: 2px; background: var(--acc); box-shadow: none; transform: none; font-size: 0; }
+:root body[data-theme="graphite"] .muted .fader .thumb { background: #b9bac2; }
+:root body[data-theme="graphite"] .muted .fader .thumb::after { background: #6d6f7a; }
+:root body[data-theme="graphite"] .fader.dragging .thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 45%, transparent), 0 4px 12px #000c; }
+:root body[data-theme="graphite"] .unity { background: #ffffff; opacity: .18; }
+:root body[data-theme="graphite"] .scale span { color: #6d6f7a; font-size: 10px; }
+:root body[data-theme="graphite"] .scale span.zero { color: var(--ink-2); }
+:root body[data-theme="graphite"] .strip .readout { font-family: var(--gr-display); font-weight: 600; font-size: 21px; color: var(--ink); background: transparent; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+:root body[data-theme="graphite"] .strip .readout:hover { background: #ffffff0d; }
+/* Mini mode and the tray panel: a soft track and a pill that carries the level. */
+:root body[data-theme="graphite"] .fader.h .track { border-radius: 8px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 28%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), var(--well); box-shadow: inset 0 0 0 1px #ffffff0d; }
+:root body[data-theme="graphite"] .fader.h .thumb { border-radius: 999px; background: var(--cap-metal); box-shadow: var(--cap-shadow); color: var(--cap-ink); }
+:root body[data-theme="graphite"] .fader.h .db { color: var(--cap-ink); font-weight: 600; }
 /* Dialogs, menus and window buttons. */
-:root body[data-theme="graphite"] :is(.dlg, .menu) { border-radius: 16px; background: linear-gradient(180deg, #ffffff0a, transparent 30%), var(--flyout); box-shadow: inset 0 1px 0 #ffffff1f, var(--pop-shadow); }
-:root body[data-theme="graphite"] .dlg::backdrop { background: rgba(3, 5, 8, .7); backdrop-filter: blur(3px); }
-:root body[data-theme="graphite"] .dlg-head h2 { letter-spacing: .02em; }
-:root body[data-theme="graphite"] .wc:hover { background: var(--key-hi); color: var(--amber); }
-:root body[data-theme="graphite"] .wc.close:hover { background: var(--red); color: #fff; }
+:root body[data-theme="graphite"] :is(.dlg, .menu) { border-radius: 16px; background: var(--flyout); box-shadow: var(--pop-shadow); }
+:root body[data-theme="graphite"] .dlg::backdrop { background: rgba(5, 6, 9, .65); backdrop-filter: blur(3px); }
+:root body[data-theme="graphite"] .wc:hover { background: var(--key-hi); color: var(--ink); }
+:root body[data-theme="graphite"] .wc.close:hover { background: #e5404f; color: #fff; }
 /* Theme-picker sample. */
-.theme-card[data-theme="graphite"] .tc-desk { background: radial-gradient(ellipse 80% 60% at 50% -20%, #3fe0ff38, transparent 70%), linear-gradient(180deg, #16181c, #0a0b0d); }
-.theme-card[data-theme="graphite"] .tc-mod { border-radius: 6px; background: linear-gradient(180deg, #ffffff14, transparent 30%), linear-gradient(180deg, #2b2f36, #191c20); box-shadow: inset 0 1px 0 #ffffff33, 0 0 0 1px #07080a; }
-.theme-card[data-theme="graphite"] .tc-cap { height: 6px; border-radius: 2px; background: linear-gradient(180deg, #e6eaee, #9aa3ad); box-shadow: 0 0 0 .5px #000, inset 0 -1px 0 #3fe0ff; }
-.theme-card[data-theme="graphite"] .tc-slot::before { width: 2px; margin-left: -1px; background: #3fe0ff; box-shadow: 0 0 4px #3fe0ff; }
-.theme-card[data-theme="graphite"] .tc-keys i.on { box-shadow: 0 0 5px currentColor; }
+.theme-card[data-theme="graphite"] .tc-desk { background: radial-gradient(ellipse 80% 60% at 50% -20%, #7b93ff26, transparent 70%), #111215; }
+.theme-card[data-theme="graphite"] .tc-mod { border-radius: 7px; background: #1d1e23; box-shadow: inset 0 0 0 1px #ffffff14; }
+.theme-card[data-theme="graphite"] :is(.tc-keys i, .tc-mute) { border-radius: 3px; background: #2c2d34; box-shadow: none; }
+.theme-card[data-theme="graphite"] .tc-keys i.on.a { background: #7b93ff66; }
+.theme-card[data-theme="graphite"] .tc-keys i.on.b { background: #3ddc9759; }
+.theme-card[data-theme="graphite"] .tc-mute.on { background: #ff5c6c59; }
+.theme-card[data-theme="graphite"] .tc-cap { height: 5px; border-radius: 3px; background: #f4f4f7; box-shadow: none; }
+.theme-card[data-theme="graphite"] .tc-slot::before { width: 2px; margin-left: -1px; background: #7b93ff; }
 
 /* ---------------------------------------------------------------- Halo */
 /* An eclipse: near-black, with one ring of light arcing over the window. Smoked-glass cards, a beam
@@ -1855,14 +1735,8 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 .theme-card[data-theme="nordic"] .tc-cap { width: 11px; height: 11px; margin-left: -5.5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f0d2a6, #b6844c); }
 .theme-card[data-theme="nordic"] .tc-slot::before { width: 3px; margin-left: -1.5px; background: #f5f2ecaa; border-radius: 2px; }
 
-/* ---------------------------------------------------------------- Motion for Graphite, Halo and Nordic */
+/* ---------------------------------------------------------------- Motion for Halo and Nordic */
 @media (prefers-reduced-motion: no-preference) {
-  /* Graphite: the light catch runs along each panel's top chamfer (Full); a pressed mute key breathes. */
-  body[data-theme="graphite"][data-theme-motion="full"] .strip::after { animation: gr-catch 9s ease-in-out infinite; }
-  body[data-theme="graphite"][data-theme-motion="full"] .strip:nth-child(3n + 2)::after { animation-delay: -3s; }
-  body[data-theme="graphite"][data-theme-motion="full"] .strip:nth-child(3n + 3)::after { animation-delay: -6s; }
-  body[data-theme="graphite"][data-theme-motion="full"] .tog.mute[aria-pressed="true"] { animation: gr-pipe 2.4s ease-in-out infinite; }
-  body[data-theme="graphite"]:not([data-theme-motion="off"]) .theme-light::before { animation: ambient-drift 34s ease-in-out infinite alternate; }
   /* Halo: the light drifts, and the beams trace each card. */
   body[data-theme="halo"][data-theme-motion="full"] .strip::before { animation: halo-beam 7s linear infinite; }
   body[data-theme="halo"] .strip:nth-child(4n + 2)::before { animation-delay: -1.75s; }
@@ -1873,8 +1747,6 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
   /* Nordic: morning light drifts slowly across the room. */
   body[data-theme="nordic"]:not([data-theme-motion="off"]) .theme-light::before { animation: ambient-drift 40s ease-in-out infinite alternate; }
 }
-@keyframes gr-catch { 0%, 70% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
-@keyframes gr-pipe { 50% { box-shadow: inset 0 0 0 1px #ff547080, inset 0 0 8px #ff547026, 0 0 8px #ff54701f; } }
 @keyframes halo-beam { from { --halo-a: 0deg; } to { --halo-a: 360deg; } }
 @keyframes halo-pulse { 50% { box-shadow: inset 0 1px 0 #ffffff4d, 0 4px 10px #ff4fa040; } }
 
@@ -2205,70 +2077,6 @@ body:not([data-theme="arcade"], [data-theme="bubblegum"], [data-theme="abyss"]) 
 .theme-card[data-theme="overclock"] .tc-mod { background: repeating-linear-gradient(45deg, #ffffff08 0 2px, transparent 2px 4px), #12141b; box-shadow: inset 2px 0 0 #00e5ff, inset 0 -2px 0 #00e5ff99; }
 .theme-card[data-theme="overclock"] .tc-mod + .tc-mod { box-shadow: inset 2px 0 0 #ff2bd6, inset 0 -2px 0 #ff2bd699; }
 
-/* ---------------------------------------------------------------- Groovy */
-/* A 70s lounge, turned up: walnut-veneer TV cabinets with a warm screen glow, ring wallpaper behind,
-   bold rainbow arcs, four-colour stripes, lava-lamp fader caps with a metal cap and base, and chunky
-   rounded meter blocks. Headings sit on pills so they read over the rainbow. */
-body[data-theme="groovy"] {
-  background:
-    radial-gradient(circle at 0% 100%, #f2b632 0 84px, #2b1810 84px 90px, #e8702a 90px 128px, #2b1810 128px 134px, #c4532a 134px 172px, #2b1810 172px 178px, #8a3a22 178px 214px, transparent 214px),
-    radial-gradient(circle at 100% 0%, #8a9a3a 0 52px, #2b1810 52px 58px, #e0a526 58px 92px, #2b1810 92px 98px, #e8702a 98px 132px, transparent 132px),
-    radial-gradient(circle at 50% 50%, transparent 0 9px, #e0a52612 9px 12px, transparent 12px) 0 0 / 34px 34px,
-    radial-gradient(circle at 50% 50%, transparent 0 9px, #e8702a0d 9px 12px, transparent 12px) 17px 17px / 34px 34px,
-    #2b1810;
-  background-attachment: fixed;
-}
-/* Walnut cabinets: a fine grain, a warm screen glow inside, and a mustard trim. */
-:root body[data-theme="groovy"] :is(.strip, .mini-row) {
-  background:
-    radial-gradient(ellipse 90% 60% at 50% 35%, #ff8a3d14, transparent 70%),
-    repeating-linear-gradient(90deg, #00000014 0 1px, transparent 1px 5px, #ffffff06 5px 6px, transparent 6px 11px, #0000000d 11px 13px, transparent 13px 19px),
-    linear-gradient(180deg, #55301c, #3d2214 60%, #321b10);
-  box-shadow: inset 0 0 0 2px #e0a526a6, inset 0 0 0 5px #2b1810, inset 0 0 22px 6px #00000059, 0 10px 18px #000b;
-}
-:root body[data-theme="groovy"] :is(.strip, .mini-row):hover { box-shadow: inset 0 0 0 2px #f2b632, inset 0 0 0 5px #2b1810, inset 0 0 22px 6px #00000059, 0 10px 18px #000b, 0 0 24px #e8702a40; }
-:root body[data-theme="groovy"] .strip.muted { background: linear-gradient(180deg, #3d2a1f, #2b1d15); }
-/* Four stripes across the top, with rounded ends. */
-:root body[data-theme="groovy"] .strip { padding-top: 30px; }
-:root body[data-theme="groovy"] .strip::before {
-  left: 16px; right: 16px; top: 10px; height: 14px; border-radius: 7px;
-  background: linear-gradient(180deg, #8a3a22 0 3px, transparent 3px 4px, var(--gv-orange) 4px 7px, transparent 7px 8px, var(--gv-mustard) 8px 11px, transparent 11px 12px, var(--gv-avocado) 12px 14px);
-  -webkit-mask: radial-gradient(circle 7px at 7px 50%, #000 99%, transparent) left / 14px 100% no-repeat, radial-gradient(circle 7px at calc(100% - 7px) 50%, #000 99%, transparent) right / 14px 100% no-repeat, linear-gradient(#000 0 0) center / calc(100% - 14px) 100% no-repeat;
-  mask: radial-gradient(circle 7px at 7px 50%, #000 99%, transparent) left / 14px 100% no-repeat, radial-gradient(circle 7px at calc(100% - 7px) 50%, #000 99%, transparent) right / 14px 100% no-repeat, linear-gradient(#000 0 0) center / calc(100% - 14px) 100% no-repeat;
-}
-:root body[data-theme="groovy"] .strip.muted::before { filter: sepia(.8) brightness(.6); }
-/* Headings and links on dark pills so they read over the rainbow arcs. */
-:root body[data-theme="groovy"] .group-head :is(h2, .linkish) { background: #2b1810e6; border-radius: 999px; padding: 3px 12px; box-shadow: 0 0 0 1.5px #e0a52666; }
-:root body[data-theme="groovy"] .group-head .linkish { color: #f2c75c; }
-:root body[data-theme="groovy"] .strip .head .chip { box-shadow: 0 0 0 2px #2b1810, 0 0 0 3.5px color-mix(in srgb, var(--acc) 60%, transparent); }
-:root body[data-theme="groovy"] .strip .name { text-shadow: 0 1px 0 #0008; }
-/* Keys: chunky pills with a little bevel. */
-:root body[data-theme="groovy"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) { background: linear-gradient(180deg, #3b2216, #2b1810); box-shadow: inset 0 0 0 1.5px var(--key-edge), inset 0 1px 0 #ffffff14, 0 2px 0 #1a0d07; }
-:root body[data-theme="groovy"] :is(.strip-routes .route, .strip .tog)[aria-pressed="true"] { box-shadow: inset 0 1px 0 #ffffff55, inset 0 -2px 0 #00000033, 0 2px 0 #1a0d07; }
-:root body[data-theme="groovy"] .bar { background: linear-gradient(180deg, #8a3a22 0 2px, var(--gv-orange) 2px 4px, var(--gv-mustard) 4px 6px, transparent 6px) bottom / 100% 6px no-repeat, #3b2216f0; box-shadow: none; padding-bottom: 12px; }
-/* Meters: chunky rounded blocks. */
-:root body[data-theme="groovy"] .strip .meter { -webkit-mask: repeating-linear-gradient(to top, #000 0 6px, transparent 6px 8px); mask: repeating-linear-gradient(to top, #000 0 6px, transparent 6px 8px); border-radius: 3px; }
-:root body[data-theme="groovy"] .strip .well { box-shadow: inset 0 2px 4px #000c, 0 0 0 1.5px #5a3a22; border-radius: 8px; }
-:root body[data-theme="groovy"] .meter .lit { filter: drop-shadow(0 0 3px #ff8a3d66); }
-/* Fader: the lit track meets the cap; the cap is a lava lamp with a metal cap and base. */
-:root body[data-theme="groovy"] .fader:not(.h) .groove { background: linear-gradient(to top, color-mix(in srgb, var(--acc) 85%, transparent) calc(var(--cap-h) / 2 - 4px + var(--p, 0) * (100% + 8px - var(--cap-h))), var(--track) 0); }
-:root body[data-theme="groovy"] .fader:not(.h) .thumb {
-  border-radius: 40% 40% 30% 30% / 30% 30% 22% 22%;
-  background:
-    linear-gradient(180deg, #e8d2a0 0 4px, #8a6a3a 4px 5px, transparent 5px calc(100% - 6px), #8a6a3a calc(100% - 6px) calc(100% - 5px), #e8d2a0 calc(100% - 5px)),
-    radial-gradient(circle 3px at 34% 32%, #ffffffb0, transparent 4px),
-    linear-gradient(180deg, color-mix(in srgb, var(--acc) 70%, #ffd27a), var(--acc) 55%, color-mix(in srgb, var(--acc) 70%, #2b1810));
-  box-shadow: 0 4px 8px #000b, inset 0 0 0 1.5px #2b1810, 0 0 12px color-mix(in srgb, var(--acc) 45%, transparent);
-}
-:root body[data-theme="groovy"] .fader:not(.h) .thumb::after { top: 14px; width: 8px; height: 9px; left: calc(50% - 4px); border-radius: 50% 50% 45% 45%; background: radial-gradient(circle at 40% 35%, #fff6d6, #ffd27a 60%, #e8a03a); }
-:root body[data-theme="groovy"] .muted .fader:not(.h) .thumb { box-shadow: 0 4px 8px #000b, inset 0 0 0 1.5px #2b1810; }
-:root body[data-theme="groovy"] .strip .readout { font-size: 20px; text-shadow: 0 0 12px #e0a52659, 0 1px 0 #0008; }
-/* Theme-picker sample. */
-.theme-card[data-theme="groovy"] .tc-mod { background: repeating-linear-gradient(90deg, #00000014 0 1px, transparent 1px 5px), linear-gradient(180deg, #55301c, #321b10); box-shadow: inset 0 0 0 1.5px #e0a526a6, inset 0 0 0 3px #2b1810; }
-:root body[data-theme="groovy"] .bar :is(.btn, .keys) { background: linear-gradient(180deg, #f28a42, var(--gv-orange)); color: var(--on-ink); box-shadow: inset 0 1px 0 #ffffff40, 0 2px 0 #1a0d07; }
-:root body[data-theme="groovy"] .bar :is(.btn, .keys):hover { background: var(--gv-mustard); }
-:root body[data-theme="groovy"] .strip-routes .route.b[aria-pressed="true"] { background: #9aab45; color: #1f1608; }
-
 /* ---------------------------------------------------------------- Neon */
 /* A wall of neon signs: each channel is a sign on a dark acrylic backboard, outlined by a glass tube
    with a white-hot core, held on by little clips, and mounted on a dark brick wall washed in pink and
@@ -2399,6 +2207,23 @@ body[data-theme="groovy"] {
   box-shadow: inset 0 0 0 1px #ffffffb8, 0 0 7px var(--acc), 0 0 18px color-mix(in srgb, var(--acc) 50%, transparent);
 }
 :root body[data-theme="neon"] .muted .fader.h .thumb { background: #3a3156; color: #e6e0ff; box-shadow: inset 0 0 0 1px #ffffff33; }
+/* Standby: while Sleekmeeter isn't the window in front (on a second monitor, say), the signs dim to
+   their bare tubes so the glow doesn't pull your eye. Colours stay, so you can still tell channels
+   apart, and they light up again as soon as you click back in. Dropping the glow is cheaper, too. */
+:root body[data-theme="neon"].is-idle :is(.strip, .mini-row):not(.muted)::after {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 45%, transparent), 0 0 0 1px color-mix(in srgb, var(--acc) 40%, transparent);
+}
+:root body[data-theme="neon"].is-idle :is(.strip, .mini-row):not(.muted) :is(.name, .mini-name, .readout) { color: color-mix(in srgb, var(--acc) 35%, #b9b0d6); text-shadow: none; }
+:root body[data-theme="neon"].is-idle :is(.group-head h2, .group-head .linkish) { text-shadow: none; opacity: .75; }
+:root body[data-theme="neon"].is-idle :is(.strip .head .chip, .mini-row .chip) { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent); }
+:root body[data-theme="neon"].is-idle :is(.chip svg, .meter .lit, .fader:not(.h) .groove) { filter: none; }
+:root body[data-theme="neon"].is-idle .fader:not(.h) .groove { opacity: .55; }
+:root body[data-theme="neon"].is-idle .strip:not(.muted) .fader:not(.h) .thumb { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--acc) 70%, transparent), 0 4px 8px #000c; }
+:root body[data-theme="neon"].is-idle .fader:not(.h) .thumb::after { box-shadow: none; opacity: .7; }
+:root body[data-theme="neon"].is-idle :is(.strip-routes .route, .strip .tog, .mini-row .tog)[aria-pressed="true"] { box-shadow: inset 0 0 0 1px #ffffff66; filter: saturate(.7) brightness(.8); }
+:root body[data-theme="neon"].is-idle .fader.h .thumb { box-shadow: inset 0 0 0 1px #ffffff66; }
+:root body[data-theme="neon"].is-idle .bar { box-shadow: 0 1px 0 #ffffff10; }
+:root body[data-theme="neon"].is-idle .brand-name { text-shadow: none; }
 /* Theme-picker sample. */
 .theme-card[data-theme="neon"] .tc-desk { background: radial-gradient(ellipse at 90% 100%, #ff2e9733, transparent 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='14'%3E%3Cpath d='M0 .5H24M0 7.5H24M.5 0V7M12.5 7V14' stroke='%23c7b3ff' stroke-opacity='.12' fill='none'/%3E%3C/svg%3E"), #07031a; }
 .theme-card[data-theme="neon"] .tc-mod { border-radius: 5px; background: #0d0820; box-shadow: inset 0 0 0 1px #ffd0ec, inset 0 0 0 2px #ff2e97, 0 0 7px #ff2e97, inset 0 0 8px #ff2e9766; }
@@ -2569,167 +2394,298 @@ body[data-theme="groovy"] {
 @keyframes ab-snow { from { transform: translate(0, 0); } 50% { transform: translate(10px, 55vh); } to { transform: translate(-4px, 112vh); } }
 @keyframes ab-mute { 50% { box-shadow: inset 0 1px 0 #fff8, 0 0 4px #ff5f7e33; } }
 
-/* ---------------------------------------------------------------- Watercolour */
-/* Painted by hand on cold-press paper. Each channel is a loose wash of its own pigment, drawn
-   round with a slightly wobbly ink line; meters are wet paint that pools darker at its edge, fader
-   caps are blots of pigment, and pressed keys fill with a wash. Names and levels are set in an
-   italic book face (Sitka, which every Windows 10 and 11 PC has). Theme motion: the light drifts
-   across the paper (Subtle and Full) and the washes bloom slowly (Full). No SVG filters, so the
-   meters stay cheap to draw. */
-[data-theme="watercolour"] {
-  --bg: #f7f2e7; --bay: transparent; --bay-edge: transparent; --bay-shadow: none;
-  --mod-a: #fffdf8; --mod-b: #fbf6ec; --mod-edge: #2b283340; --mod-shadow: 0 1px 0 #2b28330f;
-  --key: #fffdf8b3; --key-hi: #ffffff; --key-edge: transparent; --key-ink: #2b2833; --key-shadow: inset 0 0 0 1.2px #2b283373;
-  --well: #2b28330d; --flyout: #fffdf8f7; --line: #2b283326;
-  --ink: #2b2833; --ink-2: #463f52; --muted: #665f72;
-  --amber: #30638e; --cyan: #4f8f6e; --red: #c23b4e; --solo: #b07d1c; --on-ink: #1f1c26;
-  --focus: #30638e; --panel-hi: #f1eadc; --track: #2b28331a;
-  --led-g: #6a994e; --led-y: #d9962a; --led-r: #c23b4e;
-  --led-g-off: #2b28330a; --led-y-off: #2b28330a; --led-r-off: #2b28330a;
-  --glow: 0; --scroll: #d8cfbf; --scroll-hi: #bfb4a1;
-  --field: #fffdf8; --rail: #2b283326; --switch: #d8cfbf;
-  --cap-w: 28px; --cap-h: 22px;
-  --pop-shadow: 0 0 0 1.2px #2b283359, 0 18px 40px #4a3c2826;
-  --cap-metal: radial-gradient(circle at 40% 38%, #ffffffb3, transparent 40%), #30638e; --cap-ridge: transparent;
-  --cap-shadow: none; --cap-ink: #1f1c26;
-  --c-slate: #6f7f91; --c-amber: #d9962a; --c-coral: #df6a4e; --c-rose: #d1495b;
-  --c-violet: #7b5ea7; --c-blue: #30638e; --c-cyan: #00798c; --c-green: #6a994e;
-  --font: "Sitka Text", "Sitka Small", Georgia, "Segoe UI", serif;
-  --wc-display: "Sitka Banner", "Sitka Heading", "Sitka Text", Georgia, serif;
-  --wc-paper: #fbf8f1;
-  --wc-line: 16px 11px 19px 12px / 12px 18px 11px 17px;
-  --warning-ink: #8a4b12;
+/* ---------------------------------------------------------------- Riso */
+/* A risograph-printed zine: off-white paper with a grainy tooth, printed in fluoro pink and riso
+   blue that never quite line up. Each channel is a card outlined in blue ink with its own colour
+   printed slightly off-register behind it and a halftone band across the top; meters are rows of
+   halftone dots, fader caps are yellow stickers, and pressed keys are filled with ink. Names and
+   levels are set in Archivo Black. Theme motion: the halftone in the corner drifts (Subtle and Full). */
+[data-theme="riso"] {
+  --bg: #f3eee2; --bay: transparent; --bay-edge: transparent; --bay-shadow: none;
+  --mod-a: #f8f4eb; --mod-b: #f8f4eb; --mod-edge: #0078bf; --mod-shadow: none;
+  --key: #f8f4eb; --key-hi: #ffffff; --key-edge: transparent; --key-ink: #0b5c99; --key-shadow: inset 0 0 0 1.5px #0078bf;
+  --well: #0078bf0f; --flyout: #f8f4ebfa; --line: #0078bf4d;
+  --ink: #0b4f86; --ink-2: #0b5c99; --muted: #4c6c8a;
+  --amber: #ff48b0; --cyan: #00a95c; --red: #e8364f; --solo: #ffe800; --on-ink: #0b3d66;
+  --focus: #ff48b0; --panel-hi: #ece5d6; --track: #0078bf26;
+  --led-g: #0078bf; --led-y: #ff48b0; --led-r: #ff6c2f;
+  --led-g-off: #0078bf1a; --led-y-off: #ff48b01f; --led-r-off: #ff6c2f1f;
+  --glow: 0; --scroll: #cfc5b1; --scroll-hi: #b5a98f;
+  --field: #fbf8f1; --rail: #0078bf33; --switch: #d8cfbf;
+  --cap-w: 40px; --cap-h: 22px;
+  --pop-shadow: 0 0 0 2px #0078bf, 5px 5px 0 #ff48b0;
+  --cap-metal: #ffe800; --cap-ridge: transparent; --cap-shadow: inset 0 0 0 2px #0078bf, 3px 3px 0 #ff48b0; --cap-ink: #0b4f86;
+  --c-slate: #6c7a89; --c-amber: #f5a800; --c-coral: #ff6c2f; --c-rose: #ff48b0;
+  --c-violet: #765ba7; --c-blue: #0078bf; --c-cyan: #00a0b8; --c-green: #00a95c;
+  --font: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --rs-display: "Archivo Black", "Arial Black", "Segoe UI", sans-serif;
+  --rs-mono: "IBM Plex Mono", Consolas, monospace;
+  --rs-blue: #0078bf; --rs-pink: #ff48b0; --rs-yellow: #ffe800;
+  --rs-off: 1.5px 1px 0 #ff48b08c;
+  --warning-ink: #8a3b00;
   color-scheme: light;
 }
-:root body[data-theme="watercolour"] { background: #f7f2e7; }
-/* The paper: warm white with a cold-press tooth, lit from the top left, with two faint old washes. */
-:root body[data-theme="watercolour"] .theme-light {
-  --ambient-base: radial-gradient(ellipse 45% 55% at 8% 18%, #edae4920, transparent 70%), radial-gradient(ellipse 50% 60% at 94% 86%, #00798c17, transparent 70%), radial-gradient(ellipse 90% 70% at 20% -10%, #fffdf8, transparent 70%), linear-gradient(180deg, #fbf8f1, #f3ede1);
-  --ambient-accent: radial-gradient(ellipse 50% 40% at 25% 8%, #fff6e0b3, transparent);
+:root body[data-theme="riso"] { background: #f3eee2; }
+/* The paper, with a pink halftone circle top right and a yellow blot bottom left. */
+:root body[data-theme="riso"] .theme-light {
+  --ambient-base: radial-gradient(ellipse 22% 26% at 4% 104%, #ffe800c0, #ffe80000 100%), radial-gradient(ellipse 16% 20% at 12% 98%, #ffe800, transparent 100%), linear-gradient(180deg, #f6f2e8, #f0eadc);
+  --ambient-accent: radial-gradient(circle, #ff48b0 0 2.4px, transparent 2.8px) 0 0 / 9px 9px;
 }
-:root body[data-theme="watercolour"] .theme-light::after { content: ""; position: absolute; inset: 0; background: var(--sm-noise); opacity: .55; mix-blend-mode: multiply; }
-:root body[data-theme="watercolour"] .glass-aurora { display: none; }
-:root body[data-theme="watercolour"] .group { border-radius: 0; background: transparent; box-shadow: none; }
-:root body[data-theme="watercolour"] .group-head h2 { font-family: var(--wc-display); font-style: italic; font-weight: 600; font-size: 16px; letter-spacing: .01em; text-transform: none; color: var(--ink-2); }
-:root body[data-theme="watercolour"] .linkish { color: #30638e; }
-:root body[data-theme="watercolour"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-family: var(--wc-display); font-style: italic; font-weight: 700; letter-spacing: 0; }
-:root body[data-theme="watercolour"] .strip .name { font-size: 18px; }
-:root body[data-theme="watercolour"] .brand-name { font-size: 21px; }
-:root body[data-theme="watercolour"] .strip .sub { color: var(--muted); }
-:root body[data-theme="watercolour"] .strip .bus-tag { color: color-mix(in srgb, var(--acc) 70%, #1f1c26); }
-/* Channels: a loose wash of the channel's pigment, darker where it pooled, inside a sketched ink line. */
-:root body[data-theme="watercolour"] :is(.strip, .mini-row) {
-  position: relative; border-radius: var(--wc-line);
-  background:
-    radial-gradient(60% 34% at 46% 14%, color-mix(in srgb, var(--acc) 34%, transparent), transparent 72%),
-    radial-gradient(70% 40% at 58% 64%, color-mix(in srgb, var(--acc) 20%, transparent), transparent 74%),
-    radial-gradient(90% 18% at 50% 98%, color-mix(in srgb, var(--acc) 26%, transparent), transparent 70%),
-    #fffdf866;
-  box-shadow: inset 0 0 0 1.2px #2b2833a6, inset 0 0 18px color-mix(in srgb, var(--acc) 10%, transparent);
+:root body[data-theme="riso"] .theme-light::before { inset: -12% -12% auto auto; width: 460px; height: 460px; border-radius: 50%; mask-image: radial-gradient(circle closest-side, #000 55%, transparent 100%); opacity: .5; mix-blend-mode: multiply; }
+:root body[data-theme="riso"] .theme-light::after { content: ""; position: absolute; inset: 0; background: var(--sm-noise); opacity: .6; mix-blend-mode: multiply; }
+:root body[data-theme="riso"] .glass-aurora { display: none; }
+:root body[data-theme="riso"] .group { border-radius: 0; background: transparent; box-shadow: none; }
+:root body[data-theme="riso"] .group-head h2 { font-family: var(--rs-display); font-weight: 400; font-size: 14px; letter-spacing: .02em; text-transform: uppercase; color: var(--rs-blue); text-shadow: var(--rs-off); }
+:root body[data-theme="riso"] .linkish { color: #c2187f; }
+:root body[data-theme="riso"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-family: var(--rs-display); font-weight: 400; letter-spacing: .01em; color: var(--ink); text-shadow: var(--rs-off); }
+:root body[data-theme="riso"] :is(.strip .name, .mini-name, .brand-name) { text-transform: uppercase; }
+:root body[data-theme="riso"] .strip .name { font-size: 14px; }
+:root body[data-theme="riso"] .brand-name { font-size: 19px; }
+:root body[data-theme="riso"] .strip .sub { color: var(--muted); font-family: var(--rs-mono); font-size: 11px; }
+:root body[data-theme="riso"] .strip .bus-tag { color: color-mix(in srgb, var(--acc) 70%, #0b3d66); }
+/* Channels: a card outlined in blue ink, its colour printed off-register behind, a halftone band on top. */
+:root body[data-theme="riso"] :is(.strip, .mini-row) {
+  position: relative; isolation: isolate; border-radius: 2px; background: var(--mod-a);
+  box-shadow: inset 0 0 0 2px var(--rs-blue), 4px 4px 0 color-mix(in srgb, var(--acc) 80%, #ff48b0);
 }
-/* A second, looser pass of the pen, slightly off the first. */
-:root body[data-theme="watercolour"] .strip::after {
-  content: ""; position: absolute; inset: -2px 1px 1px -1px; pointer-events: none; z-index: 0;
-  border: 1px solid #2b283347; border-radius: 12px 19px 13px 18px / 18px 12px 17px 11px; transform: rotate(-.35deg);
+:root body[data-theme="riso"] .strip::before {
+  content: ""; position: absolute; left: 2px; right: 2px; top: 2px; height: 64px; pointer-events: none; z-index: -1;
+  background: radial-gradient(circle, var(--acc) 0 1.6px, transparent 2px) 0 0 / 6px 6px; opacity: .38; mix-blend-mode: multiply;
+  -webkit-mask: linear-gradient(#000 40%, transparent); mask: linear-gradient(#000 40%, transparent);
 }
-:root body[data-theme="watercolour"] .mini-row { border-radius: 12px 9px 14px 10px / 10px 14px 9px 13px; background: radial-gradient(70% 90% at 30% 40%, color-mix(in srgb, var(--acc) 20%, transparent), transparent 75%), #fffdf880; }
-:root body[data-theme="watercolour"] :is(.strip, .mini-row):hover { box-shadow: inset 0 0 0 1.4px #2b2833d9, inset 0 0 24px color-mix(in srgb, var(--acc) 16%, transparent); }
-/* Muted: the wash is lifted off with a damp brush and only a grey stain is left. */
-:root body[data-theme="watercolour"] :is(.strip, .mini-row).muted { background: radial-gradient(60% 34% at 46% 14%, #6f7f911f, transparent 72%), radial-gradient(70% 40% at 58% 64%, #6f7f9114, transparent 74%), #fffdf866; box-shadow: inset 0 0 0 1.2px #2b283373; }
-/* The channel icon: a little pigment puddle with the glyph inked on top. */
-:root body[data-theme="watercolour"] :is(.strip .head .chip, .mini-row .chip) {
-  border-radius: 46% 54% 52% 48% / 55% 45% 55% 45%; color: color-mix(in srgb, var(--acc) 62%, #1f1c26);
-  background: radial-gradient(circle at 45% 40%, color-mix(in srgb, var(--acc) 22%, #fffdf8), color-mix(in srgb, var(--acc) 38%, #fffdf8) 80%);
-  box-shadow: inset 0 0 0 1.2px #2b283380;
+:root body[data-theme="riso"] .mini-row { box-shadow: inset 0 0 0 2px var(--rs-blue), 3px 3px 0 color-mix(in srgb, var(--acc) 80%, #ff48b0); }
+:root body[data-theme="riso"] :is(.strip, .mini-row):hover { box-shadow: inset 0 0 0 2px var(--rs-blue), 6px 6px 0 color-mix(in srgb, var(--acc) 80%, #ff48b0); }
+/* Muted: the colour plate is left off; only a faint blue proof remains. */
+:root body[data-theme="riso"] :is(.strip, .mini-row).muted { box-shadow: inset 0 0 0 2px #0078bf73, 4px 4px 0 #0078bf26; }
+:root body[data-theme="riso"] .strip.muted::before { opacity: .12; }
+:root body[data-theme="riso"] .strip.muted :is(.name, .readout) { color: #6a86a3; text-shadow: none; }
+/* The channel icon: a dot of the channel's colour with the glyph knocked out of it. */
+:root body[data-theme="riso"] :is(.strip .head .chip, .mini-row .chip) {
+  border-radius: 50%; color: #f8f4eb; background: var(--acc); box-shadow: 2px 1.5px 0 var(--rs-blue);
 }
-:root body[data-theme="watercolour"] .strip.muted .head .chip { color: #665f72; background: #ece6da; }
-/* Keys: pen-drawn outlines on the paper. Pressed keys fill with a wash; the label stays in ink. */
-:root body[data-theme="watercolour"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) {
-  border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px; background: var(--key); color: var(--key-ink); font-weight: 600; box-shadow: var(--key-shadow);
+:root body[data-theme="riso"] .strip.muted .head .chip { color: #f8f4eb; background: #9fb1c3; box-shadow: none; }
+/* Keys: blue-outlined boxes. Pressed keys are filled with ink. */
+:root body[data-theme="riso"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) {
+  border-radius: 0; background: var(--key); color: var(--key-ink); font-weight: 600; box-shadow: var(--key-shadow);
 }
-:root body[data-theme="watercolour"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { background: #ffffff; box-shadow: inset 0 0 0 1.4px #2b2833d9; }
-:root body[data-theme="watercolour"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="watercolour"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono, .tog.eq)[aria-pressed="true"] {
-  color: #142235; background: radial-gradient(90% 120% at 40% 30%, #9fbdd8, #6e98c0 70%, #5683ae); box-shadow: inset 0 0 0 1.2px #2b2833b3;
+:root body[data-theme="riso"] :is(.route, .tog) { font-family: var(--rs-mono); }
+:root body[data-theme="riso"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { background: #fff; box-shadow: inset 0 0 0 2px var(--rs-blue), 2px 2px 0 var(--rs-pink); }
+:root body[data-theme="riso"] .strip-routes .route.a[aria-pressed="true"], :root body[data-theme="riso"] :is(.strip, .mini-row) :is(.modes .tog, .tog.mono, .tog.eq)[aria-pressed="true"] {
+  color: #f8f4eb; background: var(--rs-blue); box-shadow: inset 0 0 0 1.5px var(--rs-blue), 2px 2px 0 var(--rs-pink);
 }
-:root body[data-theme="watercolour"] .strip-routes .route.b[aria-pressed="true"] { color: #15281d; background: radial-gradient(90% 120% at 40% 30%, #b5d6bd, #86b796 70%, #6ea582); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
-:root body[data-theme="watercolour"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { color: #2e1f05; background: radial-gradient(90% 120% at 40% 30%, #f6d58f, #e8b454 70%, #d9962a); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
-:root body[data-theme="watercolour"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #2e0b12; background: radial-gradient(90% 120% at 40% 30%, #f0a3ad, #e0707f 70%, #d1495b); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
-:root body[data-theme="watercolour"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: #fffdf8; background: radial-gradient(90% 120% at 40% 30%, #3f78a8, #30638e 70%, #244d70); box-shadow: inset 0 0 0 1.2px #1f1c26; }
-:root body[data-theme="watercolour"] .bar { background: #fbf8f1e6; box-shadow: inset 0 -1.2px 0 #2b283340; }
-:root body[data-theme="watercolour"] .bar :is(.btn, .keys) { box-shadow: inset 0 0 0 1.1px #2b283366; }
-:root body[data-theme="watercolour"] .bar :is(#pinBtn, #dockBtn)[aria-pressed="true"] { background: #30638e; color: #fffdf8; }
-/* Meters: wet pigment in the channel's colour, deepening as it rises, alizarin past 0 dB, and
-   darker where it pools at its edge (the .lit layer's top or right edge is the level). */
-:root body[data-theme="watercolour"] .strip .well { border-radius: 6px 4px 7px 5px; background: #2b28330a; box-shadow: inset 0 0 0 1px #2b28332e; }
-:root body[data-theme="watercolour"] .meter { -webkit-mask: none; mask: none; border-radius: 4px 4px 3px 3px; }
-:root body[data-theme="watercolour"] .meter .unlit { background: #2b28330a; }
-:root body[data-theme="watercolour"] .meter .lit b { background: linear-gradient(to top, color-mix(in srgb, var(--acc) 45%, #fffdf8), color-mix(in srgb, var(--acc) 80%, #fffdf8) var(--p-yellow), var(--acc) var(--p-zero), #c23b4e var(--p-zero)); }
-:root body[data-theme="watercolour"] .fader.h .meter .lit b { background: linear-gradient(to right, color-mix(in srgb, var(--acc) 45%, #fffdf8), color-mix(in srgb, var(--acc) 80%, #fffdf8) var(--p-yellow), var(--acc) var(--p-zero), #c23b4e var(--p-zero)); }
-:root body[data-theme="watercolour"] .meter .lit::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--acc) 75%, #1f1c26); opacity: .75; }
-:root body[data-theme="watercolour"] .fader.h .meter .lit::after { top: 0; bottom: 0; left: auto; right: 0; width: 3px; height: auto; }
-:root body[data-theme="watercolour"] .muted .meter .lit { filter: saturate(0) brightness(1.05); opacity: .6; }
-:root body[data-theme="watercolour"] .meter .pk i { background: #2b2833; height: 1.5px; border-radius: 1px; opacity: .7; }
-:root body[data-theme="watercolour"] .fader.h .meter .pk i { width: 1.5px; height: auto; }
-/* Fader: a pencil rail, washed in the channel's colour up to the cap, and a cap that is a blot of pigment. */
-:root body[data-theme="watercolour"] .fader .groove::before { display: none; }
-:root body[data-theme="watercolour"] .fader:not(.h) .groove {
-  width: 4px; margin-left: -2px; border: 0; border-radius: 3px;
-  background: linear-gradient(to top, color-mix(in srgb, var(--acc) 30%, transparent), color-mix(in srgb, var(--acc) 55%, transparent) calc(var(--cap-h) / 2 + var(--p, 0) * (100% - var(--cap-h))), transparent 0) center / 4px 100% no-repeat, linear-gradient(#2b28338c, #2b28338c) center / 1.2px 100% no-repeat;
-  box-shadow: none;
+:root body[data-theme="riso"] .strip-routes .route.b[aria-pressed="true"] { color: #0b3d66; background: var(--rs-pink); box-shadow: inset 0 0 0 1.5px var(--rs-blue), 2px 2px 0 var(--rs-blue); }
+:root body[data-theme="riso"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { color: #0b3d66; background: var(--rs-yellow); box-shadow: inset 0 0 0 1.5px var(--rs-blue), 2px 2px 0 var(--rs-pink); }
+:root body[data-theme="riso"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { color: #fff; background: var(--red); box-shadow: inset 0 0 0 1.5px var(--rs-blue), 2px 2px 0 var(--rs-blue); }
+:root body[data-theme="riso"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) { color: #f8f4eb; background: var(--rs-blue); box-shadow: 3px 3px 0 var(--rs-pink); }
+:root body[data-theme="riso"] .bar { background: #f3eee2f0; box-shadow: inset 0 -2px 0 var(--rs-blue); }
+:root body[data-theme="riso"] .bar :is(.btn, .keys) { box-shadow: inset 0 0 0 1.5px var(--rs-blue); text-transform: uppercase; letter-spacing: .05em; }
+:root body[data-theme="riso"] .bar :is(#pinBtn, #dockBtn)[aria-pressed="true"] { background: var(--rs-blue); color: #f8f4eb; }
+/* Meters: rows of halftone dots in the channel's colour, pink near 0 dB and orange past it. */
+:root body[data-theme="riso"] .strip .well { border-radius: 0; background: transparent; box-shadow: inset 0 0 0 1.5px #0078bf59; }
+:root body[data-theme="riso"] .meter { border-radius: 0; -webkit-mask: radial-gradient(circle, #000 0 2.1px, transparent 2.5px) 50% 100% / 100% 5px; mask: radial-gradient(circle, #000 0 2.1px, transparent 2.5px) 50% 100% / 100% 5px; }
+:root body[data-theme="riso"] .fader.h .meter { -webkit-mask: radial-gradient(circle, #000 0 1.8px, transparent 2.2px) 0 50% / 5px 100%; mask: radial-gradient(circle, #000 0 1.8px, transparent 2.2px) 0 50% / 5px 100%; }
+:root body[data-theme="riso"] .meter .unlit { background: #0078bf24; }
+:root body[data-theme="riso"] .meter .lit b { background: linear-gradient(to top, var(--acc), var(--acc) var(--p-yellow), var(--rs-pink) var(--p-yellow), var(--rs-pink) var(--p-zero), #ff6c2f var(--p-zero)); }
+:root body[data-theme="riso"] .fader.h .meter .lit b { background: linear-gradient(to right, var(--acc), var(--acc) var(--p-yellow), var(--rs-pink) var(--p-yellow), var(--rs-pink) var(--p-zero), #ff6c2f var(--p-zero)); }
+:root body[data-theme="riso"] .muted .meter .lit { filter: saturate(0); opacity: .5; }
+:root body[data-theme="riso"] .meter .pk i { background: var(--rs-pink); height: 3px; }
+:root body[data-theme="riso"] .fader.h .meter .pk i { width: 3px; height: auto; }
+/* Fader: a blue ink rule, overprinted in the channel's colour up to a yellow sticker cap. */
+:root body[data-theme="riso"] .fader .groove::before { display: none; }
+:root body[data-theme="riso"] .fader:not(.h) .groove {
+  width: 8px; margin-left: -4px; border: 0; border-radius: 0; box-shadow: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--acc) 85%, transparent) calc(var(--p, 0) * 100%), transparent 0) center / 6px 100% no-repeat, linear-gradient(var(--rs-blue), var(--rs-blue)) center / 2px 100% no-repeat;
 }
-:root body[data-theme="watercolour"] .muted .fader:not(.h) .groove { background: linear-gradient(#2b283366, #2b283366) center / 1.2px 100% no-repeat; }
-:root body[data-theme="watercolour"] .fader .thumb {
-  border-radius: 52% 48% 60% 40% / 45% 55% 45% 55%; clip-path: none; filter: none;
-  background: radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--acc) 40%, #fffdf8) 0, var(--acc) 58%, color-mix(in srgb, var(--acc) 72%, #1f1c26) 100%);
-  box-shadow: inset 0 0 0 1px #2b283359, 0 2px 0 color-mix(in srgb, var(--acc) 25%, transparent);
-}
-:root body[data-theme="watercolour"] .fader .thumb::before { content: none; }
-:root body[data-theme="watercolour"] .fader:not(.h) .thumb::after { display: none; }
-:root body[data-theme="watercolour"] .muted .fader .thumb { background: radial-gradient(circle at 38% 34%, #e4ded2, #a8a2ae 60%, #7e7888); }
-:root body[data-theme="watercolour"] .fader.dragging .thumb { box-shadow: inset 0 0 0 1.4px #2b2833, 0 0 0 5px color-mix(in srgb, var(--acc) 22%, transparent); }
-:root body[data-theme="watercolour"] .unity { background: #2b2833; opacity: .35; }
-:root body[data-theme="watercolour"] .scale span { color: #6b6577; font-size: 10px; font-family: var(--font); font-style: italic; }
-:root body[data-theme="watercolour"] .scale span.zero { color: var(--ink); font-weight: 700; }
-/* The level readout: written with a nib in the italic book face. */
-:root body[data-theme="watercolour"] .strip .readout { font-family: var(--wc-display); font-style: italic; font-weight: 700; font-size: 22px; color: var(--ink); background: transparent; letter-spacing: 0; }
-:root body[data-theme="watercolour"] .strip .readout:hover { background: color-mix(in srgb, var(--acc) 14%, transparent); }
-:root body[data-theme="watercolour"] .muted .readout { color: #a3364a; }
-/* Mini mode and the tray panel: the sideways cap is a pale wash so the level printed on it reads. */
-:root body[data-theme="watercolour"] .fader.h { --cap-w: 46px; }
-:root body[data-theme="watercolour"] .fader.h .track { border-radius: 7px 5px 8px 6px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 22%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), #2b28330a; box-shadow: inset 0 0 0 1px #2b283340; }
-:root body[data-theme="watercolour"] .fader.h .thumb { top: 0; bottom: 0; border-radius: 12px 9px 13px 10px / 10px 13px 9px 12px; color: #1f1c26; background: radial-gradient(90% 120% at 40% 30%, color-mix(in srgb, var(--acc) 22%, #fffdf8), color-mix(in srgb, var(--acc) 42%, #fffdf8)); box-shadow: inset 0 0 0 1.2px #2b2833b3; }
-:root body[data-theme="watercolour"] .muted .fader.h .thumb { background: #ece6da; }
-:root body[data-theme="watercolour"] .fader.h .db { color: #1f1c26; font-family: var(--wc-display); font-style: italic; font-weight: 700; font-size: 12px; padding: 0; }
-:root body[data-theme="watercolour"] .duck-tag { color: var(--ink); }
+:root body[data-theme="riso"] .muted .fader:not(.h) .groove { background: linear-gradient(#0078bf80, #0078bf80) center / 2px 100% no-repeat; }
+:root body[data-theme="riso"] .fader .thumb { border-radius: 0; clip-path: none; filter: none; background: var(--cap-metal); box-shadow: var(--cap-shadow); }
+:root body[data-theme="riso"] .fader .thumb::before { content: none; }
+:root body[data-theme="riso"] .fader:not(.h) .thumb::after { left: 7px; right: 7px; width: auto; top: calc(50% - 1.5px); height: 3px; margin: 0; border-radius: 0; background: var(--rs-blue); box-shadow: none; transform: none; font-size: 0; }
+:root body[data-theme="riso"] .muted .fader .thumb { background: #e8e2d3; box-shadow: inset 0 0 0 2px #0078bf80; }
+:root body[data-theme="riso"] .fader.dragging .thumb { box-shadow: inset 0 0 0 2px var(--rs-blue), 5px 5px 0 var(--rs-pink); }
+:root body[data-theme="riso"] .unity { background: var(--rs-pink); opacity: .9; height: 2px; }
+:root body[data-theme="riso"] .scale span { color: #0078bfb3; font-size: 10px; font-family: var(--rs-mono); }
+:root body[data-theme="riso"] .scale span.zero { color: #c2187f; font-weight: 700; }
+/* The level readout: big block type with the pink plate slightly off. */
+:root body[data-theme="riso"] .strip .readout { font-family: var(--rs-display); font-weight: 400; font-size: 21px; color: var(--ink); background: transparent; letter-spacing: 0; text-shadow: 2px 1px 0 #ff48b08c; }
+:root body[data-theme="riso"] .strip .readout:hover { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+/* Mini mode and the tray panel: an outlined track and a yellow sticker that carries the level. */
+:root body[data-theme="riso"] .fader.h { --cap-w: 46px; }
+:root body[data-theme="riso"] .fader.h .track { border-radius: 0; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 26%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), #0078bf0a; box-shadow: inset 0 0 0 1.5px var(--rs-blue); }
+:root body[data-theme="riso"] .fader.h .thumb { top: 0; bottom: 0; border-radius: 0; color: var(--cap-ink); background: var(--cap-metal); box-shadow: inset 0 0 0 2px var(--rs-blue), 2px 2px 0 var(--rs-pink); }
+:root body[data-theme="riso"] .muted .fader.h .thumb { background: #e8e2d3; }
+:root body[data-theme="riso"] .fader.h .db { color: var(--cap-ink); font-family: var(--rs-mono); font-weight: 600; font-size: 11px; padding: 0; }
+:root body[data-theme="riso"] .duck-tag { color: #0b3d66; }
 /* Dialogs, menus and window buttons. */
-:root body[data-theme="watercolour"] :is(.dlg, .menu) { border-radius: 18px 13px 20px 14px / 14px 20px 13px 18px; background: var(--sm-noise), var(--flyout); background-blend-mode: multiply, normal; box-shadow: var(--pop-shadow); }
-:root body[data-theme="watercolour"] .dlg::backdrop { background: rgba(60, 50, 40, .22); backdrop-filter: blur(3px); }
-:root body[data-theme="watercolour"] .wc { border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px; }
-:root body[data-theme="watercolour"] .wc:hover { background: #2b283314; }
-:root body[data-theme="watercolour"] .wc.close:hover { background: #d1495b; color: #fffdf8; }
+:root body[data-theme="riso"] :is(.dlg, .menu) { border-radius: 2px; background: var(--sm-noise), var(--flyout); background-blend-mode: multiply, normal; box-shadow: var(--pop-shadow); }
+:root body[data-theme="riso"] .dlg::backdrop { background: rgba(243, 238, 226, .55); backdrop-filter: blur(2px); }
+:root body[data-theme="riso"] .wc { border-radius: 0; }
+:root body[data-theme="riso"] .wc:hover { background: #0078bf1a; }
+:root body[data-theme="riso"] .wc.close:hover { background: var(--red); color: #fff; }
 /* Theme-picker sample. */
-.theme-card[data-theme="watercolour"] .tc-desk { background: radial-gradient(ellipse 50% 60% at 15% 30%, #edae4933, transparent 70%), radial-gradient(ellipse 55% 60% at 90% 85%, #00798c26, transparent 70%), #fbf8f1; box-shadow: inset 0 0 0 1px #2b28331f; }
-.theme-card[data-theme="watercolour"] .tc-mod { border-radius: 9px 6px 10px 7px / 7px 10px 6px 9px; background: radial-gradient(70% 45% at 45% 25%, #30638e40, transparent 75%), radial-gradient(80% 30% at 50% 95%, #30638e2e, transparent 70%), #fffdf8; box-shadow: inset 0 0 0 1px #2b2833a6; }
-.theme-card[data-theme="watercolour"] .tc-mod:nth-child(2) { background: radial-gradient(70% 45% at 45% 25%, #d1495b40, transparent 75%), radial-gradient(80% 30% at 50% 95%, #d1495b2e, transparent 70%), #fffdf8; }
-.theme-card[data-theme="watercolour"] .tc-mod:nth-child(3) { background: radial-gradient(70% 45% at 45% 25%, #6a994e47, transparent 75%), radial-gradient(80% 30% at 50% 95%, #6a994e33, transparent 70%), #fffdf8; }
-.theme-card[data-theme="watercolour"] :is(.tc-keys i, .tc-mute) { border-radius: 3px; background: #fffdf8; box-shadow: inset 0 0 0 .8px #2b283399; }
-.theme-card[data-theme="watercolour"] .tc-keys i.on.a { background: #6e98c0; box-shadow: inset 0 0 0 .8px #2b283399; }
-.theme-card[data-theme="watercolour"] .tc-keys i.on.b { background: #86b796; box-shadow: inset 0 0 0 .8px #2b283399; }
-.theme-card[data-theme="watercolour"] .tc-mute.on { background: #e0707f; box-shadow: inset 0 0 0 .8px #2b283399; }
-.theme-card[data-theme="watercolour"] .tc-well { background: #2b28330d; border-radius: 3px; }
-.theme-card[data-theme="watercolour"] .tc-well b { background: linear-gradient(to top, #6e98c066, #30638e); border-radius: 2px 2px 1px 1px; box-shadow: inset 0 2px 0 #244d70; }
-.theme-card[data-theme="watercolour"] .tc-cap { width: 11px; height: 9px; margin-left: -5.5px; border-radius: 52% 48% 60% 40% / 45% 55% 45% 55%; background: radial-gradient(circle at 38% 34%, #9fbdd8, #30638e 60%, #244d70); box-shadow: none; }
-.theme-card[data-theme="watercolour"] .tc-slot::before { width: 1px; margin-left: -.5px; background: #2b283380; }
-/* Theme motion: light drifts across the paper (Subtle and Full); the washes bloom slowly (Full). */
+.theme-card[data-theme="riso"] .tc-desk { border-radius: 2px; background: radial-gradient(circle at 92% 8%, #ff48b04d 0 16px, transparent 17px), radial-gradient(ellipse 30% 40% at 6% 100%, #ffe800, transparent 100%), #f3eee2; }
+.theme-card[data-theme="riso"] .tc-mod { border-radius: 1px; background: #f8f4eb; box-shadow: inset 0 0 0 1.2px #0078bf, 2px 2px 0 #ff48b0; }
+.theme-card[data-theme="riso"] .tc-mod:nth-child(2) { box-shadow: inset 0 0 0 1.2px #0078bf, 2px 2px 0 #00a95c; }
+.theme-card[data-theme="riso"] :is(.tc-keys i, .tc-mute) { border-radius: 0; background: #f8f4eb; box-shadow: inset 0 0 0 .8px #0078bf; }
+.theme-card[data-theme="riso"] .tc-keys i.on.a { background: #0078bf; }
+.theme-card[data-theme="riso"] .tc-keys i.on.b { background: #ff48b0; }
+.theme-card[data-theme="riso"] .tc-mute.on { background: #e8364f; }
+.theme-card[data-theme="riso"] .tc-well { background: #0078bf14; border-radius: 0; }
+.theme-card[data-theme="riso"] .tc-well b { background: #0078bf; border-radius: 0; }
+.theme-card[data-theme="riso"] .tc-cap { height: 6px; border-radius: 0; background: #ffe800; box-shadow: inset 0 0 0 .8px #0078bf; }
+.theme-card[data-theme="riso"] .tc-slot::before { width: 1.5px; margin-left: -.75px; background: #0078bf; }
+/* Theme motion: the pink halftone drifts in its corner (Subtle and Full). */
 @media (prefers-reduced-motion: no-preference) {
-  body[data-theme="watercolour"]:not([data-theme-motion="off"]) .theme-light::before { animation: ambient-drift 44s ease-in-out infinite alternate; }
-  body[data-theme="watercolour"][data-theme-motion="full"] .strip:not(.muted) { animation: wc-bloom 9s ease-in-out infinite alternate; }
-  body[data-theme="watercolour"][data-theme-motion="full"] .strip:nth-child(3n + 2) { animation-delay: -3s; animation-duration: 11s; }
-  body[data-theme="watercolour"][data-theme-motion="full"] .strip:nth-child(3n + 3) { animation-delay: -6s; animation-duration: 8s; }
+  body[data-theme="riso"]:not([data-theme-motion="off"]) .theme-light::before { animation: rs-drift 30s ease-in-out infinite alternate; }
 }
-@keyframes wc-bloom {
-  from { background-size: 100% 100%, 100% 100%, 100% 100%, auto; background-position: 0 0, 0 0, 0 0, 0 0; }
-  to { background-size: 112% 108%, 106% 112%, 104% 100%, auto; background-position: 40% 0, 60% 30%, 50% 100%, 0 0; }
+@keyframes rs-drift { to { transform: translate(-18px, 14px) rotate(6deg); } }
+
+/* ---------------------------------------------------------------- Aero */
+/* Glossy and optimistic: a bright sky over rolling green hills with a soft sun and a few glass
+   bubbles. Channels are frosted white glass with a shine across the top half, keys are glossy gel
+   pills that fill with the channel's colour, meters are polished bars, and fader caps are gel orbs.
+   No blur behind the channels (it costs a redraw every frame); the glass look comes from gradients.
+   Theme motion: bubbles rise slowly (Subtle and Full). */
+[data-theme="aero"] {
+  --bg: #a9e1fb; --bay: transparent; --bay-edge: transparent; --bay-shadow: none;
+  --mod-a: #ffffffe6; --mod-b: #eef9ffd9; --mod-edge: #ffffff; --mod-shadow: 0 0 0 1px #6fb3dd66, 0 14px 26px -12px #0a4a7aa0;
+  --key: #f5fbff; --key-hi: #ffffff; --key-edge: transparent; --key-ink: #2f6688; --key-shadow: inset 0 0 0 1px #9fcbe6;
+  --well: #0a4a7a17; --flyout: #f6fbfffa; --line: #6fb3dd59;
+  --ink: #0b3a5a; --ink-2: #155178; --muted: #4a7a99;
+  --amber: #1590d6; --cyan: #2fae4a; --red: #d9302a; --solo: #ff9a1a; --on-ink: #ffffff;
+  --focus: #1590d6; --panel-hi: #e3f3fd; --track: #0a4a7a1f;
+  --led-g: #3cc45a; --led-y: #ffc21f; --led-r: #ff5a3a;
+  --led-g-off: #0a4a7a14; --led-y-off: #0a4a7a14; --led-r-off: #0a4a7a14;
+  --glow: .3; --scroll: #a9cde4; --scroll-hi: #7fb3d6;
+  --field: #ffffff; --rail: #0a4a7a26; --switch: #c9e3f3;
+  --cap-w: 40px; --cap-h: 22px;
+  --pop-shadow: 0 0 0 1px #6fb3dd80, 0 20px 44px #0a4a7a40;
+  --cap-metal: #1aa7e8; --cap-ridge: transparent; --cap-shadow: none; --cap-ink: #ffffff;
+  --c-slate: #6f8aa3; --c-amber: #ff9a1a; --c-coral: #ff6f4f; --c-rose: #f0559a;
+  --c-violet: #7b6cf6; --c-blue: #1aa7e8; --c-cyan: #0fb3ad; --c-green: #2fbf4f;
+  --font: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --ae-gloss: linear-gradient(180deg, #ffffffb3 0, #ffffff38 48%, transparent 52%);
+  --warning-ink: #8a4b00;
+  color-scheme: light;
+}
+:root body[data-theme="aero"] { background: #a9e1fb; }
+/* The sky: a soft sun top left, green hills along the bottom and a few glass bubbles. */
+:root body[data-theme="aero"] .theme-light {
+  --ambient-base:
+    radial-gradient(circle at 88% 18%, #ffffffe0 0 3%, #ffffff70 4%, #ffffff00 6.5%),
+    radial-gradient(circle at 93% 30%, #ffffffd0 0 1.4%, #ffffff50 2%, #ffffff00 3%),
+    radial-gradient(circle at 6% 70%, #ffffffc0 0 2%, #ffffff40 3%, #ffffff00 4.5%),
+    radial-gradient(ellipse 70% 28% at 25% 112%, #5cc23e 0, #84d65a 55%, #84d65a00 100%),
+    radial-gradient(ellipse 80% 30% at 85% 116%, #4bb43a 0, #7ccf55 55%, #7ccf5500 100%),
+    radial-gradient(ellipse 55% 50% at 8% -6%, #ffffff, #ffffffb0 30%, #ffffff00 70%),
+    linear-gradient(180deg, #4dbcf2 0%, #9fdcfa 42%, #dff4ff 72%, #e2f6d2 100%);
+  --ambient-accent: radial-gradient(ellipse 40% 30% at 30% 30%, #ffffff60, transparent);
+}
+:root body[data-theme="aero"] .glass-aurora { display: none; }
+:root body[data-theme="aero"] .group { background: #ffffff26; box-shadow: inset 0 0 0 1px #ffffff66; border-radius: 26px; }
+:root body[data-theme="aero"] .group-head h2 { font-weight: 800; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: #0b4a73; text-shadow: 0 1px 0 #ffffffb0; }
+:root body[data-theme="aero"] .linkish { color: #0d6fb0; }
+:root body[data-theme="aero"] :is(.strip .name, .mini-name, .brand-name, .dlg-head h2) { font-weight: 800; letter-spacing: 0; color: var(--ink); }
+:root body[data-theme="aero"] .brand-name { text-shadow: 0 1px 0 #fff; }
+:root body[data-theme="aero"] .strip .name { font-size: 15px; }
+:root body[data-theme="aero"] .strip .sub { color: var(--muted); }
+:root body[data-theme="aero"] .strip .bus-tag { color: color-mix(in srgb, var(--acc) 70%, #0b3a5a); }
+/* Channels: frosted white glass with a shine across the top half. */
+:root body[data-theme="aero"] :is(.strip, .mini-row) {
+  position: relative; isolation: isolate; border-radius: 20px;
+  background: linear-gradient(180deg, var(--mod-a), #ffffffa6 55%, var(--mod-b));
+  box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px #ffffffb0, var(--mod-shadow);
+}
+:root body[data-theme="aero"] .strip::before {
+  content: ""; position: absolute; left: 3px; right: 3px; top: 3px; height: 40%; pointer-events: none; z-index: -1;
+  border-radius: 17px 17px 40% 40% / 17px 17px 24px 24px; background: linear-gradient(180deg, #ffffffd9, #ffffff00);
+}
+:root body[data-theme="aero"] .mini-row { border-radius: 14px; }
+:root body[data-theme="aero"] :is(.strip, .mini-row):hover { box-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px #fff, 0 0 0 1px color-mix(in srgb, var(--acc) 55%, #6fb3dd), 0 16px 30px -12px #0a4a7ab0; }
+:root body[data-theme="aero"] :is(.strip, .mini-row).muted { background: linear-gradient(180deg, #ffffffc0, #eef3f6b3); }
+:root body[data-theme="aero"] .strip.muted :is(.name, .readout) { color: #6f8aa3; }
+/* The channel icon: a glossy gel orb in the channel's colour. */
+:root body[data-theme="aero"] :is(.strip .head .chip, .mini-row .chip) {
+  border-radius: 50%; color: #fff;
+  background: radial-gradient(circle at 34% 24%, #ffffffe6 0 14%, #ffffff00 42%), radial-gradient(circle at 50% 115%, color-mix(in srgb, var(--acc) 45%, #fff), var(--acc) 55%, color-mix(in srgb, var(--acc) 72%, #002040));
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--acc) 50%, transparent), inset 0 -1px 0 #0003, inset 0 0 0 1px color-mix(in srgb, var(--acc) 70%, #003);
+}
+:root body[data-theme="aero"] .strip .head .chip svg { filter: drop-shadow(0 1px 1px #0005); }
+:root body[data-theme="aero"] .strip.muted .head .chip { background: radial-gradient(circle at 34% 24%, #ffffffe6 0 14%, #ffffff00 42%), radial-gradient(circle at 50% 115%, #dbe4ea, #9aacb9 55%, #7d8f9c); box-shadow: inset 0 0 0 1px #7d8f9c; }
+/* Keys: glossy pills. On keys fill with coloured gel. */
+:root body[data-theme="aero"] :is(.btn, .route, .tog, .keys, select, .scene-list .load, .route-expand) {
+  border-radius: 999px; color: var(--key-ink); font-weight: 700;
+  background: linear-gradient(180deg, #ffffff 0 48%, #e6f3fb 52%, #f7fcff); box-shadow: var(--key-shadow), 0 1px 2px #0a4a7a1a;
+}
+:root body[data-theme="aero"] :is(.btn, .route, .tog, .keys):not([aria-pressed="true"]):hover { background: linear-gradient(180deg, #ffffff 0 48%, #d8eefc 52%, #eef8ff); box-shadow: inset 0 0 0 1px #5fb0e3, 0 0 8px #5fb0e355; }
+:root body[data-theme="aero"] :is(.strip-routes .route, .strip .tog, .mini-row .tog)[aria-pressed="true"], :root body[data-theme="aero"] :is(.btn.primary, .btn[aria-pressed="true"], .update-btn) {
+  --gel: var(--amber); color: #fff; text-shadow: 0 1px 1px #0006;
+  background: var(--ae-gloss), linear-gradient(180deg, color-mix(in srgb, var(--gel) 55%, #fff), var(--gel) 60%, color-mix(in srgb, var(--gel) 78%, #001830));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gel) 70%, #001830), 0 2px 6px color-mix(in srgb, var(--gel) 45%, transparent);
+}
+:root body[data-theme="aero"] .strip-routes .route.a[aria-pressed="true"] { --gel: var(--acc); }
+:root body[data-theme="aero"] .strip-routes .route.b[aria-pressed="true"] { --gel: #2fae4a; }
+:root body[data-theme="aero"] :is(.strip, .mini-row) .tog.solo[aria-pressed="true"] { --gel: #f08a00; }
+:root body[data-theme="aero"] :is(.strip, .mini-row) .tog.mute[aria-pressed="true"] { --gel: #e0302a; }
+:root body[data-theme="aero"] .bar { background: linear-gradient(180deg, #ffffffd9, #e8f6ffcc); box-shadow: inset 0 -1px 0 #ffffff, 0 1px 0 #6fb3dd66, 0 4px 12px #0a4a7a1a; }
+:root body[data-theme="aero"] .bar :is(#pinBtn, #dockBtn)[aria-pressed="true"] { --gel: var(--amber); }
+/* Meters: polished bars with a highlight down one side. */
+:root body[data-theme="aero"] .strip .well { border-radius: 8px; background: #0a4a7a12; box-shadow: inset 0 1px 3px #0a4a7a33, 0 1px 0 #fff; }
+:root body[data-theme="aero"] .meter { -webkit-mask: none; mask: none; border-radius: 3px; }
+:root body[data-theme="aero"] .meter .lit b { background: linear-gradient(90deg, #ffffff70, #ffffff00 60%), linear-gradient(to top, var(--led-g), #8ee04a var(--p-yellow), var(--led-y) var(--p-zero), var(--led-r) var(--p-zero)); }
+:root body[data-theme="aero"] .fader.h .meter .lit b { background: linear-gradient(180deg, #ffffff70, #ffffff00 60%), linear-gradient(to right, var(--led-g), #8ee04a var(--p-yellow), var(--led-y) var(--p-zero), var(--led-r) var(--p-zero)); }
+:root body[data-theme="aero"] .muted .meter .lit { filter: saturate(0) brightness(1.1); opacity: .6; }
+:root body[data-theme="aero"] .meter .pk i { background: #0b4a73; height: 2px; }
+:root body[data-theme="aero"] .fader.h .meter .pk i { width: 2px; height: auto; }
+/* Fader: a sunken glass tube filled with the channel's gel up to an orb cap. */
+:root body[data-theme="aero"] .fader .groove::before { display: none; }
+:root body[data-theme="aero"] .fader:not(.h) .groove {
+  width: 8px; margin-left: -4px; border: 0; border-radius: 4px;
+  background: linear-gradient(90deg, #ffffff80, #ffffff00 55%) 0 100% / 100% calc(var(--p, 0) * 100%) no-repeat, linear-gradient(to top, var(--acc), color-mix(in srgb, var(--acc) 45%, #fff)) 0 100% / 100% calc(var(--p, 0) * 100%) no-repeat, #0a4a7a1f;
+  box-shadow: inset 0 1px 3px #0a4a7a40, 0 1px 0 #fff;
+}
+:root body[data-theme="aero"] .muted .fader:not(.h) .groove { background: #0a4a7a1f; }
+:root body[data-theme="aero"] .fader .thumb {
+  border-radius: 999px; clip-path: none; filter: none;
+  background: radial-gradient(70% 60% at 40% 22%, #ffffff 0, #ffffffb0 35%, #ffffff00 60%), linear-gradient(180deg, color-mix(in srgb, var(--acc) 35%, #fff), var(--acc) 70%, color-mix(in srgb, var(--acc) 75%, #001830));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 60%, #001830), 0 4px 10px color-mix(in srgb, var(--acc) 45%, #0a4a7a66);
+}
+:root body[data-theme="aero"] .fader .thumb::before { content: none; }
+:root body[data-theme="aero"] .fader:not(.h) .thumb::after { left: 12px; right: 12px; width: auto; top: calc(50% - 1px); height: 2px; margin: 0; border-radius: 1px; background: #ffffffe6; box-shadow: none; transform: none; font-size: 0; }
+:root body[data-theme="aero"] .muted .fader .thumb { background: radial-gradient(70% 60% at 40% 22%, #fff 0, #ffffffb0 35%, #ffffff00 60%), linear-gradient(180deg, #e3e9ee, #9aacb9 70%, #7d8f9c); box-shadow: inset 0 0 0 1px #7d8f9c, 0 3px 8px #0a4a7a33; }
+:root body[data-theme="aero"] .fader.dragging .thumb { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 60%, #001830), 0 0 0 4px color-mix(in srgb, var(--acc) 30%, transparent), 0 6px 14px color-mix(in srgb, var(--acc) 50%, transparent); }
+:root body[data-theme="aero"] .unity { background: #0b4a73; opacity: .3; }
+:root body[data-theme="aero"] .scale span { color: #4a7a99; font-size: 10px; }
+:root body[data-theme="aero"] .scale span.zero { color: var(--ink); font-weight: 800; }
+:root body[data-theme="aero"] .strip .readout { font-weight: 800; font-size: 21px; color: #0b4a73; background: transparent; text-shadow: 0 1px 0 #fff; font-variant-numeric: tabular-nums; }
+:root body[data-theme="aero"] .strip .readout:hover { background: color-mix(in srgb, var(--acc) 14%, transparent); }
+/* Mini mode and the tray panel: a glass track and a gel pill that carries the level. */
+:root body[data-theme="aero"] .fader.h { --cap-w: 46px; }
+:root body[data-theme="aero"] .fader.h .track { border-radius: 999px; background: linear-gradient(to right, color-mix(in srgb, var(--acc) 30%, transparent) calc(var(--cap-w) / 2 + (100% - var(--cap-w)) * var(--p, .8)), transparent 0), #0a4a7a14; box-shadow: inset 0 1px 3px #0a4a7a33, 0 1px 0 #fff; }
+:root body[data-theme="aero"] .fader.h .thumb { top: 0; bottom: 0; border-radius: 999px; color: #fff; text-shadow: 0 1px 1px #0006; background: var(--ae-gloss), linear-gradient(180deg, color-mix(in srgb, var(--acc) 50%, #fff), var(--acc) 60%, color-mix(in srgb, var(--acc) 78%, #001830)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 70%, #001830); }
+:root body[data-theme="aero"] .muted .fader.h .thumb { background: var(--ae-gloss), linear-gradient(180deg, #dbe4ea, #9aacb9); }
+:root body[data-theme="aero"] .fader.h .db { color: #fff; font-weight: 800; font-size: 12px; padding: 0; }
+:root body[data-theme="aero"] .duck-tag { color: #fff; }
+/* Dialogs, menus and window buttons. */
+:root body[data-theme="aero"] :is(.dlg, .menu) { border-radius: 18px; background: linear-gradient(180deg, #ffffff, var(--flyout) 40%, #eef8ff); box-shadow: inset 0 1px 0 #fff, var(--pop-shadow); }
+:root body[data-theme="aero"] .dlg::backdrop { background: rgba(40, 110, 160, .25); backdrop-filter: blur(3px); }
+:root body[data-theme="aero"] .wc { border-radius: 8px; }
+:root body[data-theme="aero"] .wc:hover { background: #ffffffb0; }
+:root body[data-theme="aero"] .wc.close:hover { background: linear-gradient(180deg, #ff8a7a, #e0302a 60%); color: #fff; }
+/* Bubbles that rise slowly when Theme motion is on (app.js fills .theme-fx). */
+body[data-theme="aero"] .theme-fx b { width: var(--s, 18px); height: var(--s, 18px); border-radius: 50%; background: radial-gradient(circle at 32% 28%, #fff 0 9%, #ffffffa0 16%, #ffffff22 42%, #bfe9ff33 70%, #ffffffb0 100%); box-shadow: inset 0 0 0 1px #ffffffb0; opacity: .8; }
+/* Theme-picker sample. */
+.theme-card[data-theme="aero"] .tc-desk { background: radial-gradient(ellipse 80% 30% at 50% 112%, #6fd04a, transparent 100%), linear-gradient(180deg, #5cc4f5, #c9ecfc 70%, #e2f6d2); }
+.theme-card[data-theme="aero"] .tc-mod { border-radius: 8px; background: linear-gradient(180deg, #ffffffee, #ffffffaa 50%, #eaf8ffcc); box-shadow: inset 0 0 0 1px #fff, 0 0 0 .8px #6fb3dd99, 0 3px 6px #0a4a7a33; }
+.theme-card[data-theme="aero"] :is(.tc-keys i, .tc-mute) { border-radius: 99px; background: #f5fbff; box-shadow: inset 0 0 0 .8px #9fcbe6; }
+.theme-card[data-theme="aero"] .tc-keys i.on.a { background: linear-gradient(180deg, #8fdcff, #1aa7e8); box-shadow: none; }
+.theme-card[data-theme="aero"] .tc-keys i.on.b { background: linear-gradient(180deg, #9ae6a6, #2fbf4f); box-shadow: none; }
+.theme-card[data-theme="aero"] .tc-mute.on { background: linear-gradient(180deg, #ff8a7a, #e0302a); box-shadow: none; }
+.theme-card[data-theme="aero"] .tc-well { background: #0a4a7a17; border-radius: 3px; }
+.theme-card[data-theme="aero"] .tc-well b { background: linear-gradient(to top, #3cc45a, #8ee04a); border-radius: 2px; }
+.theme-card[data-theme="aero"] .tc-cap { height: 7px; border-radius: 99px; background: radial-gradient(circle at 40% 25%, #fff, #1aa7e8 70%); box-shadow: 0 1px 2px #0a4a7a66; }
+.theme-card[data-theme="aero"] .tc-slot::before { width: 3px; margin-left: -1.5px; border-radius: 2px; background: #1aa7e8; }
+@media (prefers-reduced-motion: no-preference) {
+  body[data-theme="aero"]:not([data-theme-motion="off"]) .theme-fx b { animation: mk-rise var(--d) linear infinite; animation-delay: var(--dl); }
 }
 
 /* Performance comes first: while Sleekmeeter isn't the window in front, every looping theme

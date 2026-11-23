@@ -23,7 +23,7 @@ A modern face for Voicemeeter Standard, Banana and Potato. Sleekmeeter sits on t
 - **Move your complete setup:** **Export complete setup…** in **Settings → System & backup → Backup and layout** saves settings, scenes, plugin state, Voicemeeter's setup and soundboard clips in one file, and the import previews it and maps devices first.
 - **My sound just cut out:** in Audio Event History and Check my setup, it says in plain words what changed in the last two minutes.
 - **Remote: Who can connect:** choose phones on this network, this PC only, or this PC only while Windows calls the network Public.
-- **Five new themes and a lighter lineup:** Graphite (the new default), Halo, Abyss, Nordic and Watercolour. Console, Peaches & Cream, Greenhouse, Cassette and Darkroom are retired, and anyone using one moves to the closest theme.
+- **Six new themes and a lighter lineup:** Graphite (the new default, calm and modern), Halo, Abyss, Nordic, Aero and Riso. Console, Peaches & Cream, Greenhouse, Cassette, Darkroom, Groovy and Watercolour are retired, and anyone using one moves to the closest theme.
 
 ## New in 0.21
 
@@ -98,7 +98,7 @@ Choose from fifteen themes in **Settings → Appearance & layout → Appearance*
 
 <table>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/graphite.webp" alt="Graphite with machined aluminium panels, backlit keys and glowing LED meters" width="260"><br><sub><b>Graphite</b> (default)</sub></td>
+<td align="center" valign="top"><img src="site/img/themes/graphite.webp" alt="Graphite with flat charcoal cards, tinted icons, soft keys and pill faders" width="260"><br><sub><b>Graphite</b> (default)</sub></td>
 <td align="center" valign="top"><img src="site/img/themes/oled.webp" alt="OLED black with hairline outlines and meters lit in each channel’s colour" width="260"><br><sub><b>OLED black</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/halo.webp" alt="Halo with smoked-glass cards under an eclipse ring and ring-shaped fader caps" width="260"><br><sub><b>Halo</b></sub></td>
 </tr>
@@ -108,18 +108,18 @@ Choose from fifteen themes in **Settings → Appearance & layout → Appearance*
 <td align="center" valign="top"><img src="site/img/themes/overclock.webp" alt="Overclock with carbon-fibre panels, RGB light pipes, RGB meters and angled faders" width="260"><br><sub><b>Overclock</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/groovy.webp" alt="Groovy with walnut TV-cabinet channels, rainbow stripes and lava-lamp faders" width="260"><br><sub><b>Groovy</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/neon.webp" alt="The Neon theme" width="260"><br><sub><b>Neon</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/terminal.webp" alt="The Terminal theme" width="260"><br><sub><b>Terminal</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/arcade.webp" alt="The Arcade theme" width="260"><br><sub><b>Arcade</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/arcade.webp" alt="The Arcade theme" width="260"><br><sub><b>Arcade</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/block.webp" alt="The Block theme" width="260"><br><sub><b>Block</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/transit.webp" alt="Transit with line-coloured channels and interchange-marker faders" width="260"><br><sub><b>Transit</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/nordic.webp" alt="Nordic with sage felt channels, linen keys and oak fader knobs" width="260"><br><sub><b>Nordic</b></sub></td>
 </tr>
 <tr>
-<td align="center" valign="top"><img src="site/img/themes/nordic.webp" alt="Nordic with sage felt channels, linen keys and oak fader knobs" width="260"><br><sub><b>Nordic</b></sub></td>
-<td align="center" valign="top"><img src="site/img/themes/watercolour.webp" alt="Watercolour with pigment washes on paper, ink-line channels, wet-paint meters and paint-blot faders" width="260"><br><sub><b>Watercolour</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/aero.webp" alt="Aero with glossy glass channels over a bright sky and green hills, gel buttons and orb faders" width="260"><br><sub><b>Aero</b></sub></td>
+<td align="center" valign="top"><img src="site/img/themes/riso.webp" alt="Riso with blue-ink channel cards, off-register pink, halftone meters and yellow sticker faders" width="260"><br><sub><b>Riso</b></sub></td>
 <td align="center" valign="top"><img src="site/img/themes/bubblegum.webp" alt="The Bubblegum theme" width="260"><br><sub><b>Bubblegum</b></sub></td>
 </tr>
 </table>

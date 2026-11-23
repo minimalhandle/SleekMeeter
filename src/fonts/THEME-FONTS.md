@@ -14,8 +14,7 @@ Bundled so the themes look the same offline. Latin subsets in WOFF2, from Google
 | Press Start 2P | Arcade | SIL OFL 1.1 |
 | Silkscreen | Arcade | SIL OFL 1.1 |
 | Nunito | Nordic | SIL OFL 1.1 |
-| Young Serif | Groovy | SIL OFL 1.1 |
 | Fredoka | Bubblegum | SIL OFL 1.1 |
 | Saira Semi Condensed | Console, the default | SIL OFL 1.1 |
 
-Watercolour uses Sitka Banner and Sitka Text, which come with Windows 10 and 11, so nothing is bundled for it (Georgia is the fallback).
+Riso uses Archivo Black (names and levels), Space Grotesk and IBM Plex Mono, all bundled above. Aero uses Nunito. Graphite uses Segoe UI Variable, which comes with Windows 11 (Segoe UI on Windows 10), so nothing is bundled for it.

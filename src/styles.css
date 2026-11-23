@@ -664,7 +664,7 @@ html:has(> body.is-panel) { background: rgba(0, 0, 0, .004); }
 .drawer > .ui-tabs { padding: 8px 12px; margin-bottom: 0; }
 .drawer-body [role="tabpanel"] { overflow-wrap: anywhere; }
 .input-fx-warning { position: absolute; right: 4px; top: 4px; z-index: 2; min-width: 20px; min-height: 20px; padding: 0 4px; border: 1px solid var(--amber); border-radius: 5px; background: var(--well); color: var(--amber); font-weight: 700; }
-.strip:has(.app-stack:not([hidden])) .input-fx-warning { right: 37px; }
+.strip:has(.app-stack:not([hidden])) .input-fx-warning { right: 34px; }
 .drawer-apps { list-style: none; margin: 0; padding: 0; }
 .drawer-apps li { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 .drawer-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
@@ -1243,22 +1243,22 @@ body.app-dragging, body.app-dragging * { cursor: grabbing !important; }
 .strip.drop-ok { outline: 2px dashed var(--cyan); outline-offset: -3px; }
 .strip.drop-no { outline: 2px dashed var(--red); outline-offset: -3px; }
 .app-tray.drop-home { outline: 2px dashed var(--cyan); outline-offset: -3px; }
-/* The stack sits in the corner. The list opens beside the strip, clear of its controls. */
+/* Hovering a channel opens its app list beside it, so the button that pins the list open stays out
+   of sight until then: it appears on hover or keyboard focus, inside the corner, never on its edge. */
 .strip { position: relative; }
 .app-stack {
-  position: absolute; top: 2px; right: 5px; display: inline-flex; align-items: center; gap: 3px;
-  width: 17px; height: 16px; justify-content: center; padding: 0; border: 0; border-radius: 5px; cursor: pointer;
-  background: color-mix(in srgb, var(--acc) 20%, transparent); color: var(--acc);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 35%, transparent);
+  position: absolute; top: 4px; right: 12px; z-index: 2; display: inline-flex; align-items: center;
+  width: 18px; height: 18px; justify-content: center; padding: 0; border: 0; border-radius: 5px; cursor: pointer;
+  background: transparent; color: var(--muted);
+  opacity: 0; transition: opacity .12s, color .12s, background-color .12s;
 }
+.strip:is(:hover, :focus-within, .app-list-open) .app-stack { opacity: 1; }
+.strip.app-list-open .app-stack { color: var(--acc); background: color-mix(in srgb, var(--acc) 16%, transparent); }
 .app-stack:empty { display: none; }
 .app-stack::before { content: ""; position: absolute; inset: -4px; }
-.app-stack:hover { color: var(--ink); }
+.app-stack:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
 .app-stack svg { width: 12px; height: 12px; }
-/* On themes with very round channels, sit further in along the top edge so the corner doesn't clip it. */
-:is([data-theme="glass"], [data-theme="bubblegum"]) .app-stack { top: 4px; right: 13px; }
 body.no-streamer .streamer { display: none !important; }
-.app-stack svg { opacity: .85; }
 /* In the list, each app takes the channel's colour. */
 .app-chips .sa-chip .av { background: color-mix(in srgb, var(--acc) 70%, #000); }
 .app-chips {
