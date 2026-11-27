@@ -137,7 +137,12 @@ async function refreshMicFx() {
   $("#micFxNote").dataset.ok = runningCount ? "1" : "";
   $("#micFxOffRow").hidden = !cs.off;
   const text = $("#micFxStatusText");
-  const extra = cs.running && cs.latencyMs ? ` Adds about ${Math.round(cs.latencyMs)} ms of delay.` : "";
+  // NVIDIA's effects hold the audio back about 70 ms each by themselves; say so, and point to the
+  // CPU option, which doesn't, for anyone who notices the delay.
+  const nvidia = (c.on && c.engine !== "cpu") || c.aec;
+  const extra = cs.running && cs.latencyMs
+    ? ` Adds about ${Math.round(cs.latencyMs)} ms of delay${nvidia ? ", most of it from NVIDIA's AI itself. CPU noise removal adds much less" : ""}.`
+    : "";
   text.textContent = cs.off ? "" : set(c) ? (cs.message || st.message || "") + extra : "";
   text.dataset.ok = cs.running ? "1" : "";
   // Tabs: a green dot on mics that are running.

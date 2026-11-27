@@ -14,7 +14,8 @@
 //! Voicemeeter's audio thread must never wait, and GPU work can take a few milliseconds, so the
 //! callback only moves samples through lock-free queues. A worker thread per mic runs the chain in
 //! 10 ms frames: echo removal, NVIDIA's clean-up, then the plugins (in the plugin host process,
-//! pluginhost.rs). That costs a little latency (shown in Settings), about 25 ms at a 512 buffer.
+//! pluginhost.rs). The chain itself holds about 23 ms at a 512 buffer (27 ms with plugins), and
+//! each NVIDIA effect adds its own 70 ms on top (see NVIDIA_MODEL_MS). Settings shows the total.
 //!
 //! Shortcuts, the Stream Deck, the phone, Twitch and scenes switch a mic's chain off and on, and
 //! scenes can set NVIDIA's strength: that lives in "micFxLive" (Rust-owned, kept by settings_set).
@@ -36,6 +37,11 @@ pub const EFFECTS: &[(&str, &str)] = &[
 ];
 
 const RATE: u32 = 48_000;
+/// How long each NVIDIA effect itself holds the audio back: the models look ahead before deciding
+/// what is noise or echo. Measured at 70 ms for every 48 kHz effect in runtime 1.6.1 (a speech
+/// onset comes out 70 ms later; the frame size is fixed at 10 ms and can't lower it). Speaker echo
+/// removal and noise removal run one after the other, so with both on it is twice this.
+const NVIDIA_MODEL_MS: f32 = 70.0;
 /// Samples per frame NVIDIA's 48 kHz models use (10 ms), unless the effect says otherwise.
 const DEFAULT_FRAME: usize = 480;
 /// One chain per mic, at most.
@@ -237,6 +243,8 @@ struct LaneShared {
     underruns: AtomicU64,
     /// Extra samples held back to absorb the worker's timing; grows after an underrun.
     cushion: AtomicUsize,
+    /// This mic has plugins: they may take up to the host's wait, so hold back at least PLUGIN_CUSHION.
+    plugins: AtomicBool,
     /// Voicemeeter's stream restarted: the worker drops what it had queued.
     flush: AtomicBool,
     reset_output: AtomicBool,
@@ -264,6 +272,7 @@ impl LaneShared {
             stereo: AtomicBool::new(false),
             underruns: AtomicU64::new(0),
             cushion: AtomicUsize::new(START_CUSHION),
+            plugins: AtomicBool::new(false),
             flush: AtomicBool::new(false),
             reset_output: AtomicBool::new(false),
             bypass: AtomicBool::new(false),
@@ -301,7 +310,11 @@ fn shared() -> &'static Shared {
     })
 }
 
-const START_CUSHION: usize = 288; // 6 ms
+// NVIDIA's GPU time is about 0.1 ms per 10 ms frame (under 1.5 ms at worst), so 2 ms covers it and
+// the worker's wake-up. Plugins may take up to the plugin host's 6 ms wait, so mics with plugins
+// start at 6 ms. Either way the cushion grows after an underrun.
+const START_CUSHION: usize = 96; // 2 ms
+const PLUGIN_CUSHION: usize = 288; // 6 ms
 const MAX_CUSHION: usize = 960; // 20 ms
 
 /// Owned by the audio thread only (the mutexes are never contended; try_lock keeps it safe).
@@ -515,7 +528,7 @@ fn run_lanes(sh: &Shared, b: &AudioBuffer, output: bool) {
         sys::signal(l.wake.load(Ordering::Relaxed));
 
         let frame = l.frame.load(Ordering::Relaxed);
-        if !a.primed && l.outq.len() >= 2 * (n + frame + l.cushion.load(Ordering::Relaxed)) {
+        if !a.primed && l.outq.len() >= 2 * (n + frame + cushion(l)) {
             a.primed = true;
         }
         let ok = a.primed && l.outq.pop(&mut a.out[..n * 2]);
@@ -582,11 +595,22 @@ fn send_reference(sh: &Shared, b: &AudioBuffer, n: usize, chans: usize) {
     }
 }
 
-/// Latency a mic's chain adds, in ms (what's queued ahead of playback).
+/// Samples held back for timing: the cushion, at least PLUGIN_CUSHION when the mic has plugins.
+fn cushion(l: &LaneShared) -> usize {
+    let c = l.cushion.load(Ordering::Relaxed);
+    if l.plugins.load(Ordering::Relaxed) {
+        c.max(PLUGIN_CUSHION)
+    } else {
+        c
+    }
+}
+
+/// Latency a mic's chain adds, in ms (what's queued ahead of playback), not counting the
+/// effects' own delay.
 fn latency_ms(sh: &Shared, l: &LaneShared) -> f32 {
     let n = sh.block.load(Ordering::Relaxed);
     let frame = l.frame.load(Ordering::Relaxed);
-    let held = n + frame + l.cushion.load(Ordering::Relaxed);
+    let held = n + frame + cushion(l);
     held as f32 * 1000.0 / l.worker_rate.load(Ordering::Relaxed).max(1) as f32
 }
 
@@ -1770,6 +1794,10 @@ pub fn spawn(app: AppHandle) {
                     });
                 }
             }
+            for (lane, l) in sh.lanes.iter().enumerate() {
+                let has = wants.iter().any(|w| w.lane == lane && w.on);
+                l.plugins.store(has, Ordering::Relaxed);
+            }
             crate::pluginhost::sync(wants.clone(), rate);
             prune_states(&app);
 
@@ -2005,7 +2033,7 @@ pub fn spawn(app: AppHandle) {
                         "running": running,
                         "off": off,
                         "message": message,
-                        "latencyMs": if running { ((latency_ms(sh, l) + if key.cpu || key.rider.on { 10.0 } else { 0.0 }) * 10.0).round() / 10.0 } else { 0.0 },
+                        "latencyMs": if running { ((latency_ms(sh, l) + if key.cpu || key.rider.on { 10.0 } else { 0.0 } + NVIDIA_MODEL_MS * (key.aec as u8 + key.effect.is_some() as u8) as f32) * 10.0).round() / 10.0 } else { 0.0 },
                         "riderGainDb": if running && key.rider.on { f32::from_bits(l.rider_gain.load(Ordering::Relaxed)) } else { 0.0 },
                         "underruns": l.underruns.load(Ordering::Relaxed),
                     }),

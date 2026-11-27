@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.0-beta.3
+- **A little less mic delay with NVIDIA’s clean-up:** Sleekmeeter now holds back 2 ms instead of 6 ms for timing on mics without plugins (NVIDIA’s AI only takes about 0.1 ms per 10 ms of audio). It still holds back more by itself if audio ever drops out, and mics with plugins keep 6 ms.
+- **Settings shows the real delay:** NVIDIA’s AI holds the sound back about 70 ms by itself (each effect looks ahead before deciding what’s noise or echo), which Settings left out before. It now counts it and points to CPU noise removal, which adds much less.
+
 ## 0.22.0-beta.2
 - **Cleaner channel tops:** the app-list button no longer sits on the corner of every channel with apps routed to it. Hovering a channel still shows its apps; the button to keep the list open appears only while you hover or tab into the channel.
 - **Neon dims to standby in the background:** while Sleekmeeter isn't the window in front, Neon's signs drop to bare coloured tubes so the glow doesn't pull your eye on a second monitor. They light up again when you click back in.
